@@ -6,14 +6,10 @@ spring:
     name: user-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/userdb
-    username: porterodarkoa
-    password:
+    url: jdbc:postgresql://localhost:5433/userdb
+    username: user
+    password: user
 
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true

@@ -1,0 +1,38 @@
+services:
+  user-db:
+    image: postgres:16
+    container_name: agileflow-user-db
+    environment:
+      POSTGRES_USER: ${USER_DB_USER}
+      POSTGRES_PASSWORD: ${USER_DB_PASS}
+      POSTGRES_DB: ${USER_DB_NAME}
+    ports:
+      - "5433:5432"
+    volumes:
+      - userdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${USER_DB_USER} -d ${USER_DB_NAME}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  project-db:
+    image: postgres:16
+    container_name: agileflow-project-db
+    environment:
+      POSTGRES_USER: ${PROJECT_DB_USER}
+      POSTGRES_PASSWORD: ${PROJECT_DB_PASS}
+      POSTGRES_DB: ${PROJECT_DB_NAME}
+    ports:
+      - "5434:5432"
+    volumes:
+      - projectdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PROJECT_DB_USER} -d ${PROJECT_DB_NAME}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  userdata:
+  projectdata:
