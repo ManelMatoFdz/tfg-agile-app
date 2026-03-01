@@ -13,3 +13,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+
+security:
+  jwt:
+    secret: "change-me-dev-change-me-dev-change-me-dev-change-me-dev-123456"
+    expirationMinutes: 60
