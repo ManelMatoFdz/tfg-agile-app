@@ -15,13 +15,19 @@ public class JwtService {
 
     private final byte[] keyBytes;
     private final long expirationMinutes;
+    private final String issuer;
+    private final String audience;
 
     public JwtService(
             @Value("${security.jwt.secret}") String secret,
-            @Value("${security.jwt.expirationMinutes}") long expirationMinutes
+            @Value("${security.jwt.expirationMinutes}") long expirationMinutes,
+            @Value("${security.jwt.issuer}") String issuer,
+            @Value("${security.jwt.audience}") String audience
     ) {
         this.keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         this.expirationMinutes = expirationMinutes;
+        this.issuer = issuer;
+        this.audience = audience;
     }
 
     public String generateToken(String subjectEmail) {
@@ -30,6 +36,8 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(subjectEmail)
+                .issuer(issuer)
+                .audience().add(audience).and()
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(exp))
                 .signWith(Keys.hmacShaKeyFor(keyBytes))
@@ -39,6 +47,8 @@ public class JwtService {
     public String extractSubject(String token) {
         return Jwts.parser()
                 .verifyWith(Keys.hmacShaKeyFor(keyBytes))
+                .requireIssuer(issuer)
+                .requireAudience(audience)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()

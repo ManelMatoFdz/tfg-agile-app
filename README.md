@@ -4,12 +4,12 @@
 
 ### 1) Create local env file
 ```bash
-cp .env.example .env
+cp docs/.env.example .env
 ```
 
 ### 2) Start databases (Docker)
 ```bash
-docker compose up -d
+docker compose -f docs/docker-compose.yml --env-file .env up -d
 ```
 
 ### 3) Run smoke test

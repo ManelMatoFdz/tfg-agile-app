@@ -21,37 +21,38 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<?> emailAlreadyExists() {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", 409,
+                "error", "EMAIL_ALREADY_EXISTS",
+                "message", "Email already exists"
+        ));
+    }
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<?> invalidCredentials() {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", 401,
+                "error", "INVALID_CREDENTIALS",
+                "message", "Invalid credentials"
+        ));
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<?> userNotFound() {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", 404,
+                "error", "USER_NOT_FOUND",
+                "message", "User not found"
+        ));
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<?> runtime(RuntimeException ex) {
-        String code = ex.getMessage();
-
-        if ("EMAIL_ALREADY_EXISTS".equals(code)) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                    "timestamp", Instant.now().toString(),
-                    "status", 409,
-                    "error", code,
-                    "message", "Email already exists"
-            ));
-        }
-
-        if ("INVALID_CREDENTIALS".equals(code)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
-                    "timestamp", Instant.now().toString(),
-                    "status", 401,
-                    "error", code,
-                    "message", "Invalid credentials"
-            ));
-        }
-
-        if ("USER_NOT_FOUND".equals(code)) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-                    "timestamp", Instant.now().toString(),
-                    "status", 404,
-                    "error", code,
-                    "message", "User not found"
-            ));
-        }
-
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
                 "timestamp", Instant.now().toString(),
                 "status", 500,

@@ -1,20 +1,22 @@
 server:
-  port: 8081
+  port: ${USER_SERVICE_PORT:8081}
 
 spring:
   application:
     name: user-service
 
   datasource:
-    url: jdbc:postgresql://localhost:5433/userdb
-    username: user
-    password: user
+    url: jdbc:postgresql://${USER_DB_HOST:localhost}:${USER_DB_PORT:5433}/${USER_DB_NAME}
+    username: ${USER_DB_USER}
+    password: ${USER_DB_PASS}
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${USER_SERVICE_JPA_DDL_AUTO:update}
 
 security:
   jwt:
-    secret: "change-me-dev-change-me-dev-change-me-dev-change-me-dev-123456"
-    expirationMinutes: 60
+    secret: ${JWT_SECRET}
+    expirationMinutes: ${JWT_EXPIRATION_MINUTES:60}
+    issuer: ${JWT_ISSUER:agileflow-user-service}
+    audience: ${JWT_AUDIENCE:agileflow-api}

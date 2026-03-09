@@ -5,8 +5,12 @@ import com.tfg.agile.app.user_service.dto.LoginRequestDto;
 import com.tfg.agile.app.user_service.dto.RegisterRequestDto;
 import com.tfg.agile.app.user_service.dto.UserResponseDto;
 import com.tfg.agile.app.user_service.entity.User;
-import com.tfg.agile.app.user_service.repository.UserDao;
+import com.tfg.agile.app.user_service.exception.EmailAlreadyExistsException;
+import com.tfg.agile.app.user_service.exception.InvalidCredentialsException;
+import com.tfg.agile.app.user_service.exception.UserNotFoundException;
+import com.tfg.agile.app.user_service.repository.UserRepository;
 import com.tfg.agile.app.user_service.security.JwtService;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -15,11 +19,13 @@ import java.time.Instant;
 @Service
 public class AuthService {
 
-    private final UserDao userRepository;
+    private static final String UNIQUE_EMAIL_CONSTRAINT = "uk_users_email";
+
+    private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    public AuthService(UserDao userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
@@ -27,17 +33,26 @@ public class AuthService {
 
     public AuthResponseDto register(RegisterRequestDto req) {
         if (userRepository.existsByEmail(req.getEmail())) {
-            throw new RuntimeException("EMAIL_ALREADY_EXISTS");
+            throw new EmailAlreadyExistsException();
         }
 
         User user = User.builder()
-                .username(req.getName())
+                .username(req.getUsername())
                 .email(req.getEmail())
                 .passwordHash(passwordEncoder.encode(req.getPassword()))
                 .createdAt(Instant.now())
                 .build();
 
-        User saved = userRepository.save(user);
+        User saved;
+        try {
+            saved = userRepository.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            if (isUniqueEmailViolation(ex)) {
+                throw new EmailAlreadyExistsException();
+            }
+            throw ex;
+        }
+
         String token = jwtService.generateToken(saved.getEmail());
 
         return new AuthResponseDto(token, toUserResponse(saved));
@@ -45,10 +60,10 @@ public class AuthService {
 
     public AuthResponseDto login(LoginRequestDto req) {
         User user = userRepository.findByEmail(req.getEmail())
-                .orElseThrow(() -> new RuntimeException("INVALID_CREDENTIALS"));
+                .orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
-            throw new RuntimeException("INVALID_CREDENTIALS");
+            throw new InvalidCredentialsException();
         }
 
         String token = jwtService.generateToken(user.getEmail());
@@ -57,11 +72,23 @@ public class AuthService {
 
     public UserResponseDto me(String emailFromToken) {
         User user = userRepository.findByEmail(emailFromToken)
-                .orElseThrow(() -> new RuntimeException("USER_NOT_FOUND"));
+                .orElseThrow(UserNotFoundException::new);
         return toUserResponse(user);
     }
 
     private UserResponseDto toUserResponse(User u) {
         return new UserResponseDto(u.getId(), u.getUsername(), u.getEmail(), u.getCreatedAt());
+    }
+
+    private boolean isUniqueEmailViolation(DataIntegrityViolationException ex) {
+        Throwable cause = ex;
+        while (cause != null) {
+            String message = cause.getMessage();
+            if (message != null && message.contains(UNIQUE_EMAIL_CONSTRAINT)) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 }
