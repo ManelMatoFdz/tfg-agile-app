@@ -1,5 +1,6 @@
 package com.tfg.agile.app.user_service.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -11,20 +12,21 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.Map;
 
 @Configuration
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter, ObjectMapper objectMapper) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) ->
-                                writeJsonError(response, 401, "UNAUTHORIZED", "Authentication required"))
+                                writeJsonError(response, 401, "UNAUTHORIZED", "Authentication required", objectMapper))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
-                                writeJsonError(response, 403, "FORBIDDEN", "Access denied"))
+                                writeJsonError(response, 403, "FORBIDDEN", "Access denied", objectMapper))
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/register", "/auth/login").permitAll()
@@ -38,12 +40,17 @@ public class SecurityConfig {
             jakarta.servlet.http.HttpServletResponse response,
             int status,
             String error,
-            String message
+            String message,
+            ObjectMapper objectMapper
     ) throws IOException {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write(
-                "{\"timestamp\":\"" + Instant.now() + "\",\"status\":" + status + ",\"error\":\"" + error + "\",\"message\":\"" + message + "\"}"
+        Map<String, Object> body = Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", status,
+                "error", error,
+                "message", message
         );
+        response.getWriter().write(objectMapper.writeValueAsString(body));
     }
 }

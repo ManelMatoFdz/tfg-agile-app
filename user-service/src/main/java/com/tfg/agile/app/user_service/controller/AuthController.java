@@ -4,10 +4,13 @@ import com.tfg.agile.app.user_service.dto.AuthResponseDto;
 import com.tfg.agile.app.user_service.dto.LoginRequestDto;
 import com.tfg.agile.app.user_service.dto.RegisterRequestDto;
 import com.tfg.agile.app.user_service.dto.UserResponseDto;
+import com.tfg.agile.app.user_service.exception.InvalidCredentialsException;
 import com.tfg.agile.app.user_service.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/auth")
@@ -31,7 +34,15 @@ public class AuthController {
 
     @GetMapping("/me")
     public UserResponseDto me(Authentication authentication) {
-        String email = (String) authentication.getPrincipal();
-        return authService.me(email);
+        Object principal = authentication == null ? null : authentication.getPrincipal();
+        if (!(principal instanceof String userIdValue) || userIdValue.isBlank()) {
+            throw new InvalidCredentialsException();
+        }
+        try {
+            UUID userId = UUID.fromString(userIdValue);
+            return authService.me(userId);
+        } catch (IllegalArgumentException ex) {
+            throw new InvalidCredentialsException();
+        }
     }
 }

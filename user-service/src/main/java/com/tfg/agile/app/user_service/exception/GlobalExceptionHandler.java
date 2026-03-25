@@ -1,5 +1,6 @@
 package com.tfg.agile.app.user_service.exception;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -48,6 +49,16 @@ public class GlobalExceptionHandler {
                 "status", 404,
                 "error", "USER_NOT_FOUND",
                 "message", "User not found"
+        ));
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<?> dataIntegrityViolation() {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", 409,
+                "error", "DATA_INTEGRITY_VIOLATION",
+                "message", "Data integrity constraint violated"
         ));
     }
 

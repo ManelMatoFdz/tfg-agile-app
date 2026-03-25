@@ -15,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -53,7 +54,7 @@ public class AuthService {
             throw ex;
         }
 
-        String token = jwtService.generateToken(saved.getEmail());
+        String token = jwtService.generateToken(saved.getId(), saved.getEmail());
 
         return new AuthResponseDto(token, toUserResponse(saved));
     }
@@ -66,12 +67,12 @@ public class AuthService {
             throw new InvalidCredentialsException();
         }
 
-        String token = jwtService.generateToken(user.getEmail());
+        String token = jwtService.generateToken(user.getId(), user.getEmail());
         return new AuthResponseDto(token, toUserResponse(user));
     }
 
-    public UserResponseDto me(String emailFromToken) {
-        User user = userRepository.findByEmail(emailFromToken)
+    public UserResponseDto me(UUID userIdFromToken) {
+        User user = userRepository.findById(userIdFromToken)
                 .orElseThrow(UserNotFoundException::new);
         return toUserResponse(user);
     }

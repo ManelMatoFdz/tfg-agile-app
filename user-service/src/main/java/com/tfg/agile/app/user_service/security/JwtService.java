@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -30,12 +31,13 @@ public class JwtService {
         this.audience = audience;
     }
 
-    public String generateToken(String subjectEmail) {
+    public String generateToken(UUID userId, String email) {
         Instant now = Instant.now();
         Instant exp = now.plus(expirationMinutes, ChronoUnit.MINUTES);
 
         return Jwts.builder()
-                .subject(subjectEmail)
+                .subject(userId.toString())
+                .claim("email", email)
                 .issuer(issuer)
                 .audience().add(audience).and()
                 .issuedAt(Date.from(now))
@@ -44,8 +46,8 @@ public class JwtService {
                 .compact();
     }
 
-    public String extractSubject(String token) {
-        return Jwts.parser()
+    public UUID extractUserId(String token) {
+        String subject = Jwts.parser()
                 .verifyWith(Keys.hmacShaKeyFor(keyBytes))
                 .requireIssuer(issuer)
                 .requireAudience(audience)
@@ -53,5 +55,6 @@ public class JwtService {
                 .parseSignedClaims(token)
                 .getPayload()
                 .getSubject();
+        return UUID.fromString(subject);
     }
 }
