@@ -29,7 +29,15 @@ public class SecurityConfig {
                                 writeJsonError(response, 403, "FORBIDDEN", "Access denied", objectMapper))
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/register", "/auth/login").permitAll()
+                        .requestMatchers(
+                                "/auth/register",
+                                "/auth/login",
+                                "/auth/forgot-password",
+                                "/auth/reset-password",
+                                "/auth/refresh",
+                                "/auth/logout",
+                                "/assets/avatars/**"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)

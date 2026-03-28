@@ -1,5 +1,6 @@
 package com.tfg.agile.app.user_service.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,9 +8,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthResponseDto {
+public class RefreshTokenRequestDto {
 
-    private String accessToken;
+    @NotBlank
     private String refreshToken;
-    private UserResponseDto user;
 }

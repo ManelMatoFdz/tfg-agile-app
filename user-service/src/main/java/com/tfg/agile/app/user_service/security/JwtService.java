@@ -31,13 +31,14 @@ public class JwtService {
         this.audience = audience;
     }
 
-    public String generateToken(UUID userId, String email) {
+    public String generateAccessToken(UUID userId, String email, int tokenVersion) {
         Instant now = Instant.now();
         Instant exp = now.plus(expirationMinutes, ChronoUnit.MINUTES);
 
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("email", email)
+                .claim("tokenVersion", tokenVersion)
                 .issuer(issuer)
                 .audience().add(audience).and()
                 .issuedAt(Date.from(now))
@@ -46,15 +47,21 @@ public class JwtService {
                 .compact();
     }
 
-    public UUID extractUserId(String token) {
-        String subject = Jwts.parser()
+    public AccessTokenClaims extractAccessTokenClaims(String token) {
+        var payload = Jwts.parser()
                 .verifyWith(Keys.hmacShaKeyFor(keyBytes))
                 .requireIssuer(issuer)
                 .requireAudience(audience)
                 .build()
                 .parseSignedClaims(token)
-                .getPayload()
-                .getSubject();
-        return UUID.fromString(subject);
+                .getPayload();
+
+        String subject = payload.getSubject();
+        Number tokenVersionValue = payload.get("tokenVersion", Number.class);
+        int tokenVersion = tokenVersionValue == null ? 0 : tokenVersionValue.intValue();
+        return new AccessTokenClaims(UUID.fromString(subject), tokenVersion);
+    }
+
+    public record AccessTokenClaims(UUID userId, int tokenVersion) {
     }
 }

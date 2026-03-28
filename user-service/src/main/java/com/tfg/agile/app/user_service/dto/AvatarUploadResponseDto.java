@@ -7,9 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AuthResponseDto {
+public class AvatarUploadResponseDto {
 
-    private String accessToken;
-    private String refreshToken;
-    private UserResponseDto user;
+    private String avatarUrl;
 }

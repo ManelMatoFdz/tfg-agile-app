@@ -14,9 +14,34 @@ spring:
     hibernate:
       ddl-auto: ${USER_SERVICE_JPA_DDL_AUTO:update}
 
+  mail:
+    host: ${SMTP_HOST:}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USER:}
+    password: ${SMTP_PASS:}
+    properties:
+      mail:
+        smtp:
+          auth: ${SMTP_AUTH:true}
+          starttls:
+            enable: ${SMTP_STARTTLS:true}
+
+app:
+  mail:
+    enabled: ${MAIL_ENABLED:false}
+    from: ${MAIL_FROM:no-reply@agileflow.local}
+  avatar:
+    storage-dir: ${AVATAR_STORAGE_DIR:/tmp/agileflow-avatars}
+    public-base-url: ${AVATAR_PUBLIC_BASE_URL:http://localhost:8081/assets/avatars}
+
 security:
   jwt:
     secret: ${JWT_SECRET}
     expirationMinutes: ${JWT_EXPIRATION_MINUTES:60}
     issuer: ${JWT_ISSUER:agileflow-user-service}
     audience: ${JWT_AUDIENCE:agileflow-api}
+  refresh-token:
+    expirationDays: ${REFRESH_TOKEN_EXPIRATION_DAYS:7}
+  reset-password:
+    expirationMinutes: ${RESET_PASSWORD_EXPIRATION_MINUTES:15}
+    base-url: ${RESET_PASSWORD_BASE_URL:http://localhost:3000/reset-password}

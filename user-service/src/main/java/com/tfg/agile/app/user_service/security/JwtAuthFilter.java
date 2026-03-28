@@ -1,5 +1,7 @@
 package com.tfg.agile.app.user_service.security;
 
+import com.tfg.agile.app.user_service.entity.User;
+import com.tfg.agile.app.user_service.repository.UserRepository;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -25,9 +27,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
 
     private final JwtService jwtService;
+    private final UserRepository userRepository;
 
-    public JwtAuthFilter(JwtService jwtService) {
+    public JwtAuthFilter(JwtService jwtService, UserRepository userRepository) {
         this.jwtService = jwtService;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -43,7 +47,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         try {
             String token = header.substring(7);
-            UUID userId = jwtService.extractUserId(token);
+            JwtService.AccessTokenClaims claims = jwtService.extractAccessTokenClaims(token);
+            UUID userId = claims.userId();
+
+            User user = userRepository.findById(userId).orElse(null);
+            if (user == null || user.getTokenVersion() != claims.tokenVersion()) {
+                SecurityContextHolder.clearContext();
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 UsernamePasswordAuthenticationToken auth =
