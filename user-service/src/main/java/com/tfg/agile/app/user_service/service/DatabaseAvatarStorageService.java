@@ -1,26 +1,28 @@
 package com.tfg.agile.app.user_service.service;
 
+import com.tfg.agile.app.user_service.entity.User;
+import com.tfg.agile.app.user_service.entity.UserAvatar;
+import com.tfg.agile.app.user_service.repository.UserAvatarRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Locale;
-import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
-public class LocalAvatarStorageService implements AvatarStorageService {
+public class DatabaseAvatarStorageService implements AvatarStorageService {
 
     private static final long MAX_AVATAR_BYTES = 5L * 1024 * 1024;
-    private static final Map<String, String> CONTENT_TYPE_TO_EXTENSION = Map.of(
-            "image/jpeg", "jpg",
-            "image/png", "png",
-            "image/webp", "webp",
-            "image/gif", "gif"
+    private static final Set<String> SUPPORTED_CONTENT_TYPES = Set.of(
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "image/gif"
     );
     private static final byte[] JPEG_MAGIC = new byte[]{(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
     private static final byte[] PNG_MAGIC = new byte[]{
@@ -31,21 +33,21 @@ public class LocalAvatarStorageService implements AvatarStorageService {
     private static final byte[] RIFF_MAGIC = new byte[]{0x52, 0x49, 0x46, 0x46};
     private static final byte[] WEBP_MAGIC = new byte[]{0x57, 0x45, 0x42, 0x50};
 
-    private final Path storageDir;
+    private final UserAvatarRepository userAvatarRepository;
     private final String publicBaseUrl;
 
-    public LocalAvatarStorageService(
-            @Value("${app.avatar.storage-dir:/tmp/agileflow-avatars}") String storageDir,
+    public DatabaseAvatarStorageService(
+            UserAvatarRepository userAvatarRepository,
             @Value("${app.avatar.public-base-url:http://localhost:8081/assets/avatars}") String publicBaseUrl
     ) {
-        this.storageDir = Path.of(storageDir).toAbsolutePath().normalize();
+        this.userAvatarRepository = userAvatarRepository;
         this.publicBaseUrl = publicBaseUrl.endsWith("/")
                 ? publicBaseUrl.substring(0, publicBaseUrl.length() - 1)
                 : publicBaseUrl;
     }
 
     @Override
-    public String store(UUID userId, MultipartFile file) throws IOException {
+    public String store(User user, MultipartFile file) throws IOException {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Avatar file is empty");
         }
@@ -54,29 +56,32 @@ public class LocalAvatarStorageService implements AvatarStorageService {
         }
 
         byte[] content = file.getBytes();
-        String extension = detectImageExtension(content);
-        if (extension == null) {
+        String detectedContentType = detectImageContentType(content);
+        if (detectedContentType == null) {
             throw new IllegalArgumentException("Unsupported avatar file type");
         }
 
         String declaredContentType = normalizeContentType(file.getContentType());
-        if (declaredContentType != null) {
-            String declaredExtension = CONTENT_TYPE_TO_EXTENSION.get(declaredContentType);
-            if (declaredExtension != null && !declaredExtension.equals(extension)) {
-                throw new IllegalArgumentException("Avatar content type does not match file content");
-            }
+        if (declaredContentType != null
+                && SUPPORTED_CONTENT_TYPES.contains(declaredContentType)
+                && !declaredContentType.equals(detectedContentType)) {
+            throw new IllegalArgumentException("Avatar content type does not match file content");
         }
 
-        Files.createDirectories(storageDir);
-        String filename = userId + "-" + Instant.now().toEpochMilli() + "." + extension;
-        Path destination = storageDir.resolve(filename).normalize();
-        if (!destination.startsWith(storageDir)) {
-            throw new IllegalArgumentException("Invalid avatar storage path");
-        }
+        UserAvatar avatar = userAvatarRepository.findByUserId(user.getId())
+                .orElseGet(() -> UserAvatar.builder().user(user).build());
+        avatar.setImageData(content);
+        avatar.setContentType(detectedContentType);
+        avatar.setUpdatedAt(Instant.now());
+        userAvatarRepository.save(avatar);
 
-        Files.write(destination, content);
+        return publicBaseUrl + "/" + user.getId();
+    }
 
-        return publicBaseUrl + "/" + filename;
+    @Override
+    public Optional<StoredAvatar> load(UUID userId) {
+        return userAvatarRepository.findByUserId(userId)
+                .map(avatar -> new StoredAvatar(avatar.getImageData(), avatar.getContentType()));
     }
 
     private static String normalizeContentType(String contentType) {
@@ -86,18 +91,18 @@ public class LocalAvatarStorageService implements AvatarStorageService {
         return contentType.toLowerCase(Locale.ROOT).trim();
     }
 
-    private static String detectImageExtension(byte[] content) {
+    private static String detectImageContentType(byte[] content) {
         if (hasPrefix(content, JPEG_MAGIC)) {
-            return "jpg";
+            return "image/jpeg";
         }
         if (hasPrefix(content, PNG_MAGIC)) {
-            return "png";
+            return "image/png";
         }
         if (hasPrefix(content, GIF87A_MAGIC) || hasPrefix(content, GIF89A_MAGIC)) {
-            return "gif";
+            return "image/gif";
         }
         if (hasWebpHeader(content)) {
-            return "webp";
+            return "image/webp";
         }
         return null;
     }

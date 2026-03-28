@@ -2,6 +2,7 @@ package com.tfg.agile.app.user_service.service;
 
 import com.tfg.agile.app.user_service.dto.AuthResponseDto;
 import com.tfg.agile.app.user_service.dto.ForgotPasswordRequestDto;
+import com.tfg.agile.app.user_service.dto.GoogleLoginRequestDto;
 import com.tfg.agile.app.user_service.dto.LoginRequestDto;
 import com.tfg.agile.app.user_service.dto.MessageResponseDto;
 import com.tfg.agile.app.user_service.dto.RefreshTokenRequestDto;
@@ -12,7 +13,9 @@ import com.tfg.agile.app.user_service.entity.PasswordResetToken;
 import com.tfg.agile.app.user_service.entity.RefreshToken;
 import com.tfg.agile.app.user_service.entity.User;
 import com.tfg.agile.app.user_service.exception.EmailAlreadyExistsException;
+import com.tfg.agile.app.user_service.exception.GoogleLoginNotConfiguredException;
 import com.tfg.agile.app.user_service.exception.InvalidCredentialsException;
+import com.tfg.agile.app.user_service.exception.InvalidGoogleTokenException;
 import com.tfg.agile.app.user_service.exception.InvalidPasswordResetTokenException;
 import com.tfg.agile.app.user_service.exception.InvalidRefreshTokenException;
 import com.tfg.agile.app.user_service.exception.UserNotFoundException;
@@ -38,6 +41,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Locale;
 import java.util.UUID;
 
 @Service
@@ -59,6 +63,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final MessageSource messageSource;
     private final PasswordResetNotifier passwordResetNotifier;
+    private final GoogleIdentityService googleIdentityService;
     private final long resetPasswordExpirationMinutes;
     private final long refreshTokenExpirationDays;
     private final String resetPasswordBaseUrl;
@@ -71,6 +76,7 @@ public class AuthService {
             JwtService jwtService,
             MessageSource messageSource,
             PasswordResetNotifier passwordResetNotifier,
+            GoogleIdentityService googleIdentityService,
             @org.springframework.beans.factory.annotation.Value("${security.reset-password.expirationMinutes:15}")
             long resetPasswordExpirationMinutes,
             @org.springframework.beans.factory.annotation.Value("${security.refresh-token.expirationDays:7}")
@@ -85,6 +91,7 @@ public class AuthService {
         this.jwtService = jwtService;
         this.messageSource = messageSource;
         this.passwordResetNotifier = passwordResetNotifier;
+        this.googleIdentityService = googleIdentityService;
         this.resetPasswordExpirationMinutes = resetPasswordExpirationMinutes;
         this.refreshTokenExpirationDays = refreshTokenExpirationDays;
         this.resetPasswordBaseUrl = resetPasswordBaseUrl;
@@ -125,6 +132,35 @@ public class AuthService {
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPasswordHash())) {
             throw new InvalidCredentialsException();
+        }
+
+        return issueSession(user);
+    }
+
+    @Transactional
+    public AuthResponseDto googleLogin(GoogleLoginRequestDto req) {
+        GoogleIdentityService.GoogleIdentity identity;
+        try {
+            identity = googleIdentityService.verifyIdToken(req.getIdToken());
+        } catch (GoogleLoginNotConfiguredException | InvalidGoogleTokenException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
+            throw new InvalidGoogleTokenException();
+        }
+
+        User user = userRepository.findByEmail(identity.email()).orElseGet(() -> createGoogleUser(identity));
+        boolean changed = false;
+        if ((user.getFullName() == null || user.getFullName().isBlank()) && identity.name() != null) {
+            user.setFullName(identity.name());
+            changed = true;
+        }
+        if ((user.getAvatarUrl() == null || user.getAvatarUrl().isBlank()) && identity.pictureUrl() != null) {
+            user.setAvatarUrl(identity.pictureUrl());
+            changed = true;
+        }
+        if (changed) {
+            user.setUpdatedAt(Instant.now());
+            userRepository.save(user);
         }
 
         return issueSession(user);
@@ -233,6 +269,40 @@ public class AuthService {
 
     private UserResponseDto toUserResponse(User u) {
         return new UserResponseDto(u.getId(), u.getUsername(), u.getEmail(), u.getCreatedAt());
+    }
+
+    private User createGoogleUser(GoogleIdentityService.GoogleIdentity identity) {
+        Instant now = Instant.now();
+        User user = User.builder()
+                .username(buildGoogleUsername(identity))
+                .fullName(identity.name() != null ? identity.name() : buildGoogleUsername(identity))
+                .email(identity.email())
+                .avatarUrl(identity.pictureUrl())
+                .passwordHash(passwordEncoder.encode(generateOpaqueToken(REFRESH_TOKEN_BYTES)))
+                .tokenVersion(0)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+        try {
+            return userRepository.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            if (isUniqueEmailViolation(ex)) {
+                return userRepository.findByEmail(identity.email()).orElseThrow(InvalidCredentialsException::new);
+            }
+            throw ex;
+        }
+    }
+
+    private String buildGoogleUsername(GoogleIdentityService.GoogleIdentity identity) {
+        String email = identity.email();
+        if (email == null || email.isBlank()) {
+            return "google-user-" + generateOpaqueToken(6).toLowerCase(Locale.ROOT);
+        }
+        String localPart = email.split("@", 2)[0].trim();
+        if (localPart.isBlank()) {
+            return "google-user-" + generateOpaqueToken(6).toLowerCase(Locale.ROOT);
+        }
+        return localPart;
     }
 
     private AuthResponseDto issueSession(User user) {

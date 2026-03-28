@@ -2,6 +2,7 @@ package com.tfg.agile.app.user_service.controller;
 
 import com.tfg.agile.app.user_service.dto.AuthResponseDto;
 import com.tfg.agile.app.user_service.dto.ForgotPasswordRequestDto;
+import com.tfg.agile.app.user_service.dto.GoogleLoginRequestDto;
 import com.tfg.agile.app.user_service.dto.LoginRequestDto;
 import com.tfg.agile.app.user_service.dto.MessageResponseDto;
 import com.tfg.agile.app.user_service.dto.RefreshTokenRequestDto;
@@ -34,6 +35,11 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponseDto login(@RequestBody @Valid LoginRequestDto req) {
         return authService.login(req);
+    }
+
+    @PostMapping("/google/login")
+    public AuthResponseDto googleLogin(@RequestBody @Valid GoogleLoginRequestDto req) {
+        return authService.googleLogin(req);
     }
 
     @PostMapping("/forgot-password")

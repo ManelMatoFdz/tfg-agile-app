@@ -122,7 +122,7 @@ public class UserProfileService {
     public AvatarUploadResponseDto uploadAvatar(UUID userId, MultipartFile file) {
         User user = getUser(userId);
         try {
-            String avatarUrl = avatarStorageService.store(userId, file);
+            String avatarUrl = avatarStorageService.store(user, file);
             user.setAvatarUrl(avatarUrl);
             user.setUpdatedAt(Instant.now());
             userRepository.save(user);

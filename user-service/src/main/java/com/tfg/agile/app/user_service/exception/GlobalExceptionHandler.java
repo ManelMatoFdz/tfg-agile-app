@@ -18,6 +18,8 @@ public class GlobalExceptionHandler {
     private static final String INVALID_RESET_TOKEN_MESSAGE_KEY = "auth.reset-password.invalid-token";
     private static final String INVALID_REFRESH_TOKEN_MESSAGE_KEY = "auth.refresh.invalid-token";
     private static final String INVALID_PASSWORD_CHANGE_MESSAGE_KEY = "auth.change-password.invalid";
+    private static final String INVALID_GOOGLE_TOKEN_MESSAGE_KEY = "auth.google.invalid-token";
+    private static final String GOOGLE_NOT_CONFIGURED_MESSAGE_KEY = "auth.google.not-configured";
     private final MessageSource messageSource;
 
     public GlobalExceptionHandler(MessageSource messageSource) {
@@ -119,6 +121,38 @@ public class GlobalExceptionHandler {
                 "status", 404,
                 "error", "NOTIFICATION_NOT_FOUND",
                 "message", "Notification not found"
+        ));
+    }
+
+    @ExceptionHandler(InvalidGoogleTokenException.class)
+    public ResponseEntity<?> invalidGoogleToken() {
+        String message = messageSource.getMessage(
+                INVALID_GOOGLE_TOKEN_MESSAGE_KEY,
+                null,
+                "Invalid Google token",
+                LocaleContextHolder.getLocale()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", 400,
+                "error", "INVALID_GOOGLE_TOKEN",
+                "message", message
+        ));
+    }
+
+    @ExceptionHandler(GoogleLoginNotConfiguredException.class)
+    public ResponseEntity<?> googleLoginNotConfigured() {
+        String message = messageSource.getMessage(
+                GOOGLE_NOT_CONFIGURED_MESSAGE_KEY,
+                null,
+                "Google login is not configured",
+                LocaleContextHolder.getLocale()
+        );
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", 503,
+                "error", "GOOGLE_LOGIN_NOT_CONFIGURED",
+                "message", message
         ));
     }
 

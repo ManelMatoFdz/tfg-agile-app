@@ -18,7 +18,12 @@ import java.util.Map;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter, ObjectMapper objectMapper) throws Exception {
+    public SecurityFilterChain filterChain(
+            HttpSecurity http,
+            InternalApiKeyAuthFilter internalApiKeyAuthFilter,
+            JwtAuthFilter jwtAuthFilter,
+            ObjectMapper objectMapper
+    ) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -36,10 +41,13 @@ public class SecurityConfig {
                                 "/auth/reset-password",
                                 "/auth/refresh",
                                 "/auth/logout",
+                                "/auth/google/login",
                                 "/assets/avatars/**"
                         ).permitAll()
+                        .requestMatchers("/internal/**").hasAuthority("ROLE_INTERNAL")
                         .anyRequest().authenticated()
                 )
+                .addFilterBefore(internalApiKeyAuthFilter, JwtAuthFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
