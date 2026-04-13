@@ -30,3 +30,6 @@ replay_pid*
 .env
 docs/.env
 .DS_Store
+
+
+CLAUDE.md
