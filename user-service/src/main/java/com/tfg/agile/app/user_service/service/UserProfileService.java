@@ -92,8 +92,13 @@ public class UserProfileService {
     @Transactional
     public MessageResponseDto changePassword(UUID userId, ChangePasswordRequestDto req) {
         User user = getUser(userId);
-        if (!passwordEncoder.matches(req.getCurrentPassword(), user.getPasswordHash())) {
-            throw new InvalidCredentialsException();
+        boolean hasLocalPassword = user.isHasLocalPassword();
+        if (hasLocalPassword) {
+            String currentPassword = req.getCurrentPassword();
+            if (currentPassword == null || currentPassword.isBlank()
+                    || !passwordEncoder.matches(currentPassword, user.getPasswordHash())) {
+                throw new InvalidCredentialsException();
+            }
         }
         if (passwordEncoder.matches(req.getNewPassword(), user.getPasswordHash())) {
             throw new InvalidPasswordChangeException();
@@ -101,6 +106,7 @@ public class UserProfileService {
 
         Instant now = Instant.now();
         user.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
+        user.setHasLocalPassword(true);
         user.setTokenVersion(user.getTokenVersion() + 1);
         user.setUpdatedAt(now);
         userRepository.save(user);
@@ -237,7 +243,8 @@ public class UserProfileService {
                 user.getBio(),
                 user.getAvatarUrl(),
                 user.getCreatedAt(),
-                updatedAt
+                updatedAt,
+                user.isHasLocalPassword()
         );
     }
 

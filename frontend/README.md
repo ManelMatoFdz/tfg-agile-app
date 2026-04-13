@@ -20,6 +20,7 @@ Copia `.env.example` a `.env` y ajusta si es necesario:
 | Variable             | Descripción                          | Default  |
 |----------------------|--------------------------------------|----------|
 | `VITE_API_BASE_URL`  | URL base de la API del user-service  | `/api`   |
+| `VITE_GOOGLE_CLIENT_ID` | OAuth Client ID de Google (Web)   | -        |
 
 En desarrollo, Vite hace proxy de `/api` → `http://localhost:8081` (configurable en `vite.config.ts`).
 

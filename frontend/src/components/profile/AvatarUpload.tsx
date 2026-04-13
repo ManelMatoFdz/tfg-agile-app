@@ -1,28 +1,31 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
 import { usersApi } from '../../api/users';
 import { useAuthStore } from '../../store/authStore';
 import { useApiAction } from '../../hooks/useApiAction';
-import type { User } from '../../types';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
+import { buildAvatarSrc } from '../../utils/avatarUrl';
 
 export default function AvatarUpload() {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
-  const { loading, error, success, run, reset } = useApiAction<User>();
+  const { loading, error, success, run, reset } = useApiAction<{ avatarUrl: string }>();
   const fileRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
 
-  const avatarSrc = user?.avatarUrl
-    ? `${API_BASE}/assets/avatars/${user.id}`
-    : null;
+  const avatarSrc = buildAvatarSrc(user?.avatarUrl, user?.updatedAt);
+
+  useEffect(() => {
+    setAvatarLoadError(false);
+  }, [avatarSrc]);
 
   const handleFile = async (file: File) => {
     if (!file.type.startsWith('image/')) return;
     const updated = await run(usersApi.uploadAvatar(file));
-    if (updated) setUser(updated);
+    if (updated && user) {
+      setUser({ ...user, avatarUrl: updated.avatarUrl, updatedAt: new Date().toISOString() });
+    }
   };
 
   return (
@@ -48,11 +51,12 @@ export default function AvatarUpload() {
         <div className="relative group">
           <div className={`absolute -inset-1 bg-gradient-to-r from-primary-400 via-accent-400 to-primary-400 rounded-2xl blur-sm opacity-0 group-hover:opacity-60 transition-opacity duration-500 ${loading ? 'opacity-60 animate-spin' : ''}`} style={{ backgroundSize: '200% 200%', animation: loading ? 'gradient-shift 2s linear infinite' : undefined }} />
           <div className="relative">
-            {avatarSrc ? (
+            {avatarSrc && !avatarLoadError ? (
               <img
                 src={avatarSrc}
                 alt="Avatar"
                 className="w-28 h-28 rounded-2xl object-cover ring-4 ring-white shadow-xl transition-transform duration-300 group-hover:scale-105"
+                onError={() => setAvatarLoadError(true)}
               />
             ) : (
               <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-primary-400 via-accent-400 to-primary-600 flex items-center justify-center text-white text-4xl font-bold ring-4 ring-white shadow-xl transition-transform duration-300 group-hover:scale-105">

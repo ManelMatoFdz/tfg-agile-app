@@ -11,7 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ChangePasswordRequestDto {
 
-    @NotBlank
     private String currentPassword;
 
     @NotBlank

@@ -47,8 +47,8 @@ public class SecurityConfig {
                         .requestMatchers("/internal/**").hasAuthority("ROLE_INTERNAL")
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(internalApiKeyAuthFilter, JwtAuthFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(internalApiKeyAuthFilter, JwtAuthFilter.class)
                 .build();
     }
 

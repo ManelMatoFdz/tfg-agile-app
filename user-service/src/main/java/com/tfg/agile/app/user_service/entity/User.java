@@ -41,6 +41,9 @@ public class User {
     @Column(nullable = false)
     private String passwordHash;
 
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean hasLocalPassword;
+
     @Column(nullable = false, columnDefinition = "integer default 0")
     private int tokenVersion;
 

@@ -1,16 +1,23 @@
 import { useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
 import { usersApi } from '../../api/users';
 import { useApiAction } from '../../hooks/useApiAction';
+import { useAuthStore } from '../../store/authStore';
+import { setFlashNotice } from '../../utils/flashNotice';
 
 export default function ChangePassword() {
+  const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const { loading, error, success, run, reset } = useApiAction();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [validationError, setValidationError] = useState('');
+  const requiresCurrentPassword = user?.hasLocalPassword !== false;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -25,11 +32,16 @@ export default function ChangePassword() {
       return;
     }
 
-    const result = await run(usersApi.changePassword(currentPassword, newPassword));
+    if (requiresCurrentPassword && currentPassword.trim().length === 0) {
+      setValidationError('Debes introducir tu contraseña actual.');
+      return;
+    }
+
+    const result = await run(usersApi.changePassword(newPassword, requiresCurrentPassword ? currentPassword : undefined));
     if (result !== null) {
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirm('');
+      setFlashNotice('Contrasena actualizada. Inicia sesion de nuevo.');
+      logout();
+      navigate('/login', { replace: true });
     }
   };
 
@@ -43,7 +55,11 @@ export default function ChangePassword() {
         </div>
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Cambiar contraseña</h3>
-          <p className="text-sm text-gray-400 mt-0.5">Actualiza la contraseña de tu cuenta</p>
+          <p className="text-sm text-gray-400 mt-0.5">
+            {requiresCurrentPassword
+              ? 'Actualiza la contraseña de tu cuenta'
+              : 'Crea una contraseña local para poder entrar tambien con email'}
+          </p>
         </div>
       </div>
 
@@ -53,14 +69,16 @@ export default function ChangePassword() {
       {success && <Alert type="success" message="Contraseña actualizada correctamente." onClose={reset} />}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        <Input
-          label="Contraseña actual"
-          type="password"
-          placeholder="••••••••"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          required
-        />
+        {requiresCurrentPassword && (
+          <Input
+            label="Contraseña actual"
+            type="password"
+            placeholder="••••••••"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+          />
+        )}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Nueva contraseña"
@@ -82,7 +100,7 @@ export default function ChangePassword() {
         </div>
         <div className="flex justify-end pt-2">
           <Button type="submit" loading={loading}>
-            Cambiar contraseña
+            {requiresCurrentPassword ? 'Cambiar contraseña' : 'Crear contraseña'}
           </Button>
         </div>
       </form>

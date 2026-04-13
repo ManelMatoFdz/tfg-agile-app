@@ -5,6 +5,11 @@ spring:
   application:
     name: user-service
 
+  servlet:
+    multipart:
+      max-file-size: ${USER_SERVICE_MAX_FILE_SIZE:5MB}
+      max-request-size: ${USER_SERVICE_MAX_REQUEST_SIZE:5MB}
+
   datasource:
     url: jdbc:postgresql://${USER_DB_HOST:localhost}:${USER_DB_PORT:5433}/${USER_DB_NAME}
     username: ${USER_DB_USER}

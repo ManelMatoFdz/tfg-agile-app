@@ -5,6 +5,20 @@ import { notificationsApi } from '../api/notifications';
 import { useApiAction } from '../hooks/useApiAction';
 import type { Notification, NotificationPage } from '../types';
 
+type NotificationApiItem = Partial<Notification> & { isRead?: boolean };
+
+function normalizeNotification(item: NotificationApiItem): Notification {
+  return {
+    id: item.id ?? crypto.randomUUID(),
+    userId: item.userId ?? '',
+    title: item.title ?? 'Notificacion',
+    message: item.message ?? '',
+    type: item.type ?? 'DEFAULT',
+    read: typeof item.read === 'boolean' ? item.read : Boolean(item.isRead),
+    createdAt: item.createdAt ?? new Date().toISOString(),
+  };
+}
+
 function timeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -49,8 +63,13 @@ export default function NotificationsPage() {
     try {
       const res = await notificationsApi.list({ unreadOnly, page, size: 10 });
       const data: NotificationPage = res.data;
-      setNotifications(data.content);
-      setTotalPages(data.totalPages);
+      const list = Array.isArray(data.content)
+        ? data.content
+        : Array.isArray(data.items)
+          ? data.items
+          : [];
+      setNotifications(list.map((item) => normalizeNotification(item)));
+      setTotalPages(Number.isFinite(data.totalPages) ? data.totalPages : 0);
     } catch {
       setLoadError('Error al cargar notificaciones.');
     } finally {

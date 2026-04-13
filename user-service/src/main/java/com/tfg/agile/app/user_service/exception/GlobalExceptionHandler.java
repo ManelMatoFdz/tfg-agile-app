@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
@@ -185,6 +186,16 @@ public class GlobalExceptionHandler {
                 "status", status,
                 "error", ex.getStatusCode().toString(),
                 "message", reason == null || reason.isBlank() ? "Request failed" : reason
+        ));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<?> maxUploadSizeExceeded() {
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).body(Map.of(
+                "timestamp", Instant.now().toString(),
+                "status", 413,
+                "error", "PAYLOAD_TOO_LARGE",
+                "message", "Avatar file exceeds maximum allowed size"
         ));
     }
 

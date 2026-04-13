@@ -5,6 +5,9 @@ export interface User {
   fullName?: string;
   bio?: string;
   avatarUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  hasLocalPassword?: boolean;
   roles?: string[];
 }
 
@@ -21,15 +24,19 @@ export interface Notification {
   message: string;
   type: string;
   read: boolean;
+  isRead?: boolean;
   createdAt: string;
 }
 
 export interface NotificationPage {
-  content: Notification[];
+  content?: Notification[];
+  items?: Notification[];
   totalElements: number;
   totalPages: number;
-  number: number;
+  number?: number;
+  page?: number;
   size: number;
+  hasNext?: boolean;
 }
 
 export interface NotificationSettings {

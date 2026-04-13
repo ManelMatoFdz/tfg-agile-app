@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Toggle from '../ui/Toggle';
 import Alert from '../ui/Alert';
 import { notificationsApi } from '../../api/notifications';
-import { useApiAction } from '../../hooks/useApiAction';
 import type { NotificationSettings } from '../../types';
 
 const toggleItems: Array<{ key: keyof NotificationSettings; label: string; description: string; icon: string }> = [
@@ -33,25 +33,57 @@ const toggleItems: Array<{ key: keyof NotificationSettings; label: string; descr
 ];
 
 export default function NotificationPreferences() {
-  const [settings, setSettings] = useState<NotificationSettings | null>(null);
-  const [loadError, setLoadError] = useState('');
-  const { loading, error, success, run, reset } = useApiAction<NotificationSettings>();
+  const queryClient = useQueryClient();
+  const [feedback, setFeedback] = useState<string | null>(null);
 
-  useEffect(() => {
-    notificationsApi.getSettings()
-      .then((res) => setSettings(res.data))
-      .catch(() => setLoadError('Error al cargar preferencias de notificaciones.'));
-  }, []);
+  const {
+    data: settings,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: ['notification-settings'],
+    queryFn: async () => {
+      const res = await notificationsApi.getSettings();
+      return res.data;
+    },
+  });
 
-  const handleToggle = async (key: keyof NotificationSettings, value: boolean) => {
+  const mutation = useMutation({
+    mutationFn: async (patch: Partial<NotificationSettings>) => {
+      const res = await notificationsApi.updateSettings(patch);
+      return res.data;
+    },
+    onMutate: async (patch) => {
+      setFeedback(null);
+      await queryClient.cancelQueries({ queryKey: ['notification-settings'] });
+      const previous = queryClient.getQueryData<NotificationSettings>(['notification-settings']);
+      if (previous) {
+        queryClient.setQueryData<NotificationSettings>(['notification-settings'], { ...previous, ...patch });
+      }
+      return { previous };
+    },
+    onError: (_error, _patch, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData<NotificationSettings>(['notification-settings'], context.previous);
+      }
+      setFeedback('No se pudieron guardar las preferencias.');
+    },
+    onSuccess: (serverSettings) => {
+      queryClient.setQueryData<NotificationSettings>(['notification-settings'], serverSettings);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification-settings'] });
+    },
+  });
+
+  const handleToggle = (key: keyof NotificationSettings, value: boolean) => {
     if (!settings) return;
-    const updated = { ...settings, [key]: value };
-    setSettings(updated);
-    await run(notificationsApi.updateSettings({ [key]: value }));
+    const patch: Partial<NotificationSettings> = { [key]: value };
+    mutation.mutate(patch);
   };
 
-  if (loadError) return <Alert type="error" message={loadError} />;
-  if (!settings) {
+  if (isError) return <Alert type="error" message="Error al cargar preferencias de notificaciones." />;
+  if (isLoading || !settings) {
     return (
       <div className="glass-card-strong rounded-2xl p-6">
         <div className="space-y-4">
@@ -82,8 +114,13 @@ export default function NotificationPreferences() {
         </div>
       </div>
 
-      {error && <Alert type="error" message={error} onClose={reset} />}
-      {success && <Alert type="success" message="Preferencias guardadas." onClose={reset} />}
+      {feedback && (
+        <Alert
+          type="error"
+          message={feedback}
+          onClose={() => setFeedback(null)}
+        />
+      )}
 
       <div className="space-y-1 stagger-children">
         {toggleItems.map((item, i) => (
@@ -104,7 +141,7 @@ export default function NotificationPreferences() {
                 description={item.description}
                 checked={settings[item.key]}
                 onChange={(v) => handleToggle(item.key, v)}
-                disabled={loading}
+                disabled={mutation.isPending}
               />
             </div>
           </div>

@@ -1,9 +1,8 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
-import { useState } from 'react';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
+import { useEffect, useState } from 'react';
+import { buildAvatarSrc } from '../../utils/avatarUrl';
 
 const navItems = [
   {
@@ -24,10 +23,13 @@ export default function AppLayout() {
   const { user, refreshToken, logout } = useAuthStore();
   const [loggingOut, setLoggingOut] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
 
-  const avatarSrc = user?.avatarUrl
-    ? `${API_BASE}/assets/avatars/${user.id}`
-    : null;
+  const avatarSrc = buildAvatarSrc(user?.avatarUrl, user?.updatedAt);
+
+  useEffect(() => {
+    setAvatarLoadError(false);
+  }, [avatarSrc]);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -98,8 +100,13 @@ export default function AppLayout() {
 
               {/* Avatar with ring */}
               <div className="relative group">
-                {avatarSrc ? (
-                  <img src={avatarSrc} alt="" className="w-10 h-10 rounded-xl object-cover ring-2 ring-white shadow-md transition-transform duration-300 group-hover:scale-105" />
+                {avatarSrc && !avatarLoadError ? (
+                  <img
+                    src={avatarSrc}
+                    alt=""
+                    className="w-10 h-10 rounded-xl object-cover ring-2 ring-white shadow-md transition-transform duration-300 group-hover:scale-105"
+                    onError={() => setAvatarLoadError(true)}
+                  />
                 ) : (
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-sm font-bold ring-2 ring-white shadow-md transition-transform duration-300 group-hover:scale-105">
                     {user?.username?.charAt(0).toUpperCase() ?? '?'}

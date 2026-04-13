@@ -19,4 +19,5 @@ public class UserProfileResponseDto {
     private String avatarUrl;
     private Instant createdAt;
     private Instant updatedAt;
+    private boolean hasLocalPassword;
 }

@@ -108,6 +108,7 @@ public class AuthService {
                 .fullName(req.getUsername())
                 .email(req.getEmail())
                 .passwordHash(passwordEncoder.encode(req.getPassword()))
+                .hasLocalPassword(true)
                 .tokenVersion(0)
                 .createdAt(now)
                 .updatedAt(now)
@@ -247,6 +248,7 @@ public class AuthService {
 
         User user = resetToken.getUser();
         user.setPasswordHash(passwordEncoder.encode(req.getNewPassword()));
+        user.setHasLocalPassword(true);
         user.setTokenVersion(user.getTokenVersion() + 1);
         userRepository.save(user);
 
@@ -268,7 +270,7 @@ public class AuthService {
     }
 
     private UserResponseDto toUserResponse(User u) {
-        return new UserResponseDto(u.getId(), u.getUsername(), u.getEmail(), u.getCreatedAt());
+        return new UserResponseDto(u.getId(), u.getUsername(), u.getEmail(), u.getCreatedAt(), u.isHasLocalPassword());
     }
 
     private User createGoogleUser(GoogleIdentityService.GoogleIdentity identity) {
@@ -279,6 +281,7 @@ public class AuthService {
                 .email(identity.email())
                 .avatarUrl(identity.pictureUrl())
                 .passwordHash(passwordEncoder.encode(generateOpaqueToken(REFRESH_TOKEN_BYTES)))
+                .hasLocalPassword(false)
                 .tokenVersion(0)
                 .createdAt(now)
                 .updatedAt(now)

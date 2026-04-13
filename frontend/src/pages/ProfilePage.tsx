@@ -1,24 +1,26 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usersApi } from '../api/users';
 import { useAuthStore } from '../store/authStore';
 import ProfileInfo from '../components/profile/ProfileInfo';
 import AvatarUpload from '../components/profile/AvatarUpload';
 import ChangePassword from '../components/profile/ChangePassword';
 import NotificationPreferences from '../components/profile/NotificationPreferences';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api';
+import { buildAvatarSrc } from '../utils/avatarUrl';
 
 export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
 
   useEffect(() => {
     usersApi.getMe().then((res) => setUser(res.data)).catch(() => {});
   }, [setUser]);
 
-  const avatarSrc = user?.avatarUrl
-    ? `${API_BASE}/assets/avatars/${user.id}`
-    : null;
+  const avatarSrc = buildAvatarSrc(user?.avatarUrl, user?.updatedAt);
+
+  useEffect(() => {
+    setAvatarLoadError(false);
+  }, [avatarSrc]);
 
   return (
     <div className="space-y-8 animate-slide-up-fade">
@@ -31,8 +33,13 @@ export default function ProfilePage() {
         <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-6">
           {/* Avatar */}
           <div className="relative">
-            {avatarSrc ? (
-              <img src={avatarSrc} alt="" className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-xl" />
+            {avatarSrc && !avatarLoadError ? (
+              <img
+                src={avatarSrc}
+                alt=""
+                className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-xl"
+                onError={() => setAvatarLoadError(true)}
+              />
             ) : (
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-400 via-accent-400 to-primary-600 flex items-center justify-center text-white text-3xl font-bold ring-4 ring-white shadow-xl">
                 {user?.username?.charAt(0).toUpperCase() ?? '?'}

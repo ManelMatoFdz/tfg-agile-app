@@ -6,7 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -37,7 +36,6 @@ public class UserAvatar {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Lob
     @Basic(fetch = FetchType.LAZY)
     @Column(name = "image_data", nullable = false, columnDefinition = "bytea")
     private byte[] imageData;
