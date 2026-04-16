@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
+import { useTranslation } from 'react-i18next';
 import AuthLayout from '../components/auth/AuthLayout';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
+import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 import { useApiAction } from '../hooks/useApiAction';
@@ -12,6 +14,7 @@ import type { AuthResponse } from '../types';
 import { consumeFlashNotice } from '../utils/flashNotice';
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const setSession = useAuthStore((s) => s.setSession);
@@ -31,7 +34,7 @@ export default function LoginPage() {
     const data = await run(authApi.login(email, password));
     if (data) {
       setSession(data.accessToken, data.refreshToken, data.user);
-      navigate('/profile');
+      navigate('/workspaces');
     }
   };
 
@@ -39,19 +42,19 @@ export default function LoginPage() {
     setGoogleError(null);
     const idToken = credentialResponse.credential;
     if (!idToken) {
-      setGoogleError('Google no devolvio un idToken valido.');
+      setGoogleError(t('auth.login.googleTokenError'));
       return;
     }
 
     const data = await run(authApi.googleLogin(idToken));
     if (data) {
       setSession(data.accessToken, data.refreshToken, data.user);
-      navigate('/profile');
+      navigate('/workspaces');
     }
   };
 
   const handleGoogleError = () => {
-    setGoogleError('No se pudo iniciar sesion con Google. Intentalo de nuevo.');
+    setGoogleError(t('auth.login.googleError'));
   };
 
   return (
@@ -60,10 +63,10 @@ export default function LoginPage() {
         {/* Header */}
         <div>
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
-            Bienvenido de nuevo
+            {t('auth.login.title')}
           </h2>
           <p className="mt-2 text-gray-500">
-            Accede a tu cuenta para continuar
+            {t('auth.login.subtitle')}
           </p>
         </div>
 
@@ -82,9 +85,9 @@ export default function LoginPage() {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-5">
           <Input
-            label="Correo electrónico"
+            label={t('auth.login.email')}
             type="email"
-            placeholder="tu@email.com"
+            placeholder={t('auth.login.emailPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -95,7 +98,7 @@ export default function LoginPage() {
             }
           />
           <Input
-            label="Contraseña"
+            label={t('auth.login.password')}
             type="password"
             placeholder="••••••••"
             value={password}
@@ -110,12 +113,12 @@ export default function LoginPage() {
 
           <div className="flex justify-end">
             <Link to="/forgot-password" className="text-sm text-primary-600 hover:text-primary-700 font-medium hover:underline underline-offset-4 transition-all">
-              ¿Olvidaste tu contraseña?
+              {t('auth.login.forgotPassword')}
             </Link>
           </div>
 
           <Button type="submit" loading={loading} className="w-full h-12 text-base">
-            Iniciar sesión
+            {t('auth.login.submit')}
           </Button>
         </form>
 
@@ -126,7 +129,7 @@ export default function LoginPage() {
           </div>
           <div className="relative flex justify-center text-sm">
             <span className="bg-gray-50/80 backdrop-blur-sm px-4 text-gray-400 font-medium">
-              o continúa con
+              {t('auth.login.orContinueWith')}
             </span>
           </div>
         </div>
@@ -144,16 +147,20 @@ export default function LoginPage() {
             />
           </div>
         ) : (
-          <Alert type="info" message="Google Sign-In no configurado. Define VITE_GOOGLE_CLIENT_ID en frontend/.env." />
+          <Alert type="info" message={t('auth.login.googleNotConfigured')} />
         )}
 
         {/* Register link */}
         <p className="text-center text-sm text-gray-500">
-          ¿No tienes cuenta?{' '}
+          {t('auth.login.noAccount')}{' '}
           <Link to="/register" className="font-semibold text-primary-600 hover:text-primary-700 hover:underline underline-offset-4 transition-all">
-            Regístrate gratis
+            {t('auth.login.registerLink')}
           </Link>
         </p>
+
+        <div className="flex justify-center pt-2">
+          <LanguageSwitcher compact />
+        </div>
       </div>
     </AuthLayout>
   );

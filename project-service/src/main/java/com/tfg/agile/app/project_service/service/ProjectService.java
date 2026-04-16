@@ -21,19 +21,22 @@ public class ProjectService {
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
+    private final CategoryRepository categoryRepository;
 
     public ProjectService(ProjectRepository projectRepository,
                           ProjectMemberRepository projectMemberRepository,
                           WorkspaceRepository workspaceRepository,
                           WorkspaceMemberRepository workspaceMemberRepository,
                           TeamRepository teamRepository,
-                          TeamMemberRepository teamMemberRepository) {
+                          TeamMemberRepository teamMemberRepository,
+                          CategoryRepository categoryRepository) {
         this.projectRepository = projectRepository;
         this.projectMemberRepository = projectMemberRepository;
         this.workspaceRepository = workspaceRepository;
         this.workspaceMemberRepository = workspaceMemberRepository;
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
+        this.categoryRepository = categoryRepository;
     }
 
     @Transactional
@@ -42,8 +45,11 @@ public class ProjectService {
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
         requireWorkspaceMember(workspaceId, callerId);
 
+        Category category = resolveCategory(dto.categoryId(), workspaceId);
+
         Project project = Project.builder()
                 .workspace(workspace)
+                .category(category)
                 .name(dto.name())
                 .description(dto.description())
                 .build();
@@ -81,8 +87,12 @@ public class ProjectService {
     public ProjectResponseDto update(UUID projectId, UpdateProjectRequestDto dto, UUID callerId) {
         Project project = getProjectOrThrow(projectId);
         requireProjectAdmin(projectId, callerId);
+
+        Category category = resolveCategory(dto.categoryId(), project.getWorkspace().getId());
+
         project.setName(dto.name());
         project.setDescription(dto.description());
+        project.setCategory(category);
         return ProjectResponseDto.from(projectRepository.save(project));
     }
 
@@ -139,7 +149,9 @@ public class ProjectService {
     }
 
     @Transactional
-    public List<ProjectMemberResponseDto> addMembersFromTeam(UUID projectId, UUID teamId, UUID callerId) {
+    public List<ProjectMemberResponseDto> addMembersFromTeam(UUID projectId, UUID teamId,
+                                                             AddTeamMembersRequestDto dto,
+                                                             UUID callerId) {
         Project project = getProjectOrThrow(projectId);
         requireProjectAdmin(projectId, callerId);
 
@@ -150,12 +162,25 @@ public class ProjectService {
                 .map(TeamMember::getUserId)
                 .toList();
 
+        List<UUID> targetUserIds;
+        if (dto != null && dto.userIds() != null && !dto.userIds().isEmpty()) {
+            List<UUID> invalidUsers = dto.userIds().stream()
+                    .filter(uid -> !teamUserIds.contains(uid))
+                    .toList();
+            if (!invalidUsers.isEmpty()) {
+                throw new ForbiddenException("Some users are not members of this team");
+            }
+            targetUserIds = dto.userIds();
+        } else {
+            targetUserIds = teamUserIds;
+        }
+
         List<UUID> alreadyMembers = projectMemberRepository
-                .findByProjectIdAndUserIdIn(projectId, teamUserIds).stream()
+                .findByProjectIdAndUserIdIn(projectId, targetUserIds).stream()
                 .map(ProjectMember::getUserId)
                 .toList();
 
-        List<ProjectMember> newMembers = teamUserIds.stream()
+        List<ProjectMember> newMembers = targetUserIds.stream()
                 .filter(uid -> !alreadyMembers.contains(uid))
                 .map(uid -> ProjectMember.builder()
                         .project(project)
@@ -174,6 +199,16 @@ public class ProjectService {
     private Project getProjectOrThrow(UUID id) {
         return projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+    }
+
+    private Category resolveCategory(UUID categoryId, UUID workspaceId) {
+        if (categoryId == null) return null;
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+        if (!category.getWorkspace().getId().equals(workspaceId)) {
+            throw new ForbiddenException("Category does not belong to this workspace");
+        }
+        return category;
     }
 
     private void requireWorkspaceMember(UUID workspaceId, UUID userId) {

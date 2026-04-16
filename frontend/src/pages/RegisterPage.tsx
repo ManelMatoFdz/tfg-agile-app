@@ -1,15 +1,18 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import AuthLayout from '../components/auth/AuthLayout';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
+import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 import { useApiAction } from '../hooks/useApiAction';
 import type { AuthResponse } from '../types';
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const setSession = useAuthStore((s) => s.setSession);
   const { loading, error, run, reset } = useApiAction<AuthResponse>();
@@ -25,11 +28,11 @@ export default function RegisterPage() {
     setValidationError('');
 
     if (password.length < 6) {
-      setValidationError('La contraseña debe tener al menos 6 caracteres.');
+      setValidationError(t('auth.register.validation.passwordTooShort'));
       return;
     }
     if (password !== confirm) {
-      setValidationError('Las contraseñas no coinciden.');
+      setValidationError(t('auth.register.validation.passwordsDontMatch'));
       return;
     }
 
@@ -45,10 +48,10 @@ export default function RegisterPage() {
       <div className="space-y-8">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">
-            Crear cuenta
+            {t('auth.register.title')}
           </h2>
           <p className="mt-2 text-gray-500">
-            Únete y empieza a gestionar tus proyectos
+            {t('auth.register.subtitle')}
           </p>
         </div>
 
@@ -62,8 +65,8 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit} className="space-y-5">
           <Input
-            label="Nombre de usuario"
-            placeholder="usuario123"
+            label={t('auth.register.username')}
+            placeholder={t('auth.register.usernamePlaceholder')}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
@@ -74,9 +77,9 @@ export default function RegisterPage() {
             }
           />
           <Input
-            label="Correo electrónico"
+            label={t('auth.register.email')}
             type="email"
-            placeholder="tu@email.com"
+            placeholder={t('auth.register.emailPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
@@ -87,7 +90,7 @@ export default function RegisterPage() {
             }
           />
           <Input
-            label="Contraseña"
+            label={t('auth.register.password')}
             type="password"
             placeholder="••••••••"
             value={password}
@@ -101,7 +104,7 @@ export default function RegisterPage() {
             }
           />
           <Input
-            label="Confirmar contraseña"
+            label={t('auth.register.confirmPassword')}
             type="password"
             placeholder="••••••••"
             value={confirm}
@@ -130,22 +133,32 @@ export default function RegisterPage() {
                 ))}
               </div>
               <p className="text-xs text-gray-400">
-                {password.length < 6 ? 'Muy corta' : password.length < 9 ? 'Aceptable' : password.length < 12 ? 'Buena' : 'Excelente'}
+                {password.length < 6
+                  ? t('auth.register.passwordStrength.tooShort')
+                  : password.length < 9
+                    ? t('auth.register.passwordStrength.acceptable')
+                    : password.length < 12
+                      ? t('auth.register.passwordStrength.good')
+                      : t('auth.register.passwordStrength.excellent')}
               </p>
             </div>
           )}
 
           <Button type="submit" loading={loading} className="w-full h-12 text-base">
-            Crear cuenta
+            {t('auth.register.submit')}
           </Button>
         </form>
 
         <p className="text-center text-sm text-gray-500">
-          ¿Ya tienes cuenta?{' '}
+          {t('auth.register.alreadyHaveAccount')}{' '}
           <Link to="/login" className="font-semibold text-primary-600 hover:text-primary-700 hover:underline underline-offset-4 transition-all">
-            Inicia sesión
+            {t('auth.register.loginLink')}
           </Link>
         </p>
+
+        <div className="flex justify-center pt-2">
+          <LanguageSwitcher compact />
+        </div>
       </div>
     </AuthLayout>
   );

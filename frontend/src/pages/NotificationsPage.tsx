@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
 import { notificationsApi } from '../api/notifications';
@@ -11,7 +12,7 @@ function normalizeNotification(item: NotificationApiItem): Notification {
   return {
     id: item.id ?? crypto.randomUUID(),
     userId: item.userId ?? '',
-    title: item.title ?? 'Notificacion',
+    title: item.title ?? '',
     message: item.message ?? '',
     type: item.type ?? 'DEFAULT',
     read: typeof item.read === 'boolean' ? item.read : Boolean(item.isRead),
@@ -19,15 +20,15 @@ function normalizeNotification(item: NotificationApiItem): Notification {
   };
 }
 
-function timeAgo(dateStr: string): string {
+function timeAgo(dateStr: string, t: (key: string, opts?: object) => string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'ahora';
-  if (mins < 60) return `hace ${mins} min`;
+  if (mins < 1) return t('notifications.timeAgo.now');
+  if (mins < 60) return t('notifications.timeAgo.minutes', { count: mins });
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `hace ${hours}h`;
+  if (hours < 24) return t('notifications.timeAgo.hours', { count: hours });
   const days = Math.floor(hours / 24);
-  return `hace ${days}d`;
+  return t('notifications.timeAgo.days', { count: days });
 }
 
 const typeConfig: Record<string, { icon: string; color: string; bg: string }> = {
@@ -49,6 +50,7 @@ const typeConfig: Record<string, { icon: string; color: string; bg: string }> = 
 };
 
 export default function NotificationsPage() {
+  const { t } = useTranslation();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -71,11 +73,11 @@ export default function NotificationsPage() {
       setNotifications(list.map((item) => normalizeNotification(item)));
       setTotalPages(Number.isFinite(data.totalPages) ? data.totalPages : 0);
     } catch {
-      setLoadError('Error al cargar notificaciones.');
+      setLoadError(t('notifications.loadError'));
     } finally {
       setLoadingList(false);
     }
-  }, [unreadOnly, page]);
+  }, [unreadOnly, page, t]);
 
   useEffect(() => {
     fetchNotifications();
@@ -98,8 +100,8 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Notificaciones</h1>
-          <p className="text-sm text-gray-400 mt-1">Mantente al día con tu actividad</p>
+          <h1 className="text-2xl font-bold text-gray-900">{t('notifications.title')}</h1>
+          <p className="text-sm text-gray-400 mt-1">{t('notifications.subtitle')}</p>
         </div>
         <div className="flex gap-2">
           {/* Filter tabs */}
@@ -111,7 +113,7 @@ export default function NotificationsPage() {
                 !unreadOnly ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Todas
+              {t('notifications.all')}
             </button>
             <button
               type="button"
@@ -120,7 +122,7 @@ export default function NotificationsPage() {
                 unreadOnly ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              No leídas
+              {t('notifications.unread')}
             </button>
           </div>
           <Button
@@ -132,7 +134,7 @@ export default function NotificationsPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="hidden sm:inline">Marcar todas</span>
+            <span className="hidden sm:inline">{t('notifications.markAll')}</span>
           </Button>
         </div>
       </div>
@@ -161,8 +163,8 @@ export default function NotificationsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
               </svg>
             </div>
-            <p className="text-gray-500 font-medium">Sin notificaciones</p>
-            <p className="text-sm text-gray-400 mt-1">Cuando tengas actividad, aparecerá aquí</p>
+            <p className="text-gray-500 font-medium">{t('notifications.empty')}</p>
+            <p className="text-sm text-gray-400 mt-1">{t('notifications.emptySubtitle')}</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100/40 stagger-children">
@@ -196,7 +198,7 @@ export default function NotificationsPage() {
                         )}
                       </div>
                       <span className="text-xs text-gray-400 whitespace-nowrap shrink-0 tabular-nums">
-                        {timeAgo(n.createdAt)}
+                        {timeAgo(n.createdAt, t)}
                       </span>
                     </div>
                     <p className="text-sm text-gray-500 mt-1 line-clamp-2">{n.message}</p>
@@ -208,7 +210,7 @@ export default function NotificationsPage() {
                       onClick={() => handleMarkRead(n.id)}
                       className="shrink-0 px-3 py-1.5 text-xs text-primary-600 hover:text-primary-700 font-medium rounded-lg hover:bg-primary-50 transition-all duration-200 cursor-pointer opacity-0 group-hover:opacity-100"
                     >
-                      Marcar leída
+                      {t('notifications.markRead')}
                     </button>
                   )}
                 </div>
@@ -230,7 +232,7 @@ export default function NotificationsPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Anterior
+            {t('common.previous')}
           </Button>
 
           <div className="flex items-center gap-1 px-2">
@@ -256,7 +258,7 @@ export default function NotificationsPage() {
             onClick={() => setPage((p) => p + 1)}
             type="button"
           >
-            Siguiente
+            {t('common.next')}
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>

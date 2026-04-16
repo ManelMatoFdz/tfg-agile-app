@@ -1,0 +1,290 @@
+{
+  "common": {
+    "cancel": "Cancelar",
+    "save": "Gardar",
+    "delete": "Eliminar",
+    "add": "Engadir",
+    "create": "Crear",
+    "edit": "Editar",
+    "since": "Dende {{date}}",
+    "createdAt": "Creado {{date}}",
+    "you": "Ti",
+    "noDescription": "Sen descrición",
+    "comingSoon": "Próximamente",
+    "optional": "opcional",
+    "previous": "Anterior",
+    "next": "Seguinte"
+  },
+  "auth": {
+    "login": {
+      "title": "Benvido de novo",
+      "subtitle": "Accede á túa conta para continuar",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "ti@email.com",
+      "password": "Contrasinal",
+      "forgotPassword": "Esqueciches o contrasinal?",
+      "submit": "Iniciar sesión",
+      "orContinueWith": "ou continúa con",
+      "noAccount": "Non tes conta?",
+      "registerLink": "Rexístrate gratis",
+      "googleNotConfigured": "Google Sign-In non configurado. Define VITE_GOOGLE_CLIENT_ID en frontend/.env.",
+      "googleError": "Non se puido iniciar sesión con Google. Téntao de novo.",
+      "googleTokenError": "Google non devolveu un token válido."
+    },
+    "register": {
+      "title": "Crear conta",
+      "subtitle": "Únete e comeza a xestionar os teus proxectos",
+      "username": "Nome de usuario",
+      "usernamePlaceholder": "usuario123",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "ti@email.com",
+      "password": "Contrasinal",
+      "confirmPassword": "Confirmar contrasinal",
+      "submit": "Crear conta",
+      "alreadyHaveAccount": "Xa tes conta?",
+      "loginLink": "Inicia sesión",
+      "passwordStrength": {
+        "tooShort": "Moi curto",
+        "acceptable": "Aceptable",
+        "good": "Bo",
+        "excellent": "Excelente"
+      },
+      "validation": {
+        "passwordTooShort": "O contrasinal debe ter polo menos 6 caracteres.",
+        "passwordsDontMatch": "Os contrasinais non coinciden."
+      }
+    },
+    "forgotPassword": {
+      "title": "Recuperar contrasinal",
+      "subtitle": "Introduce o teu correo e enviarémosche instrucións para restablecelo",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "ti@email.com",
+      "submit": "Enviar instrucións",
+      "successMessage": "Enviouse un correo con instrucións. Comproba a túa bandexa de entrada.",
+      "backToLogin": "Volver ao inicio de sesión"
+    },
+    "resetPassword": {
+      "title": "Novo contrasinal",
+      "subtitle": "Introduce o teu novo contrasinal seguro",
+      "newPassword": "Novo contrasinal",
+      "confirmPassword": "Confirmar contrasinal",
+      "submit": "Restablecer contrasinal",
+      "successMessage": "Contrasinal actualizado correctamente.",
+      "goToLogin": "Ir ao inicio de sesión",
+      "validation": {
+        "invalidToken": "Token non válido. Solicita unha nova ligazón de restablecemento.",
+        "passwordTooShort": "O contrasinal debe ter polo menos 6 caracteres.",
+        "passwordsDontMatch": "Os contrasinais non coinciden."
+      }
+    }
+  },
+  "workspace": {
+    "selector": {
+      "title": "Os teus workspaces",
+      "subtitle": "Selecciona un workspace para continuar",
+      "noWorkspaces": "Aínda non tes ningún workspace",
+      "noWorkspacesSubtitle": "Crea o primeiro para comezar",
+      "createNew": "Crear novo workspace",
+      "loadError": "Non se puideron cargar os workspaces.",
+      "form": {
+        "title": "Novo workspace",
+        "name": "Nome",
+        "namePlaceholder": "A miña empresa",
+        "description": "Descrición ({{optional}})",
+        "descriptionPlaceholder": "Unha breve descrición",
+        "submit": "Crear workspace"
+      }
+    },
+    "nav": {
+      "changeWorkspace": "Cambiar workspace",
+      "workspace": "Workspace",
+      "account": "Conta",
+      "projects": "Proxectos",
+      "teams": "Equipos",
+      "members": "Membros",
+      "settings": "Configuración",
+      "profile": "Perfil",
+      "notifications": "Notificacións",
+      "logout": "Pechar sesión"
+    },
+    "dashboard": {
+      "title": "Proxectos",
+      "count_one": "{{count}} proxecto",
+      "count_other": "{{count}} proxectos",
+      "noProjects": "Non hai proxectos aínda",
+      "noProjectsSubtitle": "Crea o primeiro para comezar a traballar",
+      "noProjectsYet": "Aínda non hai proxectos",
+      "newProject": "Novo proxecto",
+      "uncategorized": "Sen categoría",
+      "modal": {
+        "title": "Novo proxecto",
+        "name": "Nome do proxecto",
+        "namePlaceholder": "O meu proxecto",
+        "description": "Descrición ({{optional}})",
+        "descriptionPlaceholder": "Breve descrición do proxecto",
+        "category": "Categoría ({{optional}})",
+        "noCategory": "Sen categoría",
+        "submit": "Crear proxecto"
+      }
+    },
+    "members": {
+      "title": "Membros",
+      "count_one": "{{count}} membro",
+      "count_other": "{{count}} membros",
+      "admins": "Administradores",
+      "membersGroup": "Membros",
+      "addMember": "Engadir membro",
+      "form": {
+        "title": "Engadir membro",
+        "userId": "ID de usuario (UUID)",
+        "userIdPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        "role": "Rol",
+        "submit": "Engadir"
+      },
+      "changeRoleTitle": "Cambiar a {{role}}",
+      "removeMember": "Eliminar do workspace",
+      "roles": {
+        "ADMIN": "Admin",
+        "MEMBER": "Membro"
+      },
+      "errors": {
+        "changeRole": "Non se puido cambiar o rol.",
+        "remove": "Non se puido eliminar o membro."
+      }
+    }
+  },
+  "teams": {
+    "title": "Equipos",
+    "count_one": "{{count}} equipo",
+    "count_other": "{{count}} equipos",
+    "noTeams": "Non hai equipos aínda",
+    "noTeamsSubtitle": "Crea o primeiro para organizar os membros",
+    "noTeamsYet": "Aínda non hai equipos",
+    "newTeam": "Novo equipo",
+    "form": {
+      "title": "Novo equipo",
+      "name": "Nome",
+      "namePlaceholder": "Frontend, Backend, QA…",
+      "description": "Descrición ({{optional}})",
+      "descriptionPlaceholder": "Breve descrición do equipo",
+      "submit": "Crear equipo"
+    },
+    "detail": {
+      "breadcrumb": "Equipos",
+      "members": "Membros",
+      "addMember": "Engadir membro",
+      "noMembers": "Este equipo aínda non ten membros.",
+      "addFirst": "Engadir o primeiro",
+      "userIdPlaceholder": "ID de usuario (UUID)",
+      "removeMember": "Eliminar do equipo",
+      "delete": "Eliminar equipo",
+      "deleteConfirm": {
+        "title": "Eliminar equipo",
+        "message": "Seguro que queres eliminar <strong>{{name}}</strong>? Esta acción non se pode desfacer.",
+        "submit": "Eliminar"
+      }
+    }
+  },
+  "projects": {
+    "breadcrumb": "Proxectos",
+    "kanban": {
+      "title": "Taboleiro Kanban",
+      "todo": "Por facer",
+      "inProgress": "En progreso",
+      "done": "Feito"
+    },
+    "members": {
+      "title": "Membros",
+      "noMembers": "Non hai membros neste proxecto.",
+      "roles": {
+        "ADMIN": "Admin",
+        "MEMBER": "Membro",
+        "VIEWER": "Observador"
+      }
+    }
+  },
+  "notifications": {
+    "title": "Notificacións",
+    "subtitle": "Mantéñate ao día coa túa actividade",
+    "all": "Todas",
+    "unread": "Non lidas",
+    "markAll": "Marcar todas",
+    "markRead": "Marcar lida",
+    "empty": "Sen notificacións",
+    "emptySubtitle": "Cando teñas actividade, aparecerá aquí",
+    "loadError": "Erro ao cargar notificacións.",
+    "timeAgo": {
+      "now": "agora",
+      "minutes": "hai {{count}} min",
+      "hours": "hai {{count}}h",
+      "days": "hai {{count}}d"
+    }
+  },
+  "profile": {
+    "defaultUser": "Usuario",
+    "info": {
+      "title": "Información persoal",
+      "subtitle": "Actualiza o teu nome e biografía",
+      "username": "Nome de usuario",
+      "email": "Correo electrónico",
+      "fullName": "Nome completo",
+      "fullNamePlaceholder": "O teu nome completo",
+      "bio": "Biografía",
+      "bioPlaceholder": "Cóntanos sobre ti...",
+      "save": "Gardar cambios",
+      "successMessage": "Perfil actualizado correctamente."
+    },
+    "password": {
+      "title": "Cambiar contrasinal",
+      "subtitle": "Actualiza o contrasinal da túa conta",
+      "subtitleCreate": "Crea un contrasinal local para poder entrar tamén con email",
+      "currentPassword": "Contrasinal actual",
+      "newPassword": "Novo contrasinal",
+      "confirmNew": "Confirmar novo",
+      "change": "Cambiar contrasinal",
+      "create": "Crear contrasinal",
+      "successMessage": "Contrasinal actualizado correctamente.",
+      "flashMessage": "Contrasinal actualizado. Inicia sesión de novo.",
+      "validation": {
+        "passwordTooShort": "O novo contrasinal debe ter polo menos 6 caracteres.",
+        "passwordsDontMatch": "Os contrasinais non coinciden.",
+        "currentRequired": "Debes introducir o teu contrasinal actual."
+      }
+    },
+    "avatar": {
+      "title": "Avatar",
+      "subtitle": "A túa imaxe de perfil",
+      "selectImage": "Seleccionar imaxe",
+      "dragDrop": "ou arrastra e solta aquí",
+      "fileTypes": "JPG, PNG ou GIF. Máx 5 MB",
+      "successMessage": "Avatar actualizado."
+    },
+    "notificationSettings": {
+      "title": "Notificacións",
+      "subtitle": "Configura como queres recibilas",
+      "saveError": "Non se puideron gardar as preferencias.",
+      "loadError": "Erro ao cargar preferencias de notificacións.",
+      "email": {
+        "label": "Notificacións por correo",
+        "description": "Recibe actualizacións na túa bandexa de entrada"
+      },
+      "inApp": {
+        "label": "Notificacións na app",
+        "description": "Mostra notificacións dentro da plataforma"
+      },
+      "projectUpdates": {
+        "label": "Actualizacións de proxectos",
+        "description": "Cambios en proxectos nos que participas"
+      },
+      "taskReminders": {
+        "label": "Recordatorios de tarefas",
+        "description": "Recordatorios sobre tarefas asignadas e prazos"
+      }
+    }
+  },
+  "lang": {
+    "es": "Español",
+    "en": "English",
+    "gl": "Galego"
+  }
+}

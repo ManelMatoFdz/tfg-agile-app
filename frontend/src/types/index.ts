@@ -45,3 +45,74 @@ export interface NotificationSettings {
   projectUpdatesEnabled: boolean;
   taskRemindersEnabled: boolean;
 }
+
+export interface UserSummary {
+  id: string;
+  username: string;
+  fullName?: string;
+  avatarUrl?: string;
+}
+
+// ── Project-service types ─────────────────────────────────────────────────────
+
+export type WorkspaceRole = 'ADMIN' | 'MEMBER';
+export type ProjectRole = 'ADMIN' | 'MEMBER' | 'VIEWER';
+
+export interface Workspace {
+  id: string;
+  name: string;
+  description?: string;
+  ownerId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface WorkspaceMember {
+  id: string;
+  workspaceId: string;
+  userId: string;
+  role: WorkspaceRole;
+  joinedAt: string;
+}
+
+export interface Category {
+  id: string;
+  workspaceId: string;
+  name: string;
+  color?: string;
+  position: number;
+  createdAt: string;
+}
+
+export interface Project {
+  id: string;
+  workspaceId: string;
+  categoryId?: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProjectMember {
+  id: string;
+  projectId: string;
+  userId: string;
+  role: ProjectRole;
+  joinedAt: string;
+}
+
+export interface Team {
+  id: string;
+  workspaceId: string;
+  name: string;
+  description?: string;
+  createdAt: string;
+}
+
+export interface TeamMember {
+  id: string;
+  teamId: string;
+  userId: string;
+  joinedAt: string;
+}

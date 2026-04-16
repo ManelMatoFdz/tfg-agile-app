@@ -8,6 +8,7 @@ import java.util.UUID;
 public record ProjectResponseDto(
         UUID id,
         UUID workspaceId,
+        UUID categoryId,
         String name,
         String description,
         Instant createdAt,
@@ -15,6 +16,7 @@ public record ProjectResponseDto(
 ) {
     public static ProjectResponseDto from(Project p) {
         return new ProjectResponseDto(p.getId(), p.getWorkspace().getId(),
+                p.getCategory() != null ? p.getCategory().getId() : null,
                 p.getName(), p.getDescription(), p.getCreatedAt(), p.getUpdatedAt());
     }
 }

@@ -1,0 +1,290 @@
+{
+  "common": {
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "add": "Añadir",
+    "create": "Crear",
+    "edit": "Editar",
+    "since": "Desde {{date}}",
+    "createdAt": "Creado {{date}}",
+    "you": "Tú",
+    "noDescription": "Sin descripción",
+    "comingSoon": "Próximamente",
+    "optional": "opcional",
+    "previous": "Anterior",
+    "next": "Siguiente"
+  },
+  "auth": {
+    "login": {
+      "title": "Bienvenido de nuevo",
+      "subtitle": "Accede a tu cuenta para continuar",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "tu@email.com",
+      "password": "Contraseña",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "submit": "Iniciar sesión",
+      "orContinueWith": "o continúa con",
+      "noAccount": "¿No tienes cuenta?",
+      "registerLink": "Regístrate gratis",
+      "googleNotConfigured": "Google Sign-In no configurado. Define VITE_GOOGLE_CLIENT_ID en frontend/.env.",
+      "googleError": "No se pudo iniciar sesión con Google. Inténtalo de nuevo.",
+      "googleTokenError": "Google no devolvió un token válido."
+    },
+    "register": {
+      "title": "Crear cuenta",
+      "subtitle": "Únete y empieza a gestionar tus proyectos",
+      "username": "Nombre de usuario",
+      "usernamePlaceholder": "usuario123",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "tu@email.com",
+      "password": "Contraseña",
+      "confirmPassword": "Confirmar contraseña",
+      "submit": "Crear cuenta",
+      "alreadyHaveAccount": "¿Ya tienes cuenta?",
+      "loginLink": "Inicia sesión",
+      "passwordStrength": {
+        "tooShort": "Muy corta",
+        "acceptable": "Aceptable",
+        "good": "Buena",
+        "excellent": "Excelente"
+      },
+      "validation": {
+        "passwordTooShort": "La contraseña debe tener al menos 6 caracteres.",
+        "passwordsDontMatch": "Las contraseñas no coinciden."
+      }
+    },
+    "forgotPassword": {
+      "title": "Recuperar contraseña",
+      "subtitle": "Introduce tu correo y te enviaremos instrucciones para restablecerla",
+      "email": "Correo electrónico",
+      "emailPlaceholder": "tu@email.com",
+      "submit": "Enviar instrucciones",
+      "successMessage": "Se ha enviado un correo con instrucciones. Revisa tu bandeja de entrada.",
+      "backToLogin": "Volver al inicio de sesión"
+    },
+    "resetPassword": {
+      "title": "Nueva contraseña",
+      "subtitle": "Introduce tu nueva contraseña segura",
+      "newPassword": "Nueva contraseña",
+      "confirmPassword": "Confirmar contraseña",
+      "submit": "Restablecer contraseña",
+      "successMessage": "Contraseña actualizada correctamente.",
+      "goToLogin": "Ir al inicio de sesión",
+      "validation": {
+        "invalidToken": "Token no válido. Solicita un nuevo enlace de restablecimiento.",
+        "passwordTooShort": "La contraseña debe tener al menos 6 caracteres.",
+        "passwordsDontMatch": "Las contraseñas no coinciden."
+      }
+    }
+  },
+  "workspace": {
+    "selector": {
+      "title": "Tus workspaces",
+      "subtitle": "Selecciona un workspace para continuar",
+      "noWorkspaces": "Aún no tienes ningún workspace",
+      "noWorkspacesSubtitle": "Crea tu primero para empezar",
+      "createNew": "Crear nuevo workspace",
+      "loadError": "No se pudieron cargar los workspaces.",
+      "form": {
+        "title": "Nuevo workspace",
+        "name": "Nombre",
+        "namePlaceholder": "Mi empresa",
+        "description": "Descripción ({{optional}})",
+        "descriptionPlaceholder": "Una breve descripción",
+        "submit": "Crear workspace"
+      }
+    },
+    "nav": {
+      "changeWorkspace": "Cambiar workspace",
+      "workspace": "Workspace",
+      "account": "Cuenta",
+      "projects": "Proyectos",
+      "teams": "Equipos",
+      "members": "Miembros",
+      "settings": "Configuración",
+      "profile": "Perfil",
+      "notifications": "Notificaciones",
+      "logout": "Cerrar sesión"
+    },
+    "dashboard": {
+      "title": "Proyectos",
+      "count_one": "{{count}} proyecto",
+      "count_other": "{{count}} proyectos",
+      "noProjects": "No hay proyectos todavía",
+      "noProjectsSubtitle": "Crea el primero para empezar a trabajar",
+      "noProjectsYet": "Aún no hay proyectos",
+      "newProject": "Nuevo proyecto",
+      "uncategorized": "Sin categoría",
+      "modal": {
+        "title": "Nuevo proyecto",
+        "name": "Nombre del proyecto",
+        "namePlaceholder": "Mi proyecto",
+        "description": "Descripción ({{optional}})",
+        "descriptionPlaceholder": "Breve descripción del proyecto",
+        "category": "Categoría ({{optional}})",
+        "noCategory": "Sin categoría",
+        "submit": "Crear proyecto"
+      }
+    },
+    "members": {
+      "title": "Miembros",
+      "count_one": "{{count}} miembro",
+      "count_other": "{{count}} miembros",
+      "admins": "Administradores",
+      "membersGroup": "Miembros",
+      "addMember": "Añadir miembro",
+      "form": {
+        "title": "Añadir miembro",
+        "userId": "ID de usuario (UUID)",
+        "userIdPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        "role": "Rol",
+        "submit": "Añadir"
+      },
+      "changeRoleTitle": "Cambiar a {{role}}",
+      "removeMember": "Eliminar del workspace",
+      "roles": {
+        "ADMIN": "Admin",
+        "MEMBER": "Miembro"
+      },
+      "errors": {
+        "changeRole": "No se pudo cambiar el rol.",
+        "remove": "No se pudo eliminar al miembro."
+      }
+    }
+  },
+  "teams": {
+    "title": "Equipos",
+    "count_one": "{{count}} equipo",
+    "count_other": "{{count}} equipos",
+    "noTeams": "No hay equipos todavía",
+    "noTeamsSubtitle": "Crea el primero para organizar a los miembros",
+    "noTeamsYet": "Aún no hay equipos",
+    "newTeam": "Nuevo equipo",
+    "form": {
+      "title": "Nuevo equipo",
+      "name": "Nombre",
+      "namePlaceholder": "Frontend, Backend, QA…",
+      "description": "Descripción ({{optional}})",
+      "descriptionPlaceholder": "Breve descripción del equipo",
+      "submit": "Crear equipo"
+    },
+    "detail": {
+      "breadcrumb": "Equipos",
+      "members": "Miembros",
+      "addMember": "Añadir miembro",
+      "noMembers": "Este equipo no tiene miembros todavía.",
+      "addFirst": "Añadir el primero",
+      "userIdPlaceholder": "ID de usuario (UUID)",
+      "removeMember": "Eliminar del equipo",
+      "delete": "Eliminar equipo",
+      "deleteConfirm": {
+        "title": "Eliminar equipo",
+        "message": "¿Seguro que quieres eliminar <strong>{{name}}</strong>? Esta acción no se puede deshacer.",
+        "submit": "Eliminar"
+      }
+    }
+  },
+  "projects": {
+    "breadcrumb": "Proyectos",
+    "kanban": {
+      "title": "Tablero Kanban",
+      "todo": "Por hacer",
+      "inProgress": "En progreso",
+      "done": "Hecho"
+    },
+    "members": {
+      "title": "Miembros",
+      "noMembers": "No hay miembros en este proyecto.",
+      "roles": {
+        "ADMIN": "Admin",
+        "MEMBER": "Miembro",
+        "VIEWER": "Observador"
+      }
+    }
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "subtitle": "Mantente al día con tu actividad",
+    "all": "Todas",
+    "unread": "No leídas",
+    "markAll": "Marcar todas",
+    "markRead": "Marcar leída",
+    "empty": "Sin notificaciones",
+    "emptySubtitle": "Cuando tengas actividad, aparecerá aquí",
+    "loadError": "Error al cargar notificaciones.",
+    "timeAgo": {
+      "now": "ahora",
+      "minutes": "hace {{count}} min",
+      "hours": "hace {{count}}h",
+      "days": "hace {{count}}d"
+    }
+  },
+  "profile": {
+    "defaultUser": "Usuario",
+    "info": {
+      "title": "Información personal",
+      "subtitle": "Actualiza tu nombre y biografía",
+      "username": "Nombre de usuario",
+      "email": "Correo electrónico",
+      "fullName": "Nombre completo",
+      "fullNamePlaceholder": "Tu nombre completo",
+      "bio": "Biografía",
+      "bioPlaceholder": "Cuéntanos sobre ti...",
+      "save": "Guardar cambios",
+      "successMessage": "Perfil actualizado correctamente."
+    },
+    "password": {
+      "title": "Cambiar contraseña",
+      "subtitle": "Actualiza la contraseña de tu cuenta",
+      "subtitleCreate": "Crea una contraseña local para poder entrar también con email",
+      "currentPassword": "Contraseña actual",
+      "newPassword": "Nueva contraseña",
+      "confirmNew": "Confirmar nueva",
+      "change": "Cambiar contraseña",
+      "create": "Crear contraseña",
+      "successMessage": "Contraseña actualizada correctamente.",
+      "flashMessage": "Contraseña actualizada. Inicia sesión de nuevo.",
+      "validation": {
+        "passwordTooShort": "La nueva contraseña debe tener al menos 6 caracteres.",
+        "passwordsDontMatch": "Las contraseñas no coinciden.",
+        "currentRequired": "Debes introducir tu contraseña actual."
+      }
+    },
+    "avatar": {
+      "title": "Avatar",
+      "subtitle": "Tu imagen de perfil",
+      "selectImage": "Seleccionar imagen",
+      "dragDrop": "o arrastra y suelta aquí",
+      "fileTypes": "JPG, PNG o GIF. Máx 5 MB",
+      "successMessage": "Avatar actualizado."
+    },
+    "notificationSettings": {
+      "title": "Notificaciones",
+      "subtitle": "Configura cómo quieres recibirlas",
+      "saveError": "No se pudieron guardar las preferencias.",
+      "loadError": "Error al cargar preferencias de notificaciones.",
+      "email": {
+        "label": "Notificaciones por correo",
+        "description": "Recibe actualizaciones en tu bandeja de entrada"
+      },
+      "inApp": {
+        "label": "Notificaciones en la app",
+        "description": "Muestra notificaciones dentro de la plataforma"
+      },
+      "projectUpdates": {
+        "label": "Actualizaciones de proyectos",
+        "description": "Cambios en proyectos donde participas"
+      },
+      "taskReminders": {
+        "label": "Recordatorios de tareas",
+        "description": "Recordatorios sobre tareas asignadas y plazos"
+      }
+    }
+  },
+  "lang": {
+    "es": "Español",
+    "en": "English",
+    "gl": "Galego"
+  }
+}

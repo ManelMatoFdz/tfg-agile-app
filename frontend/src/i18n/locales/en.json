@@ -1,0 +1,290 @@
+{
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "add": "Add",
+    "create": "Create",
+    "edit": "Edit",
+    "since": "Since {{date}}",
+    "createdAt": "Created {{date}}",
+    "you": "You",
+    "noDescription": "No description",
+    "comingSoon": "Coming soon",
+    "optional": "optional",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome back",
+      "subtitle": "Sign in to your account to continue",
+      "email": "Email address",
+      "emailPlaceholder": "you@email.com",
+      "password": "Password",
+      "forgotPassword": "Forgot your password?",
+      "submit": "Sign in",
+      "orContinueWith": "or continue with",
+      "noAccount": "Don't have an account?",
+      "registerLink": "Sign up for free",
+      "googleNotConfigured": "Google Sign-In not configured. Set VITE_GOOGLE_CLIENT_ID in frontend/.env.",
+      "googleError": "Could not sign in with Google. Please try again.",
+      "googleTokenError": "Google did not return a valid token."
+    },
+    "register": {
+      "title": "Create account",
+      "subtitle": "Join and start managing your projects",
+      "username": "Username",
+      "usernamePlaceholder": "user123",
+      "email": "Email address",
+      "emailPlaceholder": "you@email.com",
+      "password": "Password",
+      "confirmPassword": "Confirm password",
+      "submit": "Create account",
+      "alreadyHaveAccount": "Already have an account?",
+      "loginLink": "Sign in",
+      "passwordStrength": {
+        "tooShort": "Too short",
+        "acceptable": "Acceptable",
+        "good": "Good",
+        "excellent": "Excellent"
+      },
+      "validation": {
+        "passwordTooShort": "Password must be at least 6 characters.",
+        "passwordsDontMatch": "Passwords do not match."
+      }
+    },
+    "forgotPassword": {
+      "title": "Recover password",
+      "subtitle": "Enter your email and we'll send you instructions to reset it",
+      "email": "Email address",
+      "emailPlaceholder": "you@email.com",
+      "submit": "Send instructions",
+      "successMessage": "An email with instructions has been sent. Check your inbox.",
+      "backToLogin": "Back to sign in"
+    },
+    "resetPassword": {
+      "title": "New password",
+      "subtitle": "Enter your new secure password",
+      "newPassword": "New password",
+      "confirmPassword": "Confirm password",
+      "submit": "Reset password",
+      "successMessage": "Password updated successfully.",
+      "goToLogin": "Go to sign in",
+      "validation": {
+        "invalidToken": "Invalid token. Request a new reset link.",
+        "passwordTooShort": "Password must be at least 6 characters.",
+        "passwordsDontMatch": "Passwords do not match."
+      }
+    }
+  },
+  "workspace": {
+    "selector": {
+      "title": "Your workspaces",
+      "subtitle": "Select a workspace to continue",
+      "noWorkspaces": "You don't have any workspaces yet",
+      "noWorkspacesSubtitle": "Create your first one to get started",
+      "createNew": "Create new workspace",
+      "loadError": "Could not load workspaces.",
+      "form": {
+        "title": "New workspace",
+        "name": "Name",
+        "namePlaceholder": "My company",
+        "description": "Description ({{optional}})",
+        "descriptionPlaceholder": "A brief description",
+        "submit": "Create workspace"
+      }
+    },
+    "nav": {
+      "changeWorkspace": "Change workspace",
+      "workspace": "Workspace",
+      "account": "Account",
+      "projects": "Projects",
+      "teams": "Teams",
+      "members": "Members",
+      "settings": "Settings",
+      "profile": "Profile",
+      "notifications": "Notifications",
+      "logout": "Sign out"
+    },
+    "dashboard": {
+      "title": "Projects",
+      "count_one": "{{count}} project",
+      "count_other": "{{count}} projects",
+      "noProjects": "No projects yet",
+      "noProjectsSubtitle": "Create the first one to start working",
+      "noProjectsYet": "No projects yet",
+      "newProject": "New project",
+      "uncategorized": "Uncategorized",
+      "modal": {
+        "title": "New project",
+        "name": "Project name",
+        "namePlaceholder": "My project",
+        "description": "Description ({{optional}})",
+        "descriptionPlaceholder": "Brief description of the project",
+        "category": "Category ({{optional}})",
+        "noCategory": "No category",
+        "submit": "Create project"
+      }
+    },
+    "members": {
+      "title": "Members",
+      "count_one": "{{count}} member",
+      "count_other": "{{count}} members",
+      "admins": "Administrators",
+      "membersGroup": "Members",
+      "addMember": "Add member",
+      "form": {
+        "title": "Add member",
+        "userId": "User ID (UUID)",
+        "userIdPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
+        "role": "Role",
+        "submit": "Add"
+      },
+      "changeRoleTitle": "Change to {{role}}",
+      "removeMember": "Remove from workspace",
+      "roles": {
+        "ADMIN": "Admin",
+        "MEMBER": "Member"
+      },
+      "errors": {
+        "changeRole": "Could not change role.",
+        "remove": "Could not remove member."
+      }
+    }
+  },
+  "teams": {
+    "title": "Teams",
+    "count_one": "{{count}} team",
+    "count_other": "{{count}} teams",
+    "noTeams": "No teams yet",
+    "noTeamsSubtitle": "Create the first one to organise members",
+    "noTeamsYet": "No teams yet",
+    "newTeam": "New team",
+    "form": {
+      "title": "New team",
+      "name": "Name",
+      "namePlaceholder": "Frontend, Backend, QA…",
+      "description": "Description ({{optional}})",
+      "descriptionPlaceholder": "Brief description of the team",
+      "submit": "Create team"
+    },
+    "detail": {
+      "breadcrumb": "Teams",
+      "members": "Members",
+      "addMember": "Add member",
+      "noMembers": "This team has no members yet.",
+      "addFirst": "Add the first one",
+      "userIdPlaceholder": "User ID (UUID)",
+      "removeMember": "Remove from team",
+      "delete": "Delete team",
+      "deleteConfirm": {
+        "title": "Delete team",
+        "message": "Are you sure you want to delete <strong>{{name}}</strong>? This action cannot be undone.",
+        "submit": "Delete"
+      }
+    }
+  },
+  "projects": {
+    "breadcrumb": "Projects",
+    "kanban": {
+      "title": "Kanban Board",
+      "todo": "To do",
+      "inProgress": "In progress",
+      "done": "Done"
+    },
+    "members": {
+      "title": "Members",
+      "noMembers": "No members in this project.",
+      "roles": {
+        "ADMIN": "Admin",
+        "MEMBER": "Member",
+        "VIEWER": "Viewer"
+      }
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Stay up to date with your activity",
+    "all": "All",
+    "unread": "Unread",
+    "markAll": "Mark all",
+    "markRead": "Mark as read",
+    "empty": "No notifications",
+    "emptySubtitle": "When you have activity, it will appear here",
+    "loadError": "Error loading notifications.",
+    "timeAgo": {
+      "now": "just now",
+      "minutes": "{{count}} min ago",
+      "hours": "{{count}}h ago",
+      "days": "{{count}}d ago"
+    }
+  },
+  "profile": {
+    "defaultUser": "User",
+    "info": {
+      "title": "Personal information",
+      "subtitle": "Update your name and bio",
+      "username": "Username",
+      "email": "Email address",
+      "fullName": "Full name",
+      "fullNamePlaceholder": "Your full name",
+      "bio": "Bio",
+      "bioPlaceholder": "Tell us about yourself...",
+      "save": "Save changes",
+      "successMessage": "Profile updated successfully."
+    },
+    "password": {
+      "title": "Change password",
+      "subtitle": "Update your account password",
+      "subtitleCreate": "Create a local password to also sign in with email",
+      "currentPassword": "Current password",
+      "newPassword": "New password",
+      "confirmNew": "Confirm new password",
+      "change": "Change password",
+      "create": "Create password",
+      "successMessage": "Password updated successfully.",
+      "flashMessage": "Password updated. Please sign in again.",
+      "validation": {
+        "passwordTooShort": "New password must be at least 6 characters.",
+        "passwordsDontMatch": "Passwords do not match.",
+        "currentRequired": "You must enter your current password."
+      }
+    },
+    "avatar": {
+      "title": "Avatar",
+      "subtitle": "Your profile picture",
+      "selectImage": "Select image",
+      "dragDrop": "or drag and drop here",
+      "fileTypes": "JPG, PNG or GIF. Max 5 MB",
+      "successMessage": "Avatar updated."
+    },
+    "notificationSettings": {
+      "title": "Notifications",
+      "subtitle": "Configure how you want to receive them",
+      "saveError": "Could not save preferences.",
+      "loadError": "Error loading notification preferences.",
+      "email": {
+        "label": "Email notifications",
+        "description": "Receive updates in your inbox"
+      },
+      "inApp": {
+        "label": "In-app notifications",
+        "description": "Show notifications within the platform"
+      },
+      "projectUpdates": {
+        "label": "Project updates",
+        "description": "Changes in projects you participate in"
+      },
+      "taskReminders": {
+        "label": "Task reminders",
+        "description": "Reminders about assigned tasks and deadlines"
+      }
+    }
+  },
+  "lang": {
+    "es": "Español",
+    "en": "English",
+    "gl": "Galego"
+  }
+}

@@ -9,6 +9,7 @@ import com.tfg.agile.app.user_service.dto.PagedResponseDto;
 import com.tfg.agile.app.user_service.dto.UpdateNotificationSettingsRequestDto;
 import com.tfg.agile.app.user_service.dto.UpdateUserProfileRequestDto;
 import com.tfg.agile.app.user_service.dto.UserProfileResponseDto;
+import com.tfg.agile.app.user_service.dto.UserSummaryDto;
 import com.tfg.agile.app.user_service.entity.Notification;
 import com.tfg.agile.app.user_service.entity.NotificationSettings;
 import com.tfg.agile.app.user_service.entity.User;
@@ -32,6 +33,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -208,6 +210,13 @@ public class UserProfileService {
         settings.setUpdatedAt(Instant.now());
         notificationSettingsRepository.save(settings);
         return toNotificationSettingsResponse(settings);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserSummaryDto> batchLookup(List<UUID> ids) {
+        return userRepository.findAllById(ids).stream()
+                .map(u -> new UserSummaryDto(u.getId(), u.getUsername(), u.getFullName(), u.getAvatarUrl()))
+                .toList();
     }
 
     private User getUser(UUID userId) {

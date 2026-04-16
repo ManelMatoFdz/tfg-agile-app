@@ -22,8 +22,8 @@ public class Category {
     private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "project_id", nullable = false, updatable = false)
-    private Project project;
+    @JoinColumn(name = "workspace_id", nullable = false, updatable = false)
+    private Workspace workspace;
 
     @Column(nullable = false, length = 100)
     private String name;

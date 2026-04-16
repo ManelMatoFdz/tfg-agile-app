@@ -1,13 +1,16 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import AuthLayout from '../components/auth/AuthLayout';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
+import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import { authApi } from '../api/auth';
 import { useApiAction } from '../hooks/useApiAction';
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const { loading, error, success, run, reset } = useApiAction();
 
@@ -26,23 +29,23 @@ export default function ForgotPasswordPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
             </svg>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Recuperar contraseña</h2>
+          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">{t('auth.forgotPassword.title')}</h2>
           <p className="mt-2 text-gray-500">
-            Introduce tu correo y te enviaremos instrucciones para restablecerla
+            {t('auth.forgotPassword.subtitle')}
           </p>
         </div>
 
         {error && <Alert type="error" message={error} onClose={reset} />}
         {success && (
-          <Alert type="success" message="Se ha enviado un correo con instrucciones. Revisa tu bandeja de entrada." />
+          <Alert type="success" message={t('auth.forgotPassword.successMessage')} />
         )}
 
         {!success && (
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
-              label="Correo electrónico"
+              label={t('auth.forgotPassword.email')}
               type="email"
-              placeholder="tu@email.com"
+              placeholder={t('auth.forgotPassword.emailPlaceholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -53,7 +56,7 @@ export default function ForgotPasswordPage() {
               }
             />
             <Button type="submit" loading={loading} className="w-full h-12 text-base">
-              Enviar instrucciones
+              {t('auth.forgotPassword.submit')}
             </Button>
           </form>
         )}
@@ -63,9 +66,13 @@ export default function ForgotPasswordPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Volver al inicio de sesión
+            {t('auth.forgotPassword.backToLogin')}
           </Link>
         </p>
+
+        <div className="flex justify-center pt-2">
+          <LanguageSwitcher compact />
+        </div>
       </div>
     </AuthLayout>
   );

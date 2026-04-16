@@ -2,12 +2,12 @@ package com.tfg.agile.app.project_service.service;
 
 import com.tfg.agile.app.project_service.dto.*;
 import com.tfg.agile.app.project_service.entity.Category;
-import com.tfg.agile.app.project_service.entity.ProjectRole;
+import com.tfg.agile.app.project_service.entity.WorkspaceRole;
 import com.tfg.agile.app.project_service.exception.ForbiddenException;
 import com.tfg.agile.app.project_service.exception.ResourceNotFoundException;
 import com.tfg.agile.app.project_service.repository.CategoryRepository;
-import com.tfg.agile.app.project_service.repository.ProjectMemberRepository;
-import com.tfg.agile.app.project_service.repository.ProjectRepository;
+import com.tfg.agile.app.project_service.repository.WorkspaceMemberRepository;
+import com.tfg.agile.app.project_service.repository.WorkspaceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,25 +18,25 @@ import java.util.UUID;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
-    private final ProjectRepository projectRepository;
-    private final ProjectMemberRepository projectMemberRepository;
+    private final WorkspaceRepository workspaceRepository;
+    private final WorkspaceMemberRepository workspaceMemberRepository;
 
     public CategoryService(CategoryRepository categoryRepository,
-                           ProjectRepository projectRepository,
-                           ProjectMemberRepository projectMemberRepository) {
+                           WorkspaceRepository workspaceRepository,
+                           WorkspaceMemberRepository workspaceMemberRepository) {
         this.categoryRepository = categoryRepository;
-        this.projectRepository = projectRepository;
-        this.projectMemberRepository = projectMemberRepository;
+        this.workspaceRepository = workspaceRepository;
+        this.workspaceMemberRepository = workspaceMemberRepository;
     }
 
     @Transactional
-    public CategoryResponseDto create(UUID projectId, CreateCategoryRequestDto dto, UUID callerId) {
-        var project = projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-        requireProjectAdminOrMember(projectId, callerId);
+    public CategoryResponseDto create(UUID workspaceId, CreateCategoryRequestDto dto, UUID callerId) {
+        var workspace = workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
+        requireWorkspaceAdmin(workspaceId, callerId);
 
         Category category = Category.builder()
-                .project(project)
+                .workspace(workspace)
                 .name(dto.name())
                 .color(dto.color())
                 .position(dto.position())
@@ -45,19 +45,20 @@ public class CategoryService {
     }
 
     @Transactional(readOnly = true)
-    public List<CategoryResponseDto> findByProject(UUID projectId, UUID callerId) {
-        projectRepository.findById(projectId)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
-        requireProjectMember(projectId, callerId);
-        return categoryRepository.findByProjectIdOrderByPosition(projectId).stream()
+    public List<CategoryResponseDto> findByWorkspace(UUID workspaceId, UUID callerId) {
+        workspaceRepository.findById(workspaceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
+        requireWorkspaceMember(workspaceId, callerId);
+        return categoryRepository.findByWorkspaceIdOrderByPosition(workspaceId).stream()
                 .map(CategoryResponseDto::from)
                 .toList();
     }
 
     @Transactional
-    public CategoryResponseDto update(UUID categoryId, UpdateCategoryRequestDto dto, UUID callerId) {
+    public CategoryResponseDto update(UUID workspaceId, UUID categoryId,
+                                      UpdateCategoryRequestDto dto, UUID callerId) {
+        requireWorkspaceAdmin(workspaceId, callerId);
         Category category = getCategoryOrThrow(categoryId);
-        requireProjectAdminOrMember(category.getProject().getId(), callerId);
         category.setName(dto.name());
         category.setColor(dto.color());
         category.setPosition(dto.position());
@@ -65,9 +66,9 @@ public class CategoryService {
     }
 
     @Transactional
-    public void delete(UUID categoryId, UUID callerId) {
-        Category category = getCategoryOrThrow(categoryId);
-        requireProjectAdminOrMember(category.getProject().getId(), callerId);
+    public void delete(UUID workspaceId, UUID categoryId, UUID callerId) {
+        requireWorkspaceAdmin(workspaceId, callerId);
+        getCategoryOrThrow(categoryId);
         categoryRepository.deleteById(categoryId);
     }
 
@@ -78,17 +79,15 @@ public class CategoryService {
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
     }
 
-    private void requireProjectMember(UUID projectId, UUID userId) {
-        if (!projectMemberRepository.existsByProjectIdAndUserId(projectId, userId)) {
-            throw new ForbiddenException("Not a member of this project");
+    private void requireWorkspaceMember(UUID workspaceId, UUID userId) {
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
+            throw new ForbiddenException("Not a member of this workspace");
         }
     }
 
-    private void requireProjectAdminOrMember(UUID projectId, UUID userId) {
-        var membership = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
-                .orElseThrow(() -> new ForbiddenException("Not a member of this project"));
-        if (membership.getRole() == ProjectRole.VIEWER) {
-            throw new ForbiddenException("Viewer role cannot manage categories");
+    private void requireWorkspaceAdmin(UUID workspaceId, UUID userId) {
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspaceId, userId, WorkspaceRole.ADMIN)) {
+            throw new ForbiddenException("Workspace admin role required");
         }
     }
 }

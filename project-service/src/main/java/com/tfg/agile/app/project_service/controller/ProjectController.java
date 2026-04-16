@@ -93,8 +93,9 @@ public class ProjectController {
     public ResponseEntity<List<ProjectMemberResponseDto>> addMembersFromTeam(
             @PathVariable UUID projectId,
             @PathVariable UUID teamId,
+            @RequestBody(required = false) AddTeamMembersRequestDto dto,
             @AuthenticationPrincipal UUID callerId) {
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(projectService.addMembersFromTeam(projectId, teamId, callerId));
+                .body(projectService.addMembersFromTeam(projectId, teamId, dto, callerId));
     }
 }
