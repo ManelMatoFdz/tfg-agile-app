@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
 import { notificationsApi } from '../api/notifications';
@@ -20,7 +21,7 @@ function normalizeNotification(item: NotificationApiItem): Notification {
   };
 }
 
-function timeAgo(dateStr: string, t: (key: string, opts?: object) => string): string {
+function timeAgo(dateStr: string, t: TFunction): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return t('notifications.timeAgo.now');

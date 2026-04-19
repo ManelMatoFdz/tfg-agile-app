@@ -1,16 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { projectsApi } from '../../api/projects';
 import { useApiAction } from '../../hooks/useApiAction';
 import { useUserMap } from '../../hooks/useUserMap';
 import Alert from '../../components/ui/Alert';
 import type { Project, ProjectMember, ProjectRole } from '../../types';
-
-const ROLE_LABELS: Record<ProjectRole, string> = {
-  ADMIN: 'Admin',
-  MEMBER: 'Miembro',
-  VIEWER: 'Observador',
-};
 
 const ROLE_COLORS: Record<ProjectRole, string> = {
   ADMIN: 'bg-primary-100 text-primary-700',
@@ -19,6 +14,7 @@ const ROLE_COLORS: Record<ProjectRole, string> = {
 };
 
 function MemberRow({ member, displayName, avatarUrl }: { member: ProjectMember; displayName: string; avatarUrl?: string }) {
+  const { t } = useTranslation();
   const [imgError, setImgError] = useState(false);
   return (
     <div className="flex items-center justify-between py-3 px-4 rounded-xl hover:bg-gray-50/70 transition-colors">
@@ -35,18 +31,19 @@ function MemberRow({ member, displayName, avatarUrl }: { member: ProjectMember; 
         <div>
           <p className="text-sm font-medium text-gray-900">{displayName}</p>
           <p className="text-xs text-gray-400">
-            Desde {new Date(member.joinedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+            {t('common.since', { date: new Date(member.joinedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) })}
           </p>
         </div>
       </div>
       <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ROLE_COLORS[member.role]}`}>
-        {ROLE_LABELS[member.role]}
+        {t(`projects.members.roles.${member.role}`)}
       </span>
     </div>
   );
 }
 
 export default function ProjectDetailPage() {
+  const { t } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -74,7 +71,7 @@ export default function ProjectDetailPage() {
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-gray-400 mb-6">
         <Link to={`/workspaces/${workspaceId}`} className="hover:text-primary-600 transition-colors">
-          Proyectos
+          {t('projects.breadcrumb')}
         </Link>
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -105,7 +102,7 @@ export default function ProjectDetailPage() {
                   <p className="text-gray-500 mt-1.5">{project.description}</p>
                 )}
                 <p className="text-xs text-gray-400 mt-3">
-                  Creado {new Date(project.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  {t('common.createdAt', { date: new Date(project.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) })}
                 </p>
               </div>
             </div>
@@ -114,11 +111,11 @@ export default function ProjectDetailPage() {
           {/* Kanban placeholder */}
           <div className="glass-card-strong p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-gray-900">Tablero Kanban</h2>
-              <span className="text-xs font-medium bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full">Próximamente</span>
+              <h2 className="text-base font-semibold text-gray-900">{t('projects.kanban.title')}</h2>
+              <span className="text-xs font-medium bg-amber-100 text-amber-700 px-2.5 py-1 rounded-full">{t('common.comingSoon')}</span>
             </div>
             <div className="flex gap-3 overflow-x-auto pb-2">
-              {['Por hacer', 'En progreso', 'Hecho'].map((col) => (
+              {[t('projects.kanban.todo'), t('projects.kanban.inProgress'), t('projects.kanban.done')].map((col) => (
                 <div
                   key={col}
                   className="flex-shrink-0 w-64 bg-gray-50/80 rounded-xl border border-gray-100 p-3"
@@ -141,7 +138,7 @@ export default function ProjectDetailPage() {
           <div className="glass-card-strong p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-gray-900">
-                Miembros
+                {t('projects.members.title')}
                 {members.length > 0 && (
                   <span className="ml-2 text-xs font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
                     {members.length}
@@ -155,7 +152,7 @@ export default function ProjectDetailPage() {
                 <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : members.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-6">No hay miembros en este proyecto.</p>
+              <p className="text-sm text-gray-400 text-center py-6">{t('projects.members.noMembers')}</p>
             ) : (
               <div className="divide-y divide-gray-100/60">
                 {members.map((m) => {

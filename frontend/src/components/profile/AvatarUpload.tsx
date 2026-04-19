@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
 import { usersApi } from '../../api/users';
@@ -7,6 +8,7 @@ import { useApiAction } from '../../hooks/useApiAction';
 import { buildAvatarSrc } from '../../utils/avatarUrl';
 
 export default function AvatarUpload() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const { loading, error, success, run, reset } = useApiAction<{ avatarUrl: string }>();
@@ -38,13 +40,13 @@ export default function AvatarUpload() {
           </svg>
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Avatar</h3>
-          <p className="text-sm text-gray-400 mt-0.5">Tu imagen de perfil</p>
+          <h3 className="text-lg font-semibold text-gray-900">{t('profile.avatar.title')}</h3>
+          <p className="text-sm text-gray-400 mt-0.5">{t('profile.avatar.subtitle')}</p>
         </div>
       </div>
 
       {error && <Alert type="error" message={error} onClose={reset} />}
-      {success && <Alert type="success" message="Avatar actualizado." onClose={reset} />}
+      {success && <Alert type="success" message={t('profile.avatar.successMessage')} onClose={reset} />}
 
       <div className="flex flex-col items-center gap-5">
         {/* Avatar with ring animation */}
@@ -94,10 +96,10 @@ export default function AvatarUpload() {
           }}
         >
           <Button variant="secondary" loading={loading} type="button" className="mb-2">
-            Seleccionar imagen
+            {t('profile.avatar.selectImage')}
           </Button>
-          <p className="text-xs text-gray-400">o arrastra y suelta aquí</p>
-          <p className="text-xs text-gray-300 mt-1">JPG, PNG o GIF. Máx 5 MB</p>
+          <p className="text-xs text-gray-400">{t('profile.avatar.dragDrop')}</p>
+          <p className="text-xs text-gray-300 mt-1">{t('profile.avatar.fileTypes')}</p>
         </div>
 
         <input

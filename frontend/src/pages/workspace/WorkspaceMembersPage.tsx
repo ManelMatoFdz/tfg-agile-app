@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { workspacesApi } from '../../api/workspaces';
 import { useApiAction } from '../../hooks/useApiAction';
 import { useAuthStore } from '../../store/authStore';
@@ -8,11 +9,6 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Alert from '../../components/ui/Alert';
 import type { WorkspaceMember, WorkspaceRole } from '../../types';
-
-const ROLE_LABELS: Record<WorkspaceRole, string> = {
-  ADMIN: 'Admin',
-  MEMBER: 'Miembro',
-};
 
 const ROLE_COLORS: Record<WorkspaceRole, string> = {
   ADMIN: 'bg-primary-100 text-primary-700',
@@ -38,6 +34,7 @@ function MemberRow({
   updatingId: string | null;
   removingId: string | null;
 }) {
+  const { t } = useTranslation();
   const otherRole: WorkspaceRole = member.role === 'ADMIN' ? 'MEMBER' : 'ADMIN';
   const isUpdating = updatingId === member.userId;
   const isRemoving = removingId === member.userId;
@@ -59,18 +56,18 @@ function MemberRow({
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium text-gray-900">{displayName}</p>
             {isSelf && (
-              <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">Tú</span>
+              <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{t('common.you')}</span>
             )}
           </div>
           <p className="text-xs text-gray-400">
-            Desde {new Date(member.joinedAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+            {t('common.since', { date: new Date(member.joinedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) })}
           </p>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ROLE_COLORS[member.role]}`}>
-          {ROLE_LABELS[member.role]}
+          {t(`workspace.members.roles.${member.role}`)}
         </span>
 
         {!isSelf && (
@@ -78,7 +75,7 @@ function MemberRow({
             <button
               onClick={() => onRoleChange(member.userId, otherRole)}
               disabled={isUpdating || isRemoving}
-              title={`Cambiar a ${ROLE_LABELS[otherRole]}`}
+              title={t('workspace.members.changeRoleTitle', { role: t(`workspace.members.roles.${otherRole}`) })}
               className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
             >
               {isUpdating ? (
@@ -93,7 +90,7 @@ function MemberRow({
             <button
               onClick={() => onRemove(member.userId)}
               disabled={isUpdating || isRemoving}
-              title="Eliminar del workspace"
+              title={t('workspace.members.removeMember')}
               className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
             >
               {isRemoving ? (
@@ -112,6 +109,7 @@ function MemberRow({
 }
 
 export default function WorkspaceMembersPage() {
+  const { t } = useTranslation();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const currentUser = useAuthStore((s) => s.user);
 
@@ -158,10 +156,10 @@ export default function WorkspaceMembersPage() {
     setUpdatingId(userId);
     setActionError(null);
     try {
-      const updated = await workspacesApi.updateMemberRole(workspaceId, userId, role);
+      const { data: updated } = await workspacesApi.updateMemberRole(workspaceId, userId, role);
       setMembers((prev) => prev.map((m) => (m.userId === userId ? updated : m)));
     } catch {
-      setActionError('No se pudo cambiar el rol.');
+      setActionError(t('workspace.members.errors.changeRole'));
     } finally {
       setUpdatingId(null);
     }
@@ -175,7 +173,7 @@ export default function WorkspaceMembersPage() {
       await workspacesApi.removeMember(workspaceId, userId);
       setMembers((prev) => prev.filter((m) => m.userId !== userId));
     } catch {
-      setActionError('No se pudo eliminar al miembro.');
+      setActionError(t('workspace.members.errors.remove'));
     } finally {
       setRemovingId(null);
     }
@@ -190,11 +188,11 @@ export default function WorkspaceMembersPage() {
       {/* Page header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Miembros</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('workspace.members.title')}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {members.length === 0
-              ? 'Cargando…'
-              : `${members.length} miembro${members.length !== 1 ? 's' : ''}`}
+              ? '…'
+              : t('workspace.members.count', { count: members.length })}
           </p>
         </div>
         {!showAddForm && (
@@ -202,7 +200,7 @@ export default function WorkspaceMembersPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Añadir miembro
+            {t('workspace.members.addMember')}
           </Button>
         )}
       </div>
@@ -217,39 +215,39 @@ export default function WorkspaceMembersPage() {
       {/* Add member form */}
       {showAddForm && (
         <div className="glass-card-strong p-6 mb-6 animate-fade-in">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">Añadir miembro</h3>
+          <h3 className="text-base font-semibold text-gray-900 mb-4">{t('workspace.members.form.title')}</h3>
           {addAction.error && (
             <Alert type="error" message={addAction.error} onClose={addAction.reset} />
           )}
           <form onSubmit={handleAdd} className="space-y-4">
             <Input
-              label="ID de usuario (UUID)"
-              placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+              label={t('workspace.members.form.userId')}
+              placeholder={t('workspace.members.form.userIdPlaceholder')}
               value={newUserId}
               onChange={(e) => setNewUserId(e.target.value)}
               required
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Rol</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">{t('workspace.members.form.role')}</label>
               <select
                 value={newRole}
                 onChange={(e) => setNewRole(e.target.value as WorkspaceRole)}
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/80 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-all"
               >
-                <option value="MEMBER">Miembro</option>
-                <option value="ADMIN">Admin</option>
+                <option value="MEMBER">{t('workspace.members.roles.MEMBER')}</option>
+                <option value="ADMIN">{t('workspace.members.roles.ADMIN')}</option>
               </select>
             </div>
             <div className="flex gap-3 pt-1">
               <Button type="submit" loading={addAction.loading} className="flex-1">
-                Añadir
+                {t('workspace.members.form.submit')}
               </Button>
               <Button
                 type="button"
                 variant="secondary"
                 onClick={() => { setShowAddForm(false); setNewUserId(''); setNewRole('MEMBER'); addAction.reset(); }}
               >
-                Cancelar
+                {t('common.cancel')}
               </Button>
             </div>
           </form>
@@ -263,14 +261,14 @@ export default function WorkspaceMembersPage() {
         </div>
       ) : members.length === 0 ? (
         <div className="text-center py-20">
-          <p className="text-gray-500 font-medium">No hay miembros todavía</p>
+          <p className="text-gray-500 font-medium">{t('workspace.members.count', { count: 0 })}</p>
         </div>
       ) : (
         <div className="space-y-6">
           {admins.length > 0 && (
             <div className="glass-card-strong p-4">
               <p className="px-4 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                Administradores
+                {t('workspace.members.admins')}
               </p>
               <div className="divide-y divide-gray-100/60">
                 {admins.map((m) => {
@@ -296,7 +294,7 @@ export default function WorkspaceMembersPage() {
           {regularMembers.length > 0 && (
             <div className="glass-card-strong p-4">
               <p className="px-4 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                Miembros
+                {t('workspace.members.membersGroup')}
               </p>
               <div className="divide-y divide-gray-100/60">
                 {regularMembers.map((m) => {

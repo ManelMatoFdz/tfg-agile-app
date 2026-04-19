@@ -1,38 +1,27 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Toggle from '../ui/Toggle';
 import Alert from '../ui/Alert';
 import { notificationsApi } from '../../api/notifications';
 import type { NotificationSettings } from '../../types';
 
-const toggleItems: Array<{ key: keyof NotificationSettings; label: string; description: string; icon: string }> = [
-  {
-    key: 'emailNotificationsEnabled',
-    label: 'Notificaciones por correo',
-    description: 'Recibe actualizaciones en tu bandeja de entrada',
-    icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
-  },
-  {
-    key: 'inAppNotificationsEnabled',
-    label: 'Notificaciones en la app',
-    description: 'Muestra notificaciones dentro de la plataforma',
-    icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
-  },
-  {
-    key: 'projectUpdatesEnabled',
-    label: 'Actualizaciones de proyectos',
-    description: 'Cambios en proyectos donde participas',
-    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
-  },
-  {
-    key: 'taskRemindersEnabled',
-    label: 'Recordatorios de tareas',
-    description: 'Recordatorios sobre tareas asignadas y plazos',
-    icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
-  },
+const TOGGLE_ICONS: Record<string, string> = {
+  emailNotificationsEnabled: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
+  inAppNotificationsEnabled: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
+  projectUpdatesEnabled: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+  taskRemindersEnabled: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+};
+
+const TOGGLE_KEYS: Array<{ key: keyof NotificationSettings; tKey: string }> = [
+  { key: 'emailNotificationsEnabled', tKey: 'email' },
+  { key: 'inAppNotificationsEnabled', tKey: 'inApp' },
+  { key: 'projectUpdatesEnabled', tKey: 'projectUpdates' },
+  { key: 'taskRemindersEnabled', tKey: 'taskReminders' },
 ];
 
 export default function NotificationPreferences() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [feedback, setFeedback] = useState<string | null>(null);
 
@@ -66,7 +55,7 @@ export default function NotificationPreferences() {
       if (context?.previous) {
         queryClient.setQueryData<NotificationSettings>(['notification-settings'], context.previous);
       }
-      setFeedback('No se pudieron guardar las preferencias.');
+      setFeedback(t('profile.notificationSettings.saveError'));
     },
     onSuccess: (serverSettings) => {
       queryClient.setQueryData<NotificationSettings>(['notification-settings'], serverSettings);
@@ -82,7 +71,7 @@ export default function NotificationPreferences() {
     mutation.mutate(patch);
   };
 
-  if (isError) return <Alert type="error" message="Error al cargar preferencias de notificaciones." />;
+  if (isError) return <Alert type="error" message={t('profile.notificationSettings.loadError')} />;
   if (isLoading || !settings) {
     return (
       <div className="glass-card-strong rounded-2xl p-6">
@@ -109,8 +98,8 @@ export default function NotificationPreferences() {
           </svg>
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">Notificaciones</h3>
-          <p className="text-sm text-gray-400 mt-0.5">Configura cómo quieres recibirlas</p>
+          <h3 className="text-lg font-semibold text-gray-900">{t('profile.notificationSettings.title')}</h3>
+          <p className="text-sm text-gray-400 mt-0.5">{t('profile.notificationSettings.subtitle')}</p>
         </div>
       </div>
 
@@ -123,24 +112,24 @@ export default function NotificationPreferences() {
       )}
 
       <div className="space-y-1 stagger-children">
-        {toggleItems.map((item, i) => (
+        {TOGGLE_KEYS.map(({ key, tKey }, i) => (
           <div
-            key={item.key}
+            key={key}
             className={`flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50/50 transition-colors duration-200 ${
-              i < toggleItems.length - 1 ? 'border-b border-gray-100/50' : ''
+              i < TOGGLE_KEYS.length - 1 ? 'border-b border-gray-100/50' : ''
             }`}
           >
             <div className="w-8 h-8 bg-gray-100/80 rounded-lg flex items-center justify-center shrink-0">
               <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={TOGGLE_ICONS[key]} />
               </svg>
             </div>
             <div className="flex-1">
               <Toggle
-                label={item.label}
-                description={item.description}
-                checked={settings[item.key]}
-                onChange={(v) => handleToggle(item.key, v)}
+                label={t(`profile.notificationSettings.${tKey}.label`)}
+                description={t(`profile.notificationSettings.${tKey}.description`)}
+                checked={settings[key]}
+                onChange={(v) => handleToggle(key, v)}
                 disabled={mutation.isPending}
               />
             </div>

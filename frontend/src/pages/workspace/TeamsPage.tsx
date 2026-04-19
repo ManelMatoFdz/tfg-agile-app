@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { teamsApi } from '../../api/teams';
 import { useApiAction } from '../../hooks/useApiAction';
 import Button from '../../components/ui/Button';
@@ -8,6 +9,7 @@ import Alert from '../../components/ui/Alert';
 import type { Team } from '../../types';
 
 function TeamCard({ team, to }: { team: Team; to: string }) {
+  const { t } = useTranslation();
   return (
     <Link
       to={to}
@@ -24,7 +26,7 @@ function TeamCard({ team, to }: { team: Team; to: string }) {
           {team.description ? (
             <p className="text-sm text-gray-500 truncate mt-0.5">{team.description}</p>
           ) : (
-            <p className="text-sm text-gray-400 italic mt-0.5">Sin descripción</p>
+            <p className="text-sm text-gray-400 italic mt-0.5">{t('common.noDescription')}</p>
           )}
         </div>
         <svg
@@ -37,13 +39,14 @@ function TeamCard({ team, to }: { team: Team; to: string }) {
         </svg>
       </div>
       <p className="text-xs text-gray-400 mt-3 ml-15">
-        Creado {new Date(team.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' })}
+        {t('common.createdAt', { date: new Date(team.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) })}
       </p>
     </Link>
   );
 }
 
 export default function TeamsPage() {
+  const { t } = useTranslation();
   const { workspaceId } = useParams<{ workspaceId: string }>();
 
   const [teams, setTeams] = useState<Team[]>([]);
@@ -93,9 +96,9 @@ export default function TeamsPage() {
       {/* Page header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Equipos</h1>
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('teams.title')}</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {teams.length === 0 ? 'Aún no hay equipos' : `${teams.length} equipo${teams.length !== 1 ? 's' : ''}`}
+            {teams.length === 0 ? t('teams.noTeamsYet') : t('teams.count', { count: teams.length })}
           </p>
         </div>
         {!showCreateForm && (
@@ -103,7 +106,7 @@ export default function TeamsPage() {
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Nuevo equipo
+            {t('teams.newTeam')}
           </Button>
         )}
       </div>
@@ -115,30 +118,30 @@ export default function TeamsPage() {
       {/* Create form */}
       {showCreateForm && (
         <div className="glass-card-strong p-6 mb-6 animate-fade-in">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">Nuevo equipo</h3>
+          <h3 className="text-base font-semibold text-gray-900 mb-4">{t('teams.form.title')}</h3>
           {createAction.error && (
             <Alert type="error" message={createAction.error} onClose={createAction.reset} />
           )}
           <form onSubmit={handleCreate} className="space-y-4">
             <Input
-              label="Nombre"
-              placeholder="Frontend, Backend, QA…"
+              label={t('teams.form.name')}
+              placeholder={t('teams.form.namePlaceholder')}
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
             />
             <Input
-              label="Descripción (opcional)"
-              placeholder="Breve descripción del equipo"
+              label={t('teams.form.description', { optional: t('common.optional') })}
+              placeholder={t('teams.form.descriptionPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
             <div className="flex gap-3 pt-1">
               <Button type="submit" loading={createAction.loading} className="flex-1">
-                Crear equipo
+                {t('teams.form.submit')}
               </Button>
               <Button type="button" variant="secondary" onClick={closeForm}>
-                Cancelar
+                {t('common.cancel')}
               </Button>
             </div>
           </form>
@@ -162,11 +165,11 @@ export default function TeamsPage() {
               />
             </svg>
           </div>
-          <p className="text-gray-500 font-medium">No hay equipos todavía</p>
-          <p className="text-sm text-gray-400 mt-1">Crea el primero para organizar a los miembros</p>
+          <p className="text-gray-500 font-medium">{t('teams.noTeams')}</p>
+          <p className="text-sm text-gray-400 mt-1">{t('teams.noTeamsSubtitle')}</p>
           {!showCreateForm && (
             <Button className="mt-5" onClick={() => setShowCreateForm(true)}>
-              Crear equipo
+              {t('teams.form.submit')}
             </Button>
           )}
         </div>

@@ -1,25 +1,27 @@
 import { useState, type InputHTMLAttributes } from 'react';
 
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
-  label: string;
+  label?: string;
   error?: string;
   icon?: React.ReactNode;
 }
 
 export default function Input({ label, error, icon, id, className = '', onFocus, onBlur, ...rest }: Props) {
-  const inputId = id ?? label.toLowerCase().replace(/\s+/g, '-');
+  const inputId = id ?? (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
   const [focused, setFocused] = useState(false);
 
   return (
     <div className="space-y-1.5">
-      <label
-        htmlFor={inputId}
-        className={`block text-sm font-medium transition-colors duration-200 ${
-          focused ? 'text-primary-600' : 'text-gray-600'
-        }`}
-      >
-        {label}
-      </label>
+      {label && (
+        <label
+          htmlFor={inputId}
+          className={`block text-sm font-medium transition-colors duration-200 ${
+            focused ? 'text-primary-600' : 'text-gray-600'
+          }`}
+        >
+          {label}
+        </label>
+      )}
       <div className="relative group">
         {icon && (
           <div className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors duration-200 ${

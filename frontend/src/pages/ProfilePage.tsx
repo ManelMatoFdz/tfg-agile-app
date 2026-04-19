@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { usersApi } from '../api/users';
 import { useAuthStore } from '../store/authStore';
 import ProfileInfo from '../components/profile/ProfileInfo';
@@ -8,6 +9,7 @@ import NotificationPreferences from '../components/profile/NotificationPreferenc
 import { buildAvatarSrc } from '../utils/avatarUrl';
 
 export default function ProfilePage() {
+  const { t } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const [avatarLoadError, setAvatarLoadError] = useState(false);
@@ -51,7 +53,7 @@ export default function ProfilePage() {
           {/* User info */}
           <div className="text-center sm:text-left">
             <h1 className="text-2xl font-bold text-gray-900">
-              {user?.fullName || user?.username || 'Usuario'}
+              {user?.fullName || user?.username || t('profile.defaultUser')}
             </h1>
             <p className="text-gray-500 mt-0.5">@{user?.username}</p>
             <p className="text-sm text-gray-400 mt-1">{user?.email}</p>
