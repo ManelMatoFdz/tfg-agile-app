@@ -188,6 +188,19 @@ class UserProfileServiceTest {
     }
 
     @Test
+    void uploadAvatar_whenStorageFails_throwsIllegalState() throws IOException {
+        User user = TestDataFactory.user();
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(avatarStorageService.store(any(User.class), any())).thenThrow(new IOException("io"));
+
+        MockMultipartFile file = new MockMultipartFile("file", "avatar.png", "image/png", new byte[]{1, 2, 3});
+
+        assertThatThrownBy(() -> userProfileService.uploadAvatar(user.getId(), file))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Unable to store avatar file");
+    }
+
+    @Test
     void getNotifications_unreadOnly_usesFilteredQueryAndSafePagination() {
         User user = TestDataFactory.user();
         Notification unread = TestDataFactory.notification(user, false);
@@ -200,6 +213,21 @@ class UserProfileServiceTest {
 
         assertThat(page.getItems()).hasSize(1);
         verify(notificationRepository).findByUserIdAndIsReadFalse(any(), any(PageRequest.class));
+    }
+
+    @Test
+    void getNotifications_withoutUnreadFilter_usesGeneralQuery() {
+        User user = TestDataFactory.user();
+        Notification read = TestDataFactory.notification(user, true);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(notificationRepository.findByUserId(any(), any(PageRequest.class)))
+                .thenReturn(new PageImpl<>(List.of(read)));
+
+        PagedResponseDto<?> page = userProfileService.getNotifications(user.getId(), false, null, null);
+
+        assertThat(page.getItems()).hasSize(1);
+        verify(notificationRepository).findByUserId(any(), any(PageRequest.class));
     }
 
     @Test
@@ -222,6 +250,18 @@ class UserProfileServiceTest {
 
         assertThat(notification.isRead()).isTrue();
         assertThat(response.isRead()).isTrue();
+    }
+
+    @Test
+    void markAllNotificationsAsRead_marksAllAndReturnsMessage() {
+        User user = TestDataFactory.user();
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(messageSource.getMessage(anyString(), any(), anyString(), any(java.util.Locale.class))).thenReturn("done");
+
+        MessageResponseDto response = userProfileService.markAllNotificationsAsRead(user.getId());
+
+        assertThat(response.getMessage()).isEqualTo("done");
+        verify(notificationRepository).markAllAsRead(user.getId());
     }
 
     @Test
@@ -257,5 +297,29 @@ class UserProfileServiceTest {
         assertThat(response.isInAppNotificationsEnabled()).isTrue();
         assertThat(response.isTaskRemindersEnabled()).isTrue();
     }
-}
 
+    @Test
+    void batchLookup_mapsUsersToSummaries() {
+        User first = TestDataFactory.user();
+        User second = TestDataFactory.user();
+        second.setUsername("mary");
+        second.setFullName("Mary Doe");
+
+        when(userRepository.findAllById(List.of(first.getId(), second.getId())))
+                .thenReturn(List.of(first, second));
+
+        var result = userProfileService.batchLookup(List.of(first.getId(), second.getId()));
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getId()).isEqualTo(first.getId());
+        assertThat(result.get(1).getUsername()).isEqualTo("mary");
+    }
+
+    @Test
+    void me_throwsWhenUserDoesNotExist() {
+        when(userRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userProfileService.me(java.util.UUID.randomUUID()))
+                .isInstanceOf(com.tfg.agile.app.user_service.exception.UserNotFoundException.class);
+    }
+}

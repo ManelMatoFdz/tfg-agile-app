@@ -134,6 +134,16 @@ class AuthServiceTest {
     }
 
     @Test
+    void login_failsWhenPasswordDoesNotMatch() {
+        User user = TestDataFactory.user();
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("bad-password", user.getPasswordHash())).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.login(new LoginRequestDto(user.getEmail(), "bad-password")))
+                .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
     void refresh_rotatesRefreshTokenAndReturnsNewSession() {
         User user = TestDataFactory.user();
         user.setTokenVersion(3);
@@ -298,5 +308,88 @@ class AuthServiceTest {
         assertThatThrownBy(() -> authService.googleLogin(new GoogleLoginRequestDto("id-token")))
                 .isInstanceOf(InvalidGoogleTokenException.class);
     }
-}
 
+    @Test
+    void logout_revokesTokenWhenPresentAndReturnsMessage() {
+        User user = TestDataFactory.user();
+        RefreshToken activeToken = TestDataFactory.refreshToken(user);
+
+        when(refreshTokenRepository.findByTokenHashAndRevokedAtIsNullAndExpiresAtAfter(anyString(), any(Instant.class)))
+                .thenReturn(Optional.of(activeToken));
+        when(messageSource.getMessage(anyString(), any(), anyString(), any(java.util.Locale.class))).thenReturn("session closed");
+
+        MessageResponseDto response = authService.logout(new RefreshTokenRequestDto("raw-refresh"));
+
+        assertThat(response.getMessage()).isEqualTo("session closed");
+        assertThat(activeToken.getRevokedAt()).isNotNull();
+    }
+
+    @Test
+    void logout_whenTokenIsMissingStillReturnsMessage() {
+        when(refreshTokenRepository.findByTokenHashAndRevokedAtIsNullAndExpiresAtAfter(anyString(), any(Instant.class)))
+                .thenReturn(Optional.empty());
+        when(messageSource.getMessage(anyString(), any(), anyString(), any(java.util.Locale.class))).thenReturn("session closed");
+
+        MessageResponseDto response = authService.logout(new RefreshTokenRequestDto("raw-refresh"));
+
+        assertThat(response.getMessage()).isEqualTo("session closed");
+    }
+
+    @Test
+    void me_throwsWhenUserDoesNotExist() {
+        when(userRepository.findById(any())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.me(java.util.UUID.randomUUID()))
+                .isInstanceOf(com.tfg.agile.app.user_service.exception.UserNotFoundException.class);
+    }
+
+    @Test
+    void forgotPassword_whenNotifierFails_returnsNeutralResponse() {
+        User user = TestDataFactory.user();
+        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(passwordResetTokenRepository.findAllByUserIdAndUsedAtIsNullAndExpiresAtAfter(any(), any(Instant.class)))
+                .thenReturn(List.of());
+        org.mockito.Mockito.doThrow(new RuntimeException("smtp down"))
+                .when(passwordResetNotifier).sendPasswordReset(anyString(), anyString());
+        when(messageSource.getMessage(anyString(), any(), any(java.util.Locale.class))).thenReturn("ok");
+
+        MessageResponseDto response = authService.forgotPassword(new ForgotPasswordRequestDto(user.getEmail()));
+
+        assertThat(response.getMessage()).isEqualTo("ok");
+        verify(passwordResetNotifier).sendPasswordReset(anyString(), anyString());
+    }
+
+    @Test
+    void googleLogin_propagatesNotConfiguredException() {
+        when(googleIdentityService.verifyIdToken("id-token"))
+                .thenThrow(new com.tfg.agile.app.user_service.exception.GoogleLoginNotConfiguredException());
+
+        assertThatThrownBy(() -> authService.googleLogin(new GoogleLoginRequestDto("id-token")))
+                .isInstanceOf(com.tfg.agile.app.user_service.exception.GoogleLoginNotConfiguredException.class);
+    }
+
+    @Test
+    void googleLogin_onUniqueConstraintFetchesExistingUser() {
+        GoogleIdentityService.GoogleIdentity identity = new GoogleIdentityService.GoogleIdentity(
+                "sub-id",
+                "google@example.com",
+                "Google User",
+                null
+        );
+        User existing = TestDataFactory.user();
+        existing.setEmail(identity.email());
+
+        when(googleIdentityService.verifyIdToken("id-token")).thenReturn(identity);
+        when(userRepository.findByEmail(identity.email())).thenReturn(Optional.empty(), Optional.of(existing));
+        when(passwordEncoder.encode(anyString())).thenReturn("opaque-pass");
+        when(userRepository.save(any(User.class)))
+                .thenThrow(new DataIntegrityViolationException("duplicate", new RuntimeException("uk_users_email")));
+        when(jwtService.generateAccessToken(existing.getId(), existing.getEmail(), existing.getTokenVersion()))
+                .thenReturn("google-access");
+
+        AuthResponseDto response = authService.googleLogin(new GoogleLoginRequestDto("id-token"));
+
+        assertThat(response.getAccessToken()).isEqualTo("google-access");
+        assertThat(response.getUser().getEmail()).isEqualTo(identity.email());
+    }
+}
