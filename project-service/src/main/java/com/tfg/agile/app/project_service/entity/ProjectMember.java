@@ -38,6 +38,10 @@ public class ProjectMember {
     @Column(nullable = false, length = 20)
     private ProjectRole role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private ScrumRole scrumRole;
+
     @Column(nullable = false, updatable = false)
     private Instant joinedAt;
 

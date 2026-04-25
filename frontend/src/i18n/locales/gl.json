@@ -13,7 +13,8 @@
     "comingSoon": "Próximamente",
     "optional": "opcional",
     "previous": "Anterior",
-    "next": "Seguinte"
+    "next": "Seguinte",
+    "confirm": "Confirmar"
   },
   "auth": {
     "login": {
@@ -151,6 +152,29 @@
         "changeRole": "Non se puido cambiar o rol.",
         "remove": "Non se puido eliminar o membro."
       }
+    },
+    "settings": {
+      "title": "Configuración do workspace",
+      "subtitle": "Xestiona a información e preferencias do teu workspace",
+      "general": "Información xeral",
+      "nameLabel": "Nome do workspace",
+      "descriptionLabel": "Descrición",
+      "save": "Gardar cambios",
+      "saving": "Gardando...",
+      "saveSuccess": "Cambios gardados correctamente.",
+      "saveError": "Erro ao gardar os cambios.",
+      "loadError": "Erro ao cargar o workspace.",
+      "info": "Información",
+      "workspaceId": "ID do workspace",
+      "createdAt": "Creado o",
+      "dangerZone": "Zona perigosa",
+      "dangerSubtitle": "Accións irreversibles que afectan a todo o workspace",
+      "deleteWorkspace": "Eliminar workspace",
+      "deleteWarning": "Isto eliminará permanentemente o workspace <strong>{{name}}</strong>, todos os seus proxectos, tarefas e membros. Esta acción non se pode desfacer.",
+      "deleteConfirmLabel": "Escribe <strong>{{name}}</strong> para confirmar",
+      "deleteConfirmBtn": "Eliminar este workspace",
+      "deleting": "Eliminando...",
+      "deleteError": "Erro ao eliminar o workspace."
     }
   },
   "teams": {
@@ -187,11 +211,21 @@
   },
   "projects": {
     "breadcrumb": "Proxectos",
+    "tabs": {
+      "board": "Taboleiro",
+      "backlog": "Backlog",
+      "sprints": "Sprints",
+      "members": "Membros"
+    },
     "kanban": {
       "title": "Taboleiro Kanban",
       "todo": "Por facer",
       "inProgress": "En progreso",
-      "done": "Feito"
+      "inReview": "En revisión",
+      "done": "Feito",
+      "newTask": "Nova tarefa",
+      "noTasks": "Non hai tarefas",
+      "loadError": "Erro ao cargar as tarefas."
     },
     "members": {
       "title": "Membros",
@@ -201,6 +235,123 @@
         "MEMBER": "Membro",
         "VIEWER": "Observador"
       }
+    },
+    "backlog": {
+      "title": "Backlog",
+      "noTasks": "O backlog está baleiro",
+      "noTasksSubtitle": "Crea tarefas para comezar a planificar",
+      "newTask": "Nova tarefa",
+      "loadError": "Erro ao cargar o backlog.",
+      "task": "tarefa",
+      "tasks": "tarefas"
+    },
+    "sprints": {
+      "title": "Sprints",
+      "noSprints": "Non hai sprints aínda",
+      "noSprintsSubtitle": "Crea un sprint para comezar",
+      "newSprint": "Novo sprint",
+      "sprint": "sprint",
+      "sprintsCount": "sprints",
+      "task": "tarefa",
+      "tasks": "tarefas",
+      "noTasks": "Sen tarefas asignadas",
+      "addTasks": "Engadir tarefas do backlog",
+      "removeTask": "Quitar do sprint",
+      "viewBoard": "Ver taboleiro",
+      "viewReport": "Ver informe",
+      "activate": "Activar",
+      "activateConfirm": "Activar este sprint?",
+      "activateError": "Erro ao activar o sprint.",
+      "complete": "Completar",
+      "completeConfirm": "Completar? As tarefas non rematadas volverán ao backlog.",
+      "completeError": "Erro ao completar o sprint.",
+      "loadError": "Erro ao cargar os sprints.",
+      "status": {
+        "PLANNING": "Planificación",
+        "ACTIVE": "Activo",
+        "COMPLETED": "Completado"
+      },
+      "board": {
+        "back": "Volver a Sprints",
+        "loadError": "Erro ao cargar o taboleiro do sprint."
+      },
+      "report": {
+        "loadError": "Erro ao cargar o informe.",
+        "generatedAt": "Informe xerado o",
+        "completion": "Completado",
+        "tasksDone": "Tarefas completadas",
+        "storyPoints": "Story points",
+        "duration": "Duración",
+        "days": "días",
+        "day": "día",
+        "velocity": "Velocidade",
+        "velocityDesc": "Story points completados por día",
+        "burndown": "Burndown chart",
+        "ideal": "Ideal",
+        "actual": "Real",
+        "burndownNoData": "Engade datas de inicio e fin ao sprint para ver o burndown.",
+        "distribution": "Distribución de tarefas",
+        "byPriority": "Tarefas por prioridade",
+        "totalTasks": "Total",
+        "taskList": "Listaxe de tarefas",
+        "noTasks": "Non hai tarefas neste sprint.",
+        "health": {
+          "excellent": "Sprint completado cun rendemento excelente",
+          "good": "Bo rendemento neste sprint",
+          "acceptable": "Rendemento mellorable",
+          "poor": "Sprint con dificultades"
+        },
+        "healthSummary": "{{done}} de {{total}} tarefas completadas · {{doneSP}} de {{totalSP}} story points"
+      },
+      "create": {
+        "title": "Novo sprint",
+        "name": "Nome",
+        "namePlaceholder": "Sprint 1",
+        "goal": "Obxectivo",
+        "goalPlaceholder": "Que se quere acadar neste sprint?",
+        "startDate": "Data de inicio",
+        "endDate": "Data de fin",
+        "submit": "Crear sprint",
+        "error": "Erro ao crear o sprint."
+      },
+      "planning": {
+        "title": "Sprint Planning",
+        "subtitle": "Selecciona tarefas do backlog para engadir a este sprint",
+        "noBacklog": "Non hai tarefas no backlog",
+        "selected": "seleccionadas",
+        "addSelected": "Engadir ao sprint",
+        "error": "Erro ao engadir as tarefas."
+      }
+    }
+  },
+  "tasks": {
+    "priority": {
+      "LOW": "Baixa",
+      "MEDIUM": "Media",
+      "HIGH": "Alta",
+      "CRITICAL": "Crítica"
+    },
+    "status": {
+      "TODO": "Por facer",
+      "IN_PROGRESS": "En progreso",
+      "IN_REVIEW": "En revisión",
+      "DONE": "Feito"
+    },
+    "modal": {
+      "titleCreate": "Nova tarefa",
+      "titleEdit": "Editar tarefa",
+      "titleField": "Título",
+      "titlePlaceholder": "Nome da tarefa",
+      "description": "Descrición",
+      "descriptionPlaceholder": "Descrición da tarefa...",
+      "priority": "Prioridade",
+      "status": "Estado",
+      "storyPoints": "Story points",
+      "create": "Crear tarefa",
+      "save": "Gardar cambios",
+      "deleteTask": "Eliminar tarefa",
+      "deleteConfirm": "Seguro que queres eliminar esta tarefa? Esta acción non se pode desfacer.",
+      "loadError": "Erro ao gardar a tarefa."
     }
   },
   "notifications": {
@@ -286,5 +437,15 @@
     "es": "Español",
     "en": "English",
     "gl": "Galego"
+  },
+  "myTasks": {
+    "title": "As miñas tarefas",
+    "task": "tarefa",
+    "tasks": "tarefas",
+    "activeSummary": "{{count}} tarefa activa",
+    "allDone": "Todo ao día",
+    "empty": "Non tes tarefas asignadas",
+    "emptySubtitle": "Cando che asignen tarefas nun proxecto, aparecerán aquí",
+    "loadError": "Erro ao cargar as tarefas."
   }
 }

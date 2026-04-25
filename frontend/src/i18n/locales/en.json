@@ -13,7 +13,8 @@
     "comingSoon": "Coming soon",
     "optional": "optional",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "confirm": "Confirm"
   },
   "auth": {
     "login": {
@@ -151,6 +152,29 @@
         "changeRole": "Could not change role.",
         "remove": "Could not remove member."
       }
+    },
+    "settings": {
+      "title": "Workspace settings",
+      "subtitle": "Manage your workspace information and preferences",
+      "general": "General information",
+      "nameLabel": "Workspace name",
+      "descriptionLabel": "Description",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "saveSuccess": "Changes saved successfully.",
+      "saveError": "Error saving changes.",
+      "loadError": "Error loading workspace.",
+      "info": "Information",
+      "workspaceId": "Workspace ID",
+      "createdAt": "Created on",
+      "dangerZone": "Danger zone",
+      "dangerSubtitle": "Irreversible actions that affect the entire workspace",
+      "deleteWorkspace": "Delete workspace",
+      "deleteWarning": "This will permanently delete the workspace <strong>{{name}}</strong>, all its projects, tasks and members. This action cannot be undone.",
+      "deleteConfirmLabel": "Type <strong>{{name}}</strong> to confirm",
+      "deleteConfirmBtn": "Delete this workspace",
+      "deleting": "Deleting...",
+      "deleteError": "Error deleting the workspace."
     }
   },
   "teams": {
@@ -187,11 +211,21 @@
   },
   "projects": {
     "breadcrumb": "Projects",
+    "tabs": {
+      "board": "Board",
+      "backlog": "Backlog",
+      "sprints": "Sprints",
+      "members": "Members"
+    },
     "kanban": {
       "title": "Kanban Board",
       "todo": "To do",
       "inProgress": "In progress",
-      "done": "Done"
+      "inReview": "In review",
+      "done": "Done",
+      "newTask": "New task",
+      "noTasks": "No tasks",
+      "loadError": "Error loading tasks."
     },
     "members": {
       "title": "Members",
@@ -201,6 +235,123 @@
         "MEMBER": "Member",
         "VIEWER": "Viewer"
       }
+    },
+    "backlog": {
+      "title": "Backlog",
+      "noTasks": "Backlog is empty",
+      "noTasksSubtitle": "Create tasks to start planning",
+      "newTask": "New task",
+      "loadError": "Error loading the backlog.",
+      "task": "task",
+      "tasks": "tasks"
+    },
+    "sprints": {
+      "title": "Sprints",
+      "noSprints": "No sprints yet",
+      "noSprintsSubtitle": "Create a sprint to get started",
+      "newSprint": "New sprint",
+      "sprint": "sprint",
+      "sprintsCount": "sprints",
+      "task": "task",
+      "tasks": "tasks",
+      "noTasks": "No tasks assigned",
+      "addTasks": "Add backlog tasks",
+      "removeTask": "Remove from sprint",
+      "viewBoard": "View board",
+      "viewReport": "View report",
+      "activate": "Activate",
+      "activateConfirm": "Activate this sprint?",
+      "activateError": "Error activating the sprint.",
+      "complete": "Complete",
+      "completeConfirm": "Complete? Unfinished tasks will return to the backlog.",
+      "completeError": "Error completing the sprint.",
+      "loadError": "Error loading sprints.",
+      "status": {
+        "PLANNING": "Planning",
+        "ACTIVE": "Active",
+        "COMPLETED": "Completed"
+      },
+      "board": {
+        "back": "Back to Sprints",
+        "loadError": "Error loading the sprint board."
+      },
+      "report": {
+        "loadError": "Error loading the report.",
+        "generatedAt": "Report generated on",
+        "completion": "Completion",
+        "tasksDone": "Tasks done",
+        "storyPoints": "Story points",
+        "duration": "Duration",
+        "days": "days",
+        "day": "day",
+        "velocity": "Velocity",
+        "velocityDesc": "Story points completed per day",
+        "burndown": "Burndown chart",
+        "ideal": "Ideal",
+        "actual": "Actual",
+        "burndownNoData": "Add start and end dates to the sprint to see the burndown.",
+        "distribution": "Task distribution",
+        "byPriority": "Tasks by priority",
+        "totalTasks": "Total",
+        "taskList": "Task list",
+        "noTasks": "No tasks in this sprint.",
+        "health": {
+          "excellent": "Sprint completed with excellent performance",
+          "good": "Good performance in this sprint",
+          "acceptable": "Performance could be improved",
+          "poor": "Sprint had difficulties"
+        },
+        "healthSummary": "{{done}} of {{total}} tasks completed · {{doneSP}} of {{totalSP}} story points"
+      },
+      "create": {
+        "title": "New sprint",
+        "name": "Name",
+        "namePlaceholder": "Sprint 1",
+        "goal": "Goal",
+        "goalPlaceholder": "What do you want to achieve in this sprint?",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "submit": "Create sprint",
+        "error": "Error creating the sprint."
+      },
+      "planning": {
+        "title": "Sprint Planning",
+        "subtitle": "Select backlog tasks to add to this sprint",
+        "noBacklog": "No tasks in the backlog",
+        "selected": "selected",
+        "addSelected": "Add to sprint",
+        "error": "Error adding tasks."
+      }
+    }
+  },
+  "tasks": {
+    "priority": {
+      "LOW": "Low",
+      "MEDIUM": "Medium",
+      "HIGH": "High",
+      "CRITICAL": "Critical"
+    },
+    "status": {
+      "TODO": "To do",
+      "IN_PROGRESS": "In progress",
+      "IN_REVIEW": "In review",
+      "DONE": "Done"
+    },
+    "modal": {
+      "titleCreate": "New task",
+      "titleEdit": "Edit task",
+      "titleField": "Title",
+      "titlePlaceholder": "Task name",
+      "description": "Description",
+      "descriptionPlaceholder": "Task description...",
+      "priority": "Priority",
+      "status": "Status",
+      "storyPoints": "Story points",
+      "create": "Create task",
+      "save": "Save changes",
+      "deleteTask": "Delete task",
+      "deleteConfirm": "Are you sure you want to delete this task? This action cannot be undone.",
+      "loadError": "Error saving the task."
     }
   },
   "notifications": {
@@ -286,5 +437,15 @@
     "es": "Español",
     "en": "English",
     "gl": "Galego"
+  },
+  "myTasks": {
+    "title": "My Tasks",
+    "task": "task",
+    "tasks": "tasks",
+    "activeSummary": "{{count}} active task",
+    "allDone": "All caught up",
+    "empty": "No tasks assigned to you",
+    "emptySubtitle": "When tasks are assigned to you in a project, they will appear here",
+    "loadError": "Error loading tasks."
   }
 }

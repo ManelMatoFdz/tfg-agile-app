@@ -33,6 +33,23 @@ services:
       timeout: 3s
       retries: 10
 
+  task-db:
+    image: postgres:16
+    container_name: agileflow-task-db
+    environment:
+      POSTGRES_USER: ${TASK_DB_USER}
+      POSTGRES_PASSWORD: ${TASK_DB_PASS}
+      POSTGRES_DB: ${TASK_DB_NAME}
+    ports:
+      - "5435:5432"
+    volumes:
+      - taskdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TASK_DB_USER} -d ${TASK_DB_NAME}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: agileflow-rabbitmq
@@ -52,3 +69,4 @@ services:
 volumes:
   userdata:
   projectdata:
+  taskdata:

@@ -140,6 +140,17 @@ public class ProjectService {
     }
 
     @Transactional
+    public ProjectMemberResponseDto updateScrumRole(UUID projectId, UUID targetUserId,
+                                                    UpdateScrumRoleRequestDto dto, UUID callerId) {
+        getProjectOrThrow(projectId);
+        requireProjectAdmin(projectId, callerId);
+        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+        member.setScrumRole(ScrumRole.valueOf(dto.scrumRole().toUpperCase()));
+        return ProjectMemberResponseDto.from(projectMemberRepository.save(member));
+    }
+
+    @Transactional
     public void removeMember(UUID projectId, UUID targetUserId, UUID callerId) {
         getProjectOrThrow(projectId);
         requireProjectAdmin(projectId, callerId);
@@ -192,6 +203,14 @@ public class ProjectService {
         return projectMemberRepository.saveAll(newMembers).stream()
                 .map(ProjectMemberResponseDto::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public MemberPermissionsDto getMemberPermissions(UUID projectId, UUID userId) {
+        getProjectOrThrow(projectId);
+        ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
+                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+        return new MemberPermissionsDto(member.getRole(), member.getScrumRole());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

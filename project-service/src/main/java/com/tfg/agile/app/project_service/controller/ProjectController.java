@@ -81,6 +81,15 @@ public class ProjectController {
         return projectService.updateMemberRole(projectId, userId, dto, callerId);
     }
 
+    @PatchMapping("/projects/{projectId}/members/{userId}/scrum-role")
+    public ProjectMemberResponseDto updateScrumRole(
+            @PathVariable UUID projectId,
+            @PathVariable UUID userId,
+            @Valid @RequestBody UpdateScrumRoleRequestDto dto,
+            @AuthenticationPrincipal UUID callerId) {
+        return projectService.updateScrumRole(projectId, userId, dto, callerId);
+    }
+
     @DeleteMapping("/projects/{projectId}/members/{userId}")
     public ResponseEntity<Void> removeMember(@PathVariable UUID projectId,
                                              @PathVariable UUID userId,

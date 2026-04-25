@@ -94,12 +94,49 @@ export interface Project {
   updatedAt: string;
 }
 
+export type ScrumRole = 'PRODUCT_OWNER' | 'SCRUM_MASTER' | 'DEVELOPER';
+
 export interface ProjectMember {
   id: string;
   projectId: string;
   userId: string;
   role: ProjectRole;
+  scrumRole?: ScrumRole | null;
   joinedAt: string;
+}
+
+// ── Task-service types ────────────────────────────────────────────────────────
+
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type SprintStatus = 'PLANNING' | 'ACTIVE' | 'COMPLETED';
+
+export interface Task {
+  id: string;
+  projectId: string;
+  sprintId?: string | null;
+  title: string;
+  description?: string | null;
+  status: TaskStatus;
+  priority: TaskPriority;
+  reporterId: string;
+  assigneeId?: string | null;
+  storyPoints?: number | null;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Sprint {
+  id: string;
+  projectId: string;
+  name: string;
+  goal?: string | null;
+  status: SprintStatus;
+  startDate?: string | null;
+  endDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Team {
