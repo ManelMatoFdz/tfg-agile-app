@@ -3,16 +3,18 @@ package com.tfg.agile.app.project_service.service;
 import com.tfg.agile.app.project_service.dto.AddMemberRequestDto;
 import com.tfg.agile.app.project_service.dto.AddTeamMembersRequestDto;
 import com.tfg.agile.app.project_service.dto.CreateProjectRequestDto;
+import com.tfg.agile.app.project_service.dto.MemberPermissionsDto;
+import com.tfg.agile.app.project_service.dto.UpdateScrumRoleRequestDto;
 import com.tfg.agile.app.project_service.dto.UpdateMemberRoleRequestDto;
 import com.tfg.agile.app.project_service.dto.UpdateProjectRequestDto;
 import com.tfg.agile.app.project_service.entity.Category;
 import com.tfg.agile.app.project_service.entity.Project;
 import com.tfg.agile.app.project_service.entity.ProjectMember;
 import com.tfg.agile.app.project_service.entity.ProjectRole;
+import com.tfg.agile.app.project_service.entity.ScrumRole;
 import com.tfg.agile.app.project_service.entity.Team;
 import com.tfg.agile.app.project_service.entity.TeamMember;
 import com.tfg.agile.app.project_service.entity.Workspace;
-import com.tfg.agile.app.project_service.exception.ConflictException;
 import com.tfg.agile.app.project_service.exception.ForbiddenException;
 import com.tfg.agile.app.project_service.exception.ResourceNotFoundException;
 import com.tfg.agile.app.project_service.repository.CategoryRepository;
@@ -333,6 +335,41 @@ class ProjectServiceTest {
 
         assertThatThrownBy(() -> service.removeMember(project.getId(), targetUserId, callerId))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void updateScrumRole_updatesMemberScrumRoleWhenFound() {
+        UUID callerId = UUID.randomUUID();
+        UUID targetUserId = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        Project project = TestDataFactory.project(workspace, null);
+        ProjectMember member = TestDataFactory.projectMember(project, targetUserId, ProjectRole.MEMBER);
+
+        when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
+        when(projectMemberRepository.existsByProjectIdAndUserIdAndRole(project.getId(), callerId, ProjectRole.ADMIN)).thenReturn(true);
+        when(projectMemberRepository.findByProjectIdAndUserId(project.getId(), targetUserId)).thenReturn(Optional.of(member));
+        when(projectMemberRepository.save(member)).thenReturn(member);
+
+        var response = service.updateScrumRole(project.getId(), targetUserId, new UpdateScrumRoleRequestDto("scrum_master"), callerId);
+
+        assertThat(response.scrumRole()).isEqualTo(ScrumRole.SCRUM_MASTER);
+    }
+
+    @Test
+    void getMemberPermissions_returnsRoleAndScrumRole() {
+        UUID targetUserId = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        Project project = TestDataFactory.project(workspace, null);
+        ProjectMember member = TestDataFactory.projectMember(project, targetUserId, ProjectRole.ADMIN);
+        member.setScrumRole(ScrumRole.PRODUCT_OWNER);
+
+        when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
+        when(projectMemberRepository.findByProjectIdAndUserId(project.getId(), targetUserId)).thenReturn(Optional.of(member));
+
+        MemberPermissionsDto response = service.getMemberPermissions(project.getId(), targetUserId);
+
+        assertThat(response.role()).isEqualTo(ProjectRole.ADMIN);
+        assertThat(response.scrumRole()).isEqualTo(ScrumRole.PRODUCT_OWNER);
     }
 
     @Test
