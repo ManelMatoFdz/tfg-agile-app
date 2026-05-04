@@ -22,6 +22,16 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/task-api/, ''),
       },
+      '/poker-api': {
+        target: 'http://localhost:8084',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/poker-api/, ''),
+      },
+      '/ws/poker': {
+        target: 'http://localhost:8084',
+        ws: true,
+        changeOrigin: true,
+      },
     },
   },
 })

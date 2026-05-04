@@ -17,6 +17,8 @@ import SprintsPage from './pages/workspace/project/SprintsPage';
 import ProjectMembersPage from './pages/workspace/project/ProjectMembersPage';
 import SprintBoardPage from './pages/workspace/project/SprintBoardPage';
 import SprintReportPage from './pages/workspace/project/SprintReportPage';
+import PokerPage from './pages/workspace/project/PokerPage';
+import PokerRoomPage from './pages/workspace/project/PokerRoomPage';
 import MyTasksPage from './pages/MyTasksPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AppLayout from './components/ui/AppLayout';
@@ -51,6 +53,8 @@ export default function App() {
               <Route path="sprints/:sprintId/board" element={<SprintBoardPage />} />
               <Route path="sprints/:sprintId/report" element={<SprintReportPage />} />
               <Route path="members" element={<ProjectMembersPage />} />
+              <Route path="poker" element={<PokerPage />} />
+              <Route path="poker/:sessionId" element={<PokerRoomPage />} />
             </Route>
 
             <Route path="teams" element={<TeamsPage />} />

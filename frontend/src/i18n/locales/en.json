@@ -215,7 +215,8 @@
       "board": "Board",
       "backlog": "Backlog",
       "sprints": "Sprints",
-      "members": "Members"
+      "members": "Members",
+      "poker": "Poker"
     },
     "kanban": {
       "title": "Kanban Board",
@@ -437,6 +438,78 @@
     "es": "Español",
     "en": "English",
     "gl": "Galego"
+  },
+  "poker": {
+    "title": "Planning Poker",
+    "session": "session",
+    "sessions": "sessions",
+    "newSession": "New session",
+    "noSessions": "No poker sessions",
+    "noSessionsSubtitle": "Create a session to estimate tasks with the team",
+    "loadError": "Error loading sessions.",
+    "activeSessions": "Active sessions",
+    "closedSessions": "Closed sessions",
+    "status": {
+      "LOBBY": "Lobby",
+      "VOTING": "Voting",
+      "REVEALED": "Revealed",
+      "CLOSED": "Closed"
+    },
+    "decks": {
+      "FIBONACCI": "Fibonacci",
+      "T_SHIRT": "T-Shirt sizes",
+      "POWERS_OF_2": "Powers of 2"
+    },
+    "roles": {
+      "VOTER": "Voter",
+      "OBSERVER": "Observer"
+    },
+    "create": {
+      "title": "New poker session",
+      "name": "Name",
+      "namePlaceholder": "Sprint 5 - Estimation",
+      "deck": "Deck",
+      "submit": "Create session",
+      "error": "Error creating the session."
+    },
+    "join": {
+      "title": "Join session",
+      "displayName": "Display name",
+      "displayNamePlaceholder": "Your name",
+      "role": "Role",
+      "submit": "Join",
+      "error": "Error joining the session."
+    },
+    "room": {
+      "loadError": "Error loading the session.",
+      "closeError": "Error closing the session.",
+      "connected": "Connected",
+      "leave": "Leave",
+      "closeSession": "Close session",
+      "sessionClosed": "This session has ended.",
+      "participants": "Participants",
+      "estimating": "Estimating",
+      "lobbyTitle": "Waiting room",
+      "lobbySubtitle": "Waiting for the facilitator to select a task",
+      "startRound": "Select task",
+      "selectTask": "Select task to estimate",
+      "noTasks": "No tasks available",
+      "yourVote": "Your vote",
+      "waitingVotes": "Waiting for voters to submit their estimates...",
+      "revealVotes": "Reveal votes",
+      "results": "Results",
+      "average": "Average",
+      "mode": "Mode",
+      "min": "Min",
+      "max": "Max",
+      "consensus": "Consensus reached!",
+      "finalEstimate": "Final estimate",
+      "acceptEstimate": "Accept estimate",
+      "revote": "Re-vote",
+      "nextTask": "Next task",
+      "history": "Round history",
+      "skipped": "Skipped"
+    }
   },
   "myTasks": {
     "title": "My Tasks",

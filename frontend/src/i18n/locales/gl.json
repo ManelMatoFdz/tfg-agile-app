@@ -215,7 +215,8 @@
       "board": "Taboleiro",
       "backlog": "Backlog",
       "sprints": "Sprints",
-      "members": "Membros"
+      "members": "Membros",
+      "poker": "Poker"
     },
     "kanban": {
       "title": "Taboleiro Kanban",
@@ -437,6 +438,78 @@
     "es": "Español",
     "en": "English",
     "gl": "Galego"
+  },
+  "poker": {
+    "title": "Planning Poker",
+    "session": "sesión",
+    "sessions": "sesións",
+    "newSession": "Nova sesión",
+    "noSessions": "Non hai sesións de poker",
+    "noSessionsSubtitle": "Crea unha sesión para estimar tarefas co equipo",
+    "loadError": "Erro ao cargar as sesións.",
+    "activeSessions": "Sesións activas",
+    "closedSessions": "Sesións pechadas",
+    "status": {
+      "LOBBY": "Lobby",
+      "VOTING": "Votando",
+      "REVEALED": "Revelado",
+      "CLOSED": "Pechada"
+    },
+    "decks": {
+      "FIBONACCI": "Fibonacci",
+      "T_SHIRT": "Tallas",
+      "POWERS_OF_2": "Potencias de 2"
+    },
+    "roles": {
+      "VOTER": "Votante",
+      "OBSERVER": "Observador"
+    },
+    "create": {
+      "title": "Nova sesión de poker",
+      "name": "Nome",
+      "namePlaceholder": "Sprint 5 - Estimación",
+      "deck": "Baralla",
+      "submit": "Crear sesión",
+      "error": "Erro ao crear a sesión."
+    },
+    "join": {
+      "title": "Unirse á sesión",
+      "displayName": "Nome para amosar",
+      "displayNamePlaceholder": "O teu nome",
+      "role": "Rol",
+      "submit": "Unirse",
+      "error": "Erro ao unirse á sesión."
+    },
+    "room": {
+      "loadError": "Erro ao cargar a sesión.",
+      "closeError": "Erro ao pechar a sesión.",
+      "connected": "Conectado",
+      "leave": "Saír",
+      "closeSession": "Pechar sesión",
+      "sessionClosed": "Esta sesión rematou.",
+      "participants": "Participantes",
+      "estimating": "Estimando",
+      "lobbyTitle": "Sala de espera",
+      "lobbySubtitle": "Agardando a que o facilitador seleccione unha tarefa",
+      "startRound": "Seleccionar tarefa",
+      "selectTask": "Seleccionar tarefa a estimar",
+      "noTasks": "Non hai tarefas dispoñibles",
+      "yourVote": "O teu voto",
+      "waitingVotes": "Agardando a que os votantes envíen as súas estimacións...",
+      "revealVotes": "Revelar votos",
+      "results": "Resultados",
+      "average": "Media",
+      "mode": "Moda",
+      "min": "Mín",
+      "max": "Máx",
+      "consensus": "Consenso acadado!",
+      "finalEstimate": "Estimación final",
+      "acceptEstimate": "Aceptar estimación",
+      "revote": "Re-votar",
+      "nextTask": "Seguinte tarefa",
+      "history": "Historial de roldas",
+      "skipped": "Omitida"
+    }
   },
   "myTasks": {
     "title": "As miñas tarefas",

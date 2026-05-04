@@ -9,6 +9,7 @@ const TABS = [
   { key: 'backlog',  path: 'backlog'  },
   { key: 'sprints',  path: 'sprints'  },
   { key: 'members',  path: 'members'  },
+  { key: 'poker',    path: 'poker'    },
 ] as const;
 
 export default function ProjectLayout() {

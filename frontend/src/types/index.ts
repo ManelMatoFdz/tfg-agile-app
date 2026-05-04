@@ -153,3 +153,49 @@ export interface TeamMember {
   userId: string;
   joinedAt: string;
 }
+
+// ── Poker-service types ─────────────────────────────────────────────────────
+
+export type SessionStatus = 'LOBBY' | 'VOTING' | 'REVEALED' | 'CLOSED';
+export type RoundStatus = 'VOTING' | 'REVEALED' | 'CONSENSUS';
+export type DeckType = 'FIBONACCI' | 'T_SHIRT' | 'POWERS_OF_2';
+export type ParticipantRole = 'VOTER' | 'OBSERVER';
+
+export interface PokerSession {
+  id: string;
+  projectId: string;
+  name: string;
+  status: SessionStatus;
+  deck: DeckType;
+  createdBy: string;
+  currentTaskId?: string | null;
+  participants: PokerParticipant[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PokerParticipant {
+  id: string;
+  userId: string;
+  displayName: string;
+  role: ParticipantRole;
+  connected: boolean;
+  joinedAt: string;
+}
+
+export interface PokerRound {
+  id: string;
+  taskId: string;
+  taskTitle: string;
+  status: RoundStatus;
+  finalEstimate?: number | null;
+  votes: PokerVote[];
+  startedAt: string;
+  revealedAt?: string | null;
+}
+
+export interface PokerVote {
+  userId: string;
+  value: string;
+  votedAt: string;
+}
