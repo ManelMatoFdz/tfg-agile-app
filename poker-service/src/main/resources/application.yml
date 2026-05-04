@@ -1,0 +1,33 @@
+server:
+  port: ${POKER_SERVICE_PORT:8084}
+
+spring:
+  application:
+    name: poker-service
+
+  datasource:
+    url: jdbc:postgresql://${POKER_DB_HOST:localhost}:${POKER_DB_PORT:5436}/${POKER_DB_NAME:pokerdb}
+    username: ${POKER_DB_USER:poker}
+    password: ${POKER_DB_PASS:poker}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: ${POKER_SERVICE_JPA_DDL_AUTO:update}
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+app:
+  internal:
+    api-key: ${INTERNAL_API_KEY:dev-internal-key}
+  task-service:
+    url: ${TASK_SERVICE_URL:http://localhost:8083}
+
+security:
+  jwt:
+    secret: ${JWT_SECRET:replace-with-a-long-random-secret-min-32-bytes}
+    issuer: ${JWT_ISSUER:agileflow-user-service}
+    audience: ${JWT_AUDIENCE:agileflow-api}

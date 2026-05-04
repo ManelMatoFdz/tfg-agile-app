@@ -149,4 +149,12 @@ public class TaskService {
                 || "PRODUCT_OWNER".equals(p.scrumRole())
                 || "SCRUM_MASTER".equals(p.scrumRole());
     }
+
+    @Transactional
+    public void updateStoryPoints(UUID taskId, Integer storyPoints) {
+        var task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + taskId));
+        task.setStoryPoints(storyPoints);
+        taskRepository.save(task);
+    }
 }
