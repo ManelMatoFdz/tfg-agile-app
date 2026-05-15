@@ -23,7 +23,7 @@ public class CategoryController {
 
     @PostMapping
     public ResponseEntity<CategoryResponseDto> create(
-            @PathVariable UUID workspaceId,
+            @PathVariable("workspaceId") UUID workspaceId,
             @Valid @RequestBody CreateCategoryRequestDto dto,
             @AuthenticationPrincipal UUID callerId) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -31,22 +31,22 @@ public class CategoryController {
     }
 
     @GetMapping
-    public List<CategoryResponseDto> listByWorkspace(@PathVariable UUID workspaceId,
+    public List<CategoryResponseDto> listByWorkspace(@PathVariable("workspaceId") UUID workspaceId,
                                                      @AuthenticationPrincipal UUID callerId) {
         return categoryService.findByWorkspace(workspaceId, callerId);
     }
 
     @PutMapping("/{categoryId}")
-    public CategoryResponseDto update(@PathVariable UUID workspaceId,
-                                      @PathVariable UUID categoryId,
+    public CategoryResponseDto update(@PathVariable("workspaceId") UUID workspaceId,
+                                      @PathVariable("categoryId") UUID categoryId,
                                       @Valid @RequestBody UpdateCategoryRequestDto dto,
                                       @AuthenticationPrincipal UUID callerId) {
         return categoryService.update(workspaceId, categoryId, dto, callerId);
     }
 
     @DeleteMapping("/{categoryId}")
-    public ResponseEntity<Void> delete(@PathVariable UUID workspaceId,
-                                       @PathVariable UUID categoryId,
+    public ResponseEntity<Void> delete(@PathVariable("workspaceId") UUID workspaceId,
+                                       @PathVariable("categoryId") UUID categoryId,
                                        @AuthenticationPrincipal UUID callerId) {
         categoryService.delete(workspaceId, categoryId, callerId);
         return ResponseEntity.noContent().build();

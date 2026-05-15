@@ -1,7 +1,14 @@
 package com.tfg.agile.app.project_service.exception;
 
 public class ForbiddenException extends RuntimeException {
-    public ForbiddenException(String message) {
-        super(message);
+    private final String errorCode;
+
+    public ForbiddenException(String errorCode) {
+        super(errorCode);
+        this.errorCode = errorCode;
+    }
+
+    public String getErrorCode() {
+        return errorCode;
     }
 }

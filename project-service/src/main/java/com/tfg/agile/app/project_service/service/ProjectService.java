@@ -42,7 +42,7 @@ public class ProjectService {
     @Transactional
     public ProjectResponseDto create(UUID workspaceId, CreateProjectRequestDto dto, UUID callerId) {
         Workspace workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("WORKSPACE_NOT_FOUND"));
         requireWorkspaceMember(workspaceId, callerId);
 
         Category category = resolveCategory(dto.categoryId(), workspaceId);
@@ -68,7 +68,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<ProjectResponseDto> findByWorkspace(UUID workspaceId, UUID callerId) {
         workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("WORKSPACE_NOT_FOUND"));
         requireWorkspaceMember(workspaceId, callerId);
 
         return projectMemberRepository.findProjectsByUserIdAndWorkspaceId(callerId, workspaceId).stream()
@@ -117,7 +117,7 @@ public class ProjectService {
         Project project = getProjectOrThrow(projectId);
         requireProjectAdmin(projectId, callerId);
         if (projectMemberRepository.existsByProjectIdAndUserId(projectId, dto.userId())) {
-            throw new ConflictException("User is already a member of this project");
+            throw new ConflictException("ALREADY_PROJECT_MEMBER");
         }
         ProjectRole role = ProjectRole.valueOf(dto.role().toUpperCase());
         ProjectMember member = ProjectMember.builder()
@@ -134,7 +134,7 @@ public class ProjectService {
         getProjectOrThrow(projectId);
         requireProjectAdmin(projectId, callerId);
         ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, targetUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
         member.setRole(ProjectRole.valueOf(dto.role().toUpperCase()));
         return ProjectMemberResponseDto.from(projectMemberRepository.save(member));
     }
@@ -145,7 +145,7 @@ public class ProjectService {
         getProjectOrThrow(projectId);
         requireProjectAdmin(projectId, callerId);
         ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, targetUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
         member.setScrumRole(ScrumRole.valueOf(dto.scrumRole().toUpperCase()));
         return ProjectMemberResponseDto.from(projectMemberRepository.save(member));
     }
@@ -155,7 +155,7 @@ public class ProjectService {
         getProjectOrThrow(projectId);
         requireProjectAdmin(projectId, callerId);
         ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, targetUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
         projectMemberRepository.delete(member);
     }
 
@@ -167,7 +167,7 @@ public class ProjectService {
         requireProjectAdmin(projectId, callerId);
 
         teamRepository.findById(teamId)
-                .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("TEAM_NOT_FOUND"));
 
         List<UUID> teamUserIds = teamMemberRepository.findByTeamId(teamId).stream()
                 .map(TeamMember::getUserId)
@@ -179,7 +179,7 @@ public class ProjectService {
                     .filter(uid -> !teamUserIds.contains(uid))
                     .toList();
             if (!invalidUsers.isEmpty()) {
-                throw new ForbiddenException("Some users are not members of this team");
+                throw new ForbiddenException("USERS_NOT_TEAM_MEMBERS");
             }
             targetUserIds = dto.userIds();
         } else {
@@ -209,7 +209,7 @@ public class ProjectService {
     public MemberPermissionsDto getMemberPermissions(UUID projectId, UUID userId) {
         getProjectOrThrow(projectId);
         ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
         return new MemberPermissionsDto(member.getRole(), member.getScrumRole());
     }
 
@@ -217,34 +217,34 @@ public class ProjectService {
 
     private Project getProjectOrThrow(UUID id) {
         return projectRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("PROJECT_NOT_FOUND"));
     }
 
     private Category resolveCategory(UUID categoryId, UUID workspaceId) {
         if (categoryId == null) return null;
         Category category = categoryRepository.findById(categoryId)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("CATEGORY_NOT_FOUND"));
         if (!category.getWorkspace().getId().equals(workspaceId)) {
-            throw new ForbiddenException("Category does not belong to this workspace");
+            throw new ForbiddenException("CATEGORY_WRONG_WORKSPACE");
         }
         return category;
     }
 
     private void requireWorkspaceMember(UUID workspaceId, UUID userId) {
         if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
-            throw new ForbiddenException("Not a member of this workspace");
+            throw new ForbiddenException("NOT_WORKSPACE_MEMBER");
         }
     }
 
     private void requireProjectMember(UUID projectId, UUID userId) {
         if (!projectMemberRepository.existsByProjectIdAndUserId(projectId, userId)) {
-            throw new ForbiddenException("Not a member of this project");
+            throw new ForbiddenException("NOT_PROJECT_MEMBER");
         }
     }
 
     private void requireProjectAdmin(UUID projectId, UUID userId) {
         if (!projectMemberRepository.existsByProjectIdAndUserIdAndRole(projectId, userId, ProjectRole.ADMIN)) {
-            throw new ForbiddenException("Project admin role required");
+            throw new ForbiddenException("PROJECT_ADMIN_REQUIRED");
         }
     }
 }

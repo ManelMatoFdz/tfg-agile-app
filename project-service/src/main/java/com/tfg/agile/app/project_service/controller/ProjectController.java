@@ -22,7 +22,7 @@ public class ProjectController {
 
     @PostMapping("/workspaces/{workspaceId}/projects")
     public ResponseEntity<ProjectResponseDto> create(
-            @PathVariable UUID workspaceId,
+            @PathVariable("workspaceId") UUID workspaceId,
             @Valid @RequestBody CreateProjectRequestDto dto,
             @AuthenticationPrincipal UUID callerId) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -30,26 +30,26 @@ public class ProjectController {
     }
 
     @GetMapping("/workspaces/{workspaceId}/projects")
-    public List<ProjectResponseDto> listByWorkspace(@PathVariable UUID workspaceId,
+    public List<ProjectResponseDto> listByWorkspace(@PathVariable("workspaceId") UUID workspaceId,
                                                     @AuthenticationPrincipal UUID callerId) {
         return projectService.findByWorkspace(workspaceId, callerId);
     }
 
     @GetMapping("/projects/{projectId}")
-    public ProjectResponseDto getById(@PathVariable UUID projectId,
+    public ProjectResponseDto getById(@PathVariable("projectId") UUID projectId,
                                       @AuthenticationPrincipal UUID callerId) {
         return projectService.findById(projectId, callerId);
     }
 
     @PutMapping("/projects/{projectId}")
-    public ProjectResponseDto update(@PathVariable UUID projectId,
+    public ProjectResponseDto update(@PathVariable("projectId") UUID projectId,
                                      @Valid @RequestBody UpdateProjectRequestDto dto,
                                      @AuthenticationPrincipal UUID callerId) {
         return projectService.update(projectId, dto, callerId);
     }
 
     @DeleteMapping("/projects/{projectId}")
-    public ResponseEntity<Void> delete(@PathVariable UUID projectId,
+    public ResponseEntity<Void> delete(@PathVariable("projectId") UUID projectId,
                                        @AuthenticationPrincipal UUID callerId) {
         projectService.delete(projectId, callerId);
         return ResponseEntity.noContent().build();
@@ -58,14 +58,14 @@ public class ProjectController {
     // ── members ──────────────────────────────────────────────────────────────
 
     @GetMapping("/projects/{projectId}/members")
-    public List<ProjectMemberResponseDto> getMembers(@PathVariable UUID projectId,
+    public List<ProjectMemberResponseDto> getMembers(@PathVariable("projectId") UUID projectId,
                                                      @AuthenticationPrincipal UUID callerId) {
         return projectService.getMembers(projectId, callerId);
     }
 
     @PostMapping("/projects/{projectId}/members")
     public ResponseEntity<ProjectMemberResponseDto> addMember(
-            @PathVariable UUID projectId,
+            @PathVariable("projectId") UUID projectId,
             @Valid @RequestBody AddMemberRequestDto dto,
             @AuthenticationPrincipal UUID callerId) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -74,8 +74,8 @@ public class ProjectController {
 
     @PutMapping("/projects/{projectId}/members/{userId}")
     public ProjectMemberResponseDto updateMemberRole(
-            @PathVariable UUID projectId,
-            @PathVariable UUID userId,
+            @PathVariable("projectId") UUID projectId,
+            @PathVariable("userId") UUID userId,
             @Valid @RequestBody UpdateMemberRoleRequestDto dto,
             @AuthenticationPrincipal UUID callerId) {
         return projectService.updateMemberRole(projectId, userId, dto, callerId);
@@ -83,16 +83,16 @@ public class ProjectController {
 
     @PatchMapping("/projects/{projectId}/members/{userId}/scrum-role")
     public ProjectMemberResponseDto updateScrumRole(
-            @PathVariable UUID projectId,
-            @PathVariable UUID userId,
+            @PathVariable("projectId") UUID projectId,
+            @PathVariable("userId") UUID userId,
             @Valid @RequestBody UpdateScrumRoleRequestDto dto,
             @AuthenticationPrincipal UUID callerId) {
         return projectService.updateScrumRole(projectId, userId, dto, callerId);
     }
 
     @DeleteMapping("/projects/{projectId}/members/{userId}")
-    public ResponseEntity<Void> removeMember(@PathVariable UUID projectId,
-                                             @PathVariable UUID userId,
+    public ResponseEntity<Void> removeMember(@PathVariable("projectId") UUID projectId,
+                                             @PathVariable("userId") UUID userId,
                                              @AuthenticationPrincipal UUID callerId) {
         projectService.removeMember(projectId, userId, callerId);
         return ResponseEntity.noContent().build();
@@ -100,8 +100,8 @@ public class ProjectController {
 
     @PostMapping("/projects/{projectId}/members/from-team/{teamId}")
     public ResponseEntity<List<ProjectMemberResponseDto>> addMembersFromTeam(
-            @PathVariable UUID projectId,
-            @PathVariable UUID teamId,
+            @PathVariable("projectId") UUID projectId,
+            @PathVariable("teamId") UUID teamId,
             @RequestBody(required = false) AddTeamMembersRequestDto dto,
             @AuthenticationPrincipal UUID callerId) {
         return ResponseEntity.status(HttpStatus.CREATED)

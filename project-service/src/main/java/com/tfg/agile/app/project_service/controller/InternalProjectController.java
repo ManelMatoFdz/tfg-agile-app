@@ -21,8 +21,8 @@ public class InternalProjectController {
 
     @GetMapping("/{projectId}/members/{userId}/permissions")
     public MemberPermissionsDto getMemberPermissions(
-            @PathVariable UUID projectId,
-            @PathVariable UUID userId) {
+            @PathVariable("projectId") UUID projectId,
+            @PathVariable("userId") UUID userId) {
         return projectService.getMemberPermissions(projectId, userId);
     }
 }

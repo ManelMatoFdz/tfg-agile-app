@@ -32,7 +32,7 @@ public class CategoryService {
     @Transactional
     public CategoryResponseDto create(UUID workspaceId, CreateCategoryRequestDto dto, UUID callerId) {
         var workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("WORKSPACE_NOT_FOUND"));
         requireWorkspaceAdmin(workspaceId, callerId);
 
         Category category = Category.builder()
@@ -47,7 +47,7 @@ public class CategoryService {
     @Transactional(readOnly = true)
     public List<CategoryResponseDto> findByWorkspace(UUID workspaceId, UUID callerId) {
         workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("WORKSPACE_NOT_FOUND"));
         requireWorkspaceMember(workspaceId, callerId);
         return categoryRepository.findByWorkspaceIdOrderByPosition(workspaceId).stream()
                 .map(CategoryResponseDto::from)
@@ -76,18 +76,18 @@ public class CategoryService {
 
     private Category getCategoryOrThrow(UUID id) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Category not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("CATEGORY_NOT_FOUND"));
     }
 
     private void requireWorkspaceMember(UUID workspaceId, UUID userId) {
         if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
-            throw new ForbiddenException("Not a member of this workspace");
+            throw new ForbiddenException("NOT_WORKSPACE_MEMBER");
         }
     }
 
     private void requireWorkspaceAdmin(UUID workspaceId, UUID userId) {
         if (!workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspaceId, userId, WorkspaceRole.ADMIN)) {
-            throw new ForbiddenException("Workspace admin role required");
+            throw new ForbiddenException("WORKSPACE_ADMIN_REQUIRED");
         }
     }
 }
