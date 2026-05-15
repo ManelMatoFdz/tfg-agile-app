@@ -34,6 +34,16 @@ const processQueue = (error: unknown, token: string | null) => {
 projectClient.interceptors.response.use(
   (res) => res,
   async (error) => {
+    // If the user has been removed from the workspace, redirect to the selector.
+    if (
+      error.response?.status === 403 &&
+      error.response?.data?.errorCode === 'NOT_WORKSPACE_MEMBER' &&
+      /\/workspaces\/[^/]+/.test(window.location.pathname)
+    ) {
+      window.location.replace('/workspaces');
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
       const refreshToken = useAuthStore.getState().refreshToken;

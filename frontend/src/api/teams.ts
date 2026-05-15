@@ -25,4 +25,7 @@ export const teamsApi = {
 
   removeMember: (teamId: string, userId: string) =>
     projectClient.delete(`/teams/${teamId}/members/${userId}`),
+
+  updateMemberRole: (teamId: string, userId: string, role: 'ADMIN' | 'MEMBER') =>
+    projectClient.put<TeamMember>(`/teams/${teamId}/members/${userId}/role`, { role }),
 };

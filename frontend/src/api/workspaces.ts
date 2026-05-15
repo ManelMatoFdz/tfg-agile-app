@@ -1,5 +1,5 @@
 import projectClient from './projectClient';
-import type { Workspace, WorkspaceMember, WorkspaceRole } from '../types';
+import type { Workspace, WorkspaceMember, WorkspaceRole, WorkspaceInvitation } from '../types';
 
 export const workspacesApi = {
   list: () =>
@@ -28,4 +28,10 @@ export const workspacesApi = {
 
   removeMember: (workspaceId: string, userId: string) =>
     projectClient.delete(`/workspaces/${workspaceId}/members/${userId}`),
+
+  createInvitation: (workspaceId: string, userId: string, email: string) =>
+    projectClient.post<WorkspaceInvitation>(`/workspaces/${workspaceId}/invitations`, { userId, email }),
+
+  leave: (workspaceId: string) =>
+    projectClient.delete(`/workspaces/${workspaceId}/members/me`),
 };

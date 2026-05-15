@@ -1,5 +1,5 @@
 import client from './client';
-import type { User, UserSummary } from '../types';
+import type { User, UserSummary, UserLookup } from '../types';
 
 type AvatarUploadResponse = {
   avatarUrl: string;
@@ -24,4 +24,7 @@ export const usersApi = {
 
   batch: (ids: string[]) =>
     client.post<UserSummary[]>('/users/batch', ids),
+
+  lookupByEmail: (email: string) =>
+    client.get<UserLookup>(`/users/lookup?email=${encodeURIComponent(email)}`),
 };
