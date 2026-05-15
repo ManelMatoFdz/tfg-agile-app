@@ -51,7 +51,7 @@ public class PokerWebSocketController {
         String value = payload.get("value");
 
         var participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
-                .orElseThrow(() -> new ForbiddenException("Not a participant"));
+                .orElseThrow(() -> new ForbiddenException("NOT_SESSION_PARTICIPANT"));
         if (participant.getRole() != ParticipantRole.VOTER) {
             sendError(userId, "Observers cannot vote");
             return;
@@ -154,7 +154,7 @@ public class PokerWebSocketController {
 
     private UUID extractUserId(SimpMessageHeaderAccessor headerAccessor) {
         if (headerAccessor.getUser() == null) {
-            throw new ForbiddenException("Not authenticated");
+            throw new ForbiddenException("NOT_AUTHENTICATED");
         }
         return UUID.fromString(headerAccessor.getUser().getName());
     }

@@ -1,7 +1,10 @@
 package com.tfg.agile.app.poker_service.exception;
 
 public class ConflictException extends RuntimeException {
-    public ConflictException(String message) {
-        super(message);
+    private final String errorCode;
+    public ConflictException(String errorCode) {
+        super(errorCode);
+        this.errorCode = errorCode;
     }
+    public String getErrorCode() { return errorCode; }
 }

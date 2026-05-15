@@ -61,7 +61,7 @@ public class PokerSessionService {
     public ParticipantDto joinSession(UUID sessionId, UUID userId, JoinSessionRequestDto dto) {
         var session = findSession(sessionId);
         if (session.getStatus() == SessionStatus.CLOSED) {
-            throw new ConflictException("Session is closed");
+            throw new ConflictException("SESSION_CLOSED");
         }
         if (participantRepository.existsBySessionIdAndUserId(sessionId, userId)) {
             // Re-connect existing participant
@@ -80,7 +80,7 @@ public class PokerSessionService {
 
     public void leaveSession(UUID sessionId, UUID userId) {
         var participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Participant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("PARTICIPANT_NOT_FOUND"));
         participant.setConnected(false);
         participantRepository.save(participant);
     }
@@ -88,10 +88,10 @@ public class PokerSessionService {
     public SessionResponseDto closeSession(UUID sessionId, UUID userId) {
         var session = findSession(sessionId);
         if (!session.getCreatedBy().equals(userId)) {
-            throw new ForbiddenException("Only the session creator can close it");
+            throw new ForbiddenException("SESSION_CREATOR_REQUIRED");
         }
         if (session.getStatus() == SessionStatus.CLOSED) {
-            throw new ConflictException("Session is already closed");
+            throw new ConflictException("SESSION_ALREADY_CLOSED");
         }
         session.setStatus(SessionStatus.CLOSED);
         return toDto(sessionRepository.save(session));
@@ -102,11 +102,11 @@ public class PokerSessionService {
         assertFacilitator(session, userId);
 
         if (session.getStatus() == SessionStatus.CLOSED) {
-            throw new ConflictException("Session is closed");
+            throw new ConflictException("SESSION_CLOSED");
         }
 
         roundRepository.findBySessionIdAndStatus(sessionId, RoundStatus.VOTING)
-                .ifPresent(r -> { throw new ConflictException("There is already an active voting round"); });
+                .ifPresent(r -> { throw new ConflictException("ROUND_ALREADY_ACTIVE"); });
 
         var round = PokerRound.builder()
                 .session(session)
@@ -127,7 +127,7 @@ public class PokerSessionService {
         assertFacilitator(session, userId);
 
         var round = roundRepository.findBySessionIdAndStatus(sessionId, RoundStatus.VOTING)
-                .orElseThrow(() -> new ConflictException("No active voting round"));
+                .orElseThrow(() -> new ConflictException("NO_ACTIVE_ROUND"));
 
         round.setStatus(RoundStatus.REVEALED);
         round.setRevealedAt(Instant.now());
@@ -144,7 +144,7 @@ public class PokerSessionService {
         assertFacilitator(session, userId);
 
         var round = roundRepository.findBySessionIdAndStatus(sessionId, RoundStatus.REVEALED)
-                .orElseThrow(() -> new ConflictException("No revealed round to accept"));
+                .orElseThrow(() -> new ConflictException("NO_REVEALED_ROUND_ACCEPT"));
 
         round.setFinalEstimate(finalEstimate);
         round.setStatus(RoundStatus.CONSENSUS);
@@ -166,7 +166,7 @@ public class PokerSessionService {
         assertFacilitator(session, userId);
 
         var oldRound = roundRepository.findBySessionIdAndStatus(sessionId, RoundStatus.REVEALED)
-                .orElseThrow(() -> new ConflictException("No revealed round to re-vote"));
+                .orElseThrow(() -> new ConflictException("NO_REVEALED_ROUND_REVOTE"));
 
         oldRound.setStatus(RoundStatus.CONSENSUS);
         oldRound.setFinalEstimate(null);
@@ -193,12 +193,12 @@ public class PokerSessionService {
     
     private PokerSession findSession(UUID sessionId) {
         return sessionRepository.findById(sessionId)
-                .orElseThrow(() -> new ResourceNotFoundException("Session not found: " + sessionId));
+                .orElseThrow(() -> new ResourceNotFoundException("SESSION_NOT_FOUND"));
     }
 
     private void assertFacilitator(PokerSession session, UUID userId) {
         if (!session.getCreatedBy().equals(userId)) {
-            throw new ForbiddenException("Only the session facilitator can perform this action");
+            throw new ForbiddenException("SESSION_FACILITATOR_REQUIRED");
         }
     }
 

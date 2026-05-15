@@ -18,26 +18,29 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void handleNotFound_returns404() {
-        ResponseEntity<Map<String, Object>> response = handler.handleNotFound(new ResourceNotFoundException("Session not found"));
+        ResponseEntity<Map<String, Object>> response = handler.handleNotFound(new ResourceNotFoundException("SESSION_NOT_FOUND"));
 
         assertThat(response.getStatusCode().value()).isEqualTo(404);
-        assertThat(response.getBody()).containsEntry("message", "Session not found");
+        assertThat(response.getBody()).containsEntry("message", "SESSION_NOT_FOUND");
+        assertThat(response.getBody()).containsEntry("errorCode", "SESSION_NOT_FOUND");
     }
 
     @Test
     void handleForbidden_returns403() {
-        ResponseEntity<Map<String, Object>> response = handler.handleForbidden(new ForbiddenException("Forbidden"));
+        ResponseEntity<Map<String, Object>> response = handler.handleForbidden(new ForbiddenException("NOT_AUTHENTICATED"));
 
         assertThat(response.getStatusCode().value()).isEqualTo(403);
-        assertThat(response.getBody()).containsEntry("message", "Forbidden");
+        assertThat(response.getBody()).containsEntry("message", "NOT_AUTHENTICATED");
+        assertThat(response.getBody()).containsEntry("errorCode", "NOT_AUTHENTICATED");
     }
 
     @Test
     void handleConflict_returns409() {
-        ResponseEntity<Map<String, Object>> response = handler.handleConflict(new ConflictException("Conflict"));
+        ResponseEntity<Map<String, Object>> response = handler.handleConflict(new ConflictException("SESSION_CLOSED"));
 
         assertThat(response.getStatusCode().value()).isEqualTo(409);
-        assertThat(response.getBody()).containsEntry("message", "Conflict");
+        assertThat(response.getBody()).containsEntry("message", "SESSION_CLOSED");
+        assertThat(response.getBody()).containsEntry("errorCode", "SESSION_CLOSED");
     }
 
     @Test
