@@ -14,7 +14,8 @@
     "optional": "opcional",
     "previous": "Anterior",
     "next": "Seguinte",
-    "confirm": "Confirmar"
+    "confirm": "Confirmar",
+    "unknownUser": "Usuario descoñecido"
   },
   "auth": {
     "login": {
@@ -30,7 +31,8 @@
       "registerLink": "Rexístrate gratis",
       "googleNotConfigured": "Google Sign-In non configurado. Define VITE_GOOGLE_CLIENT_ID en frontend/.env.",
       "googleError": "Non se puido iniciar sesión con Google. Téntao de novo.",
-      "googleTokenError": "Google non devolveu un token válido."
+      "googleTokenError": "Google non devolveu un token válido.",
+      "continueWithGoogle": "Continuar con Google"
     },
     "register": {
       "title": "Crear conta",
@@ -77,6 +79,9 @@
         "passwordTooShort": "O contrasinal debe ter polo menos 6 caracteres.",
         "passwordsDontMatch": "Os contrasinais non coinciden."
       }
+    },
+    "layout": {
+      "description": "Xestiona os teus proxectos con metodoloxías áxiles. Colabora co teu equipo de forma eficiente e visual."
     }
   },
   "workspace": {
@@ -94,7 +99,9 @@
         "description": "Descrición ({{optional}})",
         "descriptionPlaceholder": "Unha breve descrición",
         "submit": "Crear workspace"
-      }
+      },
+      "pendingInvitations": "Invitacións pendentes",
+      "invitedToJoin": "Foches invitado/a a unirte"
     },
     "nav": {
       "changeWorkspace": "Cambiar workspace",
@@ -134,13 +141,21 @@
       "count_other": "{{count}} membros",
       "admins": "Administradores",
       "membersGroup": "Membros",
-      "addMember": "Engadir membro",
-      "form": {
-        "title": "Engadir membro",
-        "userId": "ID de usuario (UUID)",
-        "userIdPlaceholder": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx",
-        "role": "Rol",
-        "submit": "Engadir"
+      "addMember": "Invitar membro",
+      "invite": {
+        "title": "Invitar ao workspace",
+        "emailLabel": "Correo electrónico",
+        "emailPlaceholder": "usuario@exemplo.com",
+        "searchUser": "Buscar",
+        "userNotFound": "Non se atopou ningún usuario con ese email.",
+        "sendInvitation": "Enviar invitación",
+        "success": "Invitación enviada correctamente.",
+        "pendingTitle": "Invitación pendente",
+        "pendingMessage": "Fuches invitado ao workspace «{{workspaceName}}»",
+        "accepted": "Invitación aceptada",
+        "rejected": "Invitación rexeitada",
+        "accept": "Aceptar",
+        "reject": "Rexeitar"
       },
       "changeRoleTitle": "Cambiar a {{role}}",
       "removeMember": "Eliminar do workspace",
@@ -151,6 +166,19 @@
       "errors": {
         "changeRole": "Non se puido cambiar o rol.",
         "remove": "Non se puido eliminar o membro."
+      },
+      "confirmRoleChange": {
+        "title": "Cambiar rol",
+        "subtitle": "Cambiar o rol de {{name}} a {{role}}",
+        "description": "Os permisos deste membro cambiarán segundo o rol {{role}} neste workspace.",
+        "confirm": "Cambiar rol"
+      },
+      "confirmRemove": {
+        "title": "Eliminar membro",
+        "subtitle": "Eliminar a {{name}}?",
+        "description": "Esta persoa perderá o acceso ao workspace e a todos os seus proxectos. Esta acción non se pode desfacer.",
+        "confirm": "Eliminar",
+        "removing": "Eliminando..."
       }
     },
     "settings": {
@@ -165,6 +193,17 @@
       "saveError": "Erro ao gardar os cambios.",
       "loadError": "Erro ao cargar o workspace.",
       "info": "Información",
+      "readOnly": "Só lectura",
+      "adminOnlyHint": "Só os administradores do workspace poden modificar esta configuración.",
+      "leaveTitle": "Saír do workspace",
+      "leaveSubtitle": "Perderás o acceso a este workspace e aos seus proxectos.",
+      "leaveLastAdminHint": "Es o único administrador. Asigna outro admin antes de saír.",
+      "leaveBtn": "Saír do workspace",
+      "leaveDescription": "Perderás o acceso a este workspace e a todos os seus proxectos. Só poderás volver a unirte se recibes un novo convite.",
+      "leaveConfirmBtn": "Saír",
+      "leaving": "Saíndo...",
+      "leaveError": "Non se puido saír do workspace.",
+      "leaveLastAdminError": "Non podes saír: es o único administrador. Asigna outro administrador primeiro.",
       "workspaceId": "ID do workspace",
       "createdAt": "Creado o",
       "dangerZone": "Zona perigosa",
@@ -206,6 +245,24 @@
         "title": "Eliminar equipo",
         "message": "Seguro que queres eliminar <strong>{{name}}</strong>? Esta acción non se pode desfacer.",
         "submit": "Eliminar"
+      },
+      "roles": {
+        "ADMIN": "Admin",
+        "MEMBER": "Membro"
+      },
+      "changeRole": "Cambiar rol",
+      "promoteToAdmin": "Facer admin",
+      "demoteToMember": "Facer membro",
+      "confirmRemove": {
+        "title": "Eliminar membro",
+        "message": "Seguro que queres eliminar a <strong>{{name}}</strong> do equipo?",
+        "submit": "Eliminar"
+      },
+      "confirmRoleChange": {
+        "title": "Cambiar rol",
+        "messageToAdmin": "Conceder permisos de administrador do equipo a <strong>{{name}}</strong>?",
+        "messageToMember": "Retirar permisos de administrador do equipo a <strong>{{name}}</strong>?",
+        "submit": "Confirmar"
       }
     }
   },
@@ -520,5 +577,69 @@
     "empty": "Non tes tarefas asignadas",
     "emptySubtitle": "Cando che asignen tarefas nun proxecto, aparecerán aquí",
     "loadError": "Erro ao cargar as tarefas."
+  },
+  "errors": {
+    "FORBIDDEN": "Non tes permisos para realizar esta acción.",
+    "NOT_FOUND": "O recurso solicitado non existe.",
+    "CONFLICT": "Operación en conflito co estado actual.",
+    "BAD_REQUEST": "Datos inválidos. Revisa os campos.",
+    "INTERNAL_ERROR": "Produciuse un erro. Téntao de novo.",
+    "EMAIL_ALREADY_EXISTS": "Xa existe unha conta con ese correo electrónico.",
+    "INVALID_CREDENTIALS": "Correo ou contrasinal incorrectos.",
+    "USER_NOT_FOUND": "Usuario non atopado.",
+    "INVALID_PASSWORD_RESET_TOKEN": "A ligazón de recuperación non é válida ou caducou.",
+    "INVALID_REFRESH_TOKEN": "A sesión caducou. Inicia sesión de novo.",
+    "INVALID_PASSWORD_CHANGE": "O novo contrasinal debe ser diferente do actual.",
+    "NOTIFICATION_NOT_FOUND": "Notificación non atopada.",
+    "INVALID_GOOGLE_TOKEN": "Token de Google non válido.",
+    "GOOGLE_LOGIN_NOT_CONFIGURED": "O inicio de sesión con Google non está dispoñible.",
+    "DATA_INTEGRITY_VIOLATION": "Erro de integridade de datos.",
+    "PAYLOAD_TOO_LARGE": "O arquivo supera o tamaño máximo permitido.",
+    "VALIDATION_ERROR": "Erro de validación. Revisa os campos.",
+    "WORKSPACE_NOT_FOUND": "Workspace non atopado.",
+    "PROJECT_NOT_FOUND": "Proxecto non atopado.",
+    "TEAM_NOT_FOUND": "Equipo non atopado.",
+    "CATEGORY_NOT_FOUND": "Categoría non atopada.",
+    "MEMBER_NOT_FOUND": "Membro non atopado.",
+    "TASK_NOT_FOUND": "Tarefa non atopada.",
+    "SPRINT_NOT_FOUND": "Sprint non atopado.",
+    "PARTICIPANT_NOT_FOUND": "Participante non atopado.",
+    "SESSION_NOT_FOUND": "Sesión non atopada.",
+    "NOT_WORKSPACE_MEMBER": "Non es membro deste workspace.",
+    "NOT_PROJECT_MEMBER": "Non es membro deste proxecto.",
+    "WORKSPACE_ADMIN_REQUIRED": "Requírese rol de administrador do workspace.",
+    "PROJECT_ADMIN_REQUIRED": "Requírese rol de administrador do proxecto.",
+    "CATEGORY_WRONG_WORKSPACE": "A categoría non pertence a este workspace.",
+    "USERS_NOT_TEAM_MEMBERS": "Algúns usuarios non pertencen a este equipo.",
+    "VIEWER_CANNOT_CREATE_TASKS": "Os observadores non poden crear tarefas.",
+    "VIEWER_CANNOT_EDIT_TASKS": "Os observadores non poden editar tarefas.",
+    "VIEWER_CANNOT_MOVE_TASKS": "Os observadores non poden mover tarefas.",
+    "OWN_TASKS_ONLY": "Só podes editar as túas propias tarefas.",
+    "ADMIN_REQUIRED_DELETE_TASK": "Só os administradores poden eliminar tarefas.",
+    "CANNOT_EDIT_COMPLETED_SPRINT": "Non se pode editar un sprint completado.",
+    "CANNOT_ADD_TASKS_COMPLETED_SPRINT": "Non se poden engadir tarefas a un sprint completado.",
+    "TASK_WRONG_PROJECT": "A tarefa non pertence a este proxecto.",
+    "TASK_NOT_IN_SPRINT": "A tarefa non está neste sprint.",
+    "SCRUM_MASTER_OR_ADMIN_REQUIRED": "Requírese rol de Scrum Master ou Administrador.",
+    "PO_SM_OR_ADMIN_REQUIRED": "Requírese rol de Product Owner, Scrum Master ou Administrador.",
+    "ALREADY_WORKSPACE_MEMBER": "O usuario xa é membro deste workspace.",
+    "ALREADY_TEAM_MEMBER": "O usuario xa é membro deste equipo.",
+    "ALREADY_PROJECT_MEMBER": "O usuario xa é membro deste proxecto.",
+    "SPRINT_NOT_PLANNING": "Só se poden activar sprints en estado PLANNING.",
+    "SPRINT_ALREADY_ACTIVE": "Xa existe un sprint activo neste proxecto.",
+    "SPRINT_NOT_ACTIVE": "Só se poden completar sprints en estado ACTIVE.",
+    "SESSION_CLOSED": "A sesión está pechada.",
+    "SESSION_ALREADY_CLOSED": "A sesión xa estaba pechada.",
+    "ROUND_ALREADY_ACTIVE": "Xa hai unha rolda de votación activa.",
+    "NO_ACTIVE_ROUND": "Non hai ningunha rolda de votación activa.",
+    "NO_REVEALED_ROUND_ACCEPT": "Non hai ningunha rolda revelada para aceptar.",
+    "NO_REVEALED_ROUND_REVOTE": "Non hai ningunha rolda revelada para re-votar.",
+    "SESSION_CREATOR_REQUIRED": "Só o creador pode pechar a sesión.",
+    "SESSION_FACILITATOR_REQUIRED": "Só o facilitador pode realizar esta acción.",
+    "NOT_SESSION_PARTICIPANT": "Non es participante desta sesión.",
+    "NOT_AUTHENTICATED": "Non autenticado.",
+    "INVITATION_ALREADY_PENDING": "Xa existe unha invitación pendente para ese usuario.",
+    "INVITATION_NOT_FOUND": "Invitación non atopada.",
+    "INVITATION_NOT_PENDING": "Esta invitación xa foi procesada."
   }
 }

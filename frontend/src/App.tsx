@@ -21,7 +21,6 @@ import PokerPage from './pages/workspace/project/PokerPage';
 import PokerRoomPage from './pages/workspace/project/PokerRoomPage';
 import MyTasksPage from './pages/MyTasksPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
-import AppLayout from './components/ui/AppLayout';
 import WorkspaceLayout from './components/ui/WorkspaceLayout';
 import ProjectLayout from './components/ui/ProjectLayout';
 
@@ -61,13 +60,9 @@ export default function App() {
             <Route path="teams/:teamId" element={<TeamDetailPage />} />
             <Route path="members" element={<WorkspaceMembersPage />} />
             <Route path="settings" element={<WorkspaceSettingsPage />} />
-          </Route>
-
-          {/* Account routes */}
-          <Route element={<AppLayout />}>
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/notifications" element={<NotificationsPage />} />
-            <Route path="/my-tasks" element={<MyTasksPage />} />
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="my-tasks" element={<MyTasksPage />} />
           </Route>
         </Route>
 

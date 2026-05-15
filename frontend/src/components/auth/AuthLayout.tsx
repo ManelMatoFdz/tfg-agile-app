@@ -1,8 +1,10 @@
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       {/* Left panel — animated mesh gradient branding */}
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-[#0f0a2a]">
         {/* Mesh gradient blobs */}
@@ -51,7 +53,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
           {/* Description */}
           <p className="text-lg text-primary-100/80 leading-relaxed max-w-md animate-slide-up-fade" style={{ animationDelay: '0.15s' }}>
-            Gestiona tus proyectos con metodologías ágiles. Colabora con tu equipo de forma eficiente y visual.
+            {t('auth.layout.description')}
           </p>
 
           {/* Feature pills */}
@@ -66,19 +68,6 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
             ))}
           </div>
 
-          {/* Stats row */}
-          <div className="mt-14 flex gap-8 animate-slide-up-fade" style={{ animationDelay: '0.45s' }}>
-            {[
-              { value: '10K+', label: 'Usuarios' },
-              { value: '50K+', label: 'Proyectos' },
-              { value: '99.9%', label: 'Uptime' },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <div className="text-2xl font-bold text-white">{stat.value}</div>
-                <div className="text-xs text-primary-300/60 mt-1">{stat.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 
