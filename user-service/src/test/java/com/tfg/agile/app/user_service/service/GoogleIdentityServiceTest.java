@@ -29,50 +29,46 @@ class GoogleIdentityServiceTest {
     private RestClient restClient;
 
     @Test
-    void verifyIdToken_throwsWhenGoogleLoginIsNotConfigured() {
-        GoogleIdentityService service = new GoogleIdentityService(restClientBuilder, " ", "https://oauth2.googleapis.com/tokeninfo");
+    void verifyAccessToken_throwsWhenGoogleLoginIsNotConfigured() {
+        GoogleIdentityService service = new GoogleIdentityService(restClientBuilder, " ");
 
-        assertThatThrownBy(() -> service.verifyIdToken("id-token"))
+        assertThatThrownBy(() -> service.verifyAccessToken("access-token"))
                 .isInstanceOf(GoogleLoginNotConfiguredException.class);
     }
 
     @Test
-    void verifyIdToken_throwsWhenGoogleEndpointFails() {
+    void verifyAccessToken_throwsWhenGoogleEndpointFails() {
         configureRestClient();
-        when(restClient.get().uri(anyString(), any(Object[].class)).retrieve().body(any(ParameterizedTypeReference.class)))
+        when(restClient.get().uri(anyString()).header(anyString(), anyString()).retrieve().body(any(ParameterizedTypeReference.class)))
                 .thenThrow(new RestClientException("boom"));
 
-        GoogleIdentityService service = new GoogleIdentityService(restClientBuilder, "google-client-id", "https://oauth2.googleapis.com/tokeninfo");
+        GoogleIdentityService service = new GoogleIdentityService(restClientBuilder, "google-client-id");
 
-        assertThatThrownBy(() -> service.verifyIdToken("id-token"))
+        assertThatThrownBy(() -> service.verifyAccessToken("access-token"))
                 .isInstanceOf(InvalidGoogleTokenException.class);
     }
 
     @Test
-    void verifyIdToken_throwsWhenPayloadContainsInvalidClaims() {
+    void verifyAccessToken_throwsWhenEmailIsNotVerified() {
         configureRestClient();
-        when(restClient.get().uri(anyString(), any(Object[].class)).retrieve().body(any(ParameterizedTypeReference.class)))
+        when(restClient.get().uri(anyString()).header(anyString(), anyString()).retrieve().body(any(ParameterizedTypeReference.class)))
                 .thenReturn(Map.of(
-                        "aud", "another-client",
-                        "iss", "https://accounts.google.com",
                         "email", "john@example.com",
-                        "email_verified", "true",
+                        "email_verified", "false",
                         "sub", "subject-123"
                 ));
 
-        GoogleIdentityService service = new GoogleIdentityService(restClientBuilder, "google-client-id", "https://oauth2.googleapis.com/tokeninfo");
+        GoogleIdentityService service = new GoogleIdentityService(restClientBuilder, "google-client-id");
 
-        assertThatThrownBy(() -> service.verifyIdToken("id-token"))
+        assertThatThrownBy(() -> service.verifyAccessToken("access-token"))
                 .isInstanceOf(InvalidGoogleTokenException.class);
     }
 
     @Test
-    void verifyIdToken_returnsNormalizedIdentityWhenPayloadIsValid() {
+    void verifyAccessToken_returnsNormalizedIdentityWhenPayloadIsValid() {
         configureRestClient();
-        when(restClient.get().uri(anyString(), any(Object[].class)).retrieve().body(any(ParameterizedTypeReference.class)))
+        when(restClient.get().uri(anyString()).header(anyString(), anyString()).retrieve().body(any(ParameterizedTypeReference.class)))
                 .thenReturn(Map.of(
-                        "aud", "google-client-id",
-                        "iss", "accounts.google.com",
                         "email", "  JOHN@EXAMPLE.COM ",
                         "email_verified", "true",
                         "sub", "subject-123",
@@ -80,9 +76,9 @@ class GoogleIdentityServiceTest {
                         "picture", "  https://img.example.com/u.png  "
                 ));
 
-        GoogleIdentityService service = new GoogleIdentityService(restClientBuilder, "google-client-id", "https://oauth2.googleapis.com/tokeninfo");
+        GoogleIdentityService service = new GoogleIdentityService(restClientBuilder, "google-client-id");
 
-        GoogleIdentityService.GoogleIdentity identity = service.verifyIdToken("id-token");
+        GoogleIdentityService.GoogleIdentity identity = service.verifyAccessToken("access-token");
 
         assertThat(identity.subject()).isEqualTo("subject-123");
         assertThat(identity.email()).isEqualTo("john@example.com");
@@ -91,12 +87,10 @@ class GoogleIdentityServiceTest {
     }
 
     @Test
-    void verifyIdToken_normalizesBlankOptionalFieldsToNull() {
+    void verifyAccessToken_normalizesBlankOptionalFieldsToNull() {
         configureRestClient();
-        when(restClient.get().uri(anyString(), any(Object[].class)).retrieve().body(any(ParameterizedTypeReference.class)))
+        when(restClient.get().uri(anyString()).header(anyString(), anyString()).retrieve().body(any(ParameterizedTypeReference.class)))
                 .thenReturn(Map.of(
-                        "aud", "google-client-id",
-                        "iss", "https://accounts.google.com",
                         "email", "john@example.com",
                         "email_verified", "true",
                         "sub", "subject-123",
@@ -104,9 +98,9 @@ class GoogleIdentityServiceTest {
                         "picture", "   "
                 ));
 
-        GoogleIdentityService service = new GoogleIdentityService(restClientBuilder, "google-client-id", "https://oauth2.googleapis.com/tokeninfo");
+        GoogleIdentityService service = new GoogleIdentityService(restClientBuilder, "google-client-id");
 
-        GoogleIdentityService.GoogleIdentity identity = service.verifyIdToken("id-token");
+        GoogleIdentityService.GoogleIdentity identity = service.verifyAccessToken("access-token");
 
         assertThat(identity.name()).isNull();
         assertThat(identity.pictureUrl()).isNull();

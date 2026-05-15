@@ -19,4 +19,5 @@ public class NotificationResponseDto {
     private boolean isRead;
     private Instant createdAt;
     private String link;
+    private String data;
 }

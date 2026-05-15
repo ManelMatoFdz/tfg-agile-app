@@ -142,7 +142,7 @@ public class AuthService {
     public AuthResponseDto googleLogin(GoogleLoginRequestDto req) {
         GoogleIdentityService.GoogleIdentity identity;
         try {
-            identity = googleIdentityService.verifyIdToken(req.getIdToken());
+            identity = googleIdentityService.verifyAccessToken(req.getIdToken());
         } catch (GoogleLoginNotConfiguredException | InvalidGoogleTokenException ex) {
             throw ex;
         } catch (RuntimeException ex) {

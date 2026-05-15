@@ -68,7 +68,7 @@ public class UserProfileController {
     @PatchMapping("/notifications/{notificationId}/read")
     public NotificationResponseDto markNotificationAsRead(
             Authentication authentication,
-            @PathVariable UUID notificationId
+            @PathVariable("notificationId") UUID notificationId
     ) {
         return userProfileService.markNotificationAsRead(userId(authentication), notificationId);
     }

@@ -59,4 +59,7 @@ public class Notification {
 
     @Column(length = 500)
     private String link;
+
+    @Column(length = 2000)
+    private String data;
 }

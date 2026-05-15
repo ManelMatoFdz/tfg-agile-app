@@ -22,6 +22,7 @@ public class NotificationQueueMessage implements Serializable {
     private String message;
     private String type;
     private String link;
+    private String data;
 
     public static NotificationQueueMessage fromRequest(NotificationEnqueueRequestDto req) {
         return new NotificationQueueMessage(
@@ -29,7 +30,8 @@ public class NotificationQueueMessage implements Serializable {
                 req.getTitle(),
                 req.getMessage(),
                 req.getType(),
-                req.getLink()
+                req.getLink(),
+                req.getData()
         );
     }
 }

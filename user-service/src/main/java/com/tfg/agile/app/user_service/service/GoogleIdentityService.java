@@ -9,31 +9,24 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 import java.util.Map;
-import java.util.Set;
 
 @Service
 public class GoogleIdentityService {
 
-    private static final Set<String> GOOGLE_ISSUERS = Set.of(
-            "accounts.google.com",
-            "https://accounts.google.com"
-    );
+    private static final String USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo";
 
     private final RestClient restClient;
     private final String googleClientId;
-    private final String tokenInfoUrl;
 
     public GoogleIdentityService(
             RestClient.Builder restClientBuilder,
-            @Value("${security.google.client-id:}") String googleClientId,
-            @Value("${security.google.token-info-url:https://oauth2.googleapis.com/tokeninfo}") String tokenInfoUrl
+            @Value("${security.google.client-id:}") String googleClientId
     ) {
         this.restClient = restClientBuilder.build();
         this.googleClientId = googleClientId;
-        this.tokenInfoUrl = tokenInfoUrl;
     }
 
-    public GoogleIdentity verifyIdToken(String idToken) {
+    public GoogleIdentity verifyAccessToken(String accessToken) {
         if (googleClientId == null || googleClientId.isBlank()) {
             throw new GoogleLoginNotConfiguredException();
         }
@@ -41,7 +34,8 @@ public class GoogleIdentityService {
         Map<String, Object> payload;
         try {
             payload = restClient.get()
-                    .uri(tokenInfoUrl + "?id_token={idToken}", idToken)
+                    .uri(USERINFO_URL)
+                    .header("Authorization", "Bearer " + accessToken)
                     .retrieve()
                     .body(new ParameterizedTypeReference<>() {});
         } catch (RestClientException ex) {
@@ -52,17 +46,13 @@ public class GoogleIdentityService {
             throw new InvalidGoogleTokenException();
         }
 
-        String audience = stringValue(payload.get("aud"));
-        String issuer = stringValue(payload.get("iss"));
         String email = stringValue(payload.get("email"));
         String emailVerified = stringValue(payload.get("email_verified"));
         String subject = stringValue(payload.get("sub"));
         String name = stringValue(payload.get("name"));
         String picture = stringValue(payload.get("picture"));
 
-        if (!googleClientId.equals(audience)
-                || !GOOGLE_ISSUERS.contains(issuer)
-                || !"true".equalsIgnoreCase(emailVerified)
+        if (!"true".equalsIgnoreCase(emailVerified)
                 || email == null
                 || email.isBlank()
                 || subject == null
@@ -74,9 +64,7 @@ public class GoogleIdentityService {
     }
 
     private static String normalize(String value) {
-        if (value == null) {
-            return null;
-        }
+        if (value == null) return null;
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
     }
@@ -85,6 +73,5 @@ public class GoogleIdentityService {
         return value == null ? null : String.valueOf(value);
     }
 
-    public record GoogleIdentity(String subject, String email, String name, String pictureUrl) {
-    }
+    public record GoogleIdentity(String subject, String email, String name, String pictureUrl) {}
 }

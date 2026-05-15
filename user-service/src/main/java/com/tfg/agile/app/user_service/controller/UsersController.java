@@ -1,10 +1,13 @@
 package com.tfg.agile.app.user_service.controller;
 
+import com.tfg.agile.app.user_service.dto.UserLookupResponseDto;
 import com.tfg.agile.app.user_service.dto.UserSummaryDto;
 import com.tfg.agile.app.user_service.service.UserProfileService;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -18,6 +21,11 @@ public class UsersController {
 
     public UsersController(UserProfileService userProfileService) {
         this.userProfileService = userProfileService;
+    }
+
+    @GetMapping("/lookup")
+    public UserLookupResponseDto lookup(@RequestParam("email") String email) {
+        return userProfileService.lookupByEmail(email);
     }
 
     @PostMapping("/batch")

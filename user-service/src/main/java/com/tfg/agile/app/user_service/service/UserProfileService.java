@@ -8,6 +8,7 @@ import com.tfg.agile.app.user_service.dto.NotificationSettingsResponseDto;
 import com.tfg.agile.app.user_service.dto.PagedResponseDto;
 import com.tfg.agile.app.user_service.dto.UpdateNotificationSettingsRequestDto;
 import com.tfg.agile.app.user_service.dto.UpdateUserProfileRequestDto;
+import com.tfg.agile.app.user_service.dto.UserLookupResponseDto;
 import com.tfg.agile.app.user_service.dto.UserProfileResponseDto;
 import com.tfg.agile.app.user_service.dto.UserSummaryDto;
 import com.tfg.agile.app.user_service.entity.Notification;
@@ -219,6 +220,12 @@ public class UserProfileService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public UserLookupResponseDto lookupByEmail(String email) {
+        User user = userRepository.findByEmail(email).orElseThrow(UserNotFoundException::new);
+        return new UserLookupResponseDto(user.getId(), user.getUsername(), user.getFullName(), user.getEmail(), user.getAvatarUrl());
+    }
+
     private User getUser(UUID userId) {
         return userRepository.findById(userId).orElseThrow(UserNotFoundException::new);
     }
@@ -247,6 +254,7 @@ public class UserProfileService {
         Instant updatedAt = user.getUpdatedAt() == null ? user.getCreatedAt() : user.getUpdatedAt();
         return new UserProfileResponseDto(
                 user.getId(),
+                user.getUsername(),
                 fullName,
                 user.getEmail(),
                 user.getBio(),
@@ -265,7 +273,8 @@ public class UserProfileService {
                 notification.getType(),
                 notification.isRead(),
                 notification.getCreatedAt(),
-                notification.getLink()
+                notification.getLink(),
+                notification.getData()
         );
     }
 

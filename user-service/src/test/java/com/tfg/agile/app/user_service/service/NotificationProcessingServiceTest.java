@@ -62,7 +62,7 @@ class NotificationProcessingServiceTest {
     @Test
     void process_createsDefaultSettingsAndSendsInAppAndEmail() {
         User user = TestDataFactory.user();
-        NotificationQueueMessage message = new NotificationQueueMessage(user.getId(), "  Sprint updated  ", "  Story moved  ", " project_update ", "  /projects/123  ");
+        NotificationQueueMessage message = new NotificationQueueMessage(user.getId(), "  Sprint updated  ", "  Story moved  ", " project_update ", "  /projects/123  ", null);
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(notificationSettingsRepository.findByUserId(user.getId())).thenReturn(Optional.empty());
@@ -95,7 +95,7 @@ class NotificationProcessingServiceTest {
         NotificationSettings settings = TestDataFactory.notificationSettings(user);
         settings.setProjectUpdatesEnabled(false);
 
-        NotificationQueueMessage message = new NotificationQueueMessage(user.getId(), "Title", "Message", "PROJECT_UPDATE", "/project");
+        NotificationQueueMessage message = new NotificationQueueMessage(user.getId(), "Title", "Message", "PROJECT_UPDATE", "/project", null);
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(notificationSettingsRepository.findByUserId(user.getId())).thenReturn(Optional.of(settings));
@@ -112,7 +112,7 @@ class NotificationProcessingServiceTest {
         NotificationSettings settings = TestDataFactory.notificationSettings(user);
         settings.setTaskRemindersEnabled(false);
 
-        NotificationQueueMessage message = new NotificationQueueMessage(user.getId(), "Title", "Message", "task_reminder", null);
+        NotificationQueueMessage message = new NotificationQueueMessage(user.getId(), "Title", "Message", "task_reminder", null, null);
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(notificationSettingsRepository.findByUserId(user.getId())).thenReturn(Optional.of(settings));
@@ -129,7 +129,7 @@ class NotificationProcessingServiceTest {
         NotificationSettings settings = TestDataFactory.notificationSettings(user);
         settings.setEmailNotificationsEnabled(false);
 
-        NotificationQueueMessage message = new NotificationQueueMessage(user.getId(), "  ", "", "   ", "   ");
+        NotificationQueueMessage message = new NotificationQueueMessage(user.getId(), "  ", "", "   ", "   ", null);
 
         when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
         when(notificationSettingsRepository.findByUserId(user.getId())).thenReturn(Optional.of(settings));

@@ -4,21 +4,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserProfileResponseDto {
-
+public class UserLookupResponseDto {
     private UUID id;
     private String username;
     private String fullName;
     private String email;
-    private String bio;
     private String avatarUrl;
-    private Instant createdAt;
-    private Instant updatedAt;
-    private boolean hasLocalPassword;
 }

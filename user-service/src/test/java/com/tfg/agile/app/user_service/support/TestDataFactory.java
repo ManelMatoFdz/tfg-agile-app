@@ -95,7 +95,8 @@ public final class TestDataFactory {
                 "New notification",
                 "Your project has been updated",
                 "PROJECT_UPDATE",
-                "/projects/123"
+                "/projects/123",
+                null
         );
     }
 }

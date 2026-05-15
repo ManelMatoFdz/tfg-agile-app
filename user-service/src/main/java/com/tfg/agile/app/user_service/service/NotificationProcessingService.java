@@ -61,6 +61,7 @@ public class NotificationProcessingService {
                     .isRead(false)
                     .createdAt(now)
                     .link(normalizeLink(message.getLink()))
+                    .data(message.getData())
                     .build();
             notificationRepository.save(notification);
         }

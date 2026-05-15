@@ -264,7 +264,7 @@ class AuthServiceTest {
         created.setAvatarUrl(identity.pictureUrl());
         created.setHasLocalPassword(false);
 
-        when(googleIdentityService.verifyIdToken("id-token")).thenReturn(identity);
+        when(googleIdentityService.verifyAccessToken("id-token")).thenReturn(identity);
         when(userRepository.findByEmail(identity.email())).thenReturn(Optional.empty());
         when(passwordEncoder.encode(anyString())).thenReturn("opaque-pass");
         when(userRepository.save(any(User.class))).thenReturn(created);
@@ -289,7 +289,7 @@ class AuthServiceTest {
         existing.setFullName(" ");
         existing.setAvatarUrl(null);
 
-        when(googleIdentityService.verifyIdToken("id-token")).thenReturn(identity);
+        when(googleIdentityService.verifyAccessToken("id-token")).thenReturn(identity);
         when(userRepository.findByEmail(identity.email())).thenReturn(Optional.of(existing));
         when(jwtService.generateAccessToken(existing.getId(), existing.getEmail(), existing.getTokenVersion()))
                 .thenReturn("google-access");
@@ -303,7 +303,7 @@ class AuthServiceTest {
 
     @Test
     void googleLogin_mapsUnexpectedErrors() {
-        when(googleIdentityService.verifyIdToken("id-token")).thenThrow(new RuntimeException("boom"));
+        when(googleIdentityService.verifyAccessToken("id-token")).thenThrow(new RuntimeException("boom"));
 
         assertThatThrownBy(() -> authService.googleLogin(new GoogleLoginRequestDto("id-token")))
                 .isInstanceOf(InvalidGoogleTokenException.class);
@@ -361,7 +361,7 @@ class AuthServiceTest {
 
     @Test
     void googleLogin_propagatesNotConfiguredException() {
-        when(googleIdentityService.verifyIdToken("id-token"))
+        when(googleIdentityService.verifyAccessToken("id-token"))
                 .thenThrow(new com.tfg.agile.app.user_service.exception.GoogleLoginNotConfiguredException());
 
         assertThatThrownBy(() -> authService.googleLogin(new GoogleLoginRequestDto("id-token")))
@@ -379,7 +379,7 @@ class AuthServiceTest {
         User existing = TestDataFactory.user();
         existing.setEmail(identity.email());
 
-        when(googleIdentityService.verifyIdToken("id-token")).thenReturn(identity);
+        when(googleIdentityService.verifyAccessToken("id-token")).thenReturn(identity);
         when(userRepository.findByEmail(identity.email())).thenReturn(Optional.empty(), Optional.of(existing));
         when(passwordEncoder.encode(anyString())).thenReturn("opaque-pass");
         when(userRepository.save(any(User.class)))

@@ -31,4 +31,7 @@ public class NotificationEnqueueRequestDto {
 
     @Size(max = 500)
     private String link;
+
+    @Size(max = 2000)
+    private String data;
 }
