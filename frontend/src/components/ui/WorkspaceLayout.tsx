@@ -34,17 +34,17 @@ const workspaceNavItems = [
 
 const accountNavItems = [
   {
-    to: '/my-tasks',
+    to: 'my-tasks',
     label: 'Mis tareas',
     icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
   },
   {
-    to: '/profile',
+    to: 'profile',
     label: 'Perfil',
     icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
   },
   {
-    to: '/notifications',
+    to: 'notifications',
     label: 'Notificaciones',
     icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
   },
@@ -142,11 +142,12 @@ export default function WorkspaceLayout() {
         <div className="pt-3">
           <p className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">Cuenta</p>
           {accountNavItems.map((item) => {
-            const active = location.pathname === item.to;
+            const active = isWorkspaceNavActive(item.to, false);
+            const href = `/workspaces/${workspaceId}/${item.to}`;
             return (
               <Link
                 key={item.to}
-                to={item.to}
+                to={href}
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
                   active

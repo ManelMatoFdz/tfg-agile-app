@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { tasksApi } from '@/api/tasks.ts';
+import { tasksApi } from '@/api/tasks';
 import type { Task } from '@/types';
 import KanbanBoard from '../../../components/kanban/KanbanBoard';
 import Alert from '../../../components/ui/Alert';

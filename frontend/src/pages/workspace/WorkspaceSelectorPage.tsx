@@ -2,12 +2,13 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { workspacesApi } from '../../api/workspaces';
+import { invitationsApi } from '../../api/invitations';
 import { useApiAction } from '../../hooks/useApiAction';
 import { useWorkspaceStore } from '../../store/workspaceStore';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Alert from '../../components/ui/Alert';
-import type { Workspace } from '../../types';
+import type { Workspace, WorkspaceInvitation } from '../../types';
 
 export default function WorkspaceSelectorPage() {
   const { t } = useTranslation();
@@ -15,10 +16,12 @@ export default function WorkspaceSelectorPage() {
   const setWorkspace = useWorkspaceStore((s) => s.setWorkspace);
 
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [actingInvitationId, setActingInvitationId] = useState<string | null>(null);
 
   const listAction = useApiAction<Workspace[]>();
   const createAction = useApiAction<Workspace>();
@@ -28,6 +31,9 @@ export default function WorkspaceSelectorPage() {
       if (data) setWorkspaces(data);
       else setLoadError(t('workspace.selector.loadError'));
     });
+    invitationsApi.getPending().then((res) => {
+      setInvitations(res.data);
+    }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -42,6 +48,24 @@ export default function WorkspaceSelectorPage() {
     if (data) {
       setWorkspace(data.id);
       navigate(`/workspaces/${data.id}`);
+    }
+  };
+
+  const handleInvitationAction = async (invitationId: string, action: 'accept' | 'reject') => {
+    setActingInvitationId(invitationId);
+    try {
+      if (action === 'accept') {
+        await invitationsApi.accept(invitationId);
+        const updated = await workspacesApi.list();
+        setWorkspaces(updated.data);
+      } else {
+        await invitationsApi.reject(invitationId);
+      }
+      setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
+    } catch {
+      // silently ignore
+    } finally {
+      setActingInvitationId(null);
     }
   };
 
@@ -66,6 +90,53 @@ export default function WorkspaceSelectorPage() {
         </div>
 
         {loadError && <Alert type="error" message={loadError} onClose={() => setLoadError(null)} />}
+
+        {/* Pending invitations */}
+        {invitations.length > 0 && (
+          <div className="mb-6">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">
+              {t('workspace.selector.pendingInvitations')}
+            </p>
+            <div className="space-y-2">
+              {invitations.map((inv) => (
+                <div
+                  key={inv.id}
+                  className="glass-card-strong p-4 flex items-center justify-between gap-4"
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                      {inv.workspaceName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{inv.workspaceName}</p>
+                      <p className="text-xs text-gray-400">{t('workspace.selector.invitedToJoin')}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleInvitationAction(inv.id, 'accept')}
+                      disabled={actingInvitationId === inv.id}
+                      className="px-3 py-1.5 text-xs font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      {actingInvitationId === inv.id ? (
+                        <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        t('workspace.members.invite.accept')
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleInvitationAction(inv.id, 'reject')}
+                      disabled={actingInvitationId === inv.id}
+                      className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                    >
+                      {t('workspace.members.invite.reject')}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Workspace list */}
         {listAction.loading ? (

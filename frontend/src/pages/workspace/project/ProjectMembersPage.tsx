@@ -21,7 +21,7 @@ function MemberRow({ member, displayName, avatarUrl }: { member: ProjectMember; 
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0">
           {avatarUrl && !imgError ? (
-            <img src={avatarUrl} alt="" className="w-full h-full object-cover" onError={() => setImgError(true)} />
+            <img src={avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={() => setImgError(true)} />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-sm font-bold">
               {displayName.charAt(0).toUpperCase()}
@@ -96,7 +96,7 @@ export default function ProjectMembersPage() {
               <MemberRow
                 key={m.id}
                 member={m}
-                displayName={u?.fullName || u?.username || m.userId}
+                displayName={u?.fullName || u?.username || t('common.unknownUser')}
                 avatarUrl={u?.avatarUrl}
               />
             );

@@ -26,6 +26,26 @@ export interface Notification {
   read: boolean;
   isRead?: boolean;
   createdAt: string;
+  data?: string;
+}
+
+export interface WorkspaceInvitation {
+  id: string;
+  workspaceId: string;
+  workspaceName: string;
+  invitedEmail: string;
+  invitedUserId: string;
+  invitedByUserId: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED';
+  createdAt: string;
+}
+
+export interface UserLookup {
+  id: string;
+  username: string;
+  fullName?: string;
+  email: string;
+  avatarUrl?: string;
 }
 
 export interface NotificationPage {
@@ -139,6 +159,8 @@ export interface Sprint {
   updatedAt: string;
 }
 
+export type TeamRole = 'ADMIN' | 'MEMBER';
+
 export interface Team {
   id: string;
   workspaceId: string;
@@ -151,6 +173,7 @@ export interface TeamMember {
   id: string;
   teamId: string;
   userId: string;
+  role: TeamRole;
   joinedAt: string;
 }
 
