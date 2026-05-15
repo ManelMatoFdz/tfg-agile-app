@@ -40,6 +40,7 @@ export default function ProfilePage() {
                 src={avatarSrc}
                 alt=""
                 className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-xl"
+                referrerPolicy="no-referrer"
                 onError={() => setAvatarLoadError(true)}
               />
             ) : (

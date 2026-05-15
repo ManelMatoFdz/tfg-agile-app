@@ -4,6 +4,7 @@ import type { TFunction } from 'i18next';
 import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
 import { notificationsApi } from '../api/notifications';
+import { invitationsApi } from '../api/invitations';
 import { useApiAction } from '../hooks/useApiAction';
 import type { Notification, NotificationPage } from '../types';
 
@@ -43,6 +44,11 @@ const typeConfig: Record<string, { icon: string; color: string; bg: string }> = 
     color: 'text-amber-600',
     bg: 'bg-amber-100',
   },
+  WORKSPACE_INVITATION: {
+    icon: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
+    color: 'text-green-600',
+    bg: 'bg-green-100',
+  },
   DEFAULT: {
     icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
     color: 'text-primary-600',
@@ -58,6 +64,7 @@ export default function NotificationsPage() {
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
   const [loadError, setLoadError] = useState('');
+  const [invitationActingId, setInvitationActingId] = useState<string | null>(null);
   const markAllAction = useApiAction();
 
   const fetchNotifications = useCallback(async () => {
@@ -94,6 +101,23 @@ export default function NotificationsPage() {
   const handleMarkAll = async () => {
     await markAllAction.run(notificationsApi.markAllRead());
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
+
+  const handleInvitationAction = async (notificationId: string, invitationId: string, action: 'accept' | 'reject') => {
+    setInvitationActingId(notificationId);
+    try {
+      if (action === 'accept') {
+        await invitationsApi.accept(invitationId);
+      } else {
+        await invitationsApi.reject(invitationId);
+      }
+      await notificationsApi.markRead(notificationId);
+      setNotifications((prev) =>
+        prev.map((n) => n.id === notificationId ? { ...n, read: true } : n)
+      );
+    } finally {
+      setInvitationActingId(null);
+    }
   };
 
   return (
@@ -203,15 +227,49 @@ export default function NotificationsPage() {
                       </span>
                     </div>
                     <p className="text-sm text-gray-500 mt-1 line-clamp-2">{n.message}</p>
+
+                    {/* Invitation accept/reject buttons */}
+                    {n.type === 'WORKSPACE_INVITATION' && !n.read && (() => {
+                      let invitationId: string | null = null;
+                      try {
+                        const parsed = JSON.parse(n.data ?? '{}');
+                        invitationId = parsed.invitationId ?? null;
+                      } catch { /* ignore */ }
+                      if (!invitationId) return null;
+                      const isActing = invitationActingId === n.id;
+                      return (
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            type="button"
+                            disabled={isActing}
+                            onClick={() => handleInvitationAction(n.id, invitationId!, 'accept')}
+                            className="px-3 py-1.5 text-xs font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                          >
+                            {t('workspace.members.invite.accept')}
+                          </button>
+                          <button
+                            type="button"
+                            disabled={isActing}
+                            onClick={() => handleInvitationAction(n.id, invitationId!, 'reject')}
+                            className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                          >
+                            {t('workspace.members.invite.reject')}
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Mark read button */}
                   {!n.read && (
                     <button
                       onClick={() => handleMarkRead(n.id)}
-                      className="shrink-0 px-3 py-1.5 text-xs text-primary-600 hover:text-primary-700 font-medium rounded-lg hover:bg-primary-50 transition-all duration-200 cursor-pointer opacity-0 group-hover:opacity-100"
+                      title={t('notifications.markRead')}
+                      className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-all duration-200 cursor-pointer"
                     >
-                      {t('notifications.markRead')}
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
                     </button>
                   )}
                 </div>

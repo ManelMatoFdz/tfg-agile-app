@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import type { AxiosError } from 'axios';
+import i18next from 'i18next';
 
 interface ApiActionState<T> {
   data: T | null;
@@ -23,14 +24,20 @@ export function useApiAction<T = unknown>() {
       setState({ data: res.data, loading: false, error: null, success: true });
       return res.data;
     } catch (err) {
-      const axiosErr = err as AxiosError<{ message?: string }>;
-      const message =
-        axiosErr.response?.data?.message ??
-        (axiosErr.response?.status === 403
-          ? 'No tienes permisos para esta acción.'
-          : axiosErr.response?.status === 400
-            ? 'Datos inválidos. Revisa los campos.'
-            : 'Ha ocurrido un error. Inténtalo de nuevo.');
+      const axiosErr = err as AxiosError<{ message?: string; errorCode?: string; error?: string }>;
+      const errorCode = axiosErr.response?.data?.errorCode ?? axiosErr.response?.data?.error;
+      const fallbackCode = axiosErr.response?.status === 403
+        ? 'FORBIDDEN'
+        : axiosErr.response?.status === 404
+          ? 'NOT_FOUND'
+          : axiosErr.response?.status === 409
+            ? 'CONFLICT'
+            : axiosErr.response?.status === 400
+              ? 'BAD_REQUEST'
+              : 'INTERNAL_ERROR';
+      const code = errorCode ?? fallbackCode;
+      const translated = i18next.t(`errors.${code}`);
+      const message = translated === `errors.${code}` ? i18next.t(`errors.${fallbackCode}`) : translated;
       setState({ data: null, loading: false, error: message, success: false });
       return null;
     }
