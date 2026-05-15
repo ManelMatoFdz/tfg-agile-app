@@ -34,6 +34,10 @@ public class TeamMember {
     @Column(nullable = false, updatable = false)
     private UUID userId;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private TeamRole role;
+
     @Column(nullable = false, updatable = false)
     private Instant joinedAt;
 

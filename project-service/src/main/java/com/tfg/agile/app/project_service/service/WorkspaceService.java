@@ -88,7 +88,7 @@ public class WorkspaceService {
         getWorkspaceOrThrow(workspaceId);
         requireAdmin(workspaceId, callerId);
         if (memberRepository.existsByWorkspaceIdAndUserId(workspaceId, dto.userId())) {
-            throw new ConflictException("User is already a member of this workspace");
+            throw new ConflictException("ALREADY_WORKSPACE_MEMBER");
         }
         WorkspaceRole role = WorkspaceRole.valueOf(dto.role().toUpperCase());
         WorkspaceMember member = WorkspaceMember.builder()
@@ -105,7 +105,7 @@ public class WorkspaceService {
         getWorkspaceOrThrow(workspaceId);
         requireAdmin(workspaceId, callerId);
         WorkspaceMember member = memberRepository.findByWorkspaceIdAndUserId(workspaceId, targetUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
         member.setRole(WorkspaceRole.valueOf(dto.role().toUpperCase()));
         return WorkspaceMemberResponseDto.from(memberRepository.save(member));
     }
@@ -115,7 +115,23 @@ public class WorkspaceService {
         getWorkspaceOrThrow(workspaceId);
         requireAdmin(workspaceId, callerId);
         WorkspaceMember member = memberRepository.findByWorkspaceIdAndUserId(workspaceId, targetUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
+        memberRepository.delete(member);
+    }
+
+    @Transactional
+    public void leaveWorkspace(UUID workspaceId, UUID callerId) {
+        getWorkspaceOrThrow(workspaceId);
+        WorkspaceMember member = memberRepository.findByWorkspaceIdAndUserId(workspaceId, callerId)
+                .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
+        if (member.getRole() == WorkspaceRole.ADMIN) {
+            long adminCount = memberRepository.findByWorkspaceId(workspaceId).stream()
+                    .filter(m -> m.getRole() == WorkspaceRole.ADMIN)
+                    .count();
+            if (adminCount <= 1) {
+                throw new ConflictException("LAST_WORKSPACE_ADMIN");
+            }
+        }
         memberRepository.delete(member);
     }
 
@@ -123,18 +139,18 @@ public class WorkspaceService {
 
     private Workspace getWorkspaceOrThrow(UUID id) {
         return workspaceRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("WORKSPACE_NOT_FOUND"));
     }
 
     private void requireMember(UUID workspaceId, UUID userId) {
         if (!memberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
-            throw new ForbiddenException("Not a member of this workspace");
+            throw new ForbiddenException("NOT_WORKSPACE_MEMBER");
         }
     }
 
     private void requireAdmin(UUID workspaceId, UUID userId) {
         if (!memberRepository.existsByWorkspaceIdAndUserIdAndRole(workspaceId, userId, WorkspaceRole.ADMIN)) {
-            throw new ForbiddenException("Workspace admin role required");
+            throw new ForbiddenException("WORKSPACE_ADMIN_REQUIRED");
         }
     }
 }

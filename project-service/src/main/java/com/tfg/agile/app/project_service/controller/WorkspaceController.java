@@ -34,20 +34,20 @@ public class WorkspaceController {
     }
 
     @GetMapping("/{workspaceId}")
-    public WorkspaceResponseDto getById(@PathVariable UUID workspaceId,
+    public WorkspaceResponseDto getById(@PathVariable("workspaceId") UUID workspaceId,
                                         @AuthenticationPrincipal UUID callerId) {
         return workspaceService.findById(workspaceId, callerId);
     }
 
     @PutMapping("/{workspaceId}")
-    public WorkspaceResponseDto update(@PathVariable UUID workspaceId,
+    public WorkspaceResponseDto update(@PathVariable("workspaceId") UUID workspaceId,
                                        @Valid @RequestBody UpdateWorkspaceRequestDto dto,
                                        @AuthenticationPrincipal UUID callerId) {
         return workspaceService.update(workspaceId, dto, callerId);
     }
 
     @DeleteMapping("/{workspaceId}")
-    public ResponseEntity<Void> delete(@PathVariable UUID workspaceId,
+    public ResponseEntity<Void> delete(@PathVariable("workspaceId") UUID workspaceId,
                                        @AuthenticationPrincipal UUID callerId) {
         workspaceService.delete(workspaceId, callerId);
         return ResponseEntity.noContent().build();
@@ -56,14 +56,14 @@ public class WorkspaceController {
     // ── members ──────────────────────────────────────────────────────────────
 
     @GetMapping("/{workspaceId}/members")
-    public List<WorkspaceMemberResponseDto> getMembers(@PathVariable UUID workspaceId,
+    public List<WorkspaceMemberResponseDto> getMembers(@PathVariable("workspaceId") UUID workspaceId,
                                                        @AuthenticationPrincipal UUID callerId) {
         return workspaceService.getMembers(workspaceId, callerId);
     }
 
     @PostMapping("/{workspaceId}/members")
     public ResponseEntity<WorkspaceMemberResponseDto> addMember(
-            @PathVariable UUID workspaceId,
+            @PathVariable("workspaceId") UUID workspaceId,
             @Valid @RequestBody AddMemberRequestDto dto,
             @AuthenticationPrincipal UUID callerId) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -72,18 +72,25 @@ public class WorkspaceController {
 
     @PutMapping("/{workspaceId}/members/{userId}")
     public WorkspaceMemberResponseDto updateMemberRole(
-            @PathVariable UUID workspaceId,
-            @PathVariable UUID userId,
+            @PathVariable("workspaceId") UUID workspaceId,
+            @PathVariable("userId") UUID userId,
             @Valid @RequestBody UpdateMemberRoleRequestDto dto,
             @AuthenticationPrincipal UUID callerId) {
         return workspaceService.updateMemberRole(workspaceId, userId, dto, callerId);
     }
 
     @DeleteMapping("/{workspaceId}/members/{userId}")
-    public ResponseEntity<Void> removeMember(@PathVariable UUID workspaceId,
-                                             @PathVariable UUID userId,
+    public ResponseEntity<Void> removeMember(@PathVariable("workspaceId") UUID workspaceId,
+                                             @PathVariable("userId") UUID userId,
                                              @AuthenticationPrincipal UUID callerId) {
         workspaceService.removeMember(workspaceId, userId, callerId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{workspaceId}/members/me")
+    public ResponseEntity<Void> leaveWorkspace(@PathVariable("workspaceId") UUID workspaceId,
+                                               @AuthenticationPrincipal UUID callerId) {
+        workspaceService.leaveWorkspace(workspaceId, callerId);
         return ResponseEntity.noContent().build();
     }
 }

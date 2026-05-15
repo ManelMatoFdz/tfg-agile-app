@@ -33,7 +33,7 @@ public class TeamService {
     @Transactional
     public TeamResponseDto create(UUID workspaceId, CreateTeamRequestDto dto, UUID callerId) {
         Workspace workspace = workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("WORKSPACE_NOT_FOUND"));
         requireWorkspaceMember(workspaceId, callerId);
 
         Team team = Team.builder()
@@ -41,13 +41,22 @@ public class TeamService {
                 .name(dto.name())
                 .description(dto.description())
                 .build();
-        return TeamResponseDto.from(teamRepository.save(team));
+        teamRepository.save(team);
+
+        TeamMember creator = TeamMember.builder()
+                .team(team)
+                .userId(callerId)
+                .role(TeamRole.ADMIN)
+                .build();
+        teamMemberRepository.save(creator);
+
+        return TeamResponseDto.from(team);
     }
 
     @Transactional(readOnly = true)
     public List<TeamResponseDto> findByWorkspace(UUID workspaceId, UUID callerId) {
         workspaceRepository.findById(workspaceId)
-                .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("WORKSPACE_NOT_FOUND"));
         requireWorkspaceMember(workspaceId, callerId);
         return teamRepository.findByWorkspaceId(workspaceId).stream()
                 .map(TeamResponseDto::from)
@@ -64,7 +73,7 @@ public class TeamService {
     @Transactional
     public TeamResponseDto update(UUID teamId, UpdateTeamRequestDto dto, UUID callerId) {
         Team team = getTeamOrThrow(teamId);
-        requireWorkspaceAdmin(team.getWorkspace().getId(), callerId);
+        requireTeamAdminOrWorkspaceAdmin(teamId, team.getWorkspace().getId(), callerId);
         team.setName(dto.name());
         team.setDescription(dto.description());
         return TeamResponseDto.from(teamRepository.save(team));
@@ -73,7 +82,7 @@ public class TeamService {
     @Transactional
     public void delete(UUID teamId, UUID callerId) {
         Team team = getTeamOrThrow(teamId);
-        requireWorkspaceAdmin(team.getWorkspace().getId(), callerId);
+        requireTeamAdminOrWorkspaceAdmin(teamId, team.getWorkspace().getId(), callerId);
         teamRepository.deleteById(teamId);
     }
 
@@ -89,13 +98,14 @@ public class TeamService {
     @Transactional
     public TeamMemberResponseDto addMember(UUID teamId, UUID targetUserId, UUID callerId) {
         Team team = getTeamOrThrow(teamId);
-        requireWorkspaceAdmin(team.getWorkspace().getId(), callerId);
+        requireTeamAdminOrWorkspaceAdmin(teamId, team.getWorkspace().getId(), callerId);
         if (teamMemberRepository.existsByTeamIdAndUserId(teamId, targetUserId)) {
-            throw new ConflictException("User is already a member of this team");
+            throw new ConflictException("ALREADY_TEAM_MEMBER");
         }
         TeamMember member = TeamMember.builder()
                 .team(team)
                 .userId(targetUserId)
+                .role(TeamRole.MEMBER)
                 .build();
         return TeamMemberResponseDto.from(teamMemberRepository.save(member));
     }
@@ -103,28 +113,48 @@ public class TeamService {
     @Transactional
     public void removeMember(UUID teamId, UUID targetUserId, UUID callerId) {
         Team team = getTeamOrThrow(teamId);
-        requireWorkspaceAdmin(team.getWorkspace().getId(), callerId);
+        requireTeamAdminOrWorkspaceAdmin(teamId, team.getWorkspace().getId(), callerId);
         TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, targetUserId)
-                .orElseThrow(() -> new ResourceNotFoundException("Member not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
         teamMemberRepository.delete(member);
+    }
+
+    @Transactional
+    public TeamMemberResponseDto updateMemberRole(UUID teamId, UUID targetUserId, UpdateTeamMemberRoleRequestDto dto, UUID callerId) {
+        Team team = getTeamOrThrow(teamId);
+        requireTeamAdminOrWorkspaceAdmin(teamId, team.getWorkspace().getId(), callerId);
+        TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
+        member.setRole(dto.role());
+        return TeamMemberResponseDto.from(teamMemberRepository.save(member));
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
 
     private Team getTeamOrThrow(UUID id) {
         return teamRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Team not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("TEAM_NOT_FOUND"));
     }
 
     private void requireWorkspaceMember(UUID workspaceId, UUID userId) {
         if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
-            throw new ForbiddenException("Not a member of this workspace");
+            throw new ForbiddenException("NOT_WORKSPACE_MEMBER");
         }
     }
 
-    private void requireWorkspaceAdmin(UUID workspaceId, UUID userId) {
-        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspaceId, userId, WorkspaceRole.ADMIN)) {
-            throw new ForbiddenException("Workspace admin role required");
+    private boolean isWorkspaceAdmin(UUID workspaceId, UUID userId) {
+        return workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspaceId, userId, WorkspaceRole.ADMIN);
+    }
+
+    private boolean isTeamAdmin(UUID teamId, UUID userId) {
+        return teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
+                .map(m -> m.getRole() == TeamRole.ADMIN)
+                .orElse(false);
+    }
+
+    private void requireTeamAdminOrWorkspaceAdmin(UUID teamId, UUID workspaceId, UUID userId) {
+        if (!isTeamAdmin(teamId, userId) && !isWorkspaceAdmin(workspaceId, userId)) {
+            throw new ForbiddenException("TEAM_ADMIN_REQUIRED");
         }
     }
 }

@@ -22,7 +22,7 @@ public class TeamController {
 
     @PostMapping("/workspaces/{workspaceId}/teams")
     public ResponseEntity<TeamResponseDto> create(
-            @PathVariable UUID workspaceId,
+            @PathVariable("workspaceId") UUID workspaceId,
             @Valid @RequestBody CreateTeamRequestDto dto,
             @AuthenticationPrincipal UUID callerId) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -30,26 +30,26 @@ public class TeamController {
     }
 
     @GetMapping("/workspaces/{workspaceId}/teams")
-    public List<TeamResponseDto> listByWorkspace(@PathVariable UUID workspaceId,
+    public List<TeamResponseDto> listByWorkspace(@PathVariable("workspaceId") UUID workspaceId,
                                                  @AuthenticationPrincipal UUID callerId) {
         return teamService.findByWorkspace(workspaceId, callerId);
     }
 
     @GetMapping("/teams/{teamId}")
-    public TeamResponseDto getById(@PathVariable UUID teamId,
+    public TeamResponseDto getById(@PathVariable("teamId") UUID teamId,
                                    @AuthenticationPrincipal UUID callerId) {
         return teamService.findById(teamId, callerId);
     }
 
     @PutMapping("/teams/{teamId}")
-    public TeamResponseDto update(@PathVariable UUID teamId,
+    public TeamResponseDto update(@PathVariable("teamId") UUID teamId,
                                   @Valid @RequestBody UpdateTeamRequestDto dto,
                                   @AuthenticationPrincipal UUID callerId) {
         return teamService.update(teamId, dto, callerId);
     }
 
     @DeleteMapping("/teams/{teamId}")
-    public ResponseEntity<Void> delete(@PathVariable UUID teamId,
+    public ResponseEntity<Void> delete(@PathVariable("teamId") UUID teamId,
                                        @AuthenticationPrincipal UUID callerId) {
         teamService.delete(teamId, callerId);
         return ResponseEntity.noContent().build();
@@ -58,25 +58,34 @@ public class TeamController {
     // ── members ──────────────────────────────────────────────────────────────
 
     @GetMapping("/teams/{teamId}/members")
-    public List<TeamMemberResponseDto> getMembers(@PathVariable UUID teamId,
+    public List<TeamMemberResponseDto> getMembers(@PathVariable("teamId") UUID teamId,
                                                   @AuthenticationPrincipal UUID callerId) {
         return teamService.getMembers(teamId, callerId);
     }
 
     @PostMapping("/teams/{teamId}/members/{userId}")
     public ResponseEntity<TeamMemberResponseDto> addMember(
-            @PathVariable UUID teamId,
-            @PathVariable UUID userId,
+            @PathVariable("teamId") UUID teamId,
+            @PathVariable("userId") UUID userId,
             @AuthenticationPrincipal UUID callerId) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(teamService.addMember(teamId, userId, callerId));
     }
 
     @DeleteMapping("/teams/{teamId}/members/{userId}")
-    public ResponseEntity<Void> removeMember(@PathVariable UUID teamId,
-                                             @PathVariable UUID userId,
+    public ResponseEntity<Void> removeMember(@PathVariable("teamId") UUID teamId,
+                                             @PathVariable("userId") UUID userId,
                                              @AuthenticationPrincipal UUID callerId) {
         teamService.removeMember(teamId, userId, callerId);
         return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/teams/{teamId}/members/{userId}/role")
+    public TeamMemberResponseDto updateMemberRole(
+            @PathVariable("teamId") UUID teamId,
+            @PathVariable("userId") UUID userId,
+            @Valid @RequestBody UpdateTeamMemberRoleRequestDto dto,
+            @AuthenticationPrincipal UUID callerId) {
+        return teamService.updateMemberRole(teamId, userId, dto, callerId);
     }
 }
