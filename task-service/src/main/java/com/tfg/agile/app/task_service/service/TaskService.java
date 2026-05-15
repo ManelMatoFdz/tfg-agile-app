@@ -52,7 +52,7 @@ public class TaskService {
     public TaskResponseDto create(UUID projectId, CreateTaskRequestDto dto, UUID callerId) {
         MemberPermissionsDto perms = requireMember(projectId, callerId);
         if (isViewer(perms)) {
-            throw new ForbiddenException("Viewers cannot create tasks");
+            throw new ForbiddenException("VIEWER_CANNOT_CREATE_TASKS");
         }
 
         TaskPriority priority = dto.priority() != null
@@ -81,10 +81,10 @@ public class TaskService {
         MemberPermissionsDto perms = requireMember(task.getProjectId(), callerId);
 
         if (isViewer(perms)) {
-            throw new ForbiddenException("Viewers cannot edit tasks");
+            throw new ForbiddenException("VIEWER_CANNOT_EDIT_TASKS");
         }
         if (!task.getReporterId().equals(callerId) && !canEditAnyTask(perms)) {
-            throw new ForbiddenException("You can only edit your own tasks");
+            throw new ForbiddenException("OWN_TASKS_ONLY");
         }
 
         task.setTitle(dto.title());
@@ -104,7 +104,7 @@ public class TaskService {
         MemberPermissionsDto perms = requireMember(task.getProjectId(), callerId);
 
         if (isViewer(perms)) {
-            throw new ForbiddenException("Viewers cannot move tasks");
+            throw new ForbiddenException("VIEWER_CANNOT_MOVE_TASKS");
         }
 
         task.setStatus(TaskStatus.valueOf(dto.status().toUpperCase()));
@@ -119,7 +119,7 @@ public class TaskService {
         MemberPermissionsDto perms = requireMember(task.getProjectId(), callerId);
 
         if (!isAdmin(perms)) {
-            throw new ForbiddenException("Only project admins can delete tasks");
+            throw new ForbiddenException("ADMIN_REQUIRED_DELETE_TASK");
         }
 
         taskRepository.delete(task);
@@ -129,7 +129,7 @@ public class TaskService {
 
     private Task getTaskOrThrow(UUID id) {
         return taskRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("TASK_NOT_FOUND"));
     }
 
     private MemberPermissionsDto requireMember(UUID projectId, UUID userId) {
@@ -153,7 +153,7 @@ public class TaskService {
     @Transactional
     public void updateStoryPoints(UUID taskId, Integer storyPoints) {
         var task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + taskId));
+                .orElseThrow(() -> new ResourceNotFoundException("TASK_NOT_FOUND"));
         task.setStoryPoints(storyPoints);
         taskRepository.save(task);
     }

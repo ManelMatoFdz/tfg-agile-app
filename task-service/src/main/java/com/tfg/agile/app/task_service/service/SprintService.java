@@ -91,7 +91,7 @@ public class SprintService {
         requireScrumMasterOrAdmin(perms);
 
         if (sprint.getStatus() == SprintStatus.COMPLETED) {
-            throw new ForbiddenException("Cannot edit a completed sprint");
+            throw new ForbiddenException("CANNOT_EDIT_COMPLETED_SPRINT");
         }
 
         sprint.setName(dto.name());
@@ -108,10 +108,10 @@ public class SprintService {
         requireScrumMasterOrAdmin(perms);
 
         if (sprint.getStatus() != SprintStatus.PLANNING) {
-            throw new ConflictException("Only PLANNING sprints can be activated");
+            throw new ConflictException("SPRINT_NOT_PLANNING");
         }
         if (sprintRepository.existsByProjectIdAndStatus(sprint.getProjectId(), SprintStatus.ACTIVE)) {
-            throw new ConflictException("There is already an active sprint for this project");
+            throw new ConflictException("SPRINT_ALREADY_ACTIVE");
         }
 
         sprint.setStatus(SprintStatus.ACTIVE);
@@ -125,7 +125,7 @@ public class SprintService {
         requireScrumMasterOrAdmin(perms);
 
         if (sprint.getStatus() != SprintStatus.ACTIVE) {
-            throw new ConflictException("Only ACTIVE sprints can be completed");
+            throw new ConflictException("SPRINT_NOT_ACTIVE");
         }
 
         // Move non-DONE tasks back to backlog
@@ -148,15 +148,15 @@ public class SprintService {
         requirePOOrSMOrAdmin(perms);
 
         if (sprint.getStatus() == SprintStatus.COMPLETED) {
-            throw new ForbiddenException("Cannot add tasks to a completed sprint");
+            throw new ForbiddenException("CANNOT_ADD_TASKS_COMPLETED_SPRINT");
         }
 
         return dto.taskIds().stream()
                 .map(taskId -> {
                     Task task = taskRepository.findById(taskId)
-                            .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + taskId));
+                            .orElseThrow(() -> new ResourceNotFoundException("TASK_NOT_FOUND"));
                     if (!task.getProjectId().equals(sprint.getProjectId())) {
-                        throw new ForbiddenException("Task does not belong to this project");
+                        throw new ForbiddenException("TASK_WRONG_PROJECT");
                     }
                     task.setSprintId(sprintId);
                     return TaskResponseDto.from(taskRepository.save(task));
@@ -171,9 +171,9 @@ public class SprintService {
         requirePOOrSMOrAdmin(perms);
 
         Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("TASK_NOT_FOUND"));
         if (!sprintId.equals(task.getSprintId())) {
-            throw new ResourceNotFoundException("Task is not in this sprint");
+            throw new ResourceNotFoundException("TASK_NOT_IN_SPRINT");
         }
         task.setSprintId(null);
         return TaskResponseDto.from(taskRepository.save(task));
@@ -183,7 +183,7 @@ public class SprintService {
 
     private Sprint getSprintOrThrow(UUID id) {
         return sprintRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Sprint not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("SPRINT_NOT_FOUND"));
     }
 
     private MemberPermissionsDto requireMember(UUID projectId, UUID userId) {
@@ -193,12 +193,12 @@ public class SprintService {
     private void requireScrumMasterOrAdmin(MemberPermissionsDto p) {
         if ("ADMIN".equals(p.role())) return;
         if ("SCRUM_MASTER".equals(p.scrumRole())) return;
-        throw new ForbiddenException("Scrum Master or Admin role required");
+        throw new ForbiddenException("SCRUM_MASTER_OR_ADMIN_REQUIRED");
     }
 
     private void requirePOOrSMOrAdmin(MemberPermissionsDto p) {
         if ("ADMIN".equals(p.role())) return;
         if ("PRODUCT_OWNER".equals(p.scrumRole()) || "SCRUM_MASTER".equals(p.scrumRole())) return;
-        throw new ForbiddenException("Product Owner, Scrum Master, or Admin role required");
+        throw new ForbiddenException("PO_SM_OR_ADMIN_REQUIRED");
     }
 }

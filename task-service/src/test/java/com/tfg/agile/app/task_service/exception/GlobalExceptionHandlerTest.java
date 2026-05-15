@@ -18,26 +18,29 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void handleNotFound_returns404() {
-        ResponseEntity<Map<String, Object>> response = handler.handleNotFound(new ResourceNotFoundException("Task not found"));
+        ResponseEntity<Map<String, Object>> response = handler.handleNotFound(new ResourceNotFoundException("TASK_NOT_FOUND"));
 
         assertThat(response.getStatusCode().value()).isEqualTo(404);
-        assertThat(response.getBody()).containsEntry("message", "Task not found");
+        assertThat(response.getBody()).containsEntry("message", "TASK_NOT_FOUND");
+        assertThat(response.getBody()).containsEntry("errorCode", "TASK_NOT_FOUND");
     }
 
     @Test
     void handleForbidden_returns403() {
-        ResponseEntity<Map<String, Object>> response = handler.handleForbidden(new ForbiddenException("Forbidden"));
+        ResponseEntity<Map<String, Object>> response = handler.handleForbidden(new ForbiddenException("NOT_PROJECT_MEMBER"));
 
         assertThat(response.getStatusCode().value()).isEqualTo(403);
-        assertThat(response.getBody()).containsEntry("message", "Forbidden");
+        assertThat(response.getBody()).containsEntry("message", "NOT_PROJECT_MEMBER");
+        assertThat(response.getBody()).containsEntry("errorCode", "NOT_PROJECT_MEMBER");
     }
 
     @Test
     void handleConflict_returns409() {
-        ResponseEntity<Map<String, Object>> response = handler.handleConflict(new ConflictException("Conflict"));
+        ResponseEntity<Map<String, Object>> response = handler.handleConflict(new ConflictException("SPRINT_ALREADY_ACTIVE"));
 
         assertThat(response.getStatusCode().value()).isEqualTo(409);
-        assertThat(response.getBody()).containsEntry("message", "Conflict");
+        assertThat(response.getBody()).containsEntry("message", "SPRINT_ALREADY_ACTIVE");
+        assertThat(response.getBody()).containsEntry("errorCode", "SPRINT_ALREADY_ACTIVE");
     }
 
     @Test

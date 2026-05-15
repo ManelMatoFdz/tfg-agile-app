@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestControllerAdvice
@@ -14,17 +15,17 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(ResourceNotFoundException ex) {
-        return error(HttpStatus.NOT_FOUND, ex.getMessage());
+        return errorWithCode(HttpStatus.NOT_FOUND, ex.getMessage(), ex.getErrorCode());
     }
 
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<Map<String, Object>> handleForbidden(ForbiddenException ex) {
-        return error(HttpStatus.FORBIDDEN, ex.getMessage());
+        return errorWithCode(HttpStatus.FORBIDDEN, ex.getMessage(), ex.getErrorCode());
     }
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<Map<String, Object>> handleConflict(ConflictException ex) {
-        return error(HttpStatus.CONFLICT, ex.getMessage());
+        return errorWithCode(HttpStatus.CONFLICT, ex.getMessage(), ex.getErrorCode());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -40,11 +41,20 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, msg);
     }
 
+    private ResponseEntity<Map<String, Object>> errorWithCode(HttpStatus status, String message, String errorCode) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", Instant.now().toString());
+        body.put("status", status.value());
+        body.put("message", message);
+        body.put("errorCode", errorCode);
+        return ResponseEntity.status(status).body(body);
+    }
+
     private ResponseEntity<Map<String, Object>> error(HttpStatus status, String message) {
-        return ResponseEntity.status(status).body(Map.of(
-                "timestamp", Instant.now().toString(),
-                "status", status.value(),
-                "message", message
-        ));
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("timestamp", Instant.now().toString());
+        body.put("status", status.value());
+        body.put("message", message);
+        return ResponseEntity.status(status).body(body);
     }
 }

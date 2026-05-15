@@ -26,19 +26,19 @@ public class TaskController {
     }
 
     @GetMapping("/projects/{projectId}/tasks")
-    public List<TaskResponseDto> listByProject(@PathVariable UUID projectId,
+    public List<TaskResponseDto> listByProject(@PathVariable("projectId") UUID projectId,
                                                @AuthenticationPrincipal UUID callerId) {
         return taskService.findByProject(projectId, callerId);
     }
 
     @GetMapping("/tasks/{taskId}")
-    public TaskResponseDto getById(@PathVariable UUID taskId,
+    public TaskResponseDto getById(@PathVariable("taskId") UUID taskId,
                                    @AuthenticationPrincipal UUID callerId) {
         return taskService.findById(taskId, callerId);
     }
 
     @PostMapping("/projects/{projectId}/tasks")
-    public ResponseEntity<TaskResponseDto> create(@PathVariable UUID projectId,
+    public ResponseEntity<TaskResponseDto> create(@PathVariable("projectId") UUID projectId,
                                                   @Valid @RequestBody CreateTaskRequestDto dto,
                                                   @AuthenticationPrincipal UUID callerId) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -46,21 +46,21 @@ public class TaskController {
     }
 
     @PutMapping("/tasks/{taskId}")
-    public TaskResponseDto update(@PathVariable UUID taskId,
+    public TaskResponseDto update(@PathVariable("taskId") UUID taskId,
                                   @Valid @RequestBody UpdateTaskRequestDto dto,
                                   @AuthenticationPrincipal UUID callerId) {
         return taskService.update(taskId, dto, callerId);
     }
 
     @PatchMapping("/tasks/{taskId}/move")
-    public TaskResponseDto move(@PathVariable UUID taskId,
+    public TaskResponseDto move(@PathVariable("taskId") UUID taskId,
                                 @Valid @RequestBody MoveTaskRequestDto dto,
                                 @AuthenticationPrincipal UUID callerId) {
         return taskService.move(taskId, dto, callerId);
     }
 
     @DeleteMapping("/tasks/{taskId}")
-    public ResponseEntity<Void> delete(@PathVariable UUID taskId,
+    public ResponseEntity<Void> delete(@PathVariable("taskId") UUID taskId,
                                        @AuthenticationPrincipal UUID callerId) {
         taskService.delete(taskId, callerId);
         return ResponseEntity.noContent().build();

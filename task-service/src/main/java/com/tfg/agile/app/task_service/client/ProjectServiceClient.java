@@ -32,7 +32,7 @@ public class ProjectServiceClient {
                     .body(MemberPermissionsDto.class);
         } catch (HttpClientErrorException ex) {
             if (ex.getStatusCode() == HttpStatus.NOT_FOUND) {
-                throw new ForbiddenException("Not a member of this project");
+                throw new ForbiddenException("NOT_PROJECT_MEMBER");
             }
             throw ex;
         }

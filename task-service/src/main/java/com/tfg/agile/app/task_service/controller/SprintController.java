@@ -23,7 +23,7 @@ public class SprintController {
     // ── Backlog ───────────────────────────────────────────────────────────────
 
     @GetMapping("/projects/{projectId}/backlog")
-    public List<TaskResponseDto> getBacklog(@PathVariable UUID projectId,
+    public List<TaskResponseDto> getBacklog(@PathVariable("projectId") UUID projectId,
                                             @AuthenticationPrincipal UUID callerId) {
         return sprintService.getBacklog(projectId, callerId);
     }
@@ -31,26 +31,26 @@ public class SprintController {
     // ── Sprints ───────────────────────────────────────────────────────────────
 
     @GetMapping("/projects/{projectId}/sprints")
-    public List<SprintResponseDto> listSprints(@PathVariable UUID projectId,
+    public List<SprintResponseDto> listSprints(@PathVariable("projectId") UUID projectId,
                                                @AuthenticationPrincipal UUID callerId) {
         return sprintService.listSprints(projectId, callerId);
     }
 
     @GetMapping("/sprints/{sprintId}")
-    public SprintResponseDto getSprint(@PathVariable UUID sprintId,
+    public SprintResponseDto getSprint(@PathVariable("sprintId") UUID sprintId,
                                        @AuthenticationPrincipal UUID callerId) {
         return sprintService.getSprint(sprintId, callerId);
     }
 
     @GetMapping("/sprints/{sprintId}/tasks")
-    public List<TaskResponseDto> getSprintTasks(@PathVariable UUID sprintId,
+    public List<TaskResponseDto> getSprintTasks(@PathVariable("sprintId") UUID sprintId,
                                                 @AuthenticationPrincipal UUID callerId) {
         return sprintService.getSprintTasks(sprintId, callerId);
     }
 
     @PostMapping("/projects/{projectId}/sprints")
     public ResponseEntity<SprintResponseDto> createSprint(
-            @PathVariable UUID projectId,
+            @PathVariable("projectId") UUID projectId,
             @Valid @RequestBody CreateSprintRequestDto dto,
             @AuthenticationPrincipal UUID callerId) {
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -58,35 +58,35 @@ public class SprintController {
     }
 
     @PutMapping("/sprints/{sprintId}")
-    public SprintResponseDto updateSprint(@PathVariable UUID sprintId,
+    public SprintResponseDto updateSprint(@PathVariable("sprintId") UUID sprintId,
                                           @Valid @RequestBody UpdateSprintRequestDto dto,
                                           @AuthenticationPrincipal UUID callerId) {
         return sprintService.updateSprint(sprintId, dto, callerId);
     }
 
     @PostMapping("/sprints/{sprintId}/activate")
-    public SprintResponseDto activateSprint(@PathVariable UUID sprintId,
+    public SprintResponseDto activateSprint(@PathVariable("sprintId") UUID sprintId,
                                             @AuthenticationPrincipal UUID callerId) {
         return sprintService.activateSprint(sprintId, callerId);
     }
 
     @PostMapping("/sprints/{sprintId}/complete")
-    public SprintResponseDto completeSprint(@PathVariable UUID sprintId,
+    public SprintResponseDto completeSprint(@PathVariable("sprintId") UUID sprintId,
                                             @AuthenticationPrincipal UUID callerId) {
         return sprintService.completeSprint(sprintId, callerId);
     }
 
     @PostMapping("/sprints/{sprintId}/tasks")
     public List<TaskResponseDto> assignTasksToSprint(
-            @PathVariable UUID sprintId,
+            @PathVariable("sprintId") UUID sprintId,
             @RequestBody AssignTaskToSprintRequestDto dto,
             @AuthenticationPrincipal UUID callerId) {
         return sprintService.assignTasksToSprint(sprintId, dto, callerId);
     }
 
     @DeleteMapping("/sprints/{sprintId}/tasks/{taskId}")
-    public TaskResponseDto removeTaskFromSprint(@PathVariable UUID sprintId,
-                                                @PathVariable UUID taskId,
+    public TaskResponseDto removeTaskFromSprint(@PathVariable("sprintId") UUID sprintId,
+                                                @PathVariable("taskId") UUID taskId,
                                                 @AuthenticationPrincipal UUID callerId) {
         return sprintService.removeTaskFromSprint(sprintId, taskId, callerId);
     }

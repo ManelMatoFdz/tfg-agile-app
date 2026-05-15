@@ -18,7 +18,7 @@ public class InternalTaskController {
     }
 
     @PutMapping("/{taskId}/story-points")
-    public ResponseEntity<Void> updateStoryPoints(@PathVariable UUID taskId,
+    public ResponseEntity<Void> updateStoryPoints(@PathVariable("taskId") UUID taskId,
                                                   @RequestBody Map<String, Integer> body) {
         Integer storyPoints = body.get("storyPoints");
         taskService.updateStoryPoints(taskId, storyPoints);
