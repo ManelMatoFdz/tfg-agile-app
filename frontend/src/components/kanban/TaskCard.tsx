@@ -1,11 +1,18 @@
 import { useTranslation } from 'react-i18next';
 import type { Task, TaskPriority } from '../../types';
 
-const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  LOW: 'bg-gray-100 text-gray-500',
-  MEDIUM: 'bg-blue-100 text-blue-600',
-  HIGH: 'bg-amber-100 text-amber-600',
-  CRITICAL: 'bg-red-100 text-red-600',
+const PRIORITY_LEFT_BORDER: Record<TaskPriority, string> = {
+  CRITICAL: 'border-l-red-500',
+  HIGH:     'border-l-amber-400',
+  MEDIUM:   'border-l-blue-400',
+  LOW:      'border-l-gray-300',
+};
+
+const PRIORITY_DOT: Record<TaskPriority, string> = {
+  CRITICAL: 'bg-red-500',
+  HIGH:     'bg-amber-400',
+  MEDIUM:   'bg-blue-400',
+  LOW:      'bg-gray-300',
 };
 
 interface Props {
@@ -19,20 +26,23 @@ export default function TaskCard({ task, onClick }: Props) {
   return (
     <button
       onClick={onClick}
-      className="w-full text-left glass-card p-3 hover:shadow-md hover:scale-[1.01] transition-all duration-200 cursor-pointer group"
+      className={`w-full text-left bg-white border border-gray-200 border-l-2 ${PRIORITY_LEFT_BORDER[task.priority]} rounded-lg p-3 hover:border-gray-300 hover:shadow-sm transition-all duration-150 cursor-pointer group`}
     >
-      <p className="text-sm font-medium text-gray-900 leading-snug group-hover:text-primary-700 transition-colors">
+      <p className="text-sm font-semibold text-gray-800 leading-snug group-hover:text-primary-700 transition-colors">
         {task.title}
       </p>
       {task.description && (
-        <p className="text-xs text-gray-400 mt-1 line-clamp-2">{task.description}</p>
+        <p className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">{task.description}</p>
       )}
       <div className="flex items-center justify-between mt-2.5">
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PRIORITY_COLORS[task.priority]}`}>
-          {t(`tasks.priority.${task.priority}`)}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[task.priority]}`} />
+          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+            {t(`tasks.priority.${task.priority}`)}
+          </span>
+        </div>
         {task.storyPoints != null && (
-          <span className="text-xs font-medium text-gray-400 bg-gray-50 px-2 py-0.5 rounded-full">
+          <span className="text-[10px] font-bold text-gray-400 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded">
             {task.storyPoints} pts
           </span>
         )}

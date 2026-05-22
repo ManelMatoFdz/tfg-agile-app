@@ -5,11 +5,11 @@ import { tasksApi } from '../../api/tasks';
 import TaskCard from './TaskCard';
 import TaskModal from './TaskModal';
 
-const COLUMNS: { status: TaskStatus; colorDot: string; colorHeader: string }[] = [
-  { status: 'TODO',        colorDot: 'bg-gray-400',    colorHeader: 'border-gray-200' },
-  { status: 'IN_PROGRESS', colorDot: 'bg-blue-400',    colorHeader: 'border-blue-200' },
-  { status: 'IN_REVIEW',   colorDot: 'bg-amber-400',   colorHeader: 'border-amber-200' },
-  { status: 'DONE',        colorDot: 'bg-emerald-400', colorHeader: 'border-emerald-200' },
+const COLUMNS: { status: TaskStatus; label: string; dot: string; header: string }[] = [
+  { status: 'TODO',        label: 'TODO',        dot: 'bg-gray-400',    header: 'border-t-gray-300' },
+  { status: 'IN_PROGRESS', label: 'IN_PROGRESS',  dot: 'bg-blue-500',    header: 'border-t-blue-400' },
+  { status: 'IN_REVIEW',   label: 'IN_REVIEW',    dot: 'bg-amber-400',   header: 'border-t-amber-400' },
+  { status: 'DONE',        label: 'DONE',         dot: 'bg-emerald-500', header: 'border-t-emerald-500' },
 ];
 
 interface Props {
@@ -17,11 +17,13 @@ interface Props {
   tasks: Task[];
   onTasksChange: (tasks: Task[]) => void;
   disableCreate?: boolean;
+  canMove?: boolean;
+  canDelete?: boolean;
 }
 
-export default function KanbanBoard({ projectId, tasks, onTasksChange, disableCreate = false }: Props) {
+export default function KanbanBoard({ projectId, tasks, onTasksChange, disableCreate = false, canMove = true, canDelete = true }: Props) {
   const { t } = useTranslation();
-  const [modalTask, setModalTask] = useState<Task | null | undefined>(undefined); // undefined = closed
+  const [modalTask, setModalTask] = useState<Task | null | undefined>(undefined);
   const [defaultStatus, setDefaultStatus] = useState<TaskStatus>('TODO');
 
   const tasksByStatus = (status: TaskStatus) =>
@@ -29,20 +31,14 @@ export default function KanbanBoard({ projectId, tasks, onTasksChange, disableCr
 
   const openCreate = (status: TaskStatus) => {
     setDefaultStatus(status);
-    setModalTask(null); // null = create
-  };
-
-  const openEdit = (task: Task) => {
-    setModalTask(task);
+    setModalTask(null);
   };
 
   const handleSave = async (dto: Parameters<typeof tasksApi.create>[1] | Parameters<typeof tasksApi.update>[1]) => {
     if (modalTask) {
-      // edit
       const updated = await tasksApi.update(modalTask.id, dto as Parameters<typeof tasksApi.update>[1]);
       onTasksChange(tasks.map((t) => (t.id === updated.id ? updated : t)));
     } else {
-      // create
       const created = await tasksApi.create(projectId, dto as Parameters<typeof tasksApi.create>[1]);
       onTasksChange([...tasks, created]);
     }
@@ -64,21 +60,21 @@ export default function KanbanBoard({ projectId, tasks, onTasksChange, disableCr
   return (
     <>
       <div className="flex gap-3 overflow-x-auto pb-2">
-        {COLUMNS.map(({ status, colorDot, colorHeader }) => {
+        {COLUMNS.map(({ status, dot, header }) => {
           const col = tasksByStatus(status);
           return (
             <div
               key={status}
-              className={`flex-shrink-0 w-64 bg-gray-50/80 rounded-xl border ${colorHeader} flex flex-col`}
+              className={`flex-shrink-0 w-64 bg-gray-50/70 rounded-xl border border-gray-200 border-t-2 ${header} flex flex-col`}
             >
               {/* Column header */}
-              <div className="flex items-center justify-between px-3 py-2.5 border-b border-gray-100">
+              <div className="flex items-center justify-between px-3 py-2.5">
                 <div className="flex items-center gap-2">
-                  <span className={`w-2 h-2 rounded-full ${colorDot}`} />
-                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  <span className={`w-2 h-2 rounded-full ${dot}`} />
+                  <p className="text-xs font-bold text-gray-600 uppercase tracking-wider">
                     {t(`tasks.status.${status}`)}
                   </p>
-                  <span className="text-xs font-medium text-gray-400 bg-white px-1.5 py-0.5 rounded-full">
+                  <span className="text-xs font-semibold text-gray-400 bg-white border border-gray-200 w-5 h-5 rounded-full flex items-center justify-center leading-none">
                     {col.length}
                   </span>
                 </div>
@@ -86,22 +82,22 @@ export default function KanbanBoard({ projectId, tasks, onTasksChange, disableCr
                   <button
                     onClick={() => openCreate(status)}
                     title={t('projects.kanban.newTask')}
-                    className="p-1 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-colors cursor-pointer"
+                    className="w-6 h-6 rounded-md text-gray-400 hover:text-primary-600 hover:bg-white hover:border hover:border-gray-200 transition-all duration-150 cursor-pointer flex items-center justify-center"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                     </svg>
                   </button>
                 )}
               </div>
 
               {/* Tasks */}
-              <div className="flex-1 p-2 space-y-2 min-h-[120px]">
+              <div className="flex-1 px-2 pb-2 space-y-1.5 min-h-[120px]">
                 {col.length === 0 ? (
-                  <p className="text-xs text-gray-300 text-center py-4">{t('projects.kanban.noTasks')}</p>
+                  <p className="text-xs text-gray-300 text-center py-6">{t('projects.kanban.noTasks')}</p>
                 ) : (
                   col.map((task) => (
-                    <TaskCard key={task.id} task={task} onClick={() => openEdit(task)} />
+                    <TaskCard key={task.id} task={task} onClick={() => setModalTask(task)} />
                   ))
                 )}
               </div>
@@ -115,9 +111,9 @@ export default function KanbanBoard({ projectId, tasks, onTasksChange, disableCr
           task={modalTask}
           defaultStatus={defaultStatus}
           onClose={() => setModalTask(undefined)}
-          onSave={handleSave}
-          onMove={modalTask ? handleMove : undefined}
-          onDelete={modalTask ? handleDelete : undefined}
+          onSave={modalTask ? (canMove ? handleSave : undefined) : handleSave}
+          onMove={modalTask && canMove ? handleMove : undefined}
+          onDelete={modalTask && canDelete ? handleDelete : undefined}
         />
       )}
     </>

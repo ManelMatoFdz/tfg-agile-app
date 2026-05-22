@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
     List<Category> findByWorkspaceIdOrderByPosition(UUID workspaceId);
+
+    void deleteByWorkspaceId(UUID workspaceId);
 }

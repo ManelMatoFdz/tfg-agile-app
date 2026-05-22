@@ -13,6 +13,7 @@ export interface UpdateSprintDto {
   goal?: string;
   startDate?: string;
   endDate?: string;
+  reviewNotes?: string;
 }
 
 export const sprintsApi = {
@@ -34,8 +35,8 @@ export const sprintsApi = {
   activateSprint: (sprintId: string) =>
     taskClient.post<Sprint>(`/sprints/${sprintId}/activate`).then((r) => r.data),
 
-  completeSprint: (sprintId: string) =>
-    taskClient.post<Sprint>(`/sprints/${sprintId}/complete`).then((r) => r.data),
+  completeSprint: (sprintId: string, dto?: { reviewNotes?: string }) =>
+    taskClient.post<Sprint>(`/sprints/${sprintId}/complete`, dto ?? {}).then((r) => r.data),
 
   getSprintTasks: (sprintId: string) =>
     taskClient.get<Task[]>(`/sprints/${sprintId}/tasks`).then((r) => r.data),

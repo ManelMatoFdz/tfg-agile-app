@@ -5,8 +5,7 @@ import com.tfg.agile.app.project_service.entity.*;
 import com.tfg.agile.app.project_service.exception.ConflictException;
 import com.tfg.agile.app.project_service.exception.ForbiddenException;
 import com.tfg.agile.app.project_service.exception.ResourceNotFoundException;
-import com.tfg.agile.app.project_service.repository.WorkspaceMemberRepository;
-import com.tfg.agile.app.project_service.repository.WorkspaceRepository;
+import com.tfg.agile.app.project_service.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,11 +17,29 @@ public class WorkspaceService {
 
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository memberRepository;
+    private final TeamRepository teamRepository;
+    private final TeamMemberRepository teamMemberRepository;
+    private final ProjectRepository projectRepository;
+    private final ProjectMemberRepository projectMemberRepository;
+    private final CategoryRepository categoryRepository;
+    private final WorkspaceInvitationRepository invitationRepository;
 
     public WorkspaceService(WorkspaceRepository workspaceRepository,
-                            WorkspaceMemberRepository memberRepository) {
+                            WorkspaceMemberRepository memberRepository,
+                            TeamRepository teamRepository,
+                            TeamMemberRepository teamMemberRepository,
+                            ProjectRepository projectRepository,
+                            ProjectMemberRepository projectMemberRepository,
+                            CategoryRepository categoryRepository,
+                            WorkspaceInvitationRepository invitationRepository) {
         this.workspaceRepository = workspaceRepository;
         this.memberRepository = memberRepository;
+        this.teamRepository = teamRepository;
+        this.teamMemberRepository = teamMemberRepository;
+        this.projectRepository = projectRepository;
+        this.projectMemberRepository = projectMemberRepository;
+        this.categoryRepository = categoryRepository;
+        this.invitationRepository = invitationRepository;
     }
 
     @Transactional
@@ -71,6 +88,20 @@ public class WorkspaceService {
     public void delete(UUID workspaceId, UUID callerId) {
         getWorkspaceOrThrow(workspaceId);
         requireAdmin(workspaceId, callerId);
+
+        // Delete team members before teams
+        List<Team> teams = teamRepository.findByWorkspaceId(workspaceId);
+        teams.forEach(t -> teamMemberRepository.deleteByTeamId(t.getId()));
+        teamRepository.deleteAll(teams);
+
+        // Delete project members before projects
+        List<Project> projects = projectRepository.findByWorkspaceId(workspaceId);
+        projects.forEach(p -> projectMemberRepository.deleteByProjectId(p.getId()));
+        projectRepository.deleteAll(projects);
+
+        categoryRepository.deleteByWorkspaceId(workspaceId);
+        invitationRepository.deleteByWorkspaceId(workspaceId);
+        memberRepository.deleteByWorkspaceId(workspaceId);
         workspaceRepository.deleteById(workspaceId);
     }
 
@@ -106,7 +137,16 @@ public class WorkspaceService {
         requireAdmin(workspaceId, callerId);
         WorkspaceMember member = memberRepository.findByWorkspaceIdAndUserId(workspaceId, targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
-        member.setRole(WorkspaceRole.valueOf(dto.role().toUpperCase()));
+        WorkspaceRole newRole = WorkspaceRole.valueOf(dto.role().toUpperCase());
+        if (member.getRole() == WorkspaceRole.ADMIN && newRole == WorkspaceRole.MEMBER) {
+            long adminCount = memberRepository.findByWorkspaceId(workspaceId).stream()
+                    .filter(m -> m.getRole() == WorkspaceRole.ADMIN)
+                    .count();
+            if (adminCount <= 1) {
+                throw new ConflictException("LAST_WORKSPACE_ADMIN");
+            }
+        }
+        member.setRole(newRole);
         return WorkspaceMemberResponseDto.from(memberRepository.save(member));
     }
 

@@ -132,6 +132,8 @@
         "descriptionPlaceholder": "Brief description of the project",
         "category": "Category ({{optional}})",
         "noCategory": "No category",
+        "newCategory": "New category",
+        "createCategory": "Create",
         "submit": "Create project"
       }
     },
@@ -210,10 +212,33 @@
       "dangerSubtitle": "Irreversible actions that affect the entire workspace",
       "deleteWorkspace": "Delete workspace",
       "deleteWarning": "This will permanently delete the workspace <strong>{{name}}</strong>, all its projects, tasks and members. This action cannot be undone.",
-      "deleteConfirmLabel": "Type <strong>{{name}}</strong> to confirm",
+      "deleteConfirmLabel": "Type {{name}} to confirm",
       "deleteConfirmBtn": "Delete this workspace",
       "deleting": "Deleting...",
-      "deleteError": "Error deleting the workspace."
+      "deleteError": "Error deleting the workspace.",
+      "categories": {
+        "title": "Project categories",
+        "subtitle": "Organise workspace projects by categories",
+        "newCategory": "New category",
+        "noCategories": "No categories yet",
+        "createError": "Error creating the category.",
+        "updateError": "Error updating the category.",
+        "deleteError": "Error deleting the category.",
+        "modal": {
+          "titleCreate": "New category",
+          "titleEdit": "Edit category",
+          "nameLabel": "Name",
+          "namePlaceholder": "Frontend, Marketing...",
+          "colorLabel": "Colour",
+          "submitCreate": "Create category",
+          "submitEdit": "Save changes"
+        },
+        "deleteConfirm": {
+          "title": "Delete category",
+          "message": "Are you sure you want to delete <strong>{{name}}</strong>? Associated projects will become uncategorised.",
+          "confirm": "Delete"
+        }
+      }
     }
   },
   "teams": {
@@ -238,7 +263,8 @@
       "addMember": "Add member",
       "noMembers": "This team has no members yet.",
       "addFirst": "Add the first one",
-      "userIdPlaceholder": "User ID (UUID)",
+      "searchPlaceholder": "Search by username…",
+      "noResults": "No available workspace members found.",
       "removeMember": "Remove from team",
       "delete": "Delete team",
       "deleteConfirm": {
@@ -263,6 +289,12 @@
         "messageToAdmin": "Grant team admin permissions to <strong>{{name}}</strong>?",
         "messageToMember": "Remove team admin permissions from <strong>{{name}}</strong>?",
         "submit": "Confirm"
+      },
+      "leaveTeam": "Leave team",
+      "confirmLeave": {
+        "title": "Leave team",
+        "message": "Are you sure you want to leave <strong>{{name}}</strong>?",
+        "submit": "Leave"
       }
     }
   },
@@ -273,7 +305,9 @@
       "backlog": "Backlog",
       "sprints": "Sprints",
       "members": "Members",
-      "poker": "Poker"
+      "poker": "Poker",
+      "metrics": "Metrics",
+      "settings": "Settings"
     },
     "kanban": {
       "title": "Kanban Board",
@@ -283,16 +317,105 @@
       "done": "Done",
       "newTask": "New task",
       "noTasks": "No tasks",
-      "loadError": "Error loading tasks."
+      "loadError": "Error loading tasks.",
+      "noActiveSprint": "No active sprint",
+      "noActiveSprintSub": "Activate a sprint from the"
     },
     "members": {
       "title": "Members",
       "noMembers": "No members in this project.",
+      "addMember": "Add member",
       "roles": {
         "ADMIN": "Admin",
         "MEMBER": "Member",
         "VIEWER": "Viewer"
+      },
+      "scrumRoles": {
+        "PRODUCT_OWNER": "Product Owner",
+        "SCRUM_MASTER": "Scrum Master",
+        "DEVELOPER": "Developer",
+        "none": "No Scrum role"
+      },
+      "roleLabel": "Technical role",
+      "scrumRoleLabel": "Scrum role",
+      "removeMember": "Remove from project",
+      "confirmRemove": {
+        "title": "Remove member",
+        "message": "Are you sure you want to remove <strong>{{name}}</strong> from the project?",
+        "confirm": "Remove",
+        "removing": "Removing..."
+      },
+      "add": {
+        "title": "Add member",
+        "searchPlaceholder": "Search by username…",
+        "noResults": "No workspace members available to add.",
+        "roleLabel": "Project role",
+        "submit": "Add",
+        "adding": "Adding...",
+        "error": "Error adding member."
+      },
+      "errors": {
+        "changeRole": "Error changing role.",
+        "changeScrumRole": "Error changing Scrum role.",
+        "remove": "Error removing member."
       }
+    },
+    "settings": {
+      "title": "Project settings",
+      "subtitle": "Edit project information and preferences",
+      "general": "General information",
+      "nameLabel": "Project name",
+      "descriptionLabel": "Description",
+      "categoryLabel": "Category",
+      "noCategory": "No category",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "saveSuccess": "Project updated successfully.",
+      "saveError": "Error saving changes.",
+      "loadError": "Error loading project.",
+      "adminOnly": "Only project administrators can modify these settings.",
+      "visibilityLabel": "Visibility",
+      "visibility": {
+        "PRIVATE": "Private",
+        "WORKSPACE": "Whole workspace",
+        "PRIVATE_desc": "Only project members can access",
+        "WORKSPACE_desc": "Any workspace member can view the project"
+      },
+      "dangerZone": "Danger zone",
+      "dangerSubtitle": "Irreversible actions affecting the project",
+      "deleteProject": "Delete project",
+      "deleteWarning": "This will permanently delete the project <strong>{{name}}</strong> and all its tasks. This action cannot be undone.",
+      "deleteConfirmLabel": "Type {{name}} to confirm",
+      "deleteConfirmBtn": "Delete this project",
+      "deleting": "Deleting...",
+      "deleteError": "Error deleting the project.",
+      "deleteSuccess": "Project deleted."
+    },
+    "metrics": {
+      "title": "Project metrics",
+      "loadError": "Error loading metrics.",
+      "totalTasks": "Total tasks",
+      "donePct": "{{pct}}% completed",
+      "storyPointsDone": "Story points done",
+      "total": "total",
+      "sprints": "Sprints",
+      "completedSprints": "{{n}} completed",
+      "members": "Members",
+      "activeSprint": "Active sprint: {{name}}",
+      "noActiveSprint": "No active sprint",
+      "overallProgress": "Overall progress",
+      "taskDistribution": "Task distribution",
+      "backlogVsSprint": "Backlog vs. Sprints",
+      "inSprints": "In sprints",
+      "inBacklog": "In backlog",
+      "unassigned": "Unassigned",
+      "totalSprints": "Total",
+      "completed": "Completed",
+      "active": "Active",
+      "byPriority": "Tasks by priority",
+      "velocity": "Velocity per sprint (completed SP)",
+      "tasksByMember": "Tasks by member",
+      "noTasks": "Not enough data to show metrics."
     },
     "backlog": {
       "title": "Backlog",
@@ -374,11 +497,24 @@
       },
       "planning": {
         "title": "Sprint Planning",
-        "subtitle": "Select backlog tasks to add to this sprint",
+        "subtitle": "Select backlog tasks to add to this sprint. The team commits to what they can complete during the sprint.",
         "noBacklog": "No tasks in the backlog",
         "selected": "selected",
         "addSelected": "Add to sprint",
-        "error": "Error adding tasks."
+        "error": "Error adding tasks.",
+        "goal": "Sprint goal",
+        "noEstimate": "No estimate",
+        "unestimated": "{{count}} task(s) without story points. Consider estimating with Planning Poker first."
+      },
+      "review": {
+        "title": "Sprint Review",
+        "done": "Completed",
+        "incomplete": "Back to backlog",
+        "velocity": "Story points",
+        "incompleteWarning": "{{count}} incomplete task(s) will automatically return to the backlog.",
+        "notes": "Review / Retrospective notes",
+        "notesPlaceholder": "What went well? What can be improved? Any obstacles?",
+        "complete": "Complete sprint"
       }
     }
   },
@@ -624,6 +760,9 @@
     "PO_SM_OR_ADMIN_REQUIRED": "Product Owner, Scrum Master, or Admin role required.",
     "ALREADY_WORKSPACE_MEMBER": "User is already a member of this workspace.",
     "ALREADY_TEAM_MEMBER": "User is already a member of this team.",
+    "LAST_TEAM_ADMIN": "You are the only admin of this team. Assign another admin before performing this action.",
+    "LAST_WORKSPACE_ADMIN": "You are the only admin of this workspace. Assign another admin before performing this action.",
+    "LAST_PROJECT_ADMIN": "You are the only admin of this project. Assign another admin before performing this action.",
     "ALREADY_PROJECT_MEMBER": "User is already a member of this project.",
     "SPRINT_NOT_PLANNING": "Only PLANNING sprints can be activated.",
     "SPRINT_ALREADY_ACTIVE": "There is already an active sprint for this project.",

@@ -6,6 +6,7 @@ import { sprintsApi, type CreateSprintDto } from '../../../api/sprints';
 import { tasksApi, type UpdateTaskDto, type CreateTaskDto } from '../../../api/tasks';
 import TaskModal from '../../../components/kanban/TaskModal';
 import Alert from '../../../components/ui/Alert';
+import { useProjectMember } from '../../../hooks/useProjectMember';
 
 // ── Shared style maps ────────────────────────────────────────────────────────
 
@@ -169,12 +170,13 @@ function CreateSprintModal({ projectId, onClose, onCreate }: CreateSprintModalPr
 interface SprintPlanningModalProps {
   sprintId: string;
   projectId: string;
+  sprintGoal?: string | null;
   existingTaskIds: Set<string>;
   onClose: () => void;
   onAdd: (tasks: Task[]) => void;
 }
 
-function SprintPlanningModal({ sprintId, projectId, existingTaskIds, onClose, onAdd }: SprintPlanningModalProps) {
+function SprintPlanningModal({ sprintId, projectId, sprintGoal, existingTaskIds, onClose, onAdd }: SprintPlanningModalProps) {
   const { t } = useTranslation();
   const [backlog, setBacklog] = useState<Task[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -212,6 +214,12 @@ function SprintPlanningModal({ sprintId, projectId, existingTaskIds, onClose, on
     }
   };
 
+  const selectedPoints = backlog
+    .filter((t) => selected.has(t.id))
+    .reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
+
+  const unestimatedCount = backlog.filter((t) => t.storyPoints == null).length;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
@@ -226,7 +234,24 @@ function SprintPlanningModal({ sprintId, projectId, existingTaskIds, onClose, on
             </svg>
           </button>
         </div>
-        <p className="text-sm text-gray-400 mb-4">{t('projects.sprints.planning.subtitle')}</p>
+        <p className="text-sm text-gray-400 mb-2">{t('projects.sprints.planning.subtitle')}</p>
+
+        {/* Sprint goal reminder */}
+        {sprintGoal && (
+          <div className="flex items-start gap-2 bg-primary-50 border border-primary-100 rounded-xl px-3 py-2 mb-3">
+            <svg className="w-3.5 h-3.5 text-primary-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <p className="text-xs text-primary-700 italic">{t('projects.sprints.planning.goal')}: {sprintGoal}</p>
+          </div>
+        )}
+
+        {/* Unestimated warning */}
+        {!loading && unestimatedCount > 0 && (
+          <div className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-3">
+            {t('projects.sprints.planning.unestimated', { count: unestimatedCount })}
+          </div>
+        )}
 
         {error && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">{error}</div>}
 
@@ -259,8 +284,12 @@ function SprintPlanningModal({ sprintId, projectId, existingTaskIds, onClose, on
                 <span className={`flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${PRIORITY_COLORS[task.priority]}`}>
                   {t(`tasks.priority.${task.priority}`)}
                 </span>
-                {task.storyPoints != null && (
+                {task.storyPoints != null ? (
                   <span className="flex-shrink-0 text-xs text-gray-400">{task.storyPoints}pts</span>
+                ) : (
+                  <span className="flex-shrink-0 text-xs font-medium text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                    {t('projects.sprints.planning.noEstimate')}
+                  </span>
                 )}
               </label>
             ))
@@ -269,9 +298,11 @@ function SprintPlanningModal({ sprintId, projectId, existingTaskIds, onClose, on
 
         {/* Footer */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-4">
-          <span className="text-sm text-gray-400">
-            {selected.size > 0 && `${selected.size} ${t('projects.sprints.planning.selected')}`}
-          </span>
+          <div className="text-sm text-gray-400 space-y-0.5">
+            {selected.size > 0 && (
+              <p>{selected.size} {t('projects.sprints.planning.selected')}{selectedPoints > 0 ? ` · ${selectedPoints} pts` : ''}</p>
+            )}
+          </div>
           <div className="flex gap-2">
             <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors cursor-pointer">
               {t('common.cancel')}
@@ -290,11 +321,100 @@ function SprintPlanningModal({ sprintId, projectId, existingTaskIds, onClose, on
   );
 }
 
+// ── SprintReviewModal ─────────────────────────────────────────────────────────
+
+interface SprintReviewModalProps {
+  sprint: Sprint;
+  sprintTasks: Task[];
+  onClose: () => void;
+  onConfirm: (reviewNotes: string) => void;
+  loading: boolean;
+}
+
+function SprintReviewModal({ sprint, sprintTasks, onClose, onConfirm, loading }: SprintReviewModalProps) {
+  const { t } = useTranslation();
+  const [reviewNotes, setReviewNotes] = useState('');
+
+  const doneTasks = sprintTasks.filter((t) => t.status === 'DONE');
+  const incompleteTasks = sprintTasks.filter((t) => t.status !== 'DONE');
+  const donePoints = doneTasks.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="w-full max-w-lg glass-card-strong p-6 flex flex-col max-h-[85vh] animate-fade-in">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">{t('projects.sprints.review.title')}</h2>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Sprint summary */}
+        <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="bg-emerald-50 rounded-xl p-3 text-center">
+            <p className="text-lg font-bold text-emerald-600">{doneTasks.length}</p>
+            <p className="text-xs text-emerald-500">{t('projects.sprints.review.done')}</p>
+          </div>
+          <div className="bg-amber-50 rounded-xl p-3 text-center">
+            <p className="text-lg font-bold text-amber-600">{incompleteTasks.length}</p>
+            <p className="text-xs text-amber-500">{t('projects.sprints.review.incomplete')}</p>
+          </div>
+          <div className="bg-primary-50 rounded-xl p-3 text-center">
+            <p className="text-lg font-bold text-primary-600">{donePoints}</p>
+            <p className="text-xs text-primary-500">{t('projects.sprints.review.velocity')}</p>
+          </div>
+        </div>
+
+        {incompleteTasks.length > 0 && (
+          <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-4">
+            {t('projects.sprints.review.incompleteWarning', { count: incompleteTasks.length })}
+          </p>
+        )}
+
+        {/* Review / Retrospective notes */}
+        <div className="flex-1 min-h-0">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {t('projects.sprints.review.notes')}{' '}
+            <span className="text-gray-400 font-normal">({t('common.optional')})</span>
+          </label>
+          <textarea
+            value={reviewNotes}
+            onChange={(e) => setReviewNotes(e.target.value)}
+            placeholder={t('projects.sprints.review.notesPlaceholder')}
+            rows={4}
+            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60 resize-none"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 mt-4">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors cursor-pointer">
+            {t('common.cancel')}
+          </button>
+          <button
+            onClick={() => onConfirm(reviewNotes)}
+            disabled={loading}
+            className="px-4 py-2 text-sm font-medium bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+          >
+            {loading ? '...' : t('projects.sprints.review.complete')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── SprintsPage ──────────────────────────────────────────────────────────────
 
 export default function SprintsPage() {
   const { t } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
+
+  const { canManageSprint, canPlanSprint, canDeleteTask } = useProjectMember(projectId);
 
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -305,9 +425,10 @@ export default function SprintsPage() {
   const [sprintTasks, setSprintTasks] = useState<Record<string, Task[]>>({});
   const [loadingTasksId, setLoadingTasksId] = useState<string | null>(null);
   const [planningSprintId, setPlanningSprintId] = useState<string | null>(null);
+  const [reviewSprintId, setReviewSprintId] = useState<string | null>(null);
   const [editTask, setEditTask] = useState<Task | null | undefined>(undefined);
   const [editTaskSprintId, setEditTaskSprintId] = useState<string | null>(null);
-  const [confirmAction, setConfirmAction] = useState<{ type: 'activate' | 'complete'; sprintId: string } | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'activate'; sprintId: string } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   // Load sprints
@@ -355,15 +476,15 @@ export default function SprintsPage() {
     }
   };
 
-  // Complete sprint
-  const handleComplete = async (sprintId: string) => {
+  // Complete sprint (called from review modal with optional notes)
+  const handleComplete = async (sprintId: string, reviewNotes?: string) => {
     setActionLoading(true);
     try {
-      const updated = await sprintsApi.completeSprint(sprintId);
+      const updated = await sprintsApi.completeSprint(sprintId, reviewNotes ? { reviewNotes } : undefined);
       setSprints((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
       // Tasks not DONE went back to backlog, clear cached tasks
       setSprintTasks((prev) => ({ ...prev, [sprintId]: [] }));
-      setConfirmAction(null);
+      setReviewSprintId(null);
     } catch {
       setError(t('projects.sprints.completeError'));
     } finally {
@@ -454,15 +575,17 @@ export default function SprintsPage() {
             </span>
           )}
         </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors cursor-pointer"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          {t('projects.sprints.newSprint')}
-        </button>
+        {canManageSprint && (
+          <button
+            onClick={() => setShowCreate(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors cursor-pointer"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            {t('projects.sprints.newSprint')}
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -542,7 +665,7 @@ export default function SprintsPage() {
 
                   {/* Action buttons */}
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {sprint.status === 'PLANNING' && (
+                    {sprint.status === 'PLANNING' && canManageSprint && (
                       confirmThis === 'activate' ? (
                         <div className="flex items-center gap-2">
                           <span className="text-xs text-gray-500">{t('projects.sprints.activateConfirm')}</span>
@@ -572,7 +695,7 @@ export default function SprintsPage() {
                     {sprint.status === 'ACTIVE' && (
                       <>
                         <Link
-                          to={`/workspaces/${workspaceId}/projects/${projectId}/sprints/${sprint.id}/board`}
+                          to={`/workspaces/${workspaceId}/projects/${projectId}/board`}
                           className="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
                         >
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -581,26 +704,9 @@ export default function SprintsPage() {
                           </svg>
                           {t('projects.sprints.viewBoard')}
                         </Link>
-                        {confirmThis === 'complete' ? (
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-gray-500">{t('projects.sprints.completeConfirm')}</span>
-                            <button
-                              onClick={() => handleComplete(sprint.id)}
-                              disabled={actionLoading}
-                              className="text-xs font-medium text-emerald-600 hover:text-emerald-700 transition-colors cursor-pointer"
-                            >
-                              {t('common.confirm')}
-                            </button>
-                            <button
-                              onClick={() => setConfirmAction(null)}
-                              className="text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-                            >
-                              {t('common.cancel')}
-                            </button>
-                          </div>
-                        ) : (
+                        {canManageSprint && (
                           <button
-                            onClick={() => setConfirmAction({ type: 'complete', sprintId: sprint.id })}
+                            onClick={() => { setReviewSprintId(sprint.id); if (!sprintTasks[sprint.id]) handleExpand(sprint.id); }}
                             className="px-3 py-1 text-xs font-medium text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer"
                           >
                             {t('projects.sprints.complete')}
@@ -668,7 +774,7 @@ export default function SprintsPage() {
                             )}
 
                             {/* Remove from sprint */}
-                            {sprint.status !== 'COMPLETED' && (
+                            {sprint.status !== 'COMPLETED' && canPlanSprint && (
                               <button
                                 onClick={() => handleRemoveFromSprint(sprint.id, task.id)}
                                 title={t('projects.sprints.removeTask')}
@@ -685,7 +791,7 @@ export default function SprintsPage() {
                     )}
 
                     {/* Sprint planning button */}
-                    {sprint.status !== 'COMPLETED' && (
+                    {sprint.status !== 'COMPLETED' && canPlanSprint && (
                       <div className="px-4 py-2.5 border-t border-gray-50">
                         <button
                           onClick={() => { setPlanningSprintId(sprint.id); if (!sprintTasks[sprint.id]) handleExpand(sprint.id); }}
@@ -719,6 +825,7 @@ export default function SprintsPage() {
         <SprintPlanningModal
           sprintId={planningSprintId}
           projectId={projectId}
+          sprintGoal={sprints.find((s) => s.id === planningSprintId)?.goal}
           existingTaskIds={new Set((sprintTasks[planningSprintId] ?? []).map((t) => t.id))}
           onClose={() => setPlanningSprintId(null)}
           onAdd={(added) => handleAddToSprint(planningSprintId, added)}
@@ -732,9 +839,23 @@ export default function SprintsPage() {
           onClose={() => { setEditTask(undefined); setEditTaskSprintId(null); }}
           onSave={handleSaveTask}
           onMove={editTask ? handleMoveTask : undefined}
-          onDelete={editTask ? handleDeleteTask : undefined}
+          onDelete={editTask && canDeleteTask ? handleDeleteTask : undefined}
         />
       )}
+
+      {reviewSprintId && (() => {
+        const sprint = sprints.find((s) => s.id === reviewSprintId);
+        if (!sprint) return null;
+        return (
+          <SprintReviewModal
+            sprint={sprint}
+            sprintTasks={sprintTasks[reviewSprintId] ?? []}
+            onClose={() => setReviewSprintId(null)}
+            onConfirm={(notes) => handleComplete(reviewSprintId, notes)}
+            loading={actionLoading}
+          />
+        );
+      })()}
     </div>
   );
 }

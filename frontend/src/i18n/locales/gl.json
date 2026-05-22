@@ -132,6 +132,8 @@
         "descriptionPlaceholder": "Breve descrición do proxecto",
         "category": "Categoría ({{optional}})",
         "noCategory": "Sen categoría",
+        "newCategory": "Nova categoría",
+        "createCategory": "Crear",
         "submit": "Crear proxecto"
       }
     },
@@ -210,10 +212,33 @@
       "dangerSubtitle": "Accións irreversibles que afectan a todo o workspace",
       "deleteWorkspace": "Eliminar workspace",
       "deleteWarning": "Isto eliminará permanentemente o workspace <strong>{{name}}</strong>, todos os seus proxectos, tarefas e membros. Esta acción non se pode desfacer.",
-      "deleteConfirmLabel": "Escribe <strong>{{name}}</strong> para confirmar",
+      "deleteConfirmLabel": "Escribe {{name}} para confirmar",
       "deleteConfirmBtn": "Eliminar este workspace",
       "deleting": "Eliminando...",
-      "deleteError": "Erro ao eliminar o workspace."
+      "deleteError": "Erro ao eliminar o workspace.",
+      "categories": {
+        "title": "Categorías de proxectos",
+        "subtitle": "Organiza os proxectos do workspace por categorías",
+        "newCategory": "Nova categoría",
+        "noCategories": "Non hai categorías aínda",
+        "createError": "Erro ao crear a categoría.",
+        "updateError": "Erro ao actualizar a categoría.",
+        "deleteError": "Erro ao eliminar a categoría.",
+        "modal": {
+          "titleCreate": "Nova categoría",
+          "titleEdit": "Editar categoría",
+          "nameLabel": "Nome",
+          "namePlaceholder": "Frontend, Marketing...",
+          "colorLabel": "Cor",
+          "submitCreate": "Crear categoría",
+          "submitEdit": "Gardar cambios"
+        },
+        "deleteConfirm": {
+          "title": "Eliminar categoría",
+          "message": "Seguro que queres eliminar <strong>{{name}}</strong>? Os proxectos asociados quedarán sen categoría.",
+          "confirm": "Eliminar"
+        }
+      }
     }
   },
   "teams": {
@@ -238,7 +263,8 @@
       "addMember": "Engadir membro",
       "noMembers": "Este equipo aínda non ten membros.",
       "addFirst": "Engadir o primeiro",
-      "userIdPlaceholder": "ID de usuario (UUID)",
+      "searchPlaceholder": "Buscar por nome de usuario…",
+      "noResults": "Non se atoparon membros do workspace dispoñibles.",
       "removeMember": "Eliminar do equipo",
       "delete": "Eliminar equipo",
       "deleteConfirm": {
@@ -263,6 +289,12 @@
         "messageToAdmin": "Conceder permisos de administrador do equipo a <strong>{{name}}</strong>?",
         "messageToMember": "Retirar permisos de administrador do equipo a <strong>{{name}}</strong>?",
         "submit": "Confirmar"
+      },
+      "leaveTeam": "Saír do equipo",
+      "confirmLeave": {
+        "title": "Saír do equipo",
+        "message": "Seguro que queres saír de <strong>{{name}}</strong>?",
+        "submit": "Saír"
       }
     }
   },
@@ -273,7 +305,9 @@
       "backlog": "Backlog",
       "sprints": "Sprints",
       "members": "Membros",
-      "poker": "Poker"
+      "poker": "Poker",
+      "metrics": "Métricas",
+      "settings": "Configuración"
     },
     "kanban": {
       "title": "Taboleiro Kanban",
@@ -283,16 +317,105 @@
       "done": "Feito",
       "newTask": "Nova tarefa",
       "noTasks": "Non hai tarefas",
-      "loadError": "Erro ao cargar as tarefas."
+      "loadError": "Erro ao cargar as tarefas.",
+      "noActiveSprint": "Non hai ningún sprint activo",
+      "noActiveSprintSub": "Activa un sprint desde a sección"
     },
     "members": {
       "title": "Membros",
       "noMembers": "Non hai membros neste proxecto.",
+      "addMember": "Engadir membro",
       "roles": {
         "ADMIN": "Admin",
         "MEMBER": "Membro",
         "VIEWER": "Observador"
+      },
+      "scrumRoles": {
+        "PRODUCT_OWNER": "Product Owner",
+        "SCRUM_MASTER": "Scrum Master",
+        "DEVELOPER": "Developer",
+        "none": "Sen rol Scrum"
+      },
+      "roleLabel": "Rol técnico",
+      "scrumRoleLabel": "Rol Scrum",
+      "removeMember": "Eliminar do proxecto",
+      "confirmRemove": {
+        "title": "Eliminar membro",
+        "message": "Seguro que queres eliminar a <strong>{{name}}</strong> do proxecto?",
+        "confirm": "Eliminar",
+        "removing": "Eliminando..."
+      },
+      "add": {
+        "title": "Engadir membro",
+        "searchPlaceholder": "Buscar por nome de usuario…",
+        "noResults": "Non hai membros do workspace dispoñibles para engadir.",
+        "roleLabel": "Rol no proxecto",
+        "submit": "Engadir",
+        "adding": "Engadindo...",
+        "error": "Erro ao engadir o membro."
+      },
+      "errors": {
+        "changeRole": "Erro ao cambiar o rol.",
+        "changeScrumRole": "Erro ao cambiar o rol Scrum.",
+        "remove": "Erro ao eliminar o membro."
       }
+    },
+    "settings": {
+      "title": "Configuración do proxecto",
+      "subtitle": "Edita a información e preferencias do proxecto",
+      "general": "Información xeral",
+      "nameLabel": "Nome do proxecto",
+      "descriptionLabel": "Descrición",
+      "categoryLabel": "Categoría",
+      "noCategory": "Sen categoría",
+      "save": "Gardar cambios",
+      "saving": "Gardando...",
+      "saveSuccess": "Proxecto actualizado correctamente.",
+      "saveError": "Erro ao gardar os cambios.",
+      "loadError": "Erro ao cargar o proxecto.",
+      "adminOnly": "Só os administradores do proxecto poden modificar esta configuración.",
+      "visibilityLabel": "Visibilidade",
+      "visibility": {
+        "PRIVATE": "Privado",
+        "WORKSPACE": "Todo o workspace",
+        "PRIVATE_desc": "Só os membros do proxecto poden acceder",
+        "WORKSPACE_desc": "Calquera membro do workspace pode ver o proxecto"
+      },
+      "dangerZone": "Zona perigosa",
+      "dangerSubtitle": "Accións irreversibles que afectan ao proxecto",
+      "deleteProject": "Eliminar proxecto",
+      "deleteWarning": "Isto eliminará permanentemente o proxecto <strong>{{name}}</strong> e todas as súas tarefas. Esta acción non se pode desfacer.",
+      "deleteConfirmLabel": "Escribe {{name}} para confirmar",
+      "deleteConfirmBtn": "Eliminar este proxecto",
+      "deleting": "Eliminando...",
+      "deleteError": "Erro ao eliminar o proxecto.",
+      "deleteSuccess": "Proxecto eliminado."
+    },
+    "metrics": {
+      "title": "Métricas do proxecto",
+      "loadError": "Erro ao cargar as métricas.",
+      "totalTasks": "Tarefas totais",
+      "donePct": "{{pct}}% completadas",
+      "storyPointsDone": "Story points feitos",
+      "total": "total",
+      "sprints": "Sprints",
+      "completedSprints": "{{n}} completados",
+      "members": "Membros",
+      "activeSprint": "Sprint activo: {{name}}",
+      "noActiveSprint": "Sen sprint activo",
+      "overallProgress": "Progreso xeral",
+      "taskDistribution": "Distribución de tarefas",
+      "backlogVsSprint": "Backlog vs. Sprints",
+      "inSprints": "En sprints",
+      "inBacklog": "En backlog",
+      "unassigned": "Sen asignar",
+      "totalSprints": "Total",
+      "completed": "Completados",
+      "active": "Activo",
+      "byPriority": "Tarefas por prioridade",
+      "velocity": "Velocidade por sprint (SP completados)",
+      "tasksByMember": "Tarefas por membro",
+      "noTasks": "Non hai datos suficientes para mostrar métricas."
     },
     "backlog": {
       "title": "Backlog",
@@ -378,7 +501,20 @@
         "noBacklog": "Non hai tarefas no backlog",
         "selected": "seleccionadas",
         "addSelected": "Engadir ao sprint",
-        "error": "Erro ao engadir as tarefas."
+        "error": "Erro ao engadir as tarefas.",
+        "goal": "Obxectivo do sprint",
+        "noEstimate": "Sen estimar",
+        "unestimated": "{{count}} tarefa(s) sen story points. Considera estimalas con Planning Poker antes de planificar."
+      },
+      "review": {
+        "title": "Sprint Review",
+        "done": "Completadas",
+        "incomplete": "Ao backlog",
+        "velocity": "Story points",
+        "incompleteWarning": "{{count}} tarefa(s) non finalizadas voltarán automaticamente ao backlog.",
+        "notes": "Notas de revisión / retrospectiva",
+        "notesPlaceholder": "Que foi ben? Que se pode mellorar? Obstáculos atopados?",
+        "complete": "Completar sprint"
       }
     }
   },
@@ -624,6 +760,9 @@
     "PO_SM_OR_ADMIN_REQUIRED": "Requírese rol de Product Owner, Scrum Master ou Administrador.",
     "ALREADY_WORKSPACE_MEMBER": "O usuario xa é membro deste workspace.",
     "ALREADY_TEAM_MEMBER": "O usuario xa é membro deste equipo.",
+    "LAST_TEAM_ADMIN": "Es o único administrador do equipo. Asigna outro administrador antes de realizar esta acción.",
+    "LAST_WORKSPACE_ADMIN": "Es o único administrador do workspace. Asigna outro administrador antes de realizar esta acción.",
+    "LAST_PROJECT_ADMIN": "Es o único administrador do proxecto. Asigna outro administrador antes de realizar esta acción.",
     "ALREADY_PROJECT_MEMBER": "O usuario xa é membro deste proxecto.",
     "SPRINT_NOT_PLANNING": "Só se poden activar sprints en estado PLANNING.",
     "SPRINT_ALREADY_ACTIVE": "Xa existe un sprint activo neste proxecto.",

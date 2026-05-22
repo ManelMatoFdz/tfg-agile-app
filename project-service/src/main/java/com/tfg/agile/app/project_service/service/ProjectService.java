@@ -47,11 +47,16 @@ public class ProjectService {
 
         Category category = resolveCategory(dto.categoryId(), workspaceId);
 
+        ProjectVisibility visibility = dto.visibility() != null
+                ? ProjectVisibility.valueOf(dto.visibility().toUpperCase())
+                : ProjectVisibility.PRIVATE;
+
         Project project = Project.builder()
                 .workspace(workspace)
                 .category(category)
                 .name(dto.name())
                 .description(dto.description())
+                .visibility(visibility)
                 .build();
         projectRepository.save(project);
 
@@ -71,7 +76,7 @@ public class ProjectService {
                 .orElseThrow(() -> new ResourceNotFoundException("WORKSPACE_NOT_FOUND"));
         requireWorkspaceMember(workspaceId, callerId);
 
-        return projectMemberRepository.findProjectsByUserIdAndWorkspaceId(callerId, workspaceId).stream()
+        return projectRepository.findVisibleByWorkspaceIdAndUserId(workspaceId, callerId, ProjectVisibility.WORKSPACE).stream()
                 .map(ProjectResponseDto::from)
                 .toList();
     }
@@ -79,7 +84,7 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public ProjectResponseDto findById(UUID projectId, UUID callerId) {
         Project project = getProjectOrThrow(projectId);
-        requireProjectMember(projectId, callerId);
+        requireProjectAccess(project, callerId);
         return ProjectResponseDto.from(project);
     }
 
@@ -90,9 +95,14 @@ public class ProjectService {
 
         Category category = resolveCategory(dto.categoryId(), project.getWorkspace().getId());
 
+        ProjectVisibility visibility = dto.visibility() != null
+                ? ProjectVisibility.valueOf(dto.visibility().toUpperCase())
+                : project.getVisibility();
+
         project.setName(dto.name());
         project.setDescription(dto.description());
         project.setCategory(category);
+        project.setVisibility(visibility);
         return ProjectResponseDto.from(projectRepository.save(project));
     }
 
@@ -100,13 +110,14 @@ public class ProjectService {
     public void delete(UUID projectId, UUID callerId) {
         getProjectOrThrow(projectId);
         requireProjectAdmin(projectId, callerId);
+        projectMemberRepository.deleteByProjectId(projectId);
         projectRepository.deleteById(projectId);
     }
 
     @Transactional(readOnly = true)
     public List<ProjectMemberResponseDto> getMembers(UUID projectId, UUID callerId) {
-        getProjectOrThrow(projectId);
-        requireProjectMember(projectId, callerId);
+        Project project = getProjectOrThrow(projectId);
+        requireProjectAccess(project, callerId);
         return projectMemberRepository.findByProjectId(projectId).stream()
                 .map(ProjectMemberResponseDto::from)
                 .toList();
@@ -135,7 +146,13 @@ public class ProjectService {
         requireProjectAdmin(projectId, callerId);
         ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
-        member.setRole(ProjectRole.valueOf(dto.role().toUpperCase()));
+        ProjectRole newRole = ProjectRole.valueOf(dto.role().toUpperCase());
+        if (member.getRole() == ProjectRole.ADMIN && newRole != ProjectRole.ADMIN) {
+            if (projectMemberRepository.countByProjectIdAndRole(projectId, ProjectRole.ADMIN) <= 1) {
+                throw new ForbiddenException("LAST_PROJECT_ADMIN");
+            }
+        }
+        member.setRole(newRole);
         return ProjectMemberResponseDto.from(projectMemberRepository.save(member));
     }
 
@@ -156,6 +173,10 @@ public class ProjectService {
         requireProjectAdmin(projectId, callerId);
         ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
+        if (member.getRole() == ProjectRole.ADMIN
+                && projectMemberRepository.countByProjectIdAndRole(projectId, ProjectRole.ADMIN) <= 1) {
+            throw new ForbiddenException("LAST_PROJECT_ADMIN");
+        }
         projectMemberRepository.delete(member);
     }
 
@@ -233,6 +254,16 @@ public class ProjectService {
     private void requireWorkspaceMember(UUID workspaceId, UUID userId) {
         if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
             throw new ForbiddenException("NOT_WORKSPACE_MEMBER");
+        }
+    }
+
+    private void requireProjectAccess(Project project, UUID userId) {
+        if (project.getVisibility() == ProjectVisibility.WORKSPACE
+                && workspaceMemberRepository.existsByWorkspaceIdAndUserId(project.getWorkspace().getId(), userId)) {
+            return;
+        }
+        if (!projectMemberRepository.existsByProjectIdAndUserId(project.getId(), userId)) {
+            throw new ForbiddenException("NOT_PROJECT_MEMBER");
         }
     }
 

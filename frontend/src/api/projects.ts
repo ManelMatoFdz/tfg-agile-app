@@ -1,17 +1,17 @@
 import projectClient from './projectClient';
-import type { Project, ProjectMember, ProjectRole } from '../types';
+import type { Project, ProjectMember, ProjectRole, ProjectVisibility } from '../types';
 
 export const projectsApi = {
   list: (workspaceId: string) =>
     projectClient.get<Project[]>(`/workspaces/${workspaceId}/projects`),
 
-  create: (workspaceId: string, data: { name: string; description?: string; categoryId?: string }) =>
+  create: (workspaceId: string, data: { name: string; description?: string; categoryId?: string; visibility?: ProjectVisibility }) =>
     projectClient.post<Project>(`/workspaces/${workspaceId}/projects`, data),
 
   getById: (projectId: string) =>
     projectClient.get<Project>(`/projects/${projectId}`),
 
-  update: (projectId: string, data: { name: string; description?: string; categoryId?: string }) =>
+  update: (projectId: string, data: { name: string; description?: string; categoryId?: string; visibility?: ProjectVisibility }) =>
     projectClient.put<Project>(`/projects/${projectId}`, data),
 
   delete: (projectId: string) =>
@@ -25,6 +25,9 @@ export const projectsApi = {
 
   updateMemberRole: (projectId: string, userId: string, role: ProjectRole) =>
     projectClient.put<ProjectMember>(`/projects/${projectId}/members/${userId}`, { role }),
+
+  updateScrumRole: (projectId: string, userId: string, scrumRole: string | null) =>
+    projectClient.patch<ProjectMember>(`/projects/${projectId}/members/${userId}/scrum-role`, { scrumRole }),
 
   removeMember: (projectId: string, userId: string) =>
     projectClient.delete(`/projects/${projectId}/members/${userId}`),

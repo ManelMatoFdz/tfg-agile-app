@@ -80,6 +80,13 @@ public class TeamController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/teams/{teamId}/leave")
+    public ResponseEntity<Void> leaveTeam(@PathVariable("teamId") UUID teamId,
+                                          @AuthenticationPrincipal UUID callerId) {
+        teamService.leaveTeam(teamId, callerId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PutMapping("/teams/{teamId}/members/{userId}/role")
     public TeamMemberResponseDto updateMemberRole(
             @PathVariable("teamId") UUID teamId,

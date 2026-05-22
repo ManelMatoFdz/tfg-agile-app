@@ -77,6 +77,7 @@ export interface UserSummary {
 
 export type WorkspaceRole = 'ADMIN' | 'MEMBER';
 export type ProjectRole = 'ADMIN' | 'MEMBER' | 'VIEWER';
+export type ProjectVisibility = 'PRIVATE' | 'WORKSPACE';
 
 export interface Workspace {
   id: string;
@@ -110,6 +111,7 @@ export interface Project {
   categoryId?: string;
   name: string;
   description?: string;
+  visibility: ProjectVisibility;
   createdAt: string;
   updatedAt: string;
 }
@@ -155,6 +157,7 @@ export interface Sprint {
   status: SprintStatus;
   startDate?: string | null;
   endDate?: string | null;
+  reviewNotes?: string | null;
   createdAt: string;
   updatedAt: string;
 }

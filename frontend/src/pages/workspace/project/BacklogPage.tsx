@@ -7,6 +7,7 @@ import { tasksApi } from '../../../api/tasks';
 import type { CreateTaskDto, UpdateTaskDto } from '../../../api/tasks';
 import TaskModal from '../../../components/kanban/TaskModal';
 import Alert from '../../../components/ui/Alert';
+import { useProjectMember } from '../../../hooks/useProjectMember';
 
 const PRIORITY_ORDER: TaskPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
@@ -27,6 +28,8 @@ const STATUS_COLORS: Record<TaskStatus, string> = {
 export default function BacklogPage() {
   const { t } = useTranslation();
   const { projectId } = useParams<{ projectId: string }>();
+
+  const { canCreateTask, canDeleteTask } = useProjectMember(projectId);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,15 +96,17 @@ export default function BacklogPage() {
             </div>
           )}
         </div>
-        <button
-          onClick={() => setModalTask(null)}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors cursor-pointer"
-        >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          {t('projects.backlog.newTask')}
-        </button>
+        {canCreateTask && (
+          <button
+            onClick={() => setModalTask(null)}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors cursor-pointer"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            {t('projects.backlog.newTask')}
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -183,7 +188,7 @@ export default function BacklogPage() {
           onClose={() => setModalTask(undefined)}
           onSave={handleSave}
           onMove={modalTask ? handleMove : undefined}
-          onDelete={modalTask ? handleDelete : undefined}
+          onDelete={modalTask && canDeleteTask ? handleDelete : undefined}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { teamsApi } from '../../api/teams';
@@ -9,7 +9,7 @@ import { useAuthStore } from '../../store/authStore';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Alert from '../../components/ui/Alert';
-import type { Team, TeamMember, TeamRole } from '../../types';
+import type { Team, TeamMember, TeamRole, UserSummary } from '../../types';
 
 function RoleBadge({ role }: { role: TeamRole }) {
   const { t } = useTranslation();
@@ -27,39 +27,50 @@ function RoleBadge({ role }: { role: TeamRole }) {
   );
 }
 
+function UserAvatar({ user, size = 'md' }: { user: UserSummary; size?: 'sm' | 'md' }) {
+  const [imgError, setImgError] = useState(false);
+  const dim = size === 'sm' ? 'w-8 h-8' : 'w-9 h-9';
+  const text = size === 'sm' ? 'text-xs' : 'text-sm';
+  const label = user.fullName || user.username;
+  return (
+    <div className={`${dim} rounded-xl overflow-hidden flex-shrink-0`}>
+      {user.avatarUrl && !imgError ? (
+        <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={() => setImgError(true)} />
+      ) : (
+        <div className={`w-full h-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white ${text} font-bold`}>
+          {label.charAt(0).toUpperCase()}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MemberRow({
   member,
-  displayName,
-  avatarUrl,
+  user,
   canManage,
+  isSelf,
   onRemove,
   onChangeRole,
   removing,
 }: {
   member: TeamMember;
-  displayName: string;
-  avatarUrl?: string;
+  user?: UserSummary;
   canManage: boolean;
+  isSelf: boolean;
   onRemove: (userId: string) => void;
   onChangeRole: (userId: string, newRole: TeamRole) => void;
   removing: boolean;
 }) {
   const { t } = useTranslation();
-  const [imgError, setImgError] = useState(false);
   const newRole: TeamRole = member.role === 'ADMIN' ? 'MEMBER' : 'ADMIN';
+  const displayName = user?.fullName || user?.username || t('common.unknownUser');
+  const fakeUser: UserSummary = { id: member.userId, username: displayName, fullName: user?.fullName, avatarUrl: user?.avatarUrl };
 
   return (
     <div className="flex items-center justify-between py-3 px-4 rounded-xl hover:bg-gray-50/70 transition-colors group">
       <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0">
-          {avatarUrl && !imgError ? (
-            <img src={avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={() => setImgError(true)} />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-sm font-bold">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
+        <UserAvatar user={fakeUser} />
         <div>
           <div className="flex items-center gap-2">
             <p className="text-sm font-medium text-gray-900">{displayName}</p>
@@ -82,48 +93,112 @@ function MemberRow({
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
           </button>
-          <button
-            onClick={() => onRemove(member.userId)}
-            disabled={removing}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200 cursor-pointer flex-shrink-0"
-            title={t('teams.detail.removeMember')}
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {!isSelf && (
+            <button
+              onClick={() => onRemove(member.userId)}
+              disabled={removing}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200 cursor-pointer flex-shrink-0"
+              title={t('teams.detail.removeMember')}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
       )}
     </div>
   );
 }
 
-function MemberList({ members, canManage, onRemove, onChangeRole, removingId }: {
+function MemberList({ members, userMap, canManage, currentUserId, onRemove, onChangeRole, removingId }: {
   members: TeamMember[];
+  userMap: Map<string, UserSummary>;
   canManage: boolean;
+  currentUserId?: string;
   onRemove: (userId: string) => void;
   onChangeRole: (userId: string, newRole: TeamRole) => void;
   removingId: string | null;
 }) {
-  const { t } = useTranslation();
-  const userMap = useUserMap(members.map((m) => m.userId));
   return (
     <div className="divide-y divide-gray-100/60">
-      {members.map((m) => {
-        const u = userMap.get(m.userId);
-        return (
-          <MemberRow
-            key={m.id}
-            member={m}
-            displayName={u?.fullName || u?.username || t('common.unknownUser')}
-            avatarUrl={u?.avatarUrl}
-            canManage={canManage}
-            onRemove={onRemove}
-            onChangeRole={onChangeRole}
-            removing={removingId === m.userId}
-          />
-        );
-      })}
+      {members.map((m) => (
+        <MemberRow
+          key={m.id}
+          member={m}
+          user={userMap.get(m.userId)}
+          canManage={canManage}
+          isSelf={m.userId === currentUserId}
+          onRemove={onRemove}
+          onChangeRole={onChangeRole}
+          removing={removingId === m.userId}
+        />
+      ))}
+    </div>
+  );
+}
+
+function MemberPicker({
+  candidates,
+  search,
+  onSearch,
+  onSelect,
+  onCancel,
+  loading,
+  error,
+  onErrorClose,
+}: {
+  candidates: UserSummary[];
+  search: string;
+  onSearch: (v: string) => void;
+  onSelect: (userId: string) => void;
+  onCancel: () => void;
+  loading: boolean;
+  error: string | null;
+  onErrorClose: () => void;
+}) {
+  const { t } = useTranslation();
+
+  return (
+    <div className="mb-4 animate-fade-in">
+      {error && <Alert type="error" message={error} onClose={onErrorClose} />}
+      <Input
+        placeholder={t('teams.detail.searchPlaceholder')}
+        value={search}
+        onChange={(e) => onSearch(e.target.value)}
+        autoFocus
+        className="w-full"
+      />
+      <div className="mt-2 max-h-52 overflow-y-auto rounded-xl border border-gray-100 bg-white shadow-sm">
+        {loading ? (
+          <div className="flex justify-center py-4">
+            <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : candidates.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">{t('teams.detail.noResults')}</p>
+        ) : (
+          <div className="divide-y divide-gray-50">
+            {candidates.map((u) => (
+              <button
+                key={u.id}
+                onClick={() => onSelect(u.id)}
+                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary-50/60 transition-colors text-left cursor-pointer"
+              >
+                <UserAvatar user={u} size="sm" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{u.fullName || u.username}</p>
+                  <p className="text-xs text-gray-400">@{u.username}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="mt-2 flex justify-end">
+        <Button variant="secondary" onClick={onCancel}>
+          {t('common.cancel')}
+        </Button>
+      </div>
     </div>
   );
 }
@@ -136,19 +211,26 @@ export default function TeamDetailPage() {
 
   const [team, setTeam] = useState<Team | null>(null);
   const [members, setMembers] = useState<TeamMember[]>([]);
+  const [workspaceMemberIds, setWorkspaceMemberIds] = useState<string[]>([]);
   const [canManage, setCanManage] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
-  const [newUserId, setNewUserId] = useState('');
+  const [search, setSearch] = useState('');
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
   const [confirmRoleChange, setConfirmRoleChange] = useState<{ userId: string; newRole: TeamRole } | null>(null);
-  const [roleChanging, setRoleChanging] = useState(false);
 
   const teamAction = useApiAction<Team>();
   const membersAction = useApiAction<TeamMember[]>();
   const addAction = useApiAction<TeamMember>();
   const deleteAction = useApiAction<void>();
+  const leaveAction = useApiAction<void>();
+  const roleChangeAction = useApiAction<TeamMember>();
+
+  // userMap covers both team members and all workspace members for the picker
+  const allTrackedIds = [...new Set([...members.map((m) => m.userId), ...workspaceMemberIds])];
+  const userMap = useUserMap(allTrackedIds);
 
   useEffect(() => {
     if (!teamId || !workspaceId) return;
@@ -163,19 +245,31 @@ export default function TeamDetailPage() {
       }
     });
     workspacesApi.getMembers(workspaceId).then((res) => {
+      setWorkspaceMemberIds(res.data.map((m) => m.userId));
       const isWorkspaceAdmin = res.data.some((m) => m.userId === currentUser?.id && m.role === 'ADMIN');
       if (isWorkspaceAdmin) setCanManage(true);
     }).catch(() => {});
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [teamId, workspaceId]);
 
-  const handleAddMember = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!teamId || !newUserId.trim()) return;
-    const data = await addAction.run(teamsApi.addMember(teamId, newUserId.trim()));
+  const teamMemberSet = new Set(members.map((m) => m.userId));
+
+  const candidates = workspaceMemberIds
+    .filter((uid) => !teamMemberSet.has(uid))
+    .map((uid) => userMap.get(uid))
+    .filter((u): u is UserSummary => u !== undefined)
+    .filter((u) => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return (u.username?.toLowerCase().includes(q) || u.fullName?.toLowerCase().includes(q));
+    });
+
+  const handleAddMember = async (userId: string) => {
+    if (!teamId) return;
+    const data = await addAction.run(teamsApi.addMember(teamId, userId));
     if (data) {
       setMembers((prev) => [...prev, data]);
-      setNewUserId('');
+      setSearch('');
       setShowAddMember(false);
       addAction.reset();
     }
@@ -197,17 +291,16 @@ export default function TeamDetailPage() {
 
   const handleRoleChange = async () => {
     if (!teamId || !confirmRoleChange) return;
-    setRoleChanging(true);
-    setConfirmRoleChange(null);
-    try {
-      const updated = await teamsApi.updateMemberRole(teamId, confirmRoleChange.userId, confirmRoleChange.newRole);
-      setMembers((prev) => prev.map((m) => m.userId === confirmRoleChange.userId ? { ...m, role: updated.data.role } : m));
-    } catch {
-      // ignore
-    } finally {
-      setRoleChanging(false);
+    const { userId, newRole } = confirmRoleChange;
+    const updated = await roleChangeAction.run(teamsApi.updateMemberRole(teamId, userId, newRole));
+    if (updated) {
+      setMembers((prev) => prev.map((m) => m.userId === userId ? { ...m, role: updated.role } : m));
+      setConfirmRoleChange(null);
+      roleChangeAction.reset();
     }
   };
+
+  const isCurrentUserMember = members.some((m) => m.userId === currentUser?.id);
 
   const handleDeleteTeam = async () => {
     if (!teamId) return;
@@ -215,7 +308,14 @@ export default function TeamDetailPage() {
     navigate(`/workspaces/${workspaceId}/teams`);
   };
 
-  const userMap = useUserMap(members.map((m) => m.userId));
+  const handleLeaveTeam = async () => {
+    if (!teamId) return;
+    const result = await leaveAction.run(teamsApi.leaveTeam(teamId));
+    if (result !== null) {
+      navigate(`/workspaces/${workspaceId}/teams`);
+    }
+  };
+
   const getDisplayName = (userId: string) => {
     const u = userMap.get(userId);
     return u?.fullName || u?.username || t('common.unknownUser');
@@ -261,17 +361,30 @@ export default function TeamDetailPage() {
                   </p>
                 </div>
               </div>
-              {canManage && (
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200 cursor-pointer flex-shrink-0"
-                  title={t('teams.detail.delete')}
-                >
-                  <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-              )}
+              <div className="flex items-center gap-1">
+                {isCurrentUserMember && (
+                  <button
+                    onClick={() => setShowLeaveConfirm(true)}
+                    className="p-2 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-all duration-200 cursor-pointer flex-shrink-0"
+                    title={t('teams.detail.leaveTeam')}
+                  >
+                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
+                )}
+                {canManage && (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200 cursor-pointer flex-shrink-0"
+                    title={t('teams.detail.delete')}
+                  >
+                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -299,32 +412,18 @@ export default function TeamDetailPage() {
               )}
             </div>
 
-            {/* Add member form */}
+            {/* Member picker */}
             {showAddMember && (
-              <div className="mb-4 p-4 bg-gray-50/70 rounded-xl animate-fade-in">
-                {addAction.error && (
-                  <Alert type="error" message={addAction.error} onClose={addAction.reset} />
-                )}
-                <form onSubmit={handleAddMember} className="flex gap-2">
-                  <Input
-                    placeholder={t('teams.detail.userIdPlaceholder')}
-                    value={newUserId}
-                    onChange={(e) => setNewUserId(e.target.value)}
-                    required
-                    className="flex-1"
-                  />
-                  <Button type="submit" loading={addAction.loading}>
-                    {t('common.add')}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => { setShowAddMember(false); setNewUserId(''); addAction.reset(); }}
-                  >
-                    {t('common.cancel')}
-                  </Button>
-                </form>
-              </div>
+              <MemberPicker
+                candidates={candidates}
+                search={search}
+                onSearch={setSearch}
+                onSelect={handleAddMember}
+                onCancel={() => { setShowAddMember(false); setSearch(''); addAction.reset(); }}
+                loading={addAction.loading}
+                error={addAction.error}
+                onErrorClose={addAction.reset}
+              />
             )}
 
             {membersAction.loading ? (
@@ -346,7 +445,9 @@ export default function TeamDetailPage() {
             ) : (
               <MemberList
                 members={members}
+                userMap={userMap}
                 canManage={canManage}
+                currentUserId={currentUser?.id}
                 onRemove={(userId) => setConfirmRemoveId(userId)}
                 onChangeRole={(userId, newRole) => setConfirmRoleChange({ userId, newRole })}
                 removingId={removingId}
@@ -355,6 +456,43 @@ export default function TeamDetailPage() {
           </div>
         </div>
       ) : null}
+
+      {/* Leave team confirm modal */}
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setShowLeaveConfirm(false); leaveAction.reset(); }} />
+          <div className="relative z-10 w-full max-w-sm glass-card-strong p-6 shadow-2xl animate-fade-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900">{t('teams.detail.confirmLeave.title')}</h2>
+            </div>
+            <p
+              className="text-sm text-gray-500 mb-5"
+              dangerouslySetInnerHTML={{ __html: t('teams.detail.confirmLeave.message', { name: team?.name ?? '' }) }}
+            />
+            {leaveAction.error && (
+              <Alert type="error" message={leaveAction.error} onClose={leaveAction.reset} />
+            )}
+            <div className="flex gap-3">
+              <Button
+                variant="danger"
+                loading={leaveAction.loading}
+                onClick={handleLeaveTeam}
+                className="flex-1"
+              >
+                {t('teams.detail.confirmLeave.submit')}
+              </Button>
+              <Button variant="secondary" onClick={() => { setShowLeaveConfirm(false); leaveAction.reset(); }}>
+                {t('common.cancel')}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete team confirm modal */}
       {showDeleteConfirm && (
@@ -401,7 +539,7 @@ export default function TeamDetailPage() {
             </div>
             <p
               className="text-sm text-gray-500 mb-5"
-              dangerouslySetInnerHTML={{ __html: t('teams.detail.confirmRemove.message', { name: confirmRemoveId ? getDisplayName(confirmRemoveId) : '' }) }}
+              dangerouslySetInnerHTML={{ __html: t('teams.detail.confirmRemove.message', { name: getDisplayName(confirmRemoveId) }) }}
             />
             <div className="flex gap-3">
               <Button variant="danger" onClick={handleRemoveMember} className="flex-1">
@@ -418,7 +556,7 @@ export default function TeamDetailPage() {
       {/* Role change confirm modal */}
       {confirmRoleChange && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmRoleChange(null)} />
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setConfirmRoleChange(null); roleChangeAction.reset(); }} />
           <div className="relative z-10 w-full max-w-sm glass-card-strong p-6 shadow-2xl animate-fade-in">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
@@ -429,18 +567,21 @@ export default function TeamDetailPage() {
               <h2 className="text-lg font-semibold text-gray-900">{t('teams.detail.confirmRoleChange.title')}</h2>
             </div>
             <p
-              className="text-sm text-gray-500 mb-5"
+              className="text-sm text-gray-500 mb-4"
               dangerouslySetInnerHTML={{
                 __html: confirmRoleChange.newRole === 'ADMIN'
                   ? t('teams.detail.confirmRoleChange.messageToAdmin', { name: getDisplayName(confirmRoleChange.userId) })
                   : t('teams.detail.confirmRoleChange.messageToMember', { name: getDisplayName(confirmRoleChange.userId) }),
               }}
             />
+            {roleChangeAction.error && (
+              <Alert type="error" message={roleChangeAction.error} onClose={roleChangeAction.reset} />
+            )}
             <div className="flex gap-3">
-              <Button loading={roleChanging} onClick={handleRoleChange} className="flex-1">
+              <Button loading={roleChangeAction.loading} onClick={handleRoleChange} className="flex-1">
                 {t('teams.detail.confirmRoleChange.submit')}
               </Button>
-              <Button variant="secondary" onClick={() => setConfirmRoleChange(null)}>
+              <Button variant="secondary" onClick={() => { setConfirmRoleChange(null); roleChangeAction.reset(); }}>
                 {t('common.cancel')}
               </Button>
             </div>

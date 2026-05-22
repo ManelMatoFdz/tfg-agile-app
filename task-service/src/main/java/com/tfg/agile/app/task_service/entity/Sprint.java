@@ -42,6 +42,9 @@ public class Sprint {
     @Column
     private LocalDate endDate;
 
+    @Column(columnDefinition = "TEXT")
+    private String reviewNotes;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

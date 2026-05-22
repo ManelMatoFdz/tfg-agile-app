@@ -23,9 +23,13 @@ public interface ProjectMemberRepository extends JpaRepository<ProjectMember, UU
 
     boolean existsByProjectIdAndUserIdAndRole(UUID projectId, UUID userId, ProjectRole role);
 
+    long countByProjectIdAndRole(UUID projectId, ProjectRole role);
+
     @Query("SELECT pm.project FROM ProjectMember pm WHERE pm.userId = :userId AND pm.project.workspace.id = :workspaceId")
     List<Project> findProjectsByUserIdAndWorkspaceId(@Param("userId") UUID userId,
                                                      @Param("workspaceId") UUID workspaceId);
 
     List<ProjectMember> findByProjectIdAndUserIdIn(UUID projectId, List<UUID> userIds);
+
+    void deleteByProjectId(UUID projectId);
 }

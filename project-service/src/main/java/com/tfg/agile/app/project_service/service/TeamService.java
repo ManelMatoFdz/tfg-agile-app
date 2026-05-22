@@ -83,6 +83,7 @@ public class TeamService {
     public void delete(UUID teamId, UUID callerId) {
         Team team = getTeamOrThrow(teamId);
         requireTeamAdminOrWorkspaceAdmin(teamId, team.getWorkspace().getId(), callerId);
+        teamMemberRepository.deleteByTeamId(teamId);
         teamRepository.deleteById(teamId);
     }
 
@@ -120,11 +121,35 @@ public class TeamService {
     }
 
     @Transactional
+    public void leaveTeam(UUID teamId, UUID callerId) {
+        getTeamOrThrow(teamId);
+        TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, callerId)
+                .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
+        if (member.getRole() == TeamRole.ADMIN) {
+            long adminCount = teamMemberRepository.findByTeamId(teamId).stream()
+                    .filter(m -> m.getRole() == TeamRole.ADMIN)
+                    .count();
+            if (adminCount <= 1) {
+                throw new ConflictException("LAST_TEAM_ADMIN");
+            }
+        }
+        teamMemberRepository.delete(member);
+    }
+
+    @Transactional
     public TeamMemberResponseDto updateMemberRole(UUID teamId, UUID targetUserId, UpdateTeamMemberRoleRequestDto dto, UUID callerId) {
         Team team = getTeamOrThrow(teamId);
         requireTeamAdminOrWorkspaceAdmin(teamId, team.getWorkspace().getId(), callerId);
         TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
+        if (member.getRole() == TeamRole.ADMIN && dto.role() == TeamRole.MEMBER) {
+            long adminCount = teamMemberRepository.findByTeamId(teamId).stream()
+                    .filter(m -> m.getRole() == TeamRole.ADMIN)
+                    .count();
+            if (adminCount <= 1) {
+                throw new ConflictException("LAST_TEAM_ADMIN");
+            }
+        }
         member.setRole(dto.role());
         return TeamMemberResponseDto.from(teamMemberRepository.save(member));
     }

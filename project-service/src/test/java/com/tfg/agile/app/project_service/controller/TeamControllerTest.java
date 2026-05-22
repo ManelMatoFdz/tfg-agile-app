@@ -4,6 +4,7 @@ import com.tfg.agile.app.project_service.dto.CreateTeamRequestDto;
 import com.tfg.agile.app.project_service.dto.TeamMemberResponseDto;
 import com.tfg.agile.app.project_service.dto.TeamResponseDto;
 import com.tfg.agile.app.project_service.dto.UpdateTeamRequestDto;
+import com.tfg.agile.app.project_service.entity.TeamRole;
 import com.tfg.agile.app.project_service.service.TeamService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +36,7 @@ class TeamControllerTest {
         CreateTeamRequestDto createRequest = new CreateTeamRequestDto("Team", "Desc");
         UpdateTeamRequestDto updateRequest = new UpdateTeamRequestDto("Team 2", "Desc 2");
         TeamResponseDto teamResponse = new TeamResponseDto(teamId, workspaceId, "Team", "Desc", Instant.now(), Instant.now());
-        TeamMemberResponseDto memberResponse = new TeamMemberResponseDto(UUID.randomUUID(), userId, Instant.now());
+        TeamMemberResponseDto memberResponse = new TeamMemberResponseDto(UUID.randomUUID(), userId, TeamRole.MEMBER, Instant.now());
 
         when(teamService.create(workspaceId, createRequest, callerId)).thenReturn(teamResponse);
         when(teamService.findByWorkspace(workspaceId, callerId)).thenReturn(List.of(teamResponse));
@@ -57,4 +58,3 @@ class TeamControllerTest {
         verify(teamService).removeMember(teamId, userId, callerId);
     }
 }
-

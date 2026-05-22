@@ -2,6 +2,7 @@ package com.tfg.agile.app.task_service.service;
 
 import com.tfg.agile.app.task_service.client.ProjectServiceClient;
 import com.tfg.agile.app.task_service.dto.AssignTaskToSprintRequestDto;
+import com.tfg.agile.app.task_service.dto.CompleteSprintRequestDto;
 import com.tfg.agile.app.task_service.dto.CreateSprintRequestDto;
 import com.tfg.agile.app.task_service.dto.UpdateSprintRequestDto;
 import com.tfg.agile.app.task_service.entity.Sprint;
@@ -209,7 +210,7 @@ class SprintServiceTest {
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
 
-        assertThatThrownBy(() -> service.completeSprint(sprint.getId(), callerId))
+        assertThatThrownBy(() -> service.completeSprint(sprint.getId(), null, callerId))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("Only ACTIVE sprints can be completed");
     }
@@ -235,12 +236,92 @@ class SprintServiceTest {
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(sprintRepository.save(sprint)).thenReturn(sprint);
 
-        var response = service.completeSprint(sprint.getId(), callerId);
+        var response = service.completeSprint(sprint.getId(), null, callerId);
 
         assertThat(response.status()).isEqualTo(SprintStatus.COMPLETED);
         assertThat(openTask.getSprintId()).isNull();
         assertThat(openTask.getStatus()).isEqualTo(TaskStatus.TODO);
         assertThat(doneTask.getSprintId()).isEqualTo(sprint.getId());
+    }
+
+    @Test
+    void completeSprint_savesReviewNotesWhenProvided() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+        sprint.setStatus(SprintStatus.ACTIVE);
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+        when(taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprint.getId())).thenReturn(List.of());
+        when(sprintRepository.save(sprint)).thenReturn(sprint);
+
+        service.completeSprint(sprint.getId(), new CompleteSprintRequestDto("Great sprint!"), callerId);
+
+        assertThat(sprint.getReviewNotes()).isEqualTo("Great sprint!");
+    }
+
+    @Test
+    void activateSprint_allowsProductOwnerToActivate() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
+        when(sprintRepository.existsByProjectIdAndStatus(projectId, SprintStatus.ACTIVE)).thenReturn(false);
+        when(sprintRepository.save(sprint)).thenReturn(sprint);
+
+        var response = service.activateSprint(sprint.getId(), callerId);
+
+        assertThat(response.status()).isEqualTo(SprintStatus.ACTIVE);
+    }
+
+    @Test
+    void completeSprint_allowsProductOwnerToComplete() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+        sprint.setStatus(SprintStatus.ACTIVE);
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
+        when(taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprint.getId())).thenReturn(List.of());
+        when(sprintRepository.save(sprint)).thenReturn(sprint);
+
+        var response = service.completeSprint(sprint.getId(), null, callerId);
+
+        assertThat(response.status()).isEqualTo(SprintStatus.COMPLETED);
+    }
+
+    @Test
+    void createSprint_rejectsEndDateBeforeStartDate() {
+        UUID projectId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+
+        assertThatThrownBy(() -> service.createSprint(projectId,
+                new CreateSprintRequestDto("Sprint", "Goal", LocalDate.now(), LocalDate.now().minusDays(1)),
+                callerId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("SPRINT_END_DATE_BEFORE_START_DATE");
+    }
+
+    @Test
+    void updateSprint_rejectsEndDateBeforeStartDate() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+
+        assertThatThrownBy(() -> service.updateSprint(sprint.getId(),
+                new UpdateSprintRequestDto("Sprint", "Goal", LocalDate.now(), LocalDate.now().minusDays(1), null),
+                callerId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("SPRINT_END_DATE_BEFORE_START_DATE");
     }
 
     @Test

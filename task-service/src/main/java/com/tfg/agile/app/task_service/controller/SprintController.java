@@ -72,8 +72,9 @@ public class SprintController {
 
     @PostMapping("/sprints/{sprintId}/complete")
     public SprintResponseDto completeSprint(@PathVariable("sprintId") UUID sprintId,
+                                            @RequestBody(required = false) CompleteSprintRequestDto dto,
                                             @AuthenticationPrincipal UUID callerId) {
-        return sprintService.completeSprint(sprintId, callerId);
+        return sprintService.completeSprint(sprintId, dto, callerId);
     }
 
     @PostMapping("/sprints/{sprintId}/tasks")

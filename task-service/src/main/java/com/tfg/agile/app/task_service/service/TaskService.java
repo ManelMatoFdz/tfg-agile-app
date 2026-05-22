@@ -83,9 +83,7 @@ public class TaskService {
         if (isViewer(perms)) {
             throw new ForbiddenException("VIEWER_CANNOT_EDIT_TASKS");
         }
-        if (!task.getReporterId().equals(callerId) && !canEditAnyTask(perms)) {
-            throw new ForbiddenException("OWN_TASKS_ONLY");
-        }
+        // In Scrum the team owns the sprint backlog collectively — any non-VIEWER can edit any task
 
         task.setTitle(dto.title());
         task.setDescription(dto.description());
@@ -118,8 +116,8 @@ public class TaskService {
         Task task = getTaskOrThrow(taskId);
         MemberPermissionsDto perms = requireMember(task.getProjectId(), callerId);
 
-        if (!isAdmin(perms)) {
-            throw new ForbiddenException("ADMIN_REQUIRED_DELETE_TASK");
+        if (!isAdmin(perms) && !canEditAnyTask(perms)) {
+            throw new ForbiddenException("INSUFFICIENT_ROLE_DELETE_TASK");
         }
 
         taskRepository.delete(task);

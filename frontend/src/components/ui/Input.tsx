@@ -33,16 +33,15 @@ export default function Input({ label, error, icon, id, className = '', onFocus,
         <input
           id={inputId}
           className={`
-            block w-full rounded-xl border bg-white/80 backdrop-blur-sm
-            ${icon ? 'pl-11' : 'px-4'} ${icon ? '' : ''} py-3
+            block w-full rounded-lg border bg-white
+            ${icon ? 'pl-11' : 'px-3.5'} py-2.5
             text-sm placeholder:text-gray-400
-            transition-all duration-300 ease-out
-            focus:bg-white focus:border-primary-400 focus:ring-4 focus:ring-primary-500/10 focus:outline-none
-            focus:shadow-lg focus:shadow-primary-500/5
+            transition-all duration-150
+            focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 focus:outline-none
             hover:border-gray-300
-            disabled:cursor-not-allowed disabled:bg-gray-50/80 disabled:text-gray-500 disabled:border-gray-200
+            disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400
             ${error
-              ? 'border-red-300 focus:border-red-400 focus:ring-red-500/10 focus:shadow-red-500/5'
+              ? 'border-red-300 focus:border-red-400 focus:ring-red-500/15'
               : 'border-gray-200'
             }
             ${className}
@@ -51,10 +50,6 @@ export default function Input({ label, error, icon, id, className = '', onFocus,
           onBlur={(e) => { setFocused(false); onBlur?.(e); }}
           {...rest}
         />
-        {/* Bottom glow line on focus */}
-        <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] bg-gradient-to-r from-transparent via-primary-500 to-transparent transition-all duration-500 rounded-full ${
-          focused ? 'w-[80%] opacity-100' : 'w-0 opacity-0'
-        }`} />
       </div>
       {error && (
         <p className="text-xs text-red-500 animate-slide-up flex items-center gap-1">

@@ -9,6 +9,7 @@ import com.tfg.agile.app.project_service.dto.UpdateMemberRoleRequestDto;
 import com.tfg.agile.app.project_service.dto.UpdateProjectRequestDto;
 import com.tfg.agile.app.project_service.dto.UpdateScrumRoleRequestDto;
 import com.tfg.agile.app.project_service.entity.ProjectRole;
+import com.tfg.agile.app.project_service.entity.ProjectVisibility;
 import com.tfg.agile.app.project_service.entity.ScrumRole;
 import com.tfg.agile.app.project_service.service.ProjectService;
 import org.junit.jupiter.api.Test;
@@ -39,14 +40,14 @@ class ProjectControllerTest {
         UUID callerId = UUID.randomUUID();
         UUID targetUserId = UUID.randomUUID();
 
-        CreateProjectRequestDto createRequest = new CreateProjectRequestDto("Project", "Desc", null);
-        UpdateProjectRequestDto updateRequest = new UpdateProjectRequestDto("Project 2", "Desc 2", null);
+        CreateProjectRequestDto createRequest = new CreateProjectRequestDto("Project", "Desc", null, "private");
+        UpdateProjectRequestDto updateRequest = new UpdateProjectRequestDto("Project 2", "Desc 2", null, "private");
         AddMemberRequestDto addMemberRequest = new AddMemberRequestDto(targetUserId, "member");
         UpdateMemberRoleRequestDto updateRoleRequest = new UpdateMemberRoleRequestDto("viewer");
         UpdateScrumRoleRequestDto updateScrumRoleRequest = new UpdateScrumRoleRequestDto("product_owner");
         AddTeamMembersRequestDto addTeamMembersRequest = new AddTeamMembersRequestDto(List.of(targetUserId));
 
-        ProjectResponseDto projectResponse = new ProjectResponseDto(projectId, workspaceId, null, "Project", "Desc", Instant.now(), Instant.now());
+        ProjectResponseDto projectResponse = new ProjectResponseDto(projectId, workspaceId, null, "Project", "Desc", ProjectVisibility.PRIVATE, Instant.now(), Instant.now());
         ProjectMemberResponseDto memberResponse = new ProjectMemberResponseDto(UUID.randomUUID(), targetUserId, ProjectRole.MEMBER, ScrumRole.PRODUCT_OWNER, Instant.now());
 
         when(projectService.create(workspaceId, createRequest, callerId)).thenReturn(projectResponse);
@@ -75,4 +76,3 @@ class ProjectControllerTest {
         verify(projectService).removeMember(projectId, targetUserId, callerId);
     }
 }
-

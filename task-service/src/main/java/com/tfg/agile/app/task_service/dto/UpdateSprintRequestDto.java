@@ -8,5 +8,6 @@ public record UpdateSprintRequestDto(
         @NotBlank String name,
         String goal,
         LocalDate startDate,
-        LocalDate endDate
+        LocalDate endDate,
+        String reviewNotes
 ) {}

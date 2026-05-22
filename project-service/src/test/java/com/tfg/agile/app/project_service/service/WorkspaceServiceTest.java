@@ -10,6 +10,12 @@ import com.tfg.agile.app.project_service.entity.WorkspaceRole;
 import com.tfg.agile.app.project_service.exception.ConflictException;
 import com.tfg.agile.app.project_service.exception.ForbiddenException;
 import com.tfg.agile.app.project_service.exception.ResourceNotFoundException;
+import com.tfg.agile.app.project_service.repository.CategoryRepository;
+import com.tfg.agile.app.project_service.repository.ProjectMemberRepository;
+import com.tfg.agile.app.project_service.repository.ProjectRepository;
+import com.tfg.agile.app.project_service.repository.TeamMemberRepository;
+import com.tfg.agile.app.project_service.repository.TeamRepository;
+import com.tfg.agile.app.project_service.repository.WorkspaceInvitationRepository;
 import com.tfg.agile.app.project_service.repository.WorkspaceMemberRepository;
 import com.tfg.agile.app.project_service.repository.WorkspaceRepository;
 import com.tfg.agile.app.project_service.support.TestDataFactory;
@@ -36,12 +42,33 @@ class WorkspaceServiceTest {
     private WorkspaceRepository workspaceRepository;
     @Mock
     private WorkspaceMemberRepository memberRepository;
+    @Mock
+    private TeamRepository teamRepository;
+    @Mock
+    private TeamMemberRepository teamMemberRepository;
+    @Mock
+    private ProjectRepository projectRepository;
+    @Mock
+    private ProjectMemberRepository projectMemberRepository;
+    @Mock
+    private CategoryRepository categoryRepository;
+    @Mock
+    private WorkspaceInvitationRepository invitationRepository;
 
     private WorkspaceService service;
 
     @BeforeEach
     void setUp() {
-        service = new WorkspaceService(workspaceRepository, memberRepository);
+        service = new WorkspaceService(
+                workspaceRepository,
+                memberRepository,
+                teamRepository,
+                teamMemberRepository,
+                projectRepository,
+                projectMemberRepository,
+                categoryRepository,
+                invitationRepository
+        );
     }
 
     @Test
@@ -166,9 +193,14 @@ class WorkspaceServiceTest {
 
         when(workspaceRepository.findById(workspace.getId())).thenReturn(Optional.of(workspace));
         when(memberRepository.existsByWorkspaceIdAndUserIdAndRole(workspace.getId(), callerId, WorkspaceRole.ADMIN)).thenReturn(true);
+        when(teamRepository.findByWorkspaceId(workspace.getId())).thenReturn(List.of());
+        when(projectRepository.findByWorkspaceId(workspace.getId())).thenReturn(List.of());
 
         service.delete(workspace.getId(), callerId);
 
+        verify(categoryRepository).deleteByWorkspaceId(workspace.getId());
+        verify(invitationRepository).deleteByWorkspaceId(workspace.getId());
+        verify(memberRepository).deleteByWorkspaceId(workspace.getId());
         verify(workspaceRepository).deleteById(workspace.getId());
     }
 

@@ -15,6 +15,7 @@ import com.tfg.agile.app.task_service.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -74,6 +75,8 @@ public class SprintService {
         MemberPermissionsDto perms = requireMember(projectId, callerId);
         requireScrumMasterOrAdmin(perms);
 
+        validateDateRange(dto.startDate(), dto.endDate());
+
         Sprint sprint = Sprint.builder()
                 .projectId(projectId)
                 .name(dto.name())
@@ -94,10 +97,15 @@ public class SprintService {
             throw new ForbiddenException("CANNOT_EDIT_COMPLETED_SPRINT");
         }
 
+        validateDateRange(dto.startDate(), dto.endDate());
+
         sprint.setName(dto.name());
         sprint.setGoal(dto.goal());
         sprint.setStartDate(dto.startDate());
         sprint.setEndDate(dto.endDate());
+        if (dto.reviewNotes() != null) {
+            sprint.setReviewNotes(dto.reviewNotes());
+        }
         return SprintResponseDto.from(sprintRepository.save(sprint));
     }
 
@@ -105,7 +113,7 @@ public class SprintService {
     public SprintResponseDto activateSprint(UUID sprintId, UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
-        requireScrumMasterOrAdmin(perms);
+        requirePOOrSMOrAdmin(perms);
 
         if (sprint.getStatus() != SprintStatus.PLANNING) {
             throw new ConflictException("SPRINT_NOT_PLANNING");
@@ -119,10 +127,10 @@ public class SprintService {
     }
 
     @Transactional
-    public SprintResponseDto completeSprint(UUID sprintId, UUID callerId) {
+    public SprintResponseDto completeSprint(UUID sprintId, CompleteSprintRequestDto dto, UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
-        requireScrumMasterOrAdmin(perms);
+        requirePOOrSMOrAdmin(perms);
 
         if (sprint.getStatus() != SprintStatus.ACTIVE) {
             throw new ConflictException("SPRINT_NOT_ACTIVE");
@@ -137,6 +145,9 @@ public class SprintService {
                     taskRepository.save(t);
                 });
 
+        if (dto != null && dto.reviewNotes() != null) {
+            sprint.setReviewNotes(dto.reviewNotes());
+        }
         sprint.setStatus(SprintStatus.COMPLETED);
         return SprintResponseDto.from(sprintRepository.save(sprint));
     }
@@ -200,5 +211,11 @@ public class SprintService {
         if ("ADMIN".equals(p.role())) return;
         if ("PRODUCT_OWNER".equals(p.scrumRole()) || "SCRUM_MASTER".equals(p.scrumRole())) return;
         throw new ForbiddenException("PO_SM_OR_ADMIN_REQUIRED");
+    }
+
+    private void validateDateRange(LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("SPRINT_END_DATE_BEFORE_START_DATE");
+        }
     }
 }

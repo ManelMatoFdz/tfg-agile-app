@@ -16,4 +16,6 @@ public interface WorkspaceInvitationRepository extends JpaRepository<WorkspaceIn
     java.util.List<WorkspaceInvitation> findByInvitedUserIdAndStatus(UUID invitedUserId, InvitationStatus status);
 
     void deleteByWorkspaceIdAndInvitedEmailAndStatus(UUID workspaceId, String invitedEmail, InvitationStatus status);
+
+    void deleteByWorkspaceId(UUID workspaceId);
 }

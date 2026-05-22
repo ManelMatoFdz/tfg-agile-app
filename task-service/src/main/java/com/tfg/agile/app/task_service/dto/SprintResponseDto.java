@@ -15,6 +15,7 @@ public record SprintResponseDto(
         SprintStatus status,
         LocalDate startDate,
         LocalDate endDate,
+        String reviewNotes,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -22,7 +23,7 @@ public record SprintResponseDto(
         return new SprintResponseDto(
                 s.getId(), s.getProjectId(), s.getName(), s.getGoal(),
                 s.getStatus(), s.getStartDate(), s.getEndDate(),
-                s.getCreatedAt(), s.getUpdatedAt()
+                s.getReviewNotes(), s.getCreatedAt(), s.getUpdatedAt()
         );
     }
 }

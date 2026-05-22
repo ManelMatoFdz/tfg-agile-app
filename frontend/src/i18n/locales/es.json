@@ -132,6 +132,8 @@
         "descriptionPlaceholder": "Breve descripción del proyecto",
         "category": "Categoría ({{optional}})",
         "noCategory": "Sin categoría",
+        "newCategory": "Nueva categoría",
+        "createCategory": "Crear",
         "submit": "Crear proyecto"
       }
     },
@@ -210,10 +212,33 @@
       "dangerSubtitle": "Acciones irreversibles que afectan a todo el workspace",
       "deleteWorkspace": "Eliminar workspace",
       "deleteWarning": "Esto eliminará permanentemente el workspace <strong>{{name}}</strong>, todos sus proyectos, tareas y miembros. Esta acción no se puede deshacer.",
-      "deleteConfirmLabel": "Escribe <strong>{{name}}</strong> para confirmar",
+      "deleteConfirmLabel": "Escribe {{name}} para confirmar",
       "deleteConfirmBtn": "Eliminar este workspace",
       "deleting": "Eliminando...",
-      "deleteError": "Error al eliminar el workspace."
+      "deleteError": "Error al eliminar el workspace.",
+      "categories": {
+        "title": "Categorías de proyectos",
+        "subtitle": "Organiza los proyectos del workspace por categorías",
+        "newCategory": "Nueva categoría",
+        "noCategories": "No hay categorías todavía",
+        "createError": "Error al crear la categoría.",
+        "updateError": "Error al actualizar la categoría.",
+        "deleteError": "Error al eliminar la categoría.",
+        "modal": {
+          "titleCreate": "Nueva categoría",
+          "titleEdit": "Editar categoría",
+          "nameLabel": "Nombre",
+          "namePlaceholder": "Frontend, Marketing...",
+          "colorLabel": "Color",
+          "submitCreate": "Crear categoría",
+          "submitEdit": "Guardar cambios"
+        },
+        "deleteConfirm": {
+          "title": "Eliminar categoría",
+          "message": "¿Seguro que quieres eliminar <strong>{{name}}</strong>? Los proyectos asociados quedarán sin categoría.",
+          "confirm": "Eliminar"
+        }
+      }
     }
   },
   "teams": {
@@ -238,7 +263,8 @@
       "addMember": "Añadir miembro",
       "noMembers": "Este equipo no tiene miembros todavía.",
       "addFirst": "Añadir el primero",
-      "userIdPlaceholder": "ID de usuario (UUID)",
+      "searchPlaceholder": "Buscar por nombre de usuario…",
+      "noResults": "No se encontraron miembros del workspace disponibles.",
       "removeMember": "Eliminar del equipo",
       "delete": "Eliminar equipo",
       "deleteConfirm": {
@@ -263,6 +289,12 @@
         "messageToAdmin": "¿Dar permisos de administrador del equipo a <strong>{{name}}</strong>?",
         "messageToMember": "¿Quitar permisos de administrador de equipo a <strong>{{name}}</strong>?",
         "submit": "Confirmar"
+      },
+      "leaveTeam": "Salir del equipo",
+      "confirmLeave": {
+        "title": "Salir del equipo",
+        "message": "¿Seguro que quieres salir de <strong>{{name}}</strong>?",
+        "submit": "Salir"
       }
     }
   },
@@ -273,7 +305,9 @@
       "backlog": "Backlog",
       "sprints": "Sprints",
       "members": "Miembros",
-      "poker": "Poker"
+      "poker": "Poker",
+      "metrics": "Métricas",
+      "settings": "Configuración"
     },
     "kanban": {
       "title": "Tablero Kanban",
@@ -283,16 +317,105 @@
       "done": "Hecho",
       "newTask": "Nueva tarea",
       "noTasks": "No hay tareas",
-      "loadError": "Error al cargar las tareas."
+      "loadError": "Error al cargar las tareas.",
+      "noActiveSprint": "No hay ningún sprint activo",
+      "noActiveSprintSub": "Activa un sprint desde la sección"
     },
     "members": {
       "title": "Miembros",
       "noMembers": "No hay miembros en este proyecto.",
+      "addMember": "Añadir miembro",
       "roles": {
         "ADMIN": "Admin",
         "MEMBER": "Miembro",
         "VIEWER": "Observador"
+      },
+      "scrumRoles": {
+        "PRODUCT_OWNER": "Product Owner",
+        "SCRUM_MASTER": "Scrum Master",
+        "DEVELOPER": "Developer",
+        "none": "Sin rol Scrum"
+      },
+      "roleLabel": "Rol técnico",
+      "scrumRoleLabel": "Rol Scrum",
+      "removeMember": "Eliminar del proyecto",
+      "confirmRemove": {
+        "title": "Eliminar miembro",
+        "message": "¿Seguro que quieres eliminar a <strong>{{name}}</strong> del proyecto?",
+        "confirm": "Eliminar",
+        "removing": "Eliminando..."
+      },
+      "add": {
+        "title": "Añadir miembro",
+        "searchPlaceholder": "Buscar por nombre de usuario…",
+        "noResults": "No hay miembros del workspace disponibles para añadir.",
+        "roleLabel": "Rol en el proyecto",
+        "submit": "Añadir",
+        "adding": "Añadiendo...",
+        "error": "Error al añadir el miembro."
+      },
+      "errors": {
+        "changeRole": "Error al cambiar el rol.",
+        "changeScrumRole": "Error al cambiar el rol Scrum.",
+        "remove": "Error al eliminar el miembro."
       }
+    },
+    "settings": {
+      "title": "Configuración del proyecto",
+      "subtitle": "Edita la información y preferencias del proyecto",
+      "general": "Información general",
+      "nameLabel": "Nombre del proyecto",
+      "descriptionLabel": "Descripción",
+      "categoryLabel": "Categoría",
+      "noCategory": "Sin categoría",
+      "save": "Guardar cambios",
+      "saving": "Guardando...",
+      "saveSuccess": "Proyecto actualizado correctamente.",
+      "saveError": "Error al guardar los cambios.",
+      "loadError": "Error al cargar el proyecto.",
+      "adminOnly": "Solo los administradores del proyecto pueden modificar esta configuración.",
+      "visibilityLabel": "Visibilidad",
+      "visibility": {
+        "PRIVATE": "Privado",
+        "WORKSPACE": "Todo el workspace",
+        "PRIVATE_desc": "Solo los miembros del proyecto pueden acceder",
+        "WORKSPACE_desc": "Cualquier miembro del workspace puede ver el proyecto"
+      },
+      "dangerZone": "Zona peligrosa",
+      "dangerSubtitle": "Acciones irreversibles que afectan al proyecto",
+      "deleteProject": "Eliminar proyecto",
+      "deleteWarning": "Esto eliminará permanentemente el proyecto <strong>{{name}}</strong> y todas sus tareas. Esta acción no se puede deshacer.",
+      "deleteConfirmLabel": "Escribe {{name}} para confirmar",
+      "deleteConfirmBtn": "Eliminar este proyecto",
+      "deleting": "Eliminando...",
+      "deleteError": "Error al eliminar el proyecto.",
+      "deleteSuccess": "Proyecto eliminado."
+    },
+    "metrics": {
+      "title": "Métricas del proyecto",
+      "loadError": "Error al cargar las métricas.",
+      "totalTasks": "Tareas totales",
+      "donePct": "{{pct}}% completadas",
+      "storyPointsDone": "Story points hechos",
+      "total": "total",
+      "sprints": "Sprints",
+      "completedSprints": "{{n}} completados",
+      "members": "Miembros",
+      "activeSprint": "Sprint activo: {{name}}",
+      "noActiveSprint": "Sin sprint activo",
+      "overallProgress": "Progreso general",
+      "taskDistribution": "Distribución de tareas",
+      "backlogVsSprint": "Backlog vs. Sprints",
+      "inSprints": "En sprints",
+      "inBacklog": "En backlog",
+      "unassigned": "Sin asignar",
+      "totalSprints": "Total",
+      "completed": "Completados",
+      "active": "Activo",
+      "byPriority": "Tareas por prioridad",
+      "velocity": "Velocidad por sprint (SP completados)",
+      "tasksByMember": "Tareas por miembro",
+      "noTasks": "No hay datos suficientes para mostrar métricas."
     },
     "backlog": {
       "title": "Backlog",
@@ -374,11 +497,24 @@
       },
       "planning": {
         "title": "Sprint Planning",
-        "subtitle": "Selecciona tareas del backlog para añadir a este sprint",
+        "subtitle": "Selecciona tareas del backlog para añadir a este sprint. El equipo se compromete con las tareas que puede completar en el sprint.",
         "noBacklog": "No hay tareas en el backlog",
         "selected": "seleccionadas",
         "addSelected": "Añadir al sprint",
-        "error": "Error al añadir las tareas."
+        "error": "Error al añadir las tareas.",
+        "goal": "Objetivo del sprint",
+        "noEstimate": "Sin estimar",
+        "unestimated": "{{count}} tarea(s) sin story points. Considera estimarlas con Planning Poker antes de planificar."
+      },
+      "review": {
+        "title": "Sprint Review",
+        "done": "Completadas",
+        "incomplete": "Al backlog",
+        "velocity": "Story points",
+        "incompleteWarning": "{{count}} tarea(s) no finalizadas volverán automáticamente al backlog.",
+        "notes": "Notas de revisión / retrospectiva",
+        "notesPlaceholder": "¿Qué fue bien? ¿Qué se puede mejorar? ¿Obstáculos encontrados?",
+        "complete": "Completar sprint"
       }
     }
   },
@@ -624,6 +760,9 @@
     "PO_SM_OR_ADMIN_REQUIRED": "Se requiere rol de Product Owner, Scrum Master o Administrador.",
     "ALREADY_WORKSPACE_MEMBER": "El usuario ya es miembro de este workspace.",
     "ALREADY_TEAM_MEMBER": "El usuario ya es miembro de este equipo.",
+    "LAST_TEAM_ADMIN": "Eres el único administrador del equipo. Asigna otro administrador antes de realizar esta acción.",
+    "LAST_WORKSPACE_ADMIN": "Eres el único administrador del workspace. Asigna otro administrador antes de realizar esta acción.",
+    "LAST_PROJECT_ADMIN": "Eres el único administrador del proyecto. Asigna otro administrador antes de realizar esta acción.",
     "ALREADY_PROJECT_MEMBER": "El usuario ya es miembro de este proyecto.",
     "SPRINT_NOT_PLANNING": "Solo se pueden activar sprints en estado PLANNING.",
     "SPRINT_ALREADY_ACTIVE": "Ya existe un sprint activo en este proyecto.",

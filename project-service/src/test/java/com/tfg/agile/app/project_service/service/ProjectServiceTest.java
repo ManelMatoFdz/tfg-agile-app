@@ -11,6 +11,7 @@ import com.tfg.agile.app.project_service.entity.Category;
 import com.tfg.agile.app.project_service.entity.Project;
 import com.tfg.agile.app.project_service.entity.ProjectMember;
 import com.tfg.agile.app.project_service.entity.ProjectRole;
+import com.tfg.agile.app.project_service.entity.ProjectVisibility;
 import com.tfg.agile.app.project_service.entity.ScrumRole;
 import com.tfg.agile.app.project_service.entity.Team;
 import com.tfg.agile.app.project_service.entity.TeamMember;
@@ -88,7 +89,7 @@ class ProjectServiceTest {
         when(projectRepository.save(any(Project.class))).thenReturn(project);
         when(projectMemberRepository.save(any(ProjectMember.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var response = service.create(workspace.getId(), new CreateProjectRequestDto("API", "Desc", category.getId()), callerId);
+        var response = service.create(workspace.getId(), new CreateProjectRequestDto("API", "Desc", category.getId(), "private"), callerId);
 
         assertThat(response.name()).isEqualTo("API");
         assertThat(response.workspaceId()).isEqualTo(workspace.getId());
@@ -106,7 +107,7 @@ class ProjectServiceTest {
         when(workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), callerId)).thenReturn(true);
         when(categoryRepository.findById(foreignCategory.getId())).thenReturn(Optional.of(foreignCategory));
 
-        assertThatThrownBy(() -> service.create(workspace.getId(), new CreateProjectRequestDto("API", "Desc", foreignCategory.getId()), callerId))
+        assertThatThrownBy(() -> service.create(workspace.getId(), new CreateProjectRequestDto("API", "Desc", foreignCategory.getId(), "private"), callerId))
                 .isInstanceOf(ForbiddenException.class);
     }
 
@@ -118,7 +119,8 @@ class ProjectServiceTest {
 
         when(workspaceRepository.findById(workspace.getId())).thenReturn(Optional.of(workspace));
         when(workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), callerId)).thenReturn(true);
-        when(projectMemberRepository.findProjectsByUserIdAndWorkspaceId(callerId, workspace.getId())).thenReturn(List.of(project));
+        when(projectRepository.findVisibleByWorkspaceIdAndUserId(workspace.getId(), callerId, ProjectVisibility.WORKSPACE))
+                .thenReturn(List.of(project));
 
         var result = service.findByWorkspace(workspace.getId(), callerId);
 
@@ -157,7 +159,7 @@ class ProjectServiceTest {
         when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
         when(projectMemberRepository.existsByProjectIdAndUserIdAndRole(project.getId(), callerId, ProjectRole.ADMIN)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.update(project.getId(), new UpdateProjectRequestDto("Name", "Desc", null), callerId))
+        assertThatThrownBy(() -> service.update(project.getId(), new UpdateProjectRequestDto("Name", "Desc", null, null), callerId))
                 .isInstanceOf(ForbiddenException.class);
     }
 
@@ -173,7 +175,7 @@ class ProjectServiceTest {
         when(categoryRepository.findById(category.getId())).thenReturn(Optional.of(category));
         when(projectRepository.save(project)).thenReturn(project);
 
-        var response = service.update(project.getId(), new UpdateProjectRequestDto("Updated", "Desc", category.getId()), callerId);
+        var response = service.update(project.getId(), new UpdateProjectRequestDto("Updated", "Desc", category.getId(), "private"), callerId);
 
         assertThat(response.name()).isEqualTo("Updated");
         assertThat(response.categoryId()).isEqualTo(category.getId());

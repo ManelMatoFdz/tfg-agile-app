@@ -1,8 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import type { Workspace } from '../../types';
+import type { Workspace, Category } from '../../types';
 import { workspacesApi } from '../../api/workspaces';
+import { categoriesApi } from '../../api/categories';
 import { useAuthStore } from '../../store/authStore';
 import Alert from '../../components/ui/Alert';
 
@@ -29,6 +30,17 @@ export default function WorkspaceSettingsPage() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteZone, setShowDeleteZone] = useState(false);
 
+  // Categories
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [categoryName, setCategoryName] = useState('');
+  const [categoryColor, setCategoryColor] = useState('#6366f1');
+  const [savingCategory, setSavingCategory] = useState(false);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
+  const [confirmDeleteCategory, setConfirmDeleteCategory] = useState<Category | null>(null);
+
   // Leave workspace
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -39,8 +51,9 @@ export default function WorkspaceSettingsPage() {
     Promise.all([
       workspacesApi.getById(workspaceId),
       workspacesApi.getMembers(workspaceId),
+      categoriesApi.list(workspaceId),
     ])
-      .then(([wsRes, membersRes]) => {
+      .then(([wsRes, membersRes, catRes]) => {
         setWorkspace(wsRes.data);
         setName(wsRes.data.name);
         setDescription(wsRes.data.description ?? '');
@@ -49,10 +62,74 @@ export default function WorkspaceSettingsPage() {
         );
         setIsAdmin(admin);
         setAdminCount(membersRes.data.filter((m) => m.role === 'ADMIN').length);
+        setCategories(catRes.data);
       })
       .catch(() => setError(t('workspace.settings.loadError')))
       .finally(() => setLoading(false));
   }, [workspaceId, currentUser?.id, t]);
+
+  const openCreateCategory = () => {
+    setEditingCategory(null);
+    setCategoryName('');
+    setCategoryColor('#6366f1');
+    setCategoryError(null);
+    setShowCategoryModal(true);
+  };
+
+  const openEditCategory = (cat: Category) => {
+    setEditingCategory(cat);
+    setCategoryName(cat.name);
+    setCategoryColor(cat.color ?? '#6366f1');
+    setCategoryError(null);
+    setShowCategoryModal(true);
+  };
+
+  const handleSaveCategory = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!workspaceId || !categoryName.trim()) return;
+    setSavingCategory(true);
+    setCategoryError(null);
+    try {
+      if (editingCategory) {
+        const res = await categoriesApi.update(workspaceId, editingCategory.id, {
+          name: categoryName.trim(),
+          color: categoryColor,
+          position: editingCategory.position,
+        });
+        setCategories((prev) => prev.map((c) => (c.id === editingCategory.id ? res.data : c)));
+      } else {
+        const res = await categoriesApi.create(workspaceId, {
+          name: categoryName.trim(),
+          color: categoryColor,
+          position: categories.length,
+        });
+        setCategories((prev) => [...prev, res.data]);
+      }
+      setShowCategoryModal(false);
+    } catch {
+      setCategoryError(
+        editingCategory
+          ? t('workspace.settings.categories.updateError')
+          : t('workspace.settings.categories.createError'),
+      );
+    } finally {
+      setSavingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async () => {
+    if (!workspaceId || !confirmDeleteCategory) return;
+    setDeletingCategoryId(confirmDeleteCategory.id);
+    try {
+      await categoriesApi.delete(workspaceId, confirmDeleteCategory.id);
+      setCategories((prev) => prev.filter((c) => c.id !== confirmDeleteCategory.id));
+      setConfirmDeleteCategory(null);
+    } catch {
+      setError(t('workspace.settings.categories.deleteError'));
+    } finally {
+      setDeletingCategoryId(null);
+    }
+  };
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
@@ -194,6 +271,51 @@ export default function WorkspaceSettingsPage() {
             </div>
           </section>
 
+          {/* ── Categories ──────────────────────────────────────────────────── */}
+          <section className="glass-card-strong p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-semibold text-gray-900">{t('workspace.settings.categories.title')}</h2>
+                <p className="text-xs text-gray-400 mt-0.5">{t('workspace.settings.categories.subtitle')}</p>
+              </div>
+              <button
+                onClick={openCreateCategory}
+                className="px-3 py-1.5 text-xs font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors cursor-pointer"
+              >
+                + {t('workspace.settings.categories.newCategory')}
+              </button>
+            </div>
+
+            {categories.length === 0 ? (
+              <p className="text-sm text-gray-400 py-2">{t('workspace.settings.categories.noCategories')}</p>
+            ) : (
+              <ul className="space-y-2">
+                {categories.map((cat) => (
+                  <li key={cat.id} className="flex items-center gap-3 py-2 px-3 rounded-xl bg-gray-50/60">
+                    <span
+                      className="w-3 h-3 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: cat.color ?? '#6366f1' }}
+                    />
+                    <span className="flex-1 text-sm text-gray-800 font-medium truncate">{cat.name}</span>
+                    <button
+                      onClick={() => openEditCategory(cat)}
+                      className="text-xs text-gray-400 hover:text-gray-700 transition-colors cursor-pointer px-1"
+                    >
+                      {t('common.edit')}
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteCategory(cat)}
+                      disabled={deletingCategoryId === cat.id}
+                      className="text-xs text-red-400 hover:text-red-600 transition-colors cursor-pointer px-1 disabled:opacity-40"
+                    >
+                      {t('common.delete')}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
           {/* ── Danger zone ─────────────────────────────────────────────────── */}
           <section className="border border-red-200 rounded-2xl overflow-hidden">
             <div className="flex items-center justify-between px-6 py-4 bg-red-50/50">
@@ -211,9 +333,10 @@ export default function WorkspaceSettingsPage() {
 
             {showDeleteZone && (
               <div className="px-6 py-5 bg-white space-y-4 border-t border-red-100">
-                <p className="text-sm text-gray-600">
-                  {t('workspace.settings.deleteWarning', { name: workspace?.name })}
-                </p>
+                <p
+                  className="text-sm text-gray-600"
+                  dangerouslySetInnerHTML={{ __html: t('workspace.settings.deleteWarning', { name: workspace?.name ?? '' }) }}
+                />
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     {t('workspace.settings.deleteConfirmLabel', { name: workspace?.name })}
@@ -305,6 +428,112 @@ export default function WorkspaceSettingsPage() {
       </section>
 
       {/* Leave confirmation modal */}
+      {/* Category create/edit modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCategoryModal(false)} />
+          <div className="relative glass-card-strong rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in">
+            <h3 className="text-base font-semibold text-gray-900 mb-4">
+              {editingCategory
+                ? t('workspace.settings.categories.modal.titleEdit')
+                : t('workspace.settings.categories.modal.titleCreate')}
+            </h3>
+
+            {categoryError && (
+              <Alert type="error" message={categoryError} onClose={() => setCategoryError(null)} />
+            )}
+
+            <form onSubmit={handleSaveCategory} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('workspace.settings.categories.modal.nameLabel')}
+                </label>
+                <input
+                  type="text"
+                  value={categoryName}
+                  onChange={(e) => setCategoryName(e.target.value)}
+                  placeholder={t('workspace.settings.categories.modal.namePlaceholder')}
+                  required
+                  autoFocus
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('workspace.settings.categories.modal.colorLabel')}
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="color"
+                    value={categoryColor}
+                    onChange={(e) => setCategoryColor(e.target.value)}
+                    className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white"
+                  />
+                  <span className="text-sm font-mono text-gray-500">{categoryColor}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryModal(false)}
+                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingCategory || !categoryName.trim()}
+                  className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {savingCategory
+                    ? t('workspace.settings.saving')
+                    : editingCategory
+                      ? t('workspace.settings.categories.modal.submitEdit')
+                      : t('workspace.settings.categories.modal.submitCreate')}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Category delete confirmation modal */}
+      {confirmDeleteCategory && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmDeleteCategory(null)} />
+          <div className="relative glass-card-strong rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in">
+            <h3 className="text-base font-semibold text-gray-900 mb-2">
+              {t('workspace.settings.categories.deleteConfirm.title')}
+            </h3>
+            <p
+              className="text-sm text-gray-600 mb-6"
+              dangerouslySetInnerHTML={{
+                __html: t('workspace.settings.categories.deleteConfirm.message', {
+                  name: confirmDeleteCategory.name,
+                }),
+              }}
+            />
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDeleteCategory(null)}
+                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={handleDeleteCategory}
+                disabled={deletingCategoryId === confirmDeleteCategory.id}
+                className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+              >
+                {t('workspace.settings.categories.deleteConfirm.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showLeaveModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowLeaveModal(false)} />

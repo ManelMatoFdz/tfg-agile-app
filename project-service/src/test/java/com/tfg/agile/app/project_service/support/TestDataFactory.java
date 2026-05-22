@@ -6,6 +6,7 @@ import com.tfg.agile.app.project_service.entity.ProjectMember;
 import com.tfg.agile.app.project_service.entity.ProjectRole;
 import com.tfg.agile.app.project_service.entity.Team;
 import com.tfg.agile.app.project_service.entity.TeamMember;
+import com.tfg.agile.app.project_service.entity.TeamRole;
 import com.tfg.agile.app.project_service.entity.Workspace;
 import com.tfg.agile.app.project_service.entity.WorkspaceMember;
 import com.tfg.agile.app.project_service.entity.WorkspaceRole;
@@ -87,12 +88,16 @@ public final class TestDataFactory {
     }
 
     public static TeamMember teamMember(Team team, UUID userId) {
+        return teamMember(team, userId, TeamRole.MEMBER);
+    }
+
+    public static TeamMember teamMember(Team team, UUID userId, TeamRole role) {
         return TeamMember.builder()
                 .id(UUID.randomUUID())
                 .team(team)
                 .userId(userId)
+                .role(role)
                 .joinedAt(Instant.now())
                 .build();
     }
 }
-

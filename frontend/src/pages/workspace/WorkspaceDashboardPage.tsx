@@ -7,7 +7,7 @@ import { useApiAction } from '../../hooks/useApiAction';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Alert from '../../components/ui/Alert';
-import type { Project, Category } from '../../types';
+import type { Project, Category, ProjectVisibility } from '../../types';
 
 interface ProjectGroup {
   category: Category | null;
@@ -85,6 +85,14 @@ export default function WorkspaceDashboardPage() {
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [projectCategoryId, setProjectCategoryId] = useState('');
+  const [projectVisibility, setProjectVisibility] = useState<ProjectVisibility>('PRIVATE');
+
+  // Inline category creation
+  const [showInlineCatForm, setShowInlineCatForm] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatColor, setNewCatColor] = useState('#6366f1');
+  const [creatingCat, setCreatingCat] = useState(false);
+  const [inlineCatError, setInlineCatError] = useState<string | null>(null);
 
   const projectsAction = useApiAction<Project[]>();
   const categoriesAction = useApiAction<Category[]>();
@@ -113,6 +121,7 @@ export default function WorkspaceDashboardPage() {
         name: projectName,
         description: projectDescription || undefined,
         categoryId: projectCategoryId || undefined,
+        visibility: projectVisibility,
       }),
     );
     if (data) {
@@ -130,7 +139,35 @@ export default function WorkspaceDashboardPage() {
     setProjectName('');
     setProjectDescription('');
     setProjectCategoryId('');
+    setProjectVisibility('PRIVATE');
+    setShowInlineCatForm(false);
+    setNewCatName('');
+    setNewCatColor('#6366f1');
+    setInlineCatError(null);
     createAction.reset();
+  };
+
+  const handleCreateInlineCategory = async () => {
+    if (!workspaceId || !newCatName.trim()) return;
+    setCreatingCat(true);
+    setInlineCatError(null);
+    try {
+      const res = await categoriesApi.create(workspaceId, {
+        name: newCatName.trim(),
+        color: newCatColor,
+        position: categories.length,
+      });
+      setCategories((prev) => [...prev, res.data]);
+      setProjectCategoryId(res.data.id);
+      setShowInlineCatForm(false);
+      setNewCatName('');
+      setNewCatColor('#6366f1');
+    } catch (err: unknown) {
+      const code = (err as { response?: { data?: { errorCode?: string } } })?.response?.data?.errorCode;
+      setInlineCatError(code ? t(`errors.${code}`) : t('workspace.settings.categories.createError'));
+    } finally {
+      setCreatingCat(false);
+    }
   };
 
   const loading = projectsAction.loading || categoriesAction.loading;
@@ -257,23 +294,99 @@ export default function WorkspaceDashboardPage() {
                 value={projectDescription}
                 onChange={(e) => setProjectDescription(e.target.value)}
               />
-              {categories.length > 0 && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-sm font-medium text-gray-700">
                     {t('workspace.dashboard.modal.category', { optional: t('common.optional') })}
                   </label>
-                  <select
-                    value={projectCategoryId}
-                    onChange={(e) => setProjectCategoryId(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/80 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-all"
-                  >
-                    <option value="">{t('workspace.dashboard.modal.noCategory')}</option>
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
+                  {!showInlineCatForm ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowInlineCatForm(true)}
+                      className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors cursor-pointer"
+                    >
+                      + {t('workspace.dashboard.modal.newCategory')}
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => { setShowInlineCatForm(false); setInlineCatError(null); }}
+                      className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                    >
+                      {t('common.cancel')}
+                    </button>
+                  )}
                 </div>
-              )}
+                <select
+                  value={projectCategoryId}
+                  onChange={(e) => setProjectCategoryId(e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/80 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-all"
+                >
+                  <option value="">{t('workspace.dashboard.modal.noCategory')}</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+
+                {showInlineCatForm && (
+                  <div className="mt-2 p-3 border border-gray-200 rounded-xl bg-gray-50/60 space-y-2">
+                    {inlineCatError && (
+                      <p className="text-xs text-red-500">{inlineCatError}</p>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={newCatName}
+                        onChange={(e) => setNewCatName(e.target.value)}
+                        placeholder={t('workspace.settings.categories.modal.namePlaceholder')}
+                        autoFocus
+                        className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white"
+                      />
+                      <input
+                        type="color"
+                        value={newCatColor}
+                        onChange={(e) => setNewCatColor(e.target.value)}
+                        className="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white flex-shrink-0"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleCreateInlineCategory}
+                        disabled={creatingCat || !newCatName.trim()}
+                        className="px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex-shrink-0"
+                      >
+                        {creatingCat ? '...' : t('workspace.dashboard.modal.createCategory')}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  {t('projects.settings.visibilityLabel')}
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {(['PRIVATE', 'WORKSPACE'] as ProjectVisibility[]).map((v) => (
+                    <button
+                      key={v}
+                      type="button"
+                      onClick={() => setProjectVisibility(v)}
+                      className={`p-2.5 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                        projectVisibility === v
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 bg-white/60 hover:border-gray-300'
+                      }`}
+                    >
+                      <p className={`text-xs font-semibold ${projectVisibility === v ? 'text-primary-700' : 'text-gray-700'}`}>
+                        {t(`projects.settings.visibility.${v}`)}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-0.5 leading-tight">
+                        {t(`projects.settings.visibility.${v}_desc`)}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="flex gap-3 pt-1">
                 <Button type="submit" loading={createAction.loading} className="flex-1">
                   {t('workspace.dashboard.modal.submit')}

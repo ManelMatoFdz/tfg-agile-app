@@ -33,7 +33,7 @@ public class CategoryService {
     public CategoryResponseDto create(UUID workspaceId, CreateCategoryRequestDto dto, UUID callerId) {
         var workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new ResourceNotFoundException("WORKSPACE_NOT_FOUND"));
-        requireWorkspaceAdmin(workspaceId, callerId);
+        requireWorkspaceMember(workspaceId, callerId);
 
         Category category = Category.builder()
                 .workspace(workspace)

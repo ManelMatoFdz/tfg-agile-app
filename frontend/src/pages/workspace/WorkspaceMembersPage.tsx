@@ -73,7 +73,7 @@ function MemberRow({
           {t(`workspace.members.roles.${member.role}`)}
         </span>
 
-        {isAdmin && !isSelf && (
+        {isAdmin && (
           <>
             <button
               onClick={() => onRoleChange(member.userId, otherRole)}
@@ -90,20 +90,22 @@ function MemberRow({
               )}
             </button>
 
-            <button
-              onClick={() => onRemove(member.userId)}
-              disabled={isUpdating || isRemoving}
-              title={t('workspace.members.removeMember')}
-              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
-            >
-              {isRemoving ? (
-                <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              )}
-            </button>
+            {!isSelf && (
+              <button
+                onClick={() => onRemove(member.userId)}
+                disabled={isUpdating || isRemoving}
+                title={t('workspace.members.removeMember')}
+                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
+              >
+                {isRemoving ? (
+                  <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+              </button>
+            )}
           </>
         )}
       </div>
@@ -207,14 +209,16 @@ export default function WorkspaceMembersPage() {
 
   const handleRoleChange = async (userId: string, role: WorkspaceRole) => {
     if (!workspaceId) return;
-    setConfirmRoleChange(null);
     setUpdatingId(userId);
     setActionError(null);
     try {
       const { data: updated } = await workspacesApi.updateMemberRole(workspaceId, userId, role);
       setMembers((prev) => prev.map((m) => (m.userId === userId ? updated : m)));
-    } catch {
-      setActionError(t('workspace.members.errors.changeRole'));
+      setConfirmRoleChange(null);
+    } catch (err) {
+      const axiosErr = err as import('axios').AxiosError<{ errorCode?: string }>;
+      const code = axiosErr.response?.data?.errorCode;
+      setActionError(code ? t(`errors.${code}`, t('workspace.members.errors.changeRole')) : t('workspace.members.errors.changeRole'));
     } finally {
       setUpdatingId(null);
     }
@@ -411,7 +415,7 @@ export default function WorkspaceMembersPage() {
         const newRoleLabel = t(`workspace.members.roles.${confirmRoleChange.role}`);
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmRoleChange(null)} />
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setConfirmRoleChange(null); setActionError(null); }} />
             <div className="relative glass-card-strong rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
@@ -424,9 +428,12 @@ export default function WorkspaceMembersPage() {
                   <p className="text-sm text-gray-500">{t('workspace.members.confirmRoleChange.subtitle', { name: displayName, role: newRoleLabel })}</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mb-6">{t('workspace.members.confirmRoleChange.description', { role: newRoleLabel })}</p>
+              <p className="text-sm text-gray-600 mb-4">{t('workspace.members.confirmRoleChange.description', { role: newRoleLabel })}</p>
+              {actionError && (
+                <Alert type="error" message={actionError} onClose={() => setActionError(null)} />
+              )}
               <div className="flex gap-3">
-                <Button variant="secondary" className="flex-1" onClick={() => setConfirmRoleChange(null)}>
+                <Button variant="secondary" className="flex-1" onClick={() => { setConfirmRoleChange(null); setActionError(null); }}>
                   {t('common.cancel')}
                 </Button>
                 <Button

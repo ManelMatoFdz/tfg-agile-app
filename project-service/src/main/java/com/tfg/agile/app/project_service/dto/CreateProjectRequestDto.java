@@ -8,5 +8,6 @@ import java.util.UUID;
 public record CreateProjectRequestDto(
         @NotBlank @Size(max = 100) String name,
         @Size(max = 500) String description,
-        UUID categoryId
+        UUID categoryId,
+        String visibility
 ) {}

@@ -15,10 +15,11 @@ import KanbanPage from './pages/workspace/project/KanbanPage';
 import BacklogPage from './pages/workspace/project/BacklogPage';
 import SprintsPage from './pages/workspace/project/SprintsPage';
 import ProjectMembersPage from './pages/workspace/project/ProjectMembersPage';
-import SprintBoardPage from './pages/workspace/project/SprintBoardPage';
+import ProjectSettingsPage from './pages/workspace/project/ProjectSettingsPage';
 import SprintReportPage from './pages/workspace/project/SprintReportPage';
 import PokerPage from './pages/workspace/project/PokerPage';
 import PokerRoomPage from './pages/workspace/project/PokerRoomPage';
+import ProjectMetricsPage from './pages/workspace/project/ProjectMetricsPage';
 import MyTasksPage from './pages/MyTasksPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import WorkspaceLayout from './components/ui/WorkspaceLayout';
@@ -49,10 +50,11 @@ export default function App() {
               <Route path="board" element={<KanbanPage />} />
               <Route path="backlog" element={<BacklogPage />} />
               <Route path="sprints" element={<SprintsPage />} />
-              <Route path="sprints/:sprintId/board" element={<SprintBoardPage />} />
               <Route path="sprints/:sprintId/report" element={<SprintReportPage />} />
               <Route path="members" element={<ProjectMembersPage />} />
               <Route path="poker" element={<PokerPage />} />
+              <Route path="metrics" element={<ProjectMetricsPage />} />
+              <Route path="settings" element={<ProjectSettingsPage />} />
               <Route path="poker/:sessionId" element={<PokerRoomPage />} />
             </Route>
 

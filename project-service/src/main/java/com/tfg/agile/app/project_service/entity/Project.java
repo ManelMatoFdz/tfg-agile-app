@@ -35,6 +35,11 @@ public class Project {
     @JoinColumn(name = "category_id")
     private Category category;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private ProjectVisibility visibility = ProjectVisibility.PRIVATE;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

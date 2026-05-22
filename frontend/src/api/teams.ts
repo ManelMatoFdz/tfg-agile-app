@@ -28,4 +28,7 @@ export const teamsApi = {
 
   updateMemberRole: (teamId: string, userId: string, role: 'ADMIN' | 'MEMBER') =>
     projectClient.put<TeamMember>(`/teams/${teamId}/members/${userId}/role`, { role }),
+
+  leaveTeam: (teamId: string) =>
+    projectClient.post<void>(`/teams/${teamId}/leave`, {}),
 };
