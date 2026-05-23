@@ -5,12 +5,13 @@ import type { ParticipantRole } from '../../types';
 interface Props {
   onClose: () => void;
   onJoin: (displayName: string, role: ParticipantRole) => Promise<void>;
+  defaultRole?: ParticipantRole;
 }
 
-export default function JoinSessionModal({ onClose, onJoin }: Props) {
+export default function JoinSessionModal({ onClose, onJoin, defaultRole = 'VOTER' }: Props) {
   const { t } = useTranslation();
   const [displayName, setDisplayName] = useState('');
-  const [role, setRole] = useState<ParticipantRole>('VOTER');
+  const [role, setRole] = useState<ParticipantRole>(defaultRole);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

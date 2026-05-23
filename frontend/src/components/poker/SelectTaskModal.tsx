@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { tasksApi } from '../../api/tasks';
+import { sprintsApi } from '../../api/sprints';
 import type { Task } from '../../types';
 
 interface Props {
@@ -16,8 +17,19 @@ export default function SelectTaskModal({ projectId, onClose, onSelect }: Props)
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    tasksApi.getByProject(projectId)
-      .then((all) => setTasks(all.filter((t) => t.status !== 'DONE')))
+    Promise.all([
+      tasksApi.getByProject(projectId),
+      sprintsApi.listSprints(projectId),
+    ]).then(([allTasks, sprints]) => {
+      const planningSprints = new Set(
+        sprints.filter((s) => s.status === 'PLANNING').map((s) => s.id)
+      );
+      setTasks(
+        allTasks.filter(
+          (t) => t.status !== 'DONE' && (t.sprintId == null || planningSprints.has(t.sprintId))
+        )
+      );
+    })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [projectId]);

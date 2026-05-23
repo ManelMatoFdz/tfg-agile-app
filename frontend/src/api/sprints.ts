@@ -38,6 +38,9 @@ export const sprintsApi = {
   completeSprint: (sprintId: string, dto?: { reviewNotes?: string }) =>
     taskClient.post<Sprint>(`/sprints/${sprintId}/complete`, dto ?? {}).then((r) => r.data),
 
+  deleteSprint: (sprintId: string) =>
+    taskClient.delete(`/sprints/${sprintId}`),
+
   getSprintTasks: (sprintId: string) =>
     taskClient.get<Task[]>(`/sprints/${sprintId}/tasks`).then((r) => r.data),
 

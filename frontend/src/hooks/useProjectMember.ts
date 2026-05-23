@@ -9,17 +9,24 @@ export interface ProjectMemberPermissions {
   isAdmin: boolean;
   isScrumMaster: boolean;
   isProductOwner: boolean;
+  isDeveloper: boolean;
   isViewer: boolean;
-  /** PO, SM or ADMIN — can activate/complete sprints */
-  canManageSprint: boolean;
-  /** PO, SM or ADMIN — can add/remove tasks from sprint */
-  canPlanSprint: boolean;
-  /** ADMIN, PO or SM — can delete tasks */
-  canDeleteTask: boolean;
-  /** Any role except VIEWER */
+  /** PO or ADMIN — tasks always start in the backlog, owned by the PO */
   canCreateTask: boolean;
-  /** ADMIN or Developer (not PO, not SM) — can move/create tasks on the sprint board */
+  /** PO or ADMIN — Product Backlog is owned by the PO */
+  canEditBacklogTask: boolean;
+  /** Developer or ADMIN — Sprint Backlog is owned by the Development Team */
+  canEditSprintTask: boolean;
+  /** PO or ADMIN */
+  canDeleteBacklogTask: boolean;
+  /** Developer or ADMIN */
+  canDeleteSprintTask: boolean;
+  /** Developer or ADMIN — moving tasks on the Kanban board */
   canMoveTask: boolean;
+  /** Developer, PO or ADMIN — Sprint Planning: Developers select, PO proposes */
+  canPlanSprint: boolean;
+  /** SM or ADMIN — sprint lifecycle (create, activate, complete) */
+  canManageSprint: boolean;
 }
 
 export function useProjectMember(projectId: string | undefined): ProjectMemberPermissions {
@@ -47,13 +54,17 @@ export function useProjectMember(projectId: string | undefined): ProjectMemberPe
   const isScrumMaster = member?.scrumRole === 'SCRUM_MASTER';
   const isProductOwner = member?.scrumRole === 'PRODUCT_OWNER';
   const isViewer = member?.role === 'VIEWER';
+  // Developer: any project member who is not ADMIN, VIEWER, PO, or SM
+  const isDeveloper = member !== null && !isAdmin && !isViewer && !isProductOwner && !isScrumMaster;
 
-  const canManageSprint = isAdmin || isScrumMaster || isProductOwner;
-  const canPlanSprint = isAdmin || isScrumMaster || isProductOwner;
-  const canDeleteTask = isAdmin || isScrumMaster || isProductOwner;
-  const canCreateTask = !isViewer && member !== null;
-  // Sprint board belongs to the Development Team: only Developers + ADMIN can move/create tasks
-  const canMoveTask = isAdmin || (member !== null && !isViewer && !isProductOwner && !isScrumMaster);
+  const canCreateTask = isAdmin || isProductOwner;
+  const canEditBacklogTask = isAdmin || isProductOwner;
+  const canEditSprintTask = isAdmin || isDeveloper;
+  const canDeleteBacklogTask = isAdmin || isProductOwner;
+  const canDeleteSprintTask = isAdmin || isDeveloper;
+  const canMoveTask = isAdmin || isDeveloper;
+  const canPlanSprint = isAdmin || isProductOwner || isDeveloper;
+  const canManageSprint = isAdmin || isScrumMaster;
 
   return {
     member,
@@ -61,11 +72,15 @@ export function useProjectMember(projectId: string | undefined): ProjectMemberPe
     isAdmin,
     isScrumMaster,
     isProductOwner,
+    isDeveloper,
     isViewer,
-    canManageSprint,
-    canPlanSprint,
-    canDeleteTask,
     canCreateTask,
+    canEditBacklogTask,
+    canEditSprintTask,
+    canDeleteBacklogTask,
+    canDeleteSprintTask,
     canMoveTask,
+    canPlanSprint,
+    canManageSprint,
   };
 }

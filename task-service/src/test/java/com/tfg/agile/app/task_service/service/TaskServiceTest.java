@@ -100,17 +100,31 @@ class TaskServiceTest {
     }
 
     @Test
-    void create_throwsForViewer() {
+    void create_throwsForDeveloper() {
         UUID projectId = UUID.randomUUID();
         UUID callerId = UUID.randomUUID();
 
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.viewerPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
 
         assertThatThrownBy(() -> service.create(projectId,
                 new CreateTaskRequestDto("Task", "Desc", null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("VIEWER_CANNOT_CREATE_TASKS");
+                .hasMessage("ONLY_PO_OR_ADMIN_CAN_CREATE_TASKS");
+    }
+
+    @Test
+    void create_throwsForScrumMaster() {
+        UUID projectId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+
+        assertThatThrownBy(() -> service.create(projectId,
+                new CreateTaskRequestDto("Task", "Desc", null, null),
+                callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("ONLY_PO_OR_ADMIN_CAN_CREATE_TASKS");
     }
 
     @Test
@@ -118,7 +132,7 @@ class TaskServiceTest {
         UUID projectId = UUID.randomUUID();
         UUID callerId = UUID.randomUUID();
 
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
         when(taskRepository.findByProjectIdAndStatusOrderByPositionAsc(projectId, TaskStatus.TODO)).thenReturn(List.of(new Task(), new Task()));
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -132,59 +146,39 @@ class TaskServiceTest {
     }
 
     @Test
-    void update_throwsForViewer() {
+    void update_throwsForDeveloperOnBacklogTask() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
-        Task task = TestDataFactory.task(projectId, UUID.randomUUID());
+        Task task = TestDataFactory.task(projectId, UUID.randomUUID()); // sprintId == null → backlog
 
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.viewerPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
 
         assertThatThrownBy(() -> service.update(task.getId(),
                 new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("VIEWER_CANNOT_EDIT_TASKS");
+                .hasMessage("ONLY_PO_OR_ADMIN_CAN_EDIT_BACKLOG_TASKS");
     }
 
     @Test
-    void update_allowsMemberToEditTaskReportedByAnotherUser() {
-        // In Scrum the team collectively owns the sprint backlog — any non-VIEWER can edit any task
+    void update_throwsForScrumMasterOnBacklogTask() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
-        Task task = TestDataFactory.task(projectId, UUID.randomUUID()); // different reporter
+        Task task = TestDataFactory.task(projectId, UUID.randomUUID());
 
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
-        when(taskRepository.save(task)).thenReturn(task);
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
 
-        var response = service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated by Member", "Desc", "HIGH", null),
-                callerId);
-
-        assertThat(response.title()).isEqualTo("Updated by Member");
+        assertThatThrownBy(() -> service.update(task.getId(),
+                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null),
+                callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("ONLY_PO_OR_ADMIN_CAN_EDIT_BACKLOG_TASKS");
     }
 
     @Test
-    void update_allowsReporterToEditOwnTask() {
-        UUID callerId = UUID.randomUUID();
-        UUID projectId = UUID.randomUUID();
-        Task task = TestDataFactory.task(projectId, callerId);
-
-        when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
-        when(taskRepository.save(task)).thenReturn(task);
-
-        var response = service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", callerId),
-                callerId);
-
-        assertThat(response.title()).isEqualTo("Updated");
-        assertThat(response.priority()).isEqualTo(TaskPriority.HIGH);
-    }
-
-    @Test
-    void update_allowsProductOwnerToEditTaskReportedByAnotherUser() {
+    void update_allowsProductOwnerToEditBacklogTask() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Task task = TestDataFactory.task(projectId, UUID.randomUUID());
@@ -202,17 +196,83 @@ class TaskServiceTest {
     }
 
     @Test
-    void move_throwsForViewer() {
+    void update_allowsDeveloperToEditSprintTask() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Task task = TestDataFactory.task(projectId, UUID.randomUUID());
+        task.setSprintId(UUID.randomUUID()); // task is in a sprint
+
+        when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
+        when(taskRepository.save(task)).thenReturn(task);
+
+        var response = service.update(task.getId(),
+                new UpdateTaskRequestDto("Updated by Developer", "Desc", "HIGH", null),
+                callerId);
+
+        assertThat(response.title()).isEqualTo("Updated by Developer");
+    }
+
+    @Test
+    void update_throwsForProductOwnerOnSprintTask() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Task task = TestDataFactory.task(projectId, UUID.randomUUID());
+        task.setSprintId(UUID.randomUUID()); // task is in a sprint
+
+        when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
+
+        assertThatThrownBy(() -> service.update(task.getId(),
+                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null),
+                callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("ONLY_DEVELOPERS_CAN_EDIT_SPRINT_TASKS");
+    }
+
+    @Test
+    void update_throwsForScrumMasterOnSprintTask() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Task task = TestDataFactory.task(projectId, UUID.randomUUID());
+        task.setSprintId(UUID.randomUUID());
+
+        when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+
+        assertThatThrownBy(() -> service.update(task.getId(),
+                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null),
+                callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("ONLY_DEVELOPERS_CAN_EDIT_SPRINT_TASKS");
+    }
+
+    @Test
+    void move_throwsForProductOwner() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Task task = TestDataFactory.task(projectId, UUID.randomUUID());
 
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.viewerPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
 
         assertThatThrownBy(() -> service.move(task.getId(), new MoveTaskRequestDto("done", 1), callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("VIEWER_CANNOT_MOVE_TASKS");
+                .hasMessage("ONLY_DEVELOPERS_CAN_MOVE_TASKS");
+    }
+
+    @Test
+    void move_throwsForScrumMaster() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Task task = TestDataFactory.task(projectId, UUID.randomUUID());
+
+        when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+
+        assertThatThrownBy(() -> service.move(task.getId(), new MoveTaskRequestDto("done", 1), callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("ONLY_DEVELOPERS_CAN_MOVE_TASKS");
     }
 
     @Test
@@ -232,36 +292,37 @@ class TaskServiceTest {
     }
 
     @Test
-    void delete_throwsForMemberWithoutScrumRole() {
+    void delete_throwsForDeveloperOnBacklogTask() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
-        Task task = TestDataFactory.task(projectId, UUID.randomUUID());
+        Task task = TestDataFactory.task(projectId, UUID.randomUUID()); // sprintId == null → backlog
 
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
 
         assertThatThrownBy(() -> service.delete(task.getId(), callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("INSUFFICIENT_ROLE_DELETE_TASK");
+                .hasMessage("ONLY_PO_OR_ADMIN_CAN_DELETE_BACKLOG_TASKS");
         verify(taskRepository, never()).delete(any(Task.class));
     }
 
     @Test
-    void delete_removesTaskForAdmin() {
+    void delete_throwsForScrumMasterOnBacklogTask() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Task task = TestDataFactory.task(projectId, UUID.randomUUID());
 
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
 
-        service.delete(task.getId(), callerId);
-
-        verify(taskRepository).delete(task);
+        assertThatThrownBy(() -> service.delete(task.getId(), callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("ONLY_PO_OR_ADMIN_CAN_DELETE_BACKLOG_TASKS");
+        verify(taskRepository, never()).delete(any(Task.class));
     }
 
     @Test
-    void delete_removesTaskForProductOwner() {
+    void delete_removesBacklogTaskForProductOwner() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Task task = TestDataFactory.task(projectId, UUID.randomUUID());
@@ -275,13 +336,44 @@ class TaskServiceTest {
     }
 
     @Test
-    void delete_removesTaskForScrumMaster() {
+    void delete_removesBacklogTaskForAdmin() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Task task = TestDataFactory.task(projectId, UUID.randomUUID());
 
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+
+        service.delete(task.getId(), callerId);
+
+        verify(taskRepository).delete(task);
+    }
+
+    @Test
+    void delete_throwsForProductOwnerOnSprintTask() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Task task = TestDataFactory.task(projectId, UUID.randomUUID());
+        task.setSprintId(UUID.randomUUID());
+
+        when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
+
+        assertThatThrownBy(() -> service.delete(task.getId(), callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("ONLY_DEVELOPERS_CAN_DELETE_SPRINT_TASKS");
+        verify(taskRepository, never()).delete(any(Task.class));
+    }
+
+    @Test
+    void delete_removesSprintTaskForDeveloper() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Task task = TestDataFactory.task(projectId, UUID.randomUUID());
+        task.setSprintId(UUID.randomUUID());
+
+        when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
 
         service.delete(task.getId(), callerId);
 

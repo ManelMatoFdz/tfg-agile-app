@@ -1,6 +1,7 @@
 package com.tfg.agile.app.poker_service.service;
 
 import com.tfg.agile.app.poker_service.client.TaskServiceClient;
+import com.tfg.agile.app.poker_service.config.DisconnectScheduler;
 import com.tfg.agile.app.poker_service.dto.*;
 import com.tfg.agile.app.poker_service.entity.*;
 import com.tfg.agile.app.poker_service.exception.ConflictException;
@@ -11,7 +12,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -23,17 +26,20 @@ public class PokerSessionService {
     private final PokerRoundRepository roundRepository;
     private final PokerVoteRepository voteRepository;
     private final TaskServiceClient taskServiceClient;
+    private final DisconnectScheduler disconnectScheduler;
 
     public PokerSessionService(PokerSessionRepository sessionRepository,
                                PokerParticipantRepository participantRepository,
                                PokerRoundRepository roundRepository,
                                PokerVoteRepository voteRepository,
-                               TaskServiceClient taskServiceClient) {
+                               TaskServiceClient taskServiceClient,
+                               DisconnectScheduler disconnectScheduler) {
         this.sessionRepository = sessionRepository;
         this.participantRepository = participantRepository;
         this.roundRepository = roundRepository;
         this.voteRepository = voteRepository;
         this.taskServiceClient = taskServiceClient;
+        this.disconnectScheduler = disconnectScheduler;
     }
     
     public SessionResponseDto createSession(UUID projectId, UUID userId, CreateSessionRequestDto dto) {
@@ -59,6 +65,7 @@ public class PokerSessionService {
     }
     
     public ParticipantDto joinSession(UUID sessionId, UUID userId, JoinSessionRequestDto dto) {
+        disconnectScheduler.cancel(userId); // cancel grace-period disconnect if user is refreshing
         var session = findSession(sessionId);
         if (session.getStatus() == SessionStatus.CLOSED) {
             throw new ConflictException("SESSION_CLOSED");
@@ -83,6 +90,20 @@ public class PokerSessionService {
                 .orElseThrow(() -> new ResourceNotFoundException("PARTICIPANT_NOT_FOUND"));
         participant.setConnected(false);
         participantRepository.save(participant);
+    }
+
+    /** Called by the disconnect scheduler after the grace period. Returns sessionId → participants for broadcasting. */
+    public Map<UUID, List<ParticipantDto>> disconnectUser(UUID userId) {
+        var result = new HashMap<UUID, List<ParticipantDto>>();
+        participantRepository.findByUserIdAndConnectedTrue(userId).forEach(participant -> {
+            participant.setConnected(false);
+            participantRepository.save(participant);
+            UUID sessionId = participant.getSession().getId();
+            var participants = participantRepository.findBySessionId(sessionId)
+                    .stream().map(this::toParticipantDto).toList();
+            result.put(sessionId, participants);
+        });
+        return result;
     }
     
     public SessionResponseDto closeSession(UUID sessionId, UUID userId) {

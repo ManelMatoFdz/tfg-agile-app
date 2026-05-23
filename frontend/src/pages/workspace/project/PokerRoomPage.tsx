@@ -5,6 +5,7 @@ import { ChevronLeft, Zap } from 'lucide-react';
 import { pokerApi } from '../../../api/poker';
 import { useAuthStore } from '../../../store/authStore';
 import { usePokerSocket } from '../../../hooks/usePokerSocket';
+import { useProjectMember } from '../../../hooks/useProjectMember';
 import type { PokerSession, PokerRound, ParticipantRole } from '../../../types';
 import VotingCards from '../../../components/poker/VotingCards';
 import ParticipantsList from '../../../components/poker/ParticipantsList';
@@ -30,6 +31,7 @@ export default function PokerRoomPage() {
   }>();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const { member, loading: memberLoading } = useProjectMember(projectId);
 
   const [session, setSession] = useState<PokerSession | null>(null);
   const [rounds, setRounds] = useState<PokerRound[]>([]);
@@ -45,6 +47,7 @@ export default function PokerRoomPage() {
     voteStatus,
     revealedRound,
     sessionState,
+    participantUpdate,
     sendVote,
     sendReveal,
     sendNext,
@@ -52,9 +55,14 @@ export default function PokerRoomPage() {
     error: wsError,
   } = usePokerSocket(sessionId);
 
+  const [sessionReady, setSessionReady] = useState(false);
+
   useEffect(() => {
     if (!sessionId) return;
+    // Clear any stale refresh flag from a previous visit
+    sessionStorage.removeItem('poker_reconnecting');
     setLoading(true);
+    setSessionReady(false);
     Promise.all([
       pokerApi.getSession(sessionId),
       pokerApi.getRounds(sessionId),
@@ -62,18 +70,82 @@ export default function PokerRoomPage() {
       .then(([s, r]) => {
         setSession(s);
         setRounds(r);
-        const isParticipant = s.participants.some((p) => p.userId === user?.id);
-        if (!isParticipant && s.status !== 'CLOSED') {
-          setShowJoinModal(true);
-        }
+        setSessionReady(true);
       })
       .catch(() => setError(t('poker.room.loadError')))
       .finally(() => setLoading(false));
-  }, [sessionId, user?.id, t]);
+
+    // On SPA navigation (no beforeunload), leave explicitly.
+    // On refresh/tab-close, skip — WebSocketDisconnectListener handles it.
+    return () => {
+      if (sessionStorage.getItem('poker_reconnecting') === sessionId) {
+        sessionStorage.removeItem('poker_reconnecting');
+      } else {
+        pokerApi.leaveSession(sessionId).catch(() => {});
+      }
+    };
+  }, [sessionId, t]);
+
+  // Mark refresh/tab-close so the cleanup above can distinguish it from SPA navigation
+  useEffect(() => {
+    if (!sessionId) return;
+    const handleBeforeUnload = () => {
+      sessionStorage.setItem('poker_reconnecting', sessionId);
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [sessionId]);
+
+  // Decide join flow once both session and project member data are ready
+  useEffect(() => {
+    if (!sessionReady || memberLoading || !session || !user) return;
+    if (session.status === 'CLOSED') return;
+
+    const myParticipant = session.participants.find((p) => p.userId === user.id);
+
+    // Already registered but disconnected (direct URL access after leaving) → reconnect
+    if (myParticipant && !myParticipant.connected) {
+      pokerApi.joinSession(session.id, {
+        displayName: myParticipant.displayName,
+        role: myParticipant.role,
+      })
+        .then(() => pokerApi.getSession(session.id))
+        .then(setSession)
+        .catch(() => { /* ignore */ });
+      return;
+    }
+    if (myParticipant) return; // already connected, nothing to do
+
+    if (member?.scrumRole == null) {
+      // No Scrum role → auto-join as OBSERVER silently
+      const displayName = user.fullName || user.username || 'Observer';
+      pokerApi.joinSession(session.id, { displayName, role: 'OBSERVER' })
+        .then(() => pokerApi.getSession(session.id))
+        .then(setSession)
+        .catch(() => { /* ignore, user stays as observer UI */ });
+    } else {
+      // Has scrum role but arrived via direct URL → show join modal as fallback
+      setShowJoinModal(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionReady, memberLoading]);
 
   useEffect(() => {
-    if (sessionState) setSession(sessionState);
-  }, [sessionState]);
+    if (!sessionState) return;
+    setSession((prev) => {
+      // If a new round started (session moved to VOTING with a new task), reload rounds
+      if (sessionState.status === 'VOTING' && prev?.status !== 'VOTING' && sessionId) {
+        pokerApi.getRounds(sessionId).then(setRounds).catch(() => {});
+      }
+      return sessionState;
+    });
+  }, [sessionState, sessionId]);
+
+  useEffect(() => {
+    if (participantUpdate) {
+      setSession((prev) => prev ? { ...prev, participants: participantUpdate } : prev);
+    }
+  }, [participantUpdate]);
 
   useEffect(() => {
     if (revealedRound) {
@@ -440,6 +512,7 @@ export default function PokerRoomPage() {
 
       {showJoinModal && (
         <JoinSessionModal
+          defaultRole={member?.scrumRole === 'PRODUCT_OWNER' ? 'OBSERVER' : 'VOTER'}
           onClose={() => {
             setShowJoinModal(false);
             navigate(`/workspaces/${workspaceId}/projects/${projectId}/poker`);

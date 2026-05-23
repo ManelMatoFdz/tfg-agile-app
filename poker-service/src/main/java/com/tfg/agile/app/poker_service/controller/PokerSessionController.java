@@ -5,6 +5,7 @@ import com.tfg.agile.app.poker_service.service.PokerSessionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,9 +16,22 @@ import java.util.UUID;
 public class PokerSessionController {
 
     private final PokerSessionService service;
+    private final SimpMessagingTemplate messagingTemplate;
 
-    public PokerSessionController(PokerSessionService service) {
+    public PokerSessionController(PokerSessionService service,
+                                   SimpMessagingTemplate messagingTemplate) {
         this.service = service;
+        this.messagingTemplate = messagingTemplate;
+    }
+
+    private void broadcastParticipants(UUID sessionId) {
+        var participants = service.getSession(sessionId).participants();
+        messagingTemplate.convertAndSend("/topic/poker/" + sessionId + "/participants", participants);
+    }
+
+    private void broadcastState(UUID sessionId) {
+        var session = service.getSession(sessionId);
+        messagingTemplate.convertAndSend("/topic/poker/" + sessionId + "/state", session);
     }
 
     @PostMapping("/projects/{projectId}/poker/sessions")
@@ -44,7 +58,9 @@ public class PokerSessionController {
             @PathVariable("sessionId") UUID sessionId,
             @AuthenticationPrincipal UUID userId,
             @Valid @RequestBody JoinSessionRequestDto dto) {
-        return ResponseEntity.ok(service.joinSession(sessionId, userId, dto));
+        var result = service.joinSession(sessionId, userId, dto);
+        broadcastParticipants(sessionId);
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/poker/sessions/{sessionId}/leave")
@@ -52,12 +68,15 @@ public class PokerSessionController {
     public void leaveSession(@PathVariable("sessionId") UUID sessionId,
                              @AuthenticationPrincipal UUID userId) {
         service.leaveSession(sessionId, userId);
+        broadcastParticipants(sessionId);
     }
 
     @PostMapping("/poker/sessions/{sessionId}/close")
     public SessionResponseDto closeSession(@PathVariable("sessionId") UUID sessionId,
                                            @AuthenticationPrincipal UUID userId) {
-        return service.closeSession(sessionId, userId);
+        var result = service.closeSession(sessionId, userId);
+        broadcastState(sessionId);
+        return result;
     }
 
     @PostMapping("/poker/sessions/{sessionId}/rounds")
@@ -65,8 +84,9 @@ public class PokerSessionController {
             @PathVariable("sessionId") UUID sessionId,
             @AuthenticationPrincipal UUID userId,
             @Valid @RequestBody StartRoundRequestDto dto) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(service.startRound(sessionId, userId, dto));
+        var result = service.startRound(sessionId, userId, dto);
+        broadcastState(sessionId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
     @GetMapping("/poker/sessions/{sessionId}/rounds")

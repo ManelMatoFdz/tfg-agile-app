@@ -28,6 +28,7 @@ interface Props {
   disableCreate?: boolean;
   canMove?: boolean;
   canDelete?: boolean;
+  readOnly?: boolean;
 }
 
 export default function KanbanBoard({
@@ -37,6 +38,7 @@ export default function KanbanBoard({
   disableCreate = false,
   canMove = true,
   canDelete = true,
+  readOnly = false,
 }: Props) {
   const { t } = useTranslation();
   const [modalTask, setModalTask] = useState<Task | null | undefined>(undefined);
@@ -191,6 +193,7 @@ export default function KanbanBoard({
         <TaskModal
           task={modalTask}
           defaultStatus={defaultStatus}
+          readOnly={!!modalTask && readOnly}
           onClose={() => setModalTask(undefined)}
           onSave={async (dto) => {
             if (modalTask && !canMove) return;
