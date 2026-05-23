@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Plus, ChevronRight, LayoutGrid, X } from 'lucide-react';
 import { projectsApi } from '../../api/projects';
 import { categoriesApi } from '../../api/categories';
 import { useApiAction } from '../../hooks/useApiAction';
@@ -15,65 +16,79 @@ interface ProjectGroup {
 }
 
 function groupByCategory(projects: Project[], categories: Category[]): ProjectGroup[] {
-  const catMap = new Map(categories.map((c) => [c.id, c]));
   const groups = new Map<string | null, Project[]>();
-
   for (const p of projects) {
     const key = p.categoryId ?? null;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(p);
   }
-
   const result: ProjectGroup[] = [];
-
-  // Categorized groups, ordered by category position
   for (const cat of categories) {
     const ps = groups.get(cat.id) ?? [];
-    if (ps.length > 0) {
-      result.push({ category: cat, projects: ps });
-    }
+    if (ps.length > 0) result.push({ category: cat, projects: ps });
   }
-
-  // Uncategorized last
   const uncategorized = groups.get(null) ?? [];
-  if (uncategorized.length > 0) {
-    result.push({ category: null, projects: uncategorized });
-  }
-
+  if (uncategorized.length > 0) result.push({ category: null, projects: uncategorized });
   return result;
-}
-
-function CategoryDot({ color }: { color?: string }) {
-  if (!color) return null;
-  return <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 inline-block" style={{ backgroundColor: color }} />;
 }
 
 function ProjectCard({ project, categoryColor, to }: { project: Project; categoryColor?: string; to: string }) {
   const { t } = useTranslation();
   return (
-    <Link to={to} className="glass-card-strong p-5 hover:shadow-lg hover:shadow-primary-500/10 hover:-translate-y-0.5 transition-all duration-200 group cursor-pointer block">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            {categoryColor && <CategoryDot color={categoryColor} />}
-            <h3 className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors truncate">
-              {project.name}
-            </h3>
-          </div>
+    <Link
+      to={to}
+      style={{
+        display: 'block',
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--border)',
+        borderLeft: categoryColor ? `0.125rem solid ${categoryColor}` : '1px solid var(--border)',
+        borderRadius: 'var(--radius-md)',
+        padding: '0.875rem 1rem',
+        textDecoration: 'none',
+        transition: `background var(--duration), border-color var(--duration)`,
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'; (e.currentTarget as HTMLElement).style.borderColor = 'var(--border-strong)'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; (e.currentTarget as HTMLElement).style.borderColor = categoryColor ? 'var(--border)' : 'var(--border)'; }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.625rem' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h3 style={{ margin: '0 0 0.1875rem', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+            {project.name}
+          </h3>
           {project.description && (
-            <p className="text-sm text-gray-500 line-clamp-2">{project.description}</p>
+            <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--text-faint)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+              {project.description}
+            </p>
           )}
         </div>
-        <svg className="w-4.5 h-4.5 text-gray-300 group-hover:text-primary-400 transition-colors flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
+        <ChevronRight size={13} strokeWidth={1.75} style={{ color: 'var(--text-faint)', flexShrink: 0, marginTop: '0.125rem' }} />
       </div>
-      <p className="text-xs text-gray-400 mt-3">
+      <p style={{ margin: '0.5rem 0 0', fontSize: '0.625rem', color: 'var(--text-faint)' }}>
         {t('common.createdAt', { date: new Date(project.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) })}
       </p>
     </Link>
   );
 }
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '0.375rem 0.625rem',
+  fontSize: '0.75rem',
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--text)',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '0.6875rem',
+  fontWeight: 600,
+  color: 'var(--text-muted)',
+  marginBottom: '0.25rem',
+};
 
 export default function WorkspaceDashboardPage() {
   const { t } = useTranslation();
@@ -87,10 +102,9 @@ export default function WorkspaceDashboardPage() {
   const [projectCategoryId, setProjectCategoryId] = useState('');
   const [projectVisibility, setProjectVisibility] = useState<ProjectVisibility>('PRIVATE');
 
-  // Inline category creation
   const [showInlineCatForm, setShowInlineCatForm] = useState(false);
   const [newCatName, setNewCatName] = useState('');
-  const [newCatColor, setNewCatColor] = useState('#6366f1');
+  const [newCatColor, setNewCatColor] = useState('#f97316');
   const [creatingCat, setCreatingCat] = useState(false);
   const [inlineCatError, setInlineCatError] = useState<string | null>(null);
 
@@ -100,18 +114,12 @@ export default function WorkspaceDashboardPage() {
 
   const loadData = () => {
     if (!workspaceId) return;
-    projectsAction.run(projectsApi.list(workspaceId)).then((data) => {
-      if (data) setProjects(data);
-    });
-    categoriesAction.run(categoriesApi.list(workspaceId)).then((data) => {
-      if (data) setCategories(data);
-    });
+    projectsAction.run(projectsApi.list(workspaceId)).then((data) => { if (data) setProjects(data); });
+    categoriesAction.run(categoriesApi.list(workspaceId)).then((data) => { if (data) setCategories(data); });
   };
 
-  useEffect(() => {
-    loadData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId]);
+  useEffect(() => { loadData(); }, [workspaceId]);
 
   const handleCreateProject = async (e: FormEvent) => {
     e.preventDefault();
@@ -142,7 +150,7 @@ export default function WorkspaceDashboardPage() {
     setProjectVisibility('PRIVATE');
     setShowInlineCatForm(false);
     setNewCatName('');
-    setNewCatColor('#6366f1');
+    setNewCatColor('#f97316');
     setInlineCatError(null);
     createAction.reset();
   };
@@ -152,16 +160,12 @@ export default function WorkspaceDashboardPage() {
     setCreatingCat(true);
     setInlineCatError(null);
     try {
-      const res = await categoriesApi.create(workspaceId, {
-        name: newCatName.trim(),
-        color: newCatColor,
-        position: categories.length,
-      });
+      const res = await categoriesApi.create(workspaceId, { name: newCatName.trim(), color: newCatColor, position: categories.length });
       setCategories((prev) => [...prev, res.data]);
       setProjectCategoryId(res.data.id);
       setShowInlineCatForm(false);
       setNewCatName('');
-      setNewCatColor('#6366f1');
+      setNewCatColor('#f97316');
     } catch (err: unknown) {
       const code = (err as { response?: { data?: { errorCode?: string } } })?.response?.data?.errorCode;
       setInlineCatError(code ? t(`errors.${code}`) : t('workspace.settings.categories.createError'));
@@ -176,82 +180,82 @@ export default function WorkspaceDashboardPage() {
   return (
     <div>
       {/* Page header */}
-      <div className="flex items-center justify-between mb-8">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('workspace.dashboard.title')}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.025em' }}>
+            {t('workspace.dashboard.title')}
+          </h1>
+          <p style={{ margin: '0.125rem 0 0', fontSize: '0.75rem', color: 'var(--text-faint)' }}>
             {projects.length === 0
               ? t('workspace.dashboard.noProjectsYet')
               : t('workspace.dashboard.count', { count: projects.length })}
           </p>
         </div>
-        <Button onClick={() => setShowCreateModal(true)}>
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: '0.3125rem',
+            padding: '0.3125rem 0.75rem', fontSize: '0.75rem', fontWeight: 500,
+            background: 'var(--accent)', color: '#fff',
+            border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+            transition: `background var(--duration)`,
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
+        >
+          <Plus size={12} strokeWidth={2.5} />
           {t('workspace.dashboard.newProject')}
-        </Button>
+        </button>
       </div>
 
       {(projectsAction.error || categoriesAction.error) && (
-        <Alert
-          type="error"
-          message={projectsAction.error ?? categoriesAction.error!}
-          onClose={() => { projectsAction.reset(); categoriesAction.reset(); }}
-        />
+        <Alert type="error" message={projectsAction.error ?? categoriesAction.error!} onClose={() => { projectsAction.reset(); categoriesAction.reset(); }} />
       )}
 
       {/* Content */}
       {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem 0' }}>
+          <div style={{ width: '1.5rem', height: '1.5rem', border: '0.125rem solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
         </div>
       ) : groups.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 7a2 2 0 012-2h4a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2V7zm0 8a2 2 0 012-2h4a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2zm10-8a2 2 0 012-2h4a2 2 0 012 2v2a2 2 0 01-2 2h-4a2 2 0 01-2-2V7zm0 8a2 2 0 012-2h4a2 2 0 012 2v2a2 2 0 01-2 2h-4a2 2 0 01-2-2v-2z" />
-            </svg>
+        <div style={{ textAlign: 'center', padding: '5rem 0' }}>
+          <div style={{ width: '3rem', height: '3rem', margin: '0 auto 0.875rem', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <LayoutGrid size={20} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
           </div>
-          <p className="text-gray-500 font-medium">{t('workspace.dashboard.noProjects')}</p>
-          <p className="text-sm text-gray-400 mt-1">{t('workspace.dashboard.noProjectsSubtitle')}</p>
-          <Button className="mt-5" onClick={() => setShowCreateModal(true)}>
+          <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>{t('workspace.dashboard.noProjects')}</p>
+          <p style={{ margin: '0.25rem 0 1rem', fontSize: '0.75rem', color: 'var(--text-faint)' }}>{t('workspace.dashboard.noProjectsSubtitle')}</p>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3125rem', padding: '0.3125rem 0.875rem', fontSize: '0.75rem', fontWeight: 500, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer' }}
+          >
+            <Plus size={12} strokeWidth={2.5} />
             {t('workspace.dashboard.newProject')}
-          </Button>
+          </button>
         </div>
       ) : (
-        <div className="space-y-8">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
           {groups.map((group) => (
             <div key={group.category?.id ?? '__uncategorized__'}>
               {/* Group header */}
-              <div className="flex items-center gap-2.5 mb-4">
-                {group.category ? (
-                  <>
-                    <CategoryDot color={group.category.color} />
-                    <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">
-                      {group.category.name}
-                    </h2>
-                  </>
-                ) : (
-                  <>
-                    <span className="w-2.5 h-2.5 rounded-full bg-gray-300 flex-shrink-0" />
-                    <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">{t('workspace.dashboard.uncategorized')}</h2>
-                  </>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.625rem' }}>
+                {group.category?.color && (
+                  <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', background: group.category.color, flexShrink: 0 }} />
                 )}
-                <span className="text-xs text-gray-400 font-medium bg-gray-100 px-2 py-0.5 rounded-full">
+                {!group.category?.color && (
+                  <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', background: 'var(--border-strong)', flexShrink: 0 }} />
+                )}
+                <h2 style={{ margin: 0, fontSize: '0.625rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: group.category ? 'var(--text-muted)' : 'var(--text-faint)' }}>
+                  {group.category ? group.category.name : t('workspace.dashboard.uncategorized')}
+                </h2>
+                <span style={{ fontSize: '0.625rem', fontWeight: 600, color: 'var(--text-faint)', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '0 0.25rem', fontFamily: 'var(--font-mono)' }}>
                   {group.projects.length}
                 </span>
               </div>
 
               {/* Projects grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(16.25rem, 1fr))', gap: '0.5rem' }}>
                 {group.projects.map((p) => (
-                  <ProjectCard
-                    key={p.id}
-                    project={p}
-                    categoryColor={group.category?.color}
-                    to={`/workspaces/${workspaceId}/projects/${p.id}`}
-                  />
+                  <ProjectCard key={p.id} project={p} categoryColor={group.category?.color} to={`/workspaces/${workspaceId}/projects/${p.id}`} />
                 ))}
               </div>
             </div>
@@ -261,139 +265,145 @@ export default function WorkspaceDashboardPage() {
 
       {/* Create project modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeModal} />
-          <div className="relative z-10 w-full max-w-md glass-card-strong p-6 shadow-2xl animate-fade-in">
-            <div className="flex items-center justify-between mb-5">
-              <h2 className="text-lg font-semibold text-gray-900">{t('workspace.dashboard.modal.title')}</h2>
-              <button
-                onClick={closeModal}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', backgroundColor: 'var(--bg-overlay)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
+        >
+          <div style={{ width: '100%', maxWidth: '27.5rem', background: 'var(--bg-elevated)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-lg)' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.875rem 1.125rem 0.75rem', borderBottom: '1px solid var(--border)' }}>
+              <h2 style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+                {t('workspace.dashboard.modal.title')}
+              </h2>
+              <button onClick={closeModal} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '1.5rem', height: '1.5rem', border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--text-faint)' }}>
+                <X size={13} />
               </button>
             </div>
 
-            {createAction.error && (
-              <Alert type="error" message={createAction.error} onClose={createAction.reset} />
-            )}
-
-            <form onSubmit={handleCreateProject} className="space-y-4">
-              <Input
-                label={t('workspace.dashboard.modal.name')}
-                placeholder={t('workspace.dashboard.modal.namePlaceholder')}
-                value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
-                required
-              />
-              <Input
-                label={t('workspace.dashboard.modal.description', { optional: t('common.optional') })}
-                placeholder={t('workspace.dashboard.modal.descriptionPlaceholder')}
-                value={projectDescription}
-                onChange={(e) => setProjectDescription(e.target.value)}
-              />
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="text-sm font-medium text-gray-700">
-                    {t('workspace.dashboard.modal.category', { optional: t('common.optional') })}
-                  </label>
-                  {!showInlineCatForm ? (
-                    <button
-                      type="button"
-                      onClick={() => setShowInlineCatForm(true)}
-                      className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors cursor-pointer"
-                    >
-                      + {t('workspace.dashboard.modal.newCategory')}
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => { setShowInlineCatForm(false); setInlineCatError(null); }}
-                      className="text-xs text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-                    >
-                      {t('common.cancel')}
-                    </button>
-                  )}
-                </div>
-                <select
-                  value={projectCategoryId}
-                  onChange={(e) => setProjectCategoryId(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white/80 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-primary-500/30 focus:border-primary-400 transition-all"
-                >
-                  <option value="">{t('workspace.dashboard.modal.noCategory')}</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-
-                {showInlineCatForm && (
-                  <div className="mt-2 p-3 border border-gray-200 rounded-xl bg-gray-50/60 space-y-2">
-                    {inlineCatError && (
-                      <p className="text-xs text-red-500">{inlineCatError}</p>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={newCatName}
-                        onChange={(e) => setNewCatName(e.target.value)}
-                        placeholder={t('workspace.settings.categories.modal.namePlaceholder')}
-                        autoFocus
-                        className="flex-1 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white"
-                      />
-                      <input
-                        type="color"
-                        value={newCatColor}
-                        onChange={(e) => setNewCatColor(e.target.value)}
-                        className="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white flex-shrink-0"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleCreateInlineCategory}
-                        disabled={creatingCat || !newCatName.trim()}
-                        className="px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed flex-shrink-0"
-                      >
-                        {creatingCat ? '...' : t('workspace.dashboard.modal.createCategory')}
-                      </button>
-                    </div>
+            <form onSubmit={handleCreateProject}>
+              <div style={{ padding: '0.875rem 1.125rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {createAction.error && (
+                  <div style={{ fontSize: '0.6875rem', color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '0.375rem 0.625rem' }}>
+                    {createAction.error}
                   </div>
                 )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  {t('projects.settings.visibilityLabel')}
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(['PRIVATE', 'WORKSPACE'] as ProjectVisibility[]).map((v) => (
-                    <button
-                      key={v}
-                      type="button"
-                      onClick={() => setProjectVisibility(v)}
-                      className={`p-2.5 rounded-xl border-2 text-left transition-all cursor-pointer ${
-                        projectVisibility === v
-                          ? 'border-primary-500 bg-primary-50'
-                          : 'border-gray-200 bg-white/60 hover:border-gray-300'
-                      }`}
-                    >
-                      <p className={`text-xs font-semibold ${projectVisibility === v ? 'text-primary-700' : 'text-gray-700'}`}>
-                        {t(`projects.settings.visibility.${v}`)}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5 leading-tight">
-                        {t(`projects.settings.visibility.${v}_desc`)}
-                      </p>
-                    </button>
-                  ))}
+
+                <div>
+                  <label style={labelStyle}>{t('workspace.dashboard.modal.name')}</label>
+                  <input
+                    type="text"
+                    value={projectName}
+                    onChange={(e) => setProjectName(e.target.value)}
+                    placeholder={t('workspace.dashboard.modal.namePlaceholder')}
+                    required
+                    autoFocus
+                    style={inputStyle}
+                  />
+                </div>
+
+                <div>
+                  <label style={labelStyle}>
+                    {t('workspace.dashboard.modal.description')}{' '}
+                    <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={projectDescription}
+                    onChange={(e) => setProjectDescription(e.target.value)}
+                    placeholder={t('workspace.dashboard.modal.descriptionPlaceholder')}
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* Category */}
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                    <label style={labelStyle}>
+                      {t('workspace.dashboard.modal.category')}{' '}
+                      <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
+                    </label>
+                    {!showInlineCatForm ? (
+                      <button type="button" onClick={() => setShowInlineCatForm(true)} style={{ fontSize: '0.6875rem', fontWeight: 500, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                        + {t('workspace.dashboard.modal.newCategory')}
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => { setShowInlineCatForm(false); setInlineCatError(null); }} style={{ fontSize: '0.6875rem', color: 'var(--text-faint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                        {t('common.cancel')}
+                      </button>
+                    )}
+                  </div>
+                  <select
+                    value={projectCategoryId}
+                    onChange={(e) => setProjectCategoryId(e.target.value)}
+                    style={{ ...inputStyle }}
+                  >
+                    <option value="">{t('workspace.dashboard.modal.noCategory')}</option>
+                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+
+                  {showInlineCatForm && (
+                    <div style={{ marginTop: '0.375rem', padding: '0.5rem 0.625rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', background: 'var(--bg-hover)', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                      {inlineCatError && <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--danger)' }}>{inlineCatError}</p>}
+                      <div style={{ display: 'flex', gap: '0.375rem' }}>
+                        <input
+                          type="text"
+                          value={newCatName}
+                          onChange={(e) => setNewCatName(e.target.value)}
+                          placeholder={t('workspace.settings.categories.modal.namePlaceholder')}
+                          autoFocus
+                          style={{ ...inputStyle, flex: 1 }}
+                        />
+                        <input
+                          type="color"
+                          value={newCatColor}
+                          onChange={(e) => setNewCatColor(e.target.value)}
+                          style={{ width: '2.125rem', height: '2.125rem', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', padding: '0.125rem', background: 'var(--bg-elevated)', flexShrink: 0 }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleCreateInlineCategory}
+                          disabled={creatingCat || !newCatName.trim()}
+                          style={{ padding: '0 0.625rem', fontSize: '0.6875rem', fontWeight: 600, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', opacity: creatingCat || !newCatName.trim() ? 0.5 : 1, flexShrink: 0 }}
+                        >
+                          {creatingCat ? '…' : t('workspace.dashboard.modal.createCategory')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Visibility */}
+                <div>
+                  <label style={labelStyle}>{t('projects.settings.visibilityLabel')}</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.375rem' }}>
+                    {(['PRIVATE', 'WORKSPACE'] as ProjectVisibility[]).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => setProjectVisibility(v)}
+                        style={{
+                          padding: '0.5rem 0.625rem', textAlign: 'left', cursor: 'pointer',
+                          border: `1px solid ${projectVisibility === v ? 'var(--accent)' : 'var(--border)'}`,
+                          borderRadius: 'var(--radius-md)',
+                          background: projectVisibility === v ? 'var(--accent-muted)' : 'var(--bg)',
+                          transition: `border-color var(--duration), background var(--duration)`,
+                        }}
+                      >
+                        <p style={{ margin: 0, fontSize: '0.6875rem', fontWeight: 600, color: projectVisibility === v ? 'var(--accent)' : 'var(--text-muted)' }}>
+                          {t(`projects.settings.visibility.${v}`)}
+                        </p>
+                        <p style={{ margin: '0.125rem 0 0', fontSize: '0.625rem', color: 'var(--text-faint)', lineHeight: 1.3 }}>
+                          {t(`projects.settings.visibility.${v}_desc`)}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-1">
-                <Button type="submit" loading={createAction.loading} className="flex-1">
-                  {t('workspace.dashboard.modal.submit')}
-                </Button>
-                <Button type="button" variant="secondary" onClick={closeModal}>
-                  {t('common.cancel')}
-                </Button>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.375rem', padding: '0.625rem 1.125rem 0.875rem', borderTop: '1px solid var(--border)' }}>
+                <Button type="button" variant="secondary" onClick={closeModal}>{t('common.cancel')}</Button>
+                <Button type="submit" loading={createAction.loading}>{t('workspace.dashboard.modal.submit')}</Button>
               </div>
             </form>
           </div>

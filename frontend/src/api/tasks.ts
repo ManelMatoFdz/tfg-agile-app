@@ -6,7 +6,6 @@ export interface CreateTaskDto {
   description?: string;
   priority?: string;
   assigneeId?: string;
-  storyPoints?: number;
 }
 
 export interface UpdateTaskDto {
@@ -14,7 +13,6 @@ export interface UpdateTaskDto {
   description?: string;
   priority?: string;
   assigneeId?: string | null;
-  storyPoints?: number | null;
 }
 
 export interface MoveTaskDto {

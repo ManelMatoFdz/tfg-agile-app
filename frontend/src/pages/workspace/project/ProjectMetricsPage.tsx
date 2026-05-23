@@ -15,7 +15,7 @@ import Alert from '../../../components/ui/Alert';
 // ── Colours ───────────────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
-  DONE: '#10b981',
+  DONE: '#22c55e',
   IN_PROGRESS: '#3b82f6',
   IN_REVIEW: '#f59e0b',
   TODO: '#9ca3af',
@@ -49,8 +49,14 @@ function AnimatedNumber({ target }: { target: number }) {
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
+const card: React.CSSProperties = {
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+};
+
 function StatCard({
-  label, value, sub, color = '#6366f1', icon,
+  label, value, sub, color = 'var(--accent)', icon,
 }: {
   label: string;
   value: number;
@@ -59,15 +65,17 @@ function StatCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="glass-card-strong p-4 flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <p className="text-xs text-gray-400">{label}</p>
-        <span style={{ color }} className="opacity-70">{icon}</span>
+    <div style={{ ...card, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: 'var(--text-faint)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+          {label}
+        </p>
+        <span style={{ color, opacity: 0.8 }}>{icon}</span>
       </div>
-      <p className="text-2xl font-extrabold text-gray-900">
+      <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em' }}>
         <AnimatedNumber target={value} />
       </p>
-      {sub && <p className="text-xs text-gray-400 truncate">{sub}</p>}
+      {sub && <p style={{ margin: 0, fontSize: 10, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{sub}</p>}
     </div>
   );
 }
@@ -97,7 +105,6 @@ export default function ProjectMetricsPage() {
         setSprints(s);
         setMembers(m.data);
 
-        // Resolve user display names for member tasks breakdown
         const ids = [...new Set([...m.data.map((mm) => mm.userId)])];
         if (ids.length > 0) {
           usersApi.batch(ids)
@@ -114,8 +121,12 @@ export default function ProjectMetricsPage() {
   }, [projectId, t]);
 
   if (loading) return (
-    <div className="flex justify-center py-20">
-      <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+      <div style={{
+        width: 24, height: 24,
+        border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
+        borderRadius: '50%', animation: 'spin 0.7s linear infinite',
+      }} />
     </div>
   );
 
@@ -123,20 +134,14 @@ export default function ProjectMetricsPage() {
 
   const total = tasks.length;
   const done = tasks.filter((t) => t.status === 'DONE').length;
-  const inProgress = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
-  const inReview = tasks.filter((t) => t.status === 'IN_REVIEW').length;
-  const todo = tasks.filter((t) => t.status === 'TODO').length;
-
   const totalSP = tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
   const doneSP = tasks.filter((t) => t.status === 'DONE').reduce((s, t) => s + (t.storyPoints ?? 0), 0);
-
   const backlogTasks = tasks.filter((t) => !t.sprintId);
   const sprintedTasks = tasks.filter((t) => !!t.sprintId);
-
   const completedSprints = sprints.filter((s) => s.status === 'COMPLETED').length;
   const activeSprint = sprints.find((s) => s.status === 'ACTIVE');
-
   const donePct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const unassigned = tasks.filter((t) => !t.assigneeId).length;
 
   // ── Chart data ────────────────────────────────────────────────────────────
 
@@ -157,7 +162,6 @@ export default function ProjectMetricsPage() {
     color: PRIORITY_COLORS[p],
   })).filter((d) => d.total > 0);
 
-  // Sprint velocity (SP completed per sprint)
   const velocityData = sprints
     .filter((s) => s.status !== 'PLANNING')
     .map((s) => {
@@ -166,7 +170,6 @@ export default function ProjectMetricsPage() {
       return { name: s.name, sp };
     });
 
-  // Tasks per member (top 8)
   const memberTaskData = members
     .map((m) => ({
       name: userNames[m.userId] ?? t('common.unknownUser'),
@@ -177,27 +180,28 @@ export default function ProjectMetricsPage() {
     .sort((a, b) => b.assigned - a.assigned)
     .slice(0, 8);
 
-  const unassigned = tasks.filter((t) => !t.assigneeId).length;
+  const tooltipStyle = { fontSize: 11, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-elevated)' };
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-5 pb-8">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 24 }}>
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
-      <h2 className="text-lg font-bold text-gray-900 tracking-tight">{t('projects.metrics.title')}</h2>
+      <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+        {t('projects.metrics.title')}
+      </h2>
 
-      {/* ── Summary cards ──────────────────────────────────────────────────── */}
+      {/* Summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
           label={t('projects.metrics.totalTasks')}
           value={total}
           sub={t('projects.metrics.donePct', { pct: donePct })}
-          color="#6366f1"
+          color="var(--accent)"
           icon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
           }
         />
@@ -205,11 +209,10 @@ export default function ProjectMetricsPage() {
           label={t('projects.metrics.storyPointsDone')}
           value={doneSP}
           sub={`${totalSP} ${t('projects.metrics.total')}`}
-          color="#10b981"
+          color="#22c55e"
           icon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z" />
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           }
         />
@@ -219,9 +222,8 @@ export default function ProjectMetricsPage() {
           sub={t('projects.metrics.completedSprints', { n: completedSprints })}
           color="#f59e0b"
           icon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
           }
         />
@@ -231,36 +233,39 @@ export default function ProjectMetricsPage() {
           sub={activeSprint ? t('projects.metrics.activeSprint', { name: activeSprint.name }) : t('projects.metrics.noActiveSprint')}
           color="#3b82f6"
           icon={
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           }
         />
       </div>
 
-      {/* ── Progress bar ───────────────────────────────────────────────────── */}
+      {/* Progress bar */}
       {total > 0 && (
-        <div className="glass-card-strong p-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm font-medium text-gray-700">{t('projects.metrics.overallProgress')}</p>
-            <span className="text-sm font-bold text-primary-600">{donePct}%</span>
+        <div style={{ ...card, padding: '14px 16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>
+              {t('projects.metrics.overallProgress')}
+            </p>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
+              {donePct}%
+            </span>
           </div>
-          <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-            <div
-              className="h-2 rounded-full bg-primary-500 transition-all duration-1000"
-              style={{ width: `${donePct}%` }}
-            />
+          <div style={{ width: '100%', background: 'var(--bg-hover)', borderRadius: 4, height: 6, overflow: 'hidden' }}>
+            <div style={{
+              height: 6, borderRadius: 4, background: 'var(--accent)',
+              width: `${donePct}%`, transition: 'width 1s ease',
+            }} />
           </div>
-          <div className="flex items-center gap-4 mt-3 flex-wrap">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 16px', marginTop: 10 }}>
             {statuses.map((s) => {
               const count = tasks.filter((t) => t.status === s).length;
               if (count === 0) return null;
               return (
-                <div key={s} className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: STATUS_COLORS[s] }} />
-                  <span className="text-xs text-gray-500">{t(`tasks.status.${s}`)}</span>
-                  <span className="text-xs font-semibold text-gray-800">{count}</span>
+                <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: STATUS_COLORS[s], flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t(`tasks.status.${s}`)}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{count}</span>
                 </div>
               );
             })}
@@ -268,42 +273,44 @@ export default function ProjectMetricsPage() {
         </div>
       )}
 
-      {/* ── Backlog vs Sprint ──────────────────────────────────────────────── */}
+      {/* Task distribution + Backlog vs Sprint */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-        {/* Task status donut */}
-        <div className="glass-card-strong p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('projects.metrics.taskDistribution')}</h3>
+        {/* Status donut */}
+        <div style={{ ...card, padding: '14px 16px' }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+            {t('projects.metrics.taskDistribution')}
+          </h3>
           {total > 0 ? (
-            <div className="flex items-center gap-6">
-              <ResponsiveContainer width={160} height={160}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <ResponsiveContainer width={140} height={140}>
                 <PieChart>
                   <Pie
                     data={statusPieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={48}
-                    outerRadius={72}
-                    paddingAngle={2}
-                    dataKey="value"
+                    cx="50%" cy="50%"
+                    innerRadius={42} outerRadius={62}
+                    paddingAngle={2} dataKey="value"
                   >
                     {statusPieData.map((entry) => (
                       <Cell key={entry.name} fill={entry.color} />
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(v: number, name: string) => [`${v} (${Math.round((v / total) * 100)}%)`, name]}
-                    contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                    formatter={(value, name) => {
+                      const v = typeof value === 'number' ? value : 0;
+                      const label = typeof name === 'string' ? name : String(name ?? '');
+                      return [`${v} (${Math.round((v / total) * 100)}%)`, label];
+                    }}
+                    contentStyle={tooltipStyle}
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="flex-1 space-y-2">
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {statusPieData.map((d) => (
-                  <div key={d.name} className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: d.color }} />
-                    <span className="text-xs text-gray-600 flex-1 truncate">{d.name}</span>
-                    <span className="text-xs font-semibold text-gray-800">{d.value}</span>
-                    <span className="text-xs text-gray-400 w-9 text-right">
+                  <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', flexShrink: 0, background: d.color }} />
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{d.name}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{d.value}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-faint)', width: 32, textAlign: 'right', fontFamily: 'var(--font-mono)' }}>
                       {Math.round((d.value / total) * 100)}%
                     </span>
                   </div>
@@ -311,145 +318,142 @@ export default function ProjectMetricsPage() {
               </div>
             </div>
           ) : (
-            <p className="text-xs text-gray-400 text-center py-10">{t('projects.metrics.noTasks')}</p>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '32px 0' }}>
+              {t('projects.metrics.noTasks')}
+            </p>
           )}
         </div>
 
         {/* Backlog vs sprints */}
-        <div className="glass-card-strong p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('projects.metrics.backlogVsSprint')}</h3>
+        <div style={{ ...card, padding: '14px 16px' }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+            {t('projects.metrics.backlogVsSprint')}
+          </h3>
           {total > 0 ? (
-            <div className="space-y-3">
-              {/* Sprint tasks */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-500">{t('projects.metrics.inSprints')}</span>
-                  <span className="text-xs font-semibold text-gray-800">{sprintedTasks.length}</span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="h-1.5 rounded-full bg-primary-500"
-                    style={{ width: `${total > 0 ? (sprintedTasks.length / total) * 100 : 0}%` }}
-                  />
-                </div>
-              </div>
-              {/* Backlog tasks */}
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-gray-500">{t('projects.metrics.inBacklog')}</span>
-                  <span className="text-xs font-semibold text-gray-800">{backlogTasks.length}</span>
-                </div>
-                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                  <div
-                    className="h-1.5 rounded-full bg-amber-400"
-                    style={{ width: `${total > 0 ? (backlogTasks.length / total) * 100 : 0}%` }}
-                  />
-                </div>
-              </div>
-              {/* Unassigned */}
-              {unassigned > 0 && (
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-500">{t('projects.metrics.unassigned')}</span>
-                    <span className="text-xs font-semibold text-gray-800">{unassigned}</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                { label: t('projects.metrics.inSprints'), count: sprintedTasks.length, color: 'var(--accent)' },
+                { label: t('projects.metrics.inBacklog'), count: backlogTasks.length, color: '#f59e0b' },
+                ...(unassigned > 0 ? [{ label: t('projects.metrics.unassigned'), count: unassigned, color: 'var(--border)' }] : []),
+              ].map((row) => (
+                <div key={row.label}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{row.label}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{row.count}</span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="h-1.5 rounded-full bg-gray-300"
-                      style={{ width: `${total > 0 ? (unassigned / total) * 100 : 0}%` }}
-                    />
+                  <div style={{ width: '100%', background: 'var(--bg-hover)', borderRadius: 3, height: 5, overflow: 'hidden' }}>
+                    <div style={{ height: 5, borderRadius: 3, background: row.color, width: `${total > 0 ? (row.count / total) * 100 : 0}%` }} />
                   </div>
                 </div>
-              )}
+              ))}
 
-              {/* Sprint summary */}
-              <div className="mt-4 pt-3 border-t border-gray-100 grid grid-cols-3 gap-3 text-center">
-                <div>
-                  <p className="text-lg font-bold text-gray-900">{sprints.length}</p>
-                  <p className="text-xs text-gray-400">{t('projects.metrics.totalSprints')}</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-emerald-600">{completedSprints}</p>
-                  <p className="text-xs text-gray-400">{t('projects.metrics.completed')}</p>
-                </div>
-                <div>
-                  <p className="text-lg font-bold text-primary-600">{sprints.filter((s) => s.status === 'ACTIVE').length}</p>
-                  <p className="text-xs text-gray-400">{t('projects.metrics.active')}</p>
-                </div>
+              <div style={{ marginTop: 8, paddingTop: 10, borderTop: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
+                {[
+                  { value: sprints.length, label: t('projects.metrics.totalSprints'), color: 'var(--text)' },
+                  { value: completedSprints, label: t('projects.metrics.completed'), color: '#16a34a' },
+                  { value: sprints.filter((s) => s.status === 'ACTIVE').length, label: t('projects.metrics.active'), color: 'var(--accent)' },
+                ].map((stat) => (
+                  <div key={stat.label}>
+                    <p style={{ margin: 0, fontSize: 16, fontWeight: 800, color: stat.color, fontFamily: 'var(--font-mono)' }}>{stat.value}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 9, color: 'var(--text-faint)', letterSpacing: '0.03em' }}>{stat.label}</p>
+                  </div>
+                ))}
               </div>
             </div>
           ) : (
-            <p className="text-xs text-gray-400 text-center py-10">{t('projects.metrics.noTasks')}</p>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '32px 0' }}>
+              {t('projects.metrics.noTasks')}
+            </p>
           )}
         </div>
       </div>
 
-      {/* ── Priority breakdown ────────────────────────────────────────────── */}
+      {/* Priority breakdown */}
       {priorityData.length > 0 && (
-        <div className="glass-card-strong p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('projects.metrics.byPriority')}</h3>
+        <div style={{ ...card, padding: '14px 16px' }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+            {t('projects.metrics.byPriority')}
+          </h3>
           <ResponsiveContainer width="100%" height={160}>
-            <BarChart
-              data={priorityData}
-              layout="vertical"
-              margin={{ top: 0, right: 20, bottom: 0, left: 10 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" horizontal={false} />
+            <BarChart data={priorityData} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
               <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} allowDecimals={false} />
               <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} width={60} />
               <Tooltip
-                formatter={(v: number, name: string) => [v, name]}
-                contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                formatter={(value, name) => {
+                  const v = typeof value === 'number' ? value : 0;
+                  const label = typeof name === 'string' ? name : String(name ?? '');
+                  return [v, label];
+                }}
+                contentStyle={tooltipStyle}
               />
               <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-              <Bar dataKey="done" name={t('tasks.status.DONE')} radius={[0, 4, 4, 0]} fill="#10b981" />
-              <Bar dataKey="total" name={t('projects.metrics.total')} radius={[0, 4, 4, 0]} fill="#e5e7eb" />
+              <Bar dataKey="done" name={t('tasks.status.DONE')} radius={[0, 4, 4, 0]} fill="#22c55e" />
+              <Bar dataKey="total" name={t('projects.metrics.total')} radius={[0, 4, 4, 0]} fill="var(--bg-hover)" />
             </BarChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* ── Sprint velocity ───────────────────────────────────────────────── */}
+      {/* Sprint velocity */}
       {velocityData.length > 1 && (
-        <div className="glass-card-strong p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('projects.metrics.velocity')}</h3>
+        <div style={{ ...card, padding: '14px 16px' }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+            {t('projects.metrics.velocity')}
+          </h3>
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={velocityData} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af' }} />
               <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} allowDecimals={false} />
               <Tooltip
-                formatter={(v: number) => [`${v} pts`, t('projects.metrics.storyPointsDone')]}
-                contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                formatter={(value) => {
+                  const v = typeof value === 'number' ? value : 0;
+                  return [`${v} pts`, t('projects.metrics.storyPointsDone')];
+                }}
+                contentStyle={tooltipStyle}
               />
-              <Bar dataKey="sp" name="Story Points" fill="#6366f1" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="sp" name="Story Points" fill="var(--accent)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* ── Tasks per member ──────────────────────────────────────────────── */}
+      {/* Tasks per member */}
       {memberTaskData.length > 0 && (
-        <div className="glass-card-strong overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-gray-100">
-            <h3 className="text-sm font-semibold text-gray-900">{t('projects.metrics.tasksByMember')}</h3>
+        <div style={{ ...card, overflow: 'hidden' }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+            <h3 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+              {t('projects.metrics.tasksByMember')}
+            </h3>
           </div>
-          <div className="divide-y divide-gray-50">
-            {memberTaskData.map((d) => (
-              <div key={d.name} className="flex items-center gap-3 px-5 py-3">
-                <div className="w-7 h-7 rounded-full bg-primary-100 text-primary-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+          <div>
+            {memberTaskData.map((d, idx) => (
+              <div key={d.name} style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '9px 16px',
+                borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+              }}>
+                <div style={{
+                  width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                  background: 'var(--accent-muted)', color: 'var(--accent)',
+                  fontSize: 10, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
                   {d.name.charAt(0).toUpperCase()}
                 </div>
-                <span className="text-sm text-gray-700 flex-1 truncate">{d.name}</span>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className="text-xs font-semibold text-emerald-600">{d.done} ✓</span>
-                  <span className="text-xs text-gray-400">/ {d.assigned}</span>
+                <span style={{ fontSize: 12, color: 'var(--text)', flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                  {d.name}
+                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: '#22c55e', fontFamily: 'var(--font-mono)' }}>{d.done}</span>
+                  <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>/ {d.assigned}</span>
                 </div>
-                <div className="w-24 bg-gray-100 rounded-full h-1.5 overflow-hidden flex-shrink-0">
-                  <div
-                    className="h-1.5 rounded-full bg-emerald-500"
-                    style={{ width: `${d.assigned > 0 ? (d.done / d.assigned) * 100 : 0}%` }}
-                  />
+                <div style={{ width: 80, background: 'var(--bg-hover)', borderRadius: 3, height: 5, overflow: 'hidden', flexShrink: 0 }}>
+                  <div style={{
+                    height: 5, borderRadius: 3, background: '#22c55e',
+                    width: `${d.assigned > 0 ? (d.done / d.assigned) * 100 : 0}%`,
+                  }} />
                 </div>
               </div>
             ))}
@@ -458,12 +462,11 @@ export default function ProjectMetricsPage() {
       )}
 
       {total === 0 && (
-        <div className="glass-card-strong flex flex-col items-center justify-center py-20 gap-3 text-center">
-          <svg className="w-10 h-10 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+        <div style={{ ...card, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', gap: 10, textAlign: 'center' }}>
+          <svg width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" style={{ color: 'var(--border)' }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
           </svg>
-          <p className="text-sm text-gray-400">{t('projects.metrics.noTasks')}</p>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--text-faint)' }}>{t('projects.metrics.noTasks')}</p>
         </div>
       )}
     </div>

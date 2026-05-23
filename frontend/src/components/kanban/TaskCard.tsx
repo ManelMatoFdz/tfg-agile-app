@@ -1,18 +1,11 @@
-import { useTranslation } from 'react-i18next';
 import type { Task, TaskPriority } from '../../types';
 
-const PRIORITY_LEFT_BORDER: Record<TaskPriority, string> = {
-  CRITICAL: 'border-l-red-500',
-  HIGH:     'border-l-amber-400',
-  MEDIUM:   'border-l-blue-400',
-  LOW:      'border-l-gray-300',
-};
-
-const PRIORITY_DOT: Record<TaskPriority, string> = {
-  CRITICAL: 'bg-red-500',
-  HIGH:     'bg-amber-400',
-  MEDIUM:   'bg-blue-400',
-  LOW:      'bg-gray-300',
+/* Priority → left-border color (theme-independent) */
+const PRIORITY_COLOR: Record<TaskPriority, string> = {
+  CRITICAL: '#ef4444',
+  HIGH:     '#f59e0b',
+  MEDIUM:   '#3b82f6',
+  LOW:      '#9ca3af',
 };
 
 interface Props {
@@ -21,32 +14,83 @@ interface Props {
 }
 
 export default function TaskCard({ task, onClick }: Props) {
-  const { t } = useTranslation();
-
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left bg-white border border-gray-200 border-l-2 ${PRIORITY_LEFT_BORDER[task.priority]} rounded-lg p-3 hover:border-gray-300 hover:shadow-sm transition-all duration-150 cursor-pointer group`}
+      style={{
+        width:           '100%',
+        textAlign:       'left',
+        display:         'block',
+        background:      'var(--bg-elevated)',
+        border:          '1px solid var(--border)',
+        borderLeft:      `0.125rem solid ${PRIORITY_COLOR[task.priority]}`,
+        borderRadius:    'var(--radius-sm)',
+        padding:         '0.4375rem 0.625rem',
+        cursor:          'pointer',
+        transition:      `background var(--duration), border-color var(--duration)`,
+      }}
+      onMouseEnter={e => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.background    = 'var(--bg-hover)';
+        el.style.borderColor   = `var(--border-strong)`;
+        el.style.borderLeftColor = PRIORITY_COLOR[task.priority];
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget as HTMLElement;
+        el.style.background    = 'var(--bg-elevated)';
+        el.style.borderColor   = 'var(--border)';
+        el.style.borderLeftColor = PRIORITY_COLOR[task.priority];
+      }}
     >
-      <p className="text-sm font-semibold text-gray-800 leading-snug group-hover:text-primary-700 transition-colors">
+      {/* Title */}
+      <p style={{
+        margin:       0,
+        fontSize:     '0.75rem',
+        fontWeight:   500,
+        color:        'var(--text)',
+        lineHeight:   1.4,
+        letterSpacing: '-0.01em',
+        overflow:     'hidden',
+        display:      '-webkit-box',
+        WebkitLineClamp: 2,
+        WebkitBoxOrient: 'vertical',
+      }}>
         {task.title}
       </p>
+
+      {/* Description — 1 line only */}
       {task.description && (
-        <p className="text-xs text-gray-400 mt-1 line-clamp-2 leading-relaxed">{task.description}</p>
+        <p style={{
+          margin:      '0.125rem 0 0',
+          fontSize:    '0.6875rem',
+          color:       'var(--text-faint)',
+          lineHeight:  1.35,
+          overflow:    'hidden',
+          whiteSpace:  'nowrap',
+          textOverflow: 'ellipsis',
+        }}>
+          {task.description}
+        </p>
       )}
-      <div className="flex items-center justify-between mt-2.5">
-        <div className="flex items-center gap-1.5">
-          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${PRIORITY_DOT[task.priority]}`} />
-          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-            {t(`tasks.priority.${task.priority}`)}
+
+      {/* Footer — only shown if there's metadata */}
+      {task.storyPoints != null && (
+        <div style={{ marginTop: '0.3125rem', display: 'flex', justifyContent: 'flex-end' }}>
+          <span style={{
+            fontFamily:  'var(--font-mono)',
+            fontSize:    '0.625rem',
+            fontWeight:  600,
+            color:       'var(--text-faint)',
+            background:  'var(--bg-hover)',
+            border:      '1px solid var(--border)',
+            borderRadius: 'var(--radius-sm)',
+            padding:     '0.0625rem 0.3125rem',
+            letterSpacing: 0,
+          }}>
+            {task.storyPoints}
           </span>
         </div>
-        {task.storyPoints != null && (
-          <span className="text-[10px] font-bold text-gray-400 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded">
-            {task.storyPoints} pts
-          </span>
-        )}
-      </div>
+      )}
     </button>
   );
 }

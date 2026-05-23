@@ -1,44 +1,71 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Plus, Users, ChevronRight } from 'lucide-react';
 import { teamsApi } from '../../api/teams';
 import { useApiAction } from '../../hooks/useApiAction';
-import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
 import Alert from '../../components/ui/Alert';
 import type { Team } from '../../types';
 
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '6px 10px',
+  fontSize: 12,
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--text)',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: 11,
+  fontWeight: 600,
+  color: 'var(--text-muted)',
+  marginBottom: 4,
+};
+
 function TeamCard({ team, to }: { team: Team; to: string }) {
   const { t } = useTranslation();
+  const [hovered, setHovered] = useState(false);
   return (
     <Link
       to={to}
-      className="glass-card-strong p-5 hover:shadow-lg hover:shadow-primary-500/10 hover:-translate-y-0.5 transition-all duration-200 group block"
+      style={{
+        display: 'block',
+        textDecoration: 'none',
+        background: 'var(--bg-elevated)',
+        border: `1px solid ${hovered ? 'var(--accent)' : 'var(--border)'}`,
+        borderRadius: 'var(--radius-md)',
+        padding: '12px 14px',
+        transition: `border-color var(--duration), background var(--duration)`,
+        ...(hovered ? { background: 'var(--bg-hover)' } : {}),
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      <div className="flex items-start gap-4">
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-lg font-bold shadow-md flex-shrink-0">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{
+          width: 36, height: 36, flexShrink: 0,
+          background: 'var(--accent)', borderRadius: 'var(--radius-md)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#fff', fontSize: 14, fontWeight: 700,
+        }}>
           {team.name.charAt(0).toUpperCase()}
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors truncate">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
             {team.name}
           </p>
-          {team.description ? (
-            <p className="text-sm text-gray-500 truncate mt-0.5">{team.description}</p>
-          ) : (
-            <p className="text-sm text-gray-400 italic mt-0.5">{t('common.noDescription')}</p>
-          )}
+          <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-faint)', fontStyle: team.description ? 'normal' : 'italic', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+            {team.description ?? t('common.noDescription')}
+          </p>
         </div>
-        <svg
-          className="w-5 h-5 text-gray-300 group-hover:text-primary-500 transition-colors flex-shrink-0 mt-0.5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
+        <ChevronRight size={14} strokeWidth={2} style={{ color: hovered ? 'var(--accent)' : 'var(--text-faint)', flexShrink: 0, transition: `color var(--duration)` }} />
       </div>
-      <p className="text-xs text-gray-400 mt-3 ml-15">
+      <p style={{ margin: '8px 0 0 48px', fontSize: 10, color: 'var(--text-faint)' }}>
         {t('common.createdAt', { date: new Date(team.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) })}
       </p>
     </Link>
@@ -92,22 +119,38 @@ export default function TeamsPage() {
   };
 
   return (
-    <div>
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('teams.title')}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {teams.length === 0 ? t('teams.noTeamsYet') : t('teams.count', { count: teams.length })}
-          </p>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h1 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+            {t('teams.title')}
+          </h1>
+          {!listAction.loading && teams.length > 0 && (
+            <span style={{
+              fontSize: 11, fontWeight: 500, color: 'var(--text-faint)',
+              background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)', padding: '1px 6px', fontFamily: 'var(--font-mono)',
+            }}>
+              {teams.length}
+            </span>
+          )}
         </div>
         {!showCreateForm && (
-          <Button onClick={() => setShowCreateForm(true)}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+          <button
+            onClick={() => setShowCreateForm(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '5px 10px', fontSize: 12, fontWeight: 500,
+              background: 'var(--accent)', color: '#fff',
+              border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
+          >
+            <Plus size={12} strokeWidth={2.5} />
             {t('teams.newTeam')}
-          </Button>
+          </button>
         )}
       </div>
 
@@ -117,32 +160,71 @@ export default function TeamsPage() {
 
       {/* Create form */}
       {showCreateForm && (
-        <div className="glass-card-strong p-6 mb-6 animate-fade-in">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">{t('teams.form.title')}</h3>
+        <div style={{
+          background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-md)', padding: 16,
+        }}>
+          <h3 style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+            {t('teams.form.title')}
+          </h3>
           {createAction.error && (
             <Alert type="error" message={createAction.error} onClose={createAction.reset} />
           )}
-          <form onSubmit={handleCreate} className="space-y-4">
-            <Input
-              label={t('teams.form.name')}
-              placeholder={t('teams.form.namePlaceholder')}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-            <Input
-              label={t('teams.form.description', { optional: t('common.optional') })}
-              placeholder={t('teams.form.descriptionPlaceholder')}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-            <div className="flex gap-3 pt-1">
-              <Button type="submit" loading={createAction.loading} className="flex-1">
-                {t('teams.form.submit')}
-              </Button>
-              <Button type="button" variant="secondary" onClick={closeForm}>
+          <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div>
+              <label style={labelStyle}>{t('teams.form.name')}</label>
+              <input
+                type="text"
+                placeholder={t('teams.form.namePlaceholder')}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoFocus
+                style={inputStyle}
+                onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+              />
+            </div>
+            <div>
+              <label style={labelStyle}>
+                {t('teams.form.description', { optional: t('common.optional') })}
+              </label>
+              <input
+                type="text"
+                placeholder={t('teams.form.descriptionPlaceholder')}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                style={inputStyle}
+                onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 6, paddingTop: 2 }}>
+              <button
+                type="submit"
+                disabled={createAction.loading || !name.trim()}
+                style={{
+                  flex: 1, padding: '6px 12px', fontSize: 12, fontWeight: 500,
+                  background: 'var(--accent)', color: '#fff',
+                  border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                  opacity: createAction.loading || !name.trim() ? 0.5 : 1,
+                }}
+                onMouseEnter={e => { if (!createAction.loading && name.trim()) (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent)'; }}
+              >
+                {createAction.loading ? '…' : t('teams.form.submit')}
+              </button>
+              <button
+                type="button"
+                onClick={closeForm}
+                style={{
+                  padding: '6px 12px', fontSize: 12, fontWeight: 500,
+                  background: 'transparent', color: 'var(--text-muted)',
+                  border: 'none', cursor: 'pointer',
+                }}
+              >
                 {t('common.cancel')}
-              </Button>
+              </button>
             </div>
           </form>
         </div>
@@ -150,31 +232,44 @@ export default function TeamsPage() {
 
       {/* Content */}
       {listAction.loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+          <div style={{
+            width: 24, height: 24,
+            border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
+            borderRadius: '50%', animation: 'spin 0.7s linear infinite',
+          }} />
         </div>
       ) : teams.length === 0 ? (
-        <div className="text-center py-20">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
-              />
-            </svg>
+        <div style={{
+          background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)', padding: '48px 24px', textAlign: 'center',
+        }}>
+          <div style={{
+            width: 44, height: 44, background: 'var(--bg-hover)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', margin: '0 auto 12px',
+          }}>
+            <Users size={20} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
           </div>
-          <p className="text-gray-500 font-medium">{t('teams.noTeams')}</p>
-          <p className="text-sm text-gray-400 mt-1">{t('teams.noTeamsSubtitle')}</p>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>{t('teams.noTeams')}</p>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>{t('teams.noTeamsSubtitle')}</p>
           {!showCreateForm && (
-            <Button className="mt-5" onClick={() => setShowCreateForm(true)}>
-              {t('teams.form.submit')}
-            </Button>
+            <button
+              onClick={() => setShowCreateForm(true)}
+              style={{
+                marginTop: 16, padding: '6px 14px', fontSize: 12, fontWeight: 500,
+                background: 'var(--accent)', color: '#fff',
+                border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
+            >
+              {t('teams.newTeam')}
+            </button>
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           {teams.map((team) => (
             <TeamCard
               key={team.id}

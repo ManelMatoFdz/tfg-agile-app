@@ -541,6 +541,8 @@
       "priority": "Prioridade",
       "status": "Estado",
       "storyPoints": "Story points",
+      "storyPointsPoker": "— asignado vía Planning Poker",
+      "storyPointsUnestimated": "Sen estimar — usa Planning Poker para estimar esta tarefa",
       "create": "Crear tarefa",
       "save": "Gardar cambios",
       "deleteTask": "Eliminar tarefa",

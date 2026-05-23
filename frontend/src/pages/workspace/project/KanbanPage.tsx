@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Columns } from 'lucide-react';
 import { sprintsApi } from '../../../api/sprints';
 import type { Sprint, Task } from '@/types';
 import KanbanBoard from '../../../components/kanban/KanbanBoard';
@@ -26,9 +27,7 @@ export default function KanbanPage() {
       .then((sprints) => {
         const active = sprints.find((s) => s.status === 'ACTIVE') ?? null;
         setActiveSprint(active);
-        if (active) {
-          return sprintsApi.getSprintTasks(active.id);
-        }
+        if (active) return sprintsApi.getSprintTasks(active.id);
         return [];
       })
       .then(setTasks)
@@ -44,24 +43,48 @@ export default function KanbanPage() {
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+          <div style={{
+            width: 24,
+            height: 24,
+            border: `2px solid var(--border)`,
+            borderTopColor: 'var(--accent)',
+            borderRadius: '50%',
+            animation: 'spin 0.7s linear infinite',
+          }} />
         </div>
       ) : !activeSprint ? (
-        <div className="glass-card-strong p-12 text-center">
-          <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-            </svg>
+        <div style={{
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '48px 24px',
+          textAlign: 'center',
+        }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            background: 'var(--bg-hover)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 12px',
+          }}>
+            <Columns size={18} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
           </div>
-          <p className="text-sm font-medium text-gray-700">{t('projects.kanban.noActiveSprint')}</p>
-          <p className="text-xs text-gray-400 mt-1">
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>
+            {t('projects.kanban.noActiveSprint')}
+          </p>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
             {t('projects.kanban.noActiveSprintSub')}{' '}
             {workspaceId && projectId && (
               <Link
                 to={`/workspaces/${workspaceId}/projects/${projectId}/sprints`}
-                className="text-primary-600 hover:underline"
+                style={{ color: 'var(--accent)', textDecoration: 'none' }}
+                onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
               >
                 {t('projects.sprints.title')}
               </Link>
@@ -71,18 +94,48 @@ export default function KanbanPage() {
       ) : (
         <>
           {/* Active sprint header */}
-          <div className="mb-3 flex items-center gap-3">
-            <h2 className="text-base font-semibold text-gray-900">{activeSprint.name}</h2>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-primary-100 text-primary-700">
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            marginBottom: 12,
+            flexWrap: 'wrap',
+          }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+              {activeSprint.name}
+            </span>
+
+            <span style={{
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              padding: '2px 6px',
+              borderRadius: 'var(--radius-sm)',
+              background: 'var(--success-bg)',
+              color: 'var(--success)',
+            }}>
               {t('projects.sprints.status.ACTIVE')}
             </span>
+
             {(activeSprint.startDate || activeSprint.endDate) && (
-              <span className="text-xs text-gray-400">
+              <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
                 {formatDate(activeSprint.startDate) ?? '—'} → {formatDate(activeSprint.endDate) ?? '—'}
               </span>
             )}
+
             {activeSprint.goal && (
-              <span className="text-xs text-gray-400 italic truncate max-w-xs">{activeSprint.goal}</span>
+              <span style={{
+                fontSize: 11,
+                color: 'var(--text-faint)',
+                fontStyle: 'italic',
+                overflow: 'hidden',
+                whiteSpace: 'nowrap',
+                textOverflow: 'ellipsis',
+                maxWidth: 260,
+              }}>
+                {activeSprint.goal}
+              </span>
             )}
           </div>
 

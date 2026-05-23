@@ -1,11 +1,91 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Plus, Pencil, Trash2, LogOut } from 'lucide-react';
 import type { Workspace, Category } from '../../types';
 import { workspacesApi } from '../../api/workspaces';
 import { categoriesApi } from '../../api/categories';
 import { useAuthStore } from '../../store/authStore';
 import Alert from '../../components/ui/Alert';
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '0.375rem 0.625rem',
+  fontSize: '0.75rem',
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--text)',
+  fontFamily: 'inherit',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: '0.6875rem',
+  fontWeight: 500,
+  color: 'var(--text-muted)',
+  marginBottom: '0.25rem',
+};
+
+const card: React.CSSProperties = {
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  padding: '1.25rem',
+};
+
+const modalOverlay: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 50,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: '1rem',
+};
+
+const modalBg: React.CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  backgroundColor: 'var(--bg-overlay)',
+};
+
+const modalCard: React.CSSProperties = {
+  position: 'relative',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-lg)',
+  padding: '1.25rem',
+  width: '100%',
+  maxWidth: '22.5rem',
+  boxShadow: '0 1.25rem 3.75rem rgba(0,0,0,0.15)',
+};
+
+const btnPrimary: React.CSSProperties = {
+  flex: 1,
+  padding: '0.4375rem 0.875rem',
+  fontSize: '0.75rem',
+  fontWeight: 500,
+  background: 'var(--accent)',
+  color: '#fff',
+  border: 'none',
+  borderRadius: 'var(--radius-md)',
+  cursor: 'pointer',
+};
+
+const btnSecondary: React.CSSProperties = {
+  flex: 1,
+  padding: '0.4375rem 0.875rem',
+  fontSize: '0.75rem',
+  fontWeight: 500,
+  background: 'var(--bg-hover)',
+  color: 'var(--text-muted)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  cursor: 'pointer',
+};
 
 export default function WorkspaceSettingsPage() {
   const { t } = useTranslation();
@@ -20,17 +100,14 @@ export default function WorkspaceSettingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // General form
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Danger zone
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [showDeleteZone, setShowDeleteZone] = useState(false);
 
-  // Categories
   const [categories, setCategories] = useState<Category[]>([]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -41,7 +118,6 @@ export default function WorkspaceSettingsPage() {
   const [deletingCategoryId, setDeletingCategoryId] = useState<string | null>(null);
   const [confirmDeleteCategory, setConfirmDeleteCategory] = useState<Category | null>(null);
 
-  // Leave workspace
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [leaveError, setLeaveError] = useState<string | null>(null);
@@ -186,61 +262,81 @@ export default function WorkspaceSettingsPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem 0' }}>
+        <div style={{
+          width: '1.5rem',
+          height: '1.5rem',
+          border: '0.125rem solid var(--border)',
+          borderTopColor: 'var(--accent)',
+          borderRadius: '50%',
+          animation: 'spin 0.7s linear infinite',
+        }} />
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div style={{ maxWidth: '35rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
       {success && <Alert type="success" message={success} onClose={() => setSuccess(null)} />}
 
-      {/* Page title */}
       <div>
-        <h1 className="text-xl font-bold text-gray-900 tracking-tight">{t('workspace.settings.title')}</h1>
-        <p className="text-sm text-gray-400 mt-0.5">{t('workspace.settings.subtitle')}</p>
+        <h1 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+          {t('workspace.settings.title')}
+        </h1>
+        <p style={{ margin: '0.125rem 0 0', fontSize: '0.75rem', color: 'var(--text-faint)' }}>
+          {t('workspace.settings.subtitle')}
+        </p>
       </div>
 
       {isAdmin ? (
-        /* ── ADMIN: editable form ─────────────────────────────────────────── */
         <>
-          <section className="glass-card-strong p-6 space-y-4">
-            <h2 className="text-sm font-semibold text-gray-900">{t('workspace.settings.general')}</h2>
-
-            <form onSubmit={handleSave} className="space-y-4">
+          {/* General */}
+          <section style={card}>
+            <h2 style={{ margin: '0 0 0.875rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)' }}>
+              {t('workspace.settings.general')}
+            </h2>
+            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('workspace.settings.nameLabel')}
-                </label>
+                <label style={labelStyle}>{t('workspace.settings.nameLabel')}</label>
                 <input
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
+                  style={inputStyle}
                 />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label style={labelStyle}>
                   {t('workspace.settings.descriptionLabel')}{' '}
-                  <span className="text-gray-400 font-normal">({t('common.optional')})</span>
+                  <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>({t('common.optional')})</span>
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60 resize-none"
+                  style={{ ...inputStyle, resize: 'none' }}
                 />
               </div>
-
-              <div className="flex justify-end">
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                 <button
                   type="submit"
                   disabled={saving || !name.trim()}
-                  className="px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  style={{
+                    padding: '0.375rem 0.875rem',
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 'var(--radius-md)',
+                    cursor: saving || !name.trim() ? 'not-allowed' : 'pointer',
+                    opacity: saving || !name.trim() ? 0.5 : 1,
+                    transition: `background var(--duration)`,
+                  }}
+                  onMouseEnter={(e) => { if (!saving && name.trim()) e.currentTarget.style.background = 'var(--accent-hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent)'; }}
                 >
                   {saving ? t('workspace.settings.saving') : t('workspace.settings.save')}
                 </button>
@@ -248,19 +344,40 @@ export default function WorkspaceSettingsPage() {
             </form>
           </section>
 
-          {/* ── Workspace ID (info) ─────────────────────────────────────────── */}
-          <section className="glass-card-strong p-6 space-y-3">
-            <h2 className="text-sm font-semibold text-gray-900">{t('workspace.settings.info')}</h2>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between py-2 border-b border-gray-50">
-                <span className="text-xs text-gray-500">{t('workspace.settings.workspaceId')}</span>
-                <code className="text-xs font-mono text-gray-600 bg-gray-50 px-2 py-0.5 rounded-lg">
+          {/* Info */}
+          <section style={card}>
+            <h2 style={{ margin: '0 0 0.75rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)' }}>
+              {t('workspace.settings.info')}
+            </h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.4375rem 0',
+                borderBottom: '1px solid var(--border)',
+              }}>
+                <span style={{ fontSize: '0.6875rem', color: 'var(--text-faint)' }}>{t('workspace.settings.workspaceId')}</span>
+                <code style={{
+                  fontSize: '0.6875rem',
+                  fontFamily: 'var(--font-mono)',
+                  color: 'var(--text-muted)',
+                  background: 'var(--bg-hover)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '0.0625rem 0.375rem',
+                }}>
                   {workspace?.id}
                 </code>
               </div>
-              <div className="flex items-center justify-between py-2">
-                <span className="text-xs text-gray-500">{t('workspace.settings.createdAt')}</span>
-                <span className="text-xs text-gray-600">
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.4375rem 0',
+              }}>
+                <span style={{ fontSize: '0.6875rem', color: 'var(--text-faint)' }}>{t('workspace.settings.createdAt')}</span>
+                <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                   {workspace?.createdAt
                     ? new Date(workspace.createdAt).toLocaleDateString(undefined, {
                         day: 'numeric', month: 'long', year: 'numeric',
@@ -271,44 +388,98 @@ export default function WorkspaceSettingsPage() {
             </div>
           </section>
 
-          {/* ── Categories ──────────────────────────────────────────────────── */}
-          <section className="glass-card-strong p-6 space-y-4">
-            <div className="flex items-center justify-between">
+          {/* Categories */}
+          <section style={card}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
               <div>
-                <h2 className="text-sm font-semibold text-gray-900">{t('workspace.settings.categories.title')}</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{t('workspace.settings.categories.subtitle')}</p>
+                <h2 style={{ margin: 0, fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)' }}>
+                  {t('workspace.settings.categories.title')}
+                </h2>
+                <p style={{ margin: '0.0625rem 0 0', fontSize: '0.6875rem', color: 'var(--text-faint)' }}>
+                  {t('workspace.settings.categories.subtitle')}
+                </p>
               </div>
               <button
                 onClick={openCreateCategory}
-                className="px-3 py-1.5 text-xs font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors cursor-pointer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  padding: '0.3125rem 0.625rem',
+                  fontSize: '0.6875rem',
+                  fontWeight: 500,
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer',
+                  transition: `background var(--duration)`,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-hover)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--accent)')}
               >
-                + {t('workspace.settings.categories.newCategory')}
+                <Plus size={11} strokeWidth={2.5} />
+                {t('workspace.settings.categories.newCategory')}
               </button>
             </div>
 
             {categories.length === 0 ? (
-              <p className="text-sm text-gray-400 py-2">{t('workspace.settings.categories.noCategories')}</p>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-faint)' }}>
+                {t('workspace.settings.categories.noCategories')}
+              </p>
             ) : (
-              <ul className="space-y-2">
+              <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                 {categories.map((cat) => (
-                  <li key={cat.id} className="flex items-center gap-3 py-2 px-3 rounded-xl bg-gray-50/60">
-                    <span
-                      className="w-3 h-3 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: cat.color ?? '#6366f1' }}
-                    />
-                    <span className="flex-1 text-sm text-gray-800 font-medium truncate">{cat.name}</span>
+                  <li
+                    key={cat.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      padding: '0.375rem 0.5rem',
+                      background: 'var(--bg-hover)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
+                  >
+                    <span style={{
+                      width: '0.625rem',
+                      height: '0.625rem',
+                      borderRadius: '50%',
+                      flexShrink: 0,
+                      background: cat.color ?? '#6366f1',
+                    }} />
+                    <span style={{ flex: 1, fontSize: '0.75rem', fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {cat.name}
+                    </span>
                     <button
                       onClick={() => openEditCategory(cat)}
-                      className="text-xs text-gray-400 hover:text-gray-700 transition-colors cursor-pointer px-1"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: '1.5rem', height: '1.5rem', background: 'none', border: 'none',
+                        borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                        color: 'var(--text-faint)',
+                        transition: `color var(--duration), background var(--duration)`,
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.background = 'var(--bg-elevated)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.background = 'none'; }}
                     >
-                      {t('common.edit')}
+                      <Pencil size={11} strokeWidth={2} />
                     </button>
                     <button
                       onClick={() => setConfirmDeleteCategory(cat)}
                       disabled={deletingCategoryId === cat.id}
-                      className="text-xs text-red-400 hover:text-red-600 transition-colors cursor-pointer px-1 disabled:opacity-40"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: '1.5rem', height: '1.5rem', background: 'none', border: 'none',
+                        borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                        color: 'var(--text-faint)',
+                        opacity: deletingCategoryId === cat.id ? 0.4 : 1,
+                        transition: `color var(--duration), background var(--duration)`,
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.background = 'var(--danger-bg)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.background = 'none'; }}
                     >
-                      {t('common.delete')}
+                      <Trash2 size={11} strokeWidth={2} />
                     </button>
                   </li>
                 ))}
@@ -316,29 +487,53 @@ export default function WorkspaceSettingsPage() {
             )}
           </section>
 
-          {/* ── Danger zone ─────────────────────────────────────────────────── */}
-          <section className="border border-red-200 rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 bg-red-50/50">
+          {/* Danger zone */}
+          <section style={{
+            border: '1px solid var(--danger)',
+            borderRadius: 'var(--radius-md)',
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.75rem 1.25rem',
+              background: 'var(--danger-bg)',
+            }}>
               <div>
-                <h2 className="text-sm font-semibold text-red-700">{t('workspace.settings.dangerZone')}</h2>
-                <p className="text-xs text-red-400 mt-0.5">{t('workspace.settings.dangerSubtitle')}</p>
+                <h2 style={{ margin: 0, fontSize: '0.75rem', fontWeight: 600, color: 'var(--danger)' }}>
+                  {t('workspace.settings.dangerZone')}
+                </h2>
+                <p style={{ margin: '0.0625rem 0 0', fontSize: '0.6875rem', color: 'var(--danger)', opacity: 0.7 }}>
+                  {t('workspace.settings.dangerSubtitle')}
+                </p>
               </div>
               <button
                 onClick={() => setShowDeleteZone((v) => !v)}
-                className="text-xs font-medium text-red-500 hover:text-red-700 transition-colors cursor-pointer"
+                style={{
+                  fontSize: '0.6875rem', fontWeight: 500, color: 'var(--danger)',
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0.5rem',
+                }}
               >
                 {showDeleteZone ? t('common.cancel') : t('workspace.settings.deleteWorkspace')}
               </button>
             </div>
 
             {showDeleteZone && (
-              <div className="px-6 py-5 bg-white space-y-4 border-t border-red-100">
+              <div style={{
+                padding: '1rem 1.25rem',
+                background: 'var(--bg-elevated)',
+                borderTop: '1px solid var(--danger)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+              }}>
                 <p
-                  className="text-sm text-gray-600"
+                  style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}
                   dangerouslySetInnerHTML={{ __html: t('workspace.settings.deleteWarning', { name: workspace?.name ?? '' }) }}
                 />
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label style={labelStyle}>
                     {t('workspace.settings.deleteConfirmLabel', { name: workspace?.name })}
                   </label>
                   <input
@@ -346,14 +541,20 @@ export default function WorkspaceSettingsPage() {
                     value={deleteConfirmName}
                     onChange={(e) => setDeleteConfirmName(e.target.value)}
                     placeholder={workspace?.name}
-                    className="w-full px-3 py-2 text-sm border border-red-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300/50 focus:border-red-300 bg-white"
+                    style={{ ...inputStyle, borderColor: 'var(--danger)' }}
                   />
                 </div>
-                <div className="flex justify-end">
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button
                     onClick={handleDelete}
                     disabled={deleting || deleteConfirmName !== workspace?.name}
-                    className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    style={{
+                      padding: '0.375rem 0.875rem', fontSize: '0.75rem', fontWeight: 500,
+                      background: 'var(--danger)', color: '#fff', border: 'none',
+                      borderRadius: 'var(--radius-md)',
+                      cursor: deleting || deleteConfirmName !== workspace?.name ? 'not-allowed' : 'pointer',
+                      opacity: deleting || deleteConfirmName !== workspace?.name ? 0.4 : 1,
+                    }}
                   >
                     {deleting ? t('workspace.settings.deleting') : t('workspace.settings.deleteConfirmBtn')}
                   </button>
@@ -363,32 +564,35 @@ export default function WorkspaceSettingsPage() {
           </section>
         </>
       ) : (
-        /* ── MEMBER: read-only view ───────────────────────────────────────── */
-        <section className="glass-card-strong p-6 space-y-4">
-          <div className="flex items-center gap-2 mb-2">
-            <h2 className="text-sm font-semibold text-gray-900">{t('workspace.settings.general')}</h2>
-            <span className="text-xs font-medium text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+        /* Read-only */
+        <section style={card}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.75rem' }}>
+            <h2 style={{ margin: 0, fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)' }}>
+              {t('workspace.settings.general')}
+            </h2>
+            <span style={{
+              fontSize: '0.625rem', fontWeight: 500, color: 'var(--text-faint)',
+              background: 'var(--bg-hover)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)', padding: '0.0625rem 0.375rem',
+            }}>
               {t('workspace.settings.readOnly')}
             </span>
           </div>
-
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-1">{t('workspace.settings.nameLabel')}</p>
-              <p className="text-sm text-gray-900 font-medium">{workspace?.name}</p>
+              <p style={{ ...labelStyle, marginBottom: '0.125rem' }}>{t('workspace.settings.nameLabel')}</p>
+              <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text)' }}>{workspace?.name}</p>
             </div>
-
             {workspace?.description && (
               <div>
-                <p className="text-xs font-medium text-gray-500 mb-1">{t('workspace.settings.descriptionLabel')}</p>
-                <p className="text-sm text-gray-600">{workspace.description}</p>
+                <p style={{ ...labelStyle, marginBottom: '0.125rem' }}>{t('workspace.settings.descriptionLabel')}</p>
+                <p style={{ margin: 0, fontSize: '0.75rem', color: 'var(--text-muted)' }}>{workspace.description}</p>
               </div>
             )}
-
-            <div className="pt-3 border-t border-gray-100 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500">{t('workspace.settings.createdAt')}</span>
-                <span className="text-xs text-gray-600">
+            <div style={{ paddingTop: '0.625rem', borderTop: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.6875rem', color: 'var(--text-faint)' }}>{t('workspace.settings.createdAt')}</span>
+                <span style={{ fontSize: '0.6875rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
                   {workspace?.createdAt
                     ? new Date(workspace.createdAt).toLocaleDateString(undefined, {
                         day: 'numeric', month: 'long', year: 'numeric',
@@ -398,20 +602,25 @@ export default function WorkspaceSettingsPage() {
               </div>
             </div>
           </div>
-
-          <p className="text-xs text-gray-400 pt-2">
+          <p style={{ margin: '0.75rem 0 0', fontSize: '0.6875rem', color: 'var(--text-faint)' }}>
             {t('workspace.settings.adminOnlyHint')}
           </p>
         </section>
       )}
 
-      {/* ── Leave workspace ─────────────────────────────────────────────────── */}
+      {/* Leave workspace */}
       {leaveError && <Alert type="error" message={leaveError} onClose={() => setLeaveError(null)} />}
-      <section className="border border-orange-200 rounded-2xl p-6">
-        <div className="flex items-center justify-between">
+      <section style={{
+        border: '1px solid rgba(234,179,8,0.3)',
+        borderRadius: 'var(--radius-md)',
+        padding: '0.875rem 1.25rem',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h2 className="text-sm font-semibold text-orange-700">{t('workspace.settings.leaveTitle')}</h2>
-            <p className="text-xs text-orange-400 mt-0.5">
+            <h2 style={{ margin: 0, fontSize: '0.75rem', fontWeight: 600, color: '#a16207' }}>
+              {t('workspace.settings.leaveTitle')}
+            </h2>
+            <p style={{ margin: '0.0625rem 0 0', fontSize: '0.6875rem', color: '#ca8a04', opacity: 0.8 }}>
               {isAdmin && adminCount <= 1
                 ? t('workspace.settings.leaveLastAdminHint')
                 : t('workspace.settings.leaveSubtitle')}
@@ -420,20 +629,31 @@ export default function WorkspaceSettingsPage() {
           <button
             onClick={() => setShowLeaveModal(true)}
             disabled={isAdmin && adminCount <= 1}
-            className="px-3 py-1.5 text-xs font-medium text-orange-600 border border-orange-300 rounded-xl hover:bg-orange-50 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.3125rem',
+              padding: '0.3125rem 0.625rem', fontSize: '0.6875rem', fontWeight: 500,
+              color: '#a16207', background: 'none',
+              border: '1px solid rgba(234,179,8,0.4)',
+              borderRadius: 'var(--radius-md)',
+              cursor: isAdmin && adminCount <= 1 ? 'not-allowed' : 'pointer',
+              opacity: isAdmin && adminCount <= 1 ? 0.4 : 1,
+              transition: `background var(--duration)`,
+            }}
+            onMouseEnter={(e) => { if (!(isAdmin && adminCount <= 1)) e.currentTarget.style.background = 'rgba(234,179,8,0.08)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
           >
+            <LogOut size={11} strokeWidth={2} />
             {t('workspace.settings.leaveBtn')}
           </button>
         </div>
       </section>
 
-      {/* Leave confirmation modal */}
       {/* Category create/edit modal */}
       {showCategoryModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowCategoryModal(false)} />
-          <div className="relative glass-card-strong rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in">
-            <h3 className="text-base font-semibold text-gray-900 mb-4">
+        <div style={modalOverlay}>
+          <div style={modalBg} onClick={() => setShowCategoryModal(false)} />
+          <div style={modalCard}>
+            <h3 style={{ margin: '0 0 1rem', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>
               {editingCategory
                 ? t('workspace.settings.categories.modal.titleEdit')
                 : t('workspace.settings.categories.modal.titleCreate')}
@@ -443,11 +663,9 @@ export default function WorkspaceSettingsPage() {
               <Alert type="error" message={categoryError} onClose={() => setCategoryError(null)} />
             )}
 
-            <form onSubmit={handleSaveCategory} className="space-y-4">
+            <form onSubmit={handleSaveCategory} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('workspace.settings.categories.modal.nameLabel')}
-                </label>
+                <label style={labelStyle}>{t('workspace.settings.categories.modal.nameLabel')}</label>
                 <input
                   type="text"
                   value={categoryName}
@@ -455,37 +673,48 @@ export default function WorkspaceSettingsPage() {
                   placeholder={t('workspace.settings.categories.modal.namePlaceholder')}
                   required
                   autoFocus
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
+                  style={inputStyle}
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t('workspace.settings.categories.modal.colorLabel')}
-                </label>
-                <div className="flex items-center gap-3">
+                <label style={labelStyle}>{t('workspace.settings.categories.modal.colorLabel')}</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
                   <input
                     type="color"
                     value={categoryColor}
                     onChange={(e) => setCategoryColor(e.target.value)}
-                    className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5 bg-white"
+                    style={{
+                      width: '2.25rem', height: '2.25rem',
+                      padding: '0.125rem',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      cursor: 'pointer',
+                      background: 'var(--bg)',
+                    }}
                   />
-                  <span className="text-sm font-mono text-gray-500">{categoryColor}</span>
+                  <span style={{ fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                    {categoryColor}
+                  </span>
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '0.25rem' }}>
                 <button
                   type="button"
                   onClick={() => setShowCategoryModal(false)}
-                  className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
+                  style={btnSecondary}
                 >
                   {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={savingCategory || !categoryName.trim()}
-                  className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                  style={{
+                    ...btnPrimary,
+                    opacity: savingCategory || !categoryName.trim() ? 0.5 : 1,
+                    cursor: savingCategory || !categoryName.trim() ? 'not-allowed' : 'pointer',
+                  }}
                 >
                   {savingCategory
                     ? t('workspace.settings.saving')
@@ -501,31 +730,42 @@ export default function WorkspaceSettingsPage() {
 
       {/* Category delete confirmation modal */}
       {confirmDeleteCategory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmDeleteCategory(null)} />
-          <div className="relative glass-card-strong rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in">
-            <h3 className="text-base font-semibold text-gray-900 mb-2">
-              {t('workspace.settings.categories.deleteConfirm.title')}
-            </h3>
+        <div style={modalOverlay}>
+          <div style={modalBg} onClick={() => setConfirmDeleteCategory(null)} />
+          <div style={modalCard}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.625rem' }}>
+              <div style={{
+                width: '2.25rem', height: '2.25rem', background: 'var(--danger-bg)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <Trash2 size={16} strokeWidth={2} style={{ color: 'var(--danger)' }} />
+              </div>
+              <h3 style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>
+                {t('workspace.settings.categories.deleteConfirm.title')}
+              </h3>
+            </div>
             <p
-              className="text-sm text-gray-600 mb-6"
+              style={{ margin: '0 0 1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}
               dangerouslySetInnerHTML={{
                 __html: t('workspace.settings.categories.deleteConfirm.message', {
                   name: confirmDeleteCategory.name,
                 }),
               }}
             />
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmDeleteCategory(null)}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
-              >
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button style={btnSecondary} onClick={() => setConfirmDeleteCategory(null)}>
                 {t('common.cancel')}
               </button>
               <button
                 onClick={handleDeleteCategory}
                 disabled={deletingCategoryId === confirmDeleteCategory.id}
-                className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                style={{
+                  ...btnPrimary,
+                  background: 'var(--danger)',
+                  opacity: deletingCategoryId === confirmDeleteCategory.id ? 0.5 : 1,
+                  cursor: deletingCategoryId === confirmDeleteCategory.id ? 'not-allowed' : 'pointer',
+                }}
               >
                 {t('workspace.settings.categories.deleteConfirm.confirm')}
               </button>
@@ -534,40 +774,58 @@ export default function WorkspaceSettingsPage() {
         </div>
       )}
 
+      {/* Leave workspace confirmation modal */}
       {showLeaveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowLeaveModal(false)} />
-          <div className="relative glass-card-strong rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
+        <div style={modalOverlay}>
+          <div style={modalBg} onClick={() => setShowLeaveModal(false)} />
+          <div style={modalCard}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.75rem' }}>
+              <div style={{
+                width: '2.25rem', height: '2.25rem',
+                background: 'rgba(234,179,8,0.1)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <LogOut size={16} strokeWidth={2} style={{ color: '#ca8a04' }} />
               </div>
               <div>
-                <h3 className="text-base font-semibold text-gray-900">{t('workspace.settings.leaveTitle')}</h3>
-                <p className="text-sm text-gray-500">{workspace?.name}</p>
+                <h3 style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>
+                  {t('workspace.settings.leaveTitle')}
+                </h3>
+                <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--text-faint)' }}>{workspace?.name}</p>
               </div>
             </div>
-            <p className="text-sm text-gray-600 mb-6">{t('workspace.settings.leaveDescription')}</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowLeaveModal(false)}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
-              >
+            <p style={{ margin: '0 0 1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              {t('workspace.settings.leaveDescription')}
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button style={btnSecondary} onClick={() => setShowLeaveModal(false)}>
                 {t('common.cancel')}
               </button>
               <button
                 onClick={handleLeave}
                 disabled={leaving}
-                className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 rounded-xl transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                style={{
+                  ...btnPrimary,
+                  background: '#d97706',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.375rem',
+                  opacity: leaving ? 0.7 : 1,
+                  cursor: leaving ? 'not-allowed' : 'pointer',
+                }}
               >
-                {leaving ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    {t('workspace.settings.leaving')}
-                  </span>
-                ) : t('workspace.settings.leaveConfirmBtn')}
+                {leaving && (
+                  <div style={{
+                    width: '0.625rem', height: '0.625rem',
+                    border: '0.125rem solid rgba(255,255,255,0.4)',
+                    borderTopColor: '#fff',
+                    borderRadius: '50%',
+                    animation: 'spin 0.7s linear infinite',
+                  }} />
+                )}
+                {leaving ? t('workspace.settings.leaving') : t('workspace.settings.leaveConfirmBtn')}
               </button>
             </div>
           </div>

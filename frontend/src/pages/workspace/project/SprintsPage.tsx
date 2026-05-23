@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Plus, ChevronRight, LayoutDashboard, BarChart2, X, Zap } from 'lucide-react';
 import type { Sprint, Task, TaskPriority, TaskStatus } from '../../../types';
 import { sprintsApi, type CreateSprintDto } from '../../../api/sprints';
 import { tasksApi, type UpdateTaskDto, type CreateTaskDto } from '../../../api/tasks';
@@ -8,35 +9,97 @@ import TaskModal from '../../../components/kanban/TaskModal';
 import Alert from '../../../components/ui/Alert';
 import { useProjectMember } from '../../../hooks/useProjectMember';
 
-// ── Shared style maps ────────────────────────────────────────────────────────
+// ── Color maps (theme-independent hex) ───────────────────────────────────────
 
-const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  CRITICAL: 'bg-red-100 text-red-600',
-  HIGH: 'bg-amber-100 text-amber-600',
-  MEDIUM: 'bg-blue-100 text-blue-600',
-  LOW: 'bg-gray-100 text-gray-500',
+const PRIORITY_COLOR: Record<TaskPriority, string> = {
+  CRITICAL: '#ef4444',
+  HIGH:     '#f59e0b',
+  MEDIUM:   '#3b82f6',
+  LOW:      '#9ca3af',
 };
 
-const STATUS_COLORS: Record<TaskStatus, string> = {
-  TODO: 'bg-gray-100 text-gray-500',
-  IN_PROGRESS: 'bg-blue-100 text-blue-600',
-  IN_REVIEW: 'bg-amber-100 text-amber-600',
-  DONE: 'bg-emerald-100 text-emerald-600',
+const STATUS_COLOR: Record<TaskStatus, string> = {
+  TODO:        '#9ca3af',
+  IN_PROGRESS: '#3b82f6',
+  IN_REVIEW:   '#f59e0b',
+  DONE:        '#22c55e',
 };
 
-const SPRINT_BORDER: Record<Sprint['status'], string> = {
-  PLANNING: 'border-gray-200',
-  ACTIVE: 'border-primary-300',
-  COMPLETED: 'border-gray-100',
+const SPRINT_LEFT_COLOR: Record<Sprint['status'], string> = {
+  PLANNING:  'var(--border)',
+  ACTIVE:    'var(--accent)',
+  COMPLETED: 'var(--success)',
 };
 
-const SPRINT_STATUS_BADGE: Record<Sprint['status'], string> = {
-  PLANNING: 'bg-gray-100 text-gray-500',
-  ACTIVE: 'bg-primary-100 text-primary-700',
-  COMPLETED: 'bg-emerald-100 text-emerald-600',
+// ── Shared input / button helpers ─────────────────────────────────────────────
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '6px 10px',
+  fontSize: 12,
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--text)',
+  outline: 'none',
+  boxSizing: 'border-box',
 };
 
-// ── CreateSprintModal ────────────────────────────────────────────────────────
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: 11,
+  fontWeight: 600,
+  color: 'var(--text-muted)',
+  marginBottom: 4,
+};
+
+const btnAccent: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 5,
+  padding: '5px 12px', fontSize: 12, fontWeight: 500,
+  background: 'var(--accent)', color: '#fff',
+  border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+};
+
+const btnSecondary: React.CSSProperties = {
+  padding: '5px 12px', fontSize: 12, fontWeight: 500,
+  background: 'transparent', color: 'var(--text-muted)',
+  border: 'none', cursor: 'pointer',
+};
+
+const btnOutline: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', gap: 4,
+  padding: '4px 10px', fontSize: 11, fontWeight: 500,
+  background: 'transparent',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-sm)',
+  color: 'var(--text-muted)', cursor: 'pointer',
+};
+
+// ── Overlay modal wrapper ─────────────────────────────────────────────────────
+
+function ModalOverlay({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        position: 'fixed', inset: 0, zIndex: 50,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+        backgroundColor: 'var(--bg-overlay)',
+      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      {children}
+    </div>
+  );
+}
+
+const modalBox: React.CSSProperties = {
+  width: '100%',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-strong)',
+  borderRadius: 'var(--radius-lg)',
+};
+
+// ── CreateSprintModal ─────────────────────────────────────────────────────────
 
 interface CreateSprintModalProps {
   projectId: string;
@@ -75,97 +138,77 @@ function CreateSprintModal({ projectId, onClose, onCreate }: CreateSprintModalPr
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="w-full max-w-md glass-card-strong p-6 space-y-4 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">{t('projects.sprints.create.title')}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+    <ModalOverlay onClose={onClose}>
+      <div style={{ ...modalBox, maxWidth: 440 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 12px', borderBottom: '1px solid var(--border)' }}>
+          <h2 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            {t('projects.sprints.create.title')}
+          </h2>
+          <button onClick={onClose} style={{ ...btnSecondary, padding: 4, borderRadius: 'var(--radius-sm)' }}>
+            <X size={14} />
           </button>
         </div>
 
-        {error && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</div>}
+        <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {error && (
+            <div style={{ fontSize: 11, color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '6px 10px' }}>
+              {error}
+            </div>
+          )}
 
-        {/* Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('projects.sprints.create.name')}</label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder={t('projects.sprints.create.namePlaceholder')}
-            autoFocus
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
-          />
-        </div>
-
-        {/* Goal */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('projects.sprints.create.goal')}{' '}
-            <span className="text-gray-400 font-normal">({t('common.optional')})</span>
-          </label>
-          <textarea
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            placeholder={t('projects.sprints.create.goalPlaceholder')}
-            rows={2}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60 resize-none"
-          />
-        </div>
-
-        {/* Dates */}
-        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('projects.sprints.create.startDate')}{' '}
-              <span className="text-gray-400 font-normal">({t('common.optional')})</span>
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
-            />
+            <label style={labelStyle}>{t('projects.sprints.create.name')}</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+              placeholder={t('projects.sprints.create.namePlaceholder')} autoFocus style={inputStyle} />
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              {t('projects.sprints.create.endDate')}{' '}
-              <span className="text-gray-400 font-normal">({t('common.optional')})</span>
+            <label style={labelStyle}>
+              {t('projects.sprints.create.goal')}{' '}
+              <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
             </label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
-            />
+            <textarea value={goal} onChange={(e) => setGoal(e.target.value)}
+              placeholder={t('projects.sprints.create.goalPlaceholder')} rows={2}
+              style={{ ...inputStyle, resize: 'none' }} />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <label style={labelStyle}>
+                {t('projects.sprints.create.startDate')}{' '}
+                <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
+              </label>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>
+                {t('projects.sprints.create.endDate')}{' '}
+                <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
+              </label>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} />
+            </div>
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex justify-end gap-2 pt-1">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors cursor-pointer">
-            {t('common.cancel')}
-          </button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '10px 18px 14px', borderTop: '1px solid var(--border)' }}>
+          <button onClick={onClose} style={btnSecondary}>{t('common.cancel')}</button>
           <button
             onClick={handleSubmit}
             disabled={loading || !name.trim()}
-            className="px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            style={{ ...btnAccent, opacity: loading || !name.trim() ? 0.5 : 1, cursor: loading || !name.trim() ? 'not-allowed' : 'pointer' }}
+            onMouseEnter={e => { if (!loading && name.trim()) (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent)'; }}
           >
-            {loading ? '...' : t('projects.sprints.create.submit')}
+            {loading ? '…' : t('projects.sprints.create.submit')}
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
-// ── SprintPlanningModal ──────────────────────────────────────────────────────
+// ── SprintPlanningModal ───────────────────────────────────────────────────────
 
 interface SprintPlanningModalProps {
   sprintId: string;
@@ -221,103 +264,147 @@ function SprintPlanningModal({ sprintId, projectId, sprintGoal, existingTaskIds,
   const unestimatedCount = backlog.filter((t) => t.storyPoints == null).length;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="w-full max-w-lg glass-card-strong p-6 flex flex-col max-h-[80vh] animate-fade-in">
-        <div className="flex items-center justify-between mb-1">
-          <h2 className="text-lg font-semibold text-gray-900">{t('projects.sprints.planning.title')}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+    <ModalOverlay onClose={onClose}>
+      <div style={{ ...modalBox, maxWidth: 520, display: 'flex', flexDirection: 'column', maxHeight: 'calc(100vh - 2rem)' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '14px 18px 10px', borderBottom: '1px solid var(--border)' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+              {t('projects.sprints.planning.title')}
+            </h2>
+            <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--text-faint)' }}>
+              {t('projects.sprints.planning.subtitle')}
+            </p>
+          </div>
+          <button onClick={onClose} style={{ ...btnSecondary, padding: 4, borderRadius: 'var(--radius-sm)', marginTop: 1 }}>
+            <X size={14} />
           </button>
         </div>
-        <p className="text-sm text-gray-400 mb-2">{t('projects.sprints.planning.subtitle')}</p>
 
-        {/* Sprint goal reminder */}
-        {sprintGoal && (
-          <div className="flex items-start gap-2 bg-primary-50 border border-primary-100 rounded-xl px-3 py-2 mb-3">
-            <svg className="w-3.5 h-3.5 text-primary-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            <p className="text-xs text-primary-700 italic">{t('projects.sprints.planning.goal')}: {sprintGoal}</p>
-          </div>
-        )}
+        <div style={{ padding: '10px 18px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {sprintGoal && (
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 6,
+              background: 'var(--accent-muted)', border: '1px solid var(--accent)',
+              borderRadius: 'var(--radius-sm)', padding: '6px 10px',
+            }}>
+              <Zap size={12} strokeWidth={2} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }} />
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                {t('projects.sprints.planning.goal')}: {sprintGoal}
+              </p>
+            </div>
+          )}
 
-        {/* Unestimated warning */}
-        {!loading && unestimatedCount > 0 && (
-          <div className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-3">
-            {t('projects.sprints.planning.unestimated', { count: unestimatedCount })}
-          </div>
-        )}
+          {!loading && unestimatedCount > 0 && (
+            <div style={{
+              fontSize: 11, color: '#d97706',
+              background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.2)',
+              borderRadius: 'var(--radius-sm)', padding: '5px 10px',
+            }}>
+              {t('projects.sprints.planning.unestimated', { count: unestimatedCount })}
+            </div>
+          )}
 
-        {error && <div className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-3">{error}</div>}
+          {error && (
+            <div style={{ fontSize: 11, color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '5px 10px' }}>
+              {error}
+            </div>
+          )}
+        </div>
 
         {/* Backlog list */}
-        <div className="flex-1 overflow-y-auto space-y-1 min-h-0">
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 18px', minHeight: 0 }}>
           {loading ? (
-            <div className="flex justify-center py-10">
-              <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+              <div style={{ width: 20, height: 20, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
             </div>
           ) : backlog.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-10">{t('projects.sprints.planning.noBacklog')}</p>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '40px 0' }}>
+              {t('projects.sprints.planning.noBacklog')}
+            </p>
           ) : (
-            backlog.map((task) => (
-              <label
-                key={task.id}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors"
-              >
-                <input
-                  type="checkbox"
-                  checked={selected.has(task.id)}
-                  onChange={() => toggle(task.id)}
-                  className="w-4 h-4 rounded accent-primary-600 cursor-pointer"
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
-                  {task.description && (
-                    <p className="text-xs text-gray-400 truncate">{task.description}</p>
-                  )}
-                </div>
-                <span className={`flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${PRIORITY_COLORS[task.priority]}`}>
-                  {t(`tasks.priority.${task.priority}`)}
-                </span>
-                {task.storyPoints != null ? (
-                  <span className="flex-shrink-0 text-xs text-gray-400">{task.storyPoints}pts</span>
-                ) : (
-                  <span className="flex-shrink-0 text-xs font-medium text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full">
-                    {t('projects.sprints.planning.noEstimate')}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              {backlog.map((task) => (
+                <label
+                  key={task.id}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '7px 8px', borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.has(task.id)}
+                    onChange={() => toggle(task.id)}
+                    style={{ width: 14, height: 14, cursor: 'pointer', accentColor: 'var(--accent)', flexShrink: 0 }}
+                  />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                      {task.title}
+                    </p>
+                    {task.description && (
+                      <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                        {task.description}
+                      </p>
+                    )}
+                  </div>
+                  <span style={{
+                    flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+                    color: PRIORITY_COLOR[task.priority],
+                    fontFamily: 'var(--font-mono)',
+                  }}>
+                    {t(`tasks.priority.${task.priority}`)}
                   </span>
-                )}
-              </label>
-            ))
+                  {task.storyPoints != null ? (
+                    <span style={{
+                      flexShrink: 0, fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-mono)',
+                      color: 'var(--text-faint)', background: 'var(--bg-hover)',
+                      border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1px 5px',
+                    }}>
+                      {task.storyPoints}
+                    </span>
+                  ) : (
+                    <span style={{
+                      flexShrink: 0, fontSize: 9, fontWeight: 600, letterSpacing: '0.03em',
+                      color: '#d97706', background: 'rgba(217,119,6,0.08)',
+                      border: '1px solid rgba(217,119,6,0.2)',
+                      borderRadius: 'var(--radius-sm)', padding: '1px 5px',
+                    }}>
+                      {t('projects.sprints.planning.noEstimate')}
+                    </span>
+                  )}
+                </label>
+              ))}
+            </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-4">
-          <div className="text-sm text-gray-400 space-y-0.5">
-            {selected.size > 0 && (
-              <p>{selected.size} {t('projects.sprints.planning.selected')}{selectedPoints > 0 ? ` · ${selectedPoints} pts` : ''}</p>
-            )}
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 18px 14px', borderTop: '1px solid var(--border)', marginTop: 4,
+        }}>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+            {selected.size > 0 && `${selected.size} sel.${selectedPoints > 0 ? ` · ${selectedPoints} pts` : ''}`}
           </div>
-          <div className="flex gap-2">
-            <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors cursor-pointer">
-              {t('common.cancel')}
-            </button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button onClick={onClose} style={btnSecondary}>{t('common.cancel')}</button>
             <button
               onClick={handleAdd}
               disabled={saving || selected.size === 0}
-              className="px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              style={{ ...btnAccent, opacity: saving || selected.size === 0 ? 0.5 : 1, cursor: saving || selected.size === 0 ? 'not-allowed' : 'pointer' }}
+              onMouseEnter={e => { if (!saving && selected.size > 0) (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent)'; }}
             >
-              {saving ? '...' : t('projects.sprints.planning.addSelected')}
+              {saving ? '…' : t('projects.sprints.planning.addSelected')}
             </button>
           </div>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
@@ -340,75 +427,79 @@ function SprintReviewModal({ sprint, sprintTasks, onClose, onConfirm, loading }:
   const donePoints = doneTasks.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="w-full max-w-lg glass-card-strong p-6 flex flex-col max-h-[85vh] animate-fade-in">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">{t('projects.sprints.review.title')}</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+    <ModalOverlay onClose={onClose}>
+      <div style={{ ...modalBox, maxWidth: 500, display: 'flex', flexDirection: 'column', maxHeight: 'calc(100vh - 2rem)' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 12px', borderBottom: '1px solid var(--border)' }}>
+          <h2 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            {t('projects.sprints.review.title')}
+          </h2>
+          <button onClick={onClose} style={{ ...btnSecondary, padding: 4, borderRadius: 'var(--radius-sm)' }}>
+            <X size={14} />
           </button>
         </div>
 
-        {/* Sprint summary */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          <div className="bg-emerald-50 rounded-xl p-3 text-center">
-            <p className="text-lg font-bold text-emerald-600">{doneTasks.length}</p>
-            <p className="text-xs text-emerald-500">{t('projects.sprints.review.done')}</p>
+        <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            {[
+              { value: doneTasks.length, label: t('projects.sprints.review.done'), color: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
+              { value: incompleteTasks.length, label: t('projects.sprints.review.incomplete'), color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
+              { value: donePoints, label: t('projects.sprints.review.velocity'), color: 'var(--accent)', bg: 'var(--accent-muted)' },
+            ].map((stat) => (
+              <div key={stat.label} style={{ background: stat.bg, borderRadius: 'var(--radius-md)', padding: '10px 8px', textAlign: 'center' }}>
+                <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: stat.color, fontFamily: 'var(--font-mono)' }}>{stat.value}</p>
+                <p style={{ margin: '2px 0 0', fontSize: 10, color: stat.color, opacity: 0.8 }}>{stat.label}</p>
+              </div>
+            ))}
           </div>
-          <div className="bg-amber-50 rounded-xl p-3 text-center">
-            <p className="text-lg font-bold text-amber-600">{incompleteTasks.length}</p>
-            <p className="text-xs text-amber-500">{t('projects.sprints.review.incomplete')}</p>
-          </div>
-          <div className="bg-primary-50 rounded-xl p-3 text-center">
-            <p className="text-lg font-bold text-primary-600">{donePoints}</p>
-            <p className="text-xs text-primary-500">{t('projects.sprints.review.velocity')}</p>
+
+          {incompleteTasks.length > 0 && (
+            <div style={{
+              fontSize: 11, color: '#d97706',
+              background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.2)',
+              borderRadius: 'var(--radius-sm)', padding: '6px 10px',
+            }}>
+              {t('projects.sprints.review.incompleteWarning', { count: incompleteTasks.length })}
+            </div>
+          )}
+
+          <div>
+            <label style={labelStyle}>
+              {t('projects.sprints.review.notes')}{' '}
+              <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
+            </label>
+            <textarea
+              value={reviewNotes}
+              onChange={(e) => setReviewNotes(e.target.value)}
+              placeholder={t('projects.sprints.review.notesPlaceholder')}
+              rows={4}
+              style={{ ...inputStyle, resize: 'none' }}
+            />
           </div>
         </div>
 
-        {incompleteTasks.length > 0 && (
-          <p className="text-xs text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-4">
-            {t('projects.sprints.review.incompleteWarning', { count: incompleteTasks.length })}
-          </p>
-        )}
-
-        {/* Review / Retrospective notes */}
-        <div className="flex-1 min-h-0">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {t('projects.sprints.review.notes')}{' '}
-            <span className="text-gray-400 font-normal">({t('common.optional')})</span>
-          </label>
-          <textarea
-            value={reviewNotes}
-            onChange={(e) => setReviewNotes(e.target.value)}
-            placeholder={t('projects.sprints.review.notesPlaceholder')}
-            rows={4}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60 resize-none"
-          />
-        </div>
-
-        <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 mt-4">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors cursor-pointer">
-            {t('common.cancel')}
-          </button>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '10px 18px 14px', borderTop: '1px solid var(--border)' }}>
+          <button onClick={onClose} style={btnSecondary}>{t('common.cancel')}</button>
           <button
             onClick={() => onConfirm(reviewNotes)}
             disabled={loading}
-            className="px-4 py-2 text-sm font-medium bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+            style={{
+              ...btnAccent, opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer',
+              background: '#16a34a',
+            }}
+            onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = '#15803d'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#16a34a'; }}
           >
-            {loading ? '...' : t('projects.sprints.review.complete')}
+            {loading ? '…' : t('projects.sprints.review.complete')}
           </button>
         </div>
       </div>
-    </div>
+    </ModalOverlay>
   );
 }
 
-// ── SprintsPage ──────────────────────────────────────────────────────────────
+// ── SprintsPage ───────────────────────────────────────────────────────────────
 
 export default function SprintsPage() {
   const { t } = useTranslation();
@@ -431,7 +522,6 @@ export default function SprintsPage() {
   const [confirmAction, setConfirmAction] = useState<{ type: 'activate'; sprintId: string } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Load sprints
   useEffect(() => {
     if (!projectId) return;
     setLoading(true);
@@ -442,12 +532,8 @@ export default function SprintsPage() {
       .finally(() => setLoading(false));
   }, [projectId, t]);
 
-  // Expand/collapse sprint and load its tasks lazily
   const handleExpand = async (sprintId: string) => {
-    if (expandedId === sprintId) {
-      setExpandedId(null);
-      return;
-    }
+    if (expandedId === sprintId) { setExpandedId(null); return; }
     setExpandedId(sprintId);
     if (!sprintTasks[sprintId]) {
       setLoadingTasksId(sprintId);
@@ -462,7 +548,6 @@ export default function SprintsPage() {
     }
   };
 
-  // Activate sprint
   const handleActivate = async (sprintId: string) => {
     setActionLoading(true);
     try {
@@ -476,13 +561,11 @@ export default function SprintsPage() {
     }
   };
 
-  // Complete sprint (called from review modal with optional notes)
   const handleComplete = async (sprintId: string, reviewNotes?: string) => {
     setActionLoading(true);
     try {
       const updated = await sprintsApi.completeSprint(sprintId, reviewNotes ? { reviewNotes } : undefined);
       setSprints((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-      // Tasks not DONE went back to backlog, clear cached tasks
       setSprintTasks((prev) => ({ ...prev, [sprintId]: [] }));
       setReviewSprintId(null);
     } catch {
@@ -492,48 +575,37 @@ export default function SprintsPage() {
     }
   };
 
-  // Remove task from sprint
   const handleRemoveFromSprint = async (sprintId: string, taskId: string) => {
     try {
       await sprintsApi.removeTaskFromSprint(sprintId, taskId);
-      setSprintTasks((prev) => ({
-        ...prev,
-        [sprintId]: (prev[sprintId] ?? []).filter((t) => t.id !== taskId),
-      }));
+      setSprintTasks((prev) => ({ ...prev, [sprintId]: (prev[sprintId] ?? []).filter((t) => t.id !== taskId) }));
     } catch {
       setError(t('projects.sprints.loadError'));
     }
   };
 
-  // Task modal: save (edit)
   const handleSaveTask = async (dto: CreateTaskDto | UpdateTaskDto) => {
     if (!editTask) return;
     const updated = await tasksApi.update(editTask.id, dto as UpdateTaskDto);
     if (editTaskSprintId) {
       setSprintTasks((prev) => ({
         ...prev,
-        [editTaskSprintId]: (prev[editTaskSprintId] ?? []).map((t) =>
-          t.id === updated.id ? updated : t
-        ),
+        [editTaskSprintId]: (prev[editTaskSprintId] ?? []).map((t) => (t.id === updated.id ? updated : t)),
       }));
     }
   };
 
-  // Task modal: move status
   const handleMoveTask = async (status: TaskStatus) => {
     if (!editTask) return;
     const updated = await tasksApi.move(editTask.id, { status, position: 0 });
     if (editTaskSprintId) {
       setSprintTasks((prev) => ({
         ...prev,
-        [editTaskSprintId]: (prev[editTaskSprintId] ?? []).map((t) =>
-          t.id === updated.id ? updated : t
-        ),
+        [editTaskSprintId]: (prev[editTaskSprintId] ?? []).map((t) => (t.id === updated.id ? updated : t)),
       }));
     }
   };
 
-  // Task modal: delete
   const handleDeleteTask = async () => {
     if (!editTask) return;
     await tasksApi.delete(editTask.id);
@@ -545,44 +617,44 @@ export default function SprintsPage() {
     }
   };
 
-  // Sprint planning: add tasks
   const handleAddToSprint = (sprintId: string, added: Task[]) => {
-    setSprintTasks((prev) => ({
-      ...prev,
-      [sprintId]: [...(prev[sprintId] ?? []), ...added],
-    }));
+    setSprintTasks((prev) => ({ ...prev, [sprintId]: [...(prev[sprintId] ?? []), ...added] }));
   };
 
   const formatDate = (date: string | null | undefined) =>
     date ? new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null;
 
-  const isExpandable = (sprint: Sprint) => sprint.status !== 'COMPLETED' || (sprintTasks[sprint.id]?.length ?? 0) > 0;
-
   const totalPoints = (sprintId: string) =>
     (sprintTasks[sprintId] ?? []).reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-base font-semibold text-gray-900">{t('projects.sprints.title')}</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+            {t('projects.sprints.title')}
+          </h2>
           {!loading && (
-            <span className="text-xs font-medium text-gray-400 bg-white border border-gray-200 px-2 py-0.5 rounded-full">
-              {sprints.length} {sprints.length === 1 ? t('projects.sprints.sprint') : t('projects.sprints.sprintsCount')}
+            <span style={{
+              fontSize: 11, fontWeight: 600, color: 'var(--text-faint)',
+              background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)', padding: '1px 6px', fontFamily: 'var(--font-mono)',
+            }}>
+              {sprints.length}
             </span>
           )}
         </div>
         {canManageSprint && (
           <button
             onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors cursor-pointer"
+            style={btnAccent}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+            <Plus size={12} strokeWidth={2.5} />
             {t('projects.sprints.newSprint')}
           </button>
         )}
@@ -590,22 +662,19 @@ export default function SprintsPage() {
 
       {/* Content */}
       {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+          <div style={{ width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
         </div>
       ) : sprints.length === 0 ? (
-        <div className="glass-card-strong p-12 text-center">
-          <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+        <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '48px 24px', textAlign: 'center' }}>
+          <div style={{ width: 40, height: 40, background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+            <Zap size={18} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
           </div>
-          <p className="text-sm font-medium text-gray-700">{t('projects.sprints.noSprints')}</p>
-          <p className="text-xs text-gray-400 mt-1">{t('projects.sprints.noSprintsSubtitle')}</p>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>{t('projects.sprints.noSprints')}</p>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>{t('projects.sprints.noSprintsSubtitle')}</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {sprints.map((sprint) => {
             const isExpanded = expandedId === sprint.id;
             const tasks = sprintTasks[sprint.id] ?? [];
@@ -618,67 +687,82 @@ export default function SprintsPage() {
             return (
               <div
                 key={sprint.id}
-                className={`glass-card-strong overflow-hidden border-l-4 ${SPRINT_BORDER[sprint.status]}`}
+                style={{
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border)',
+                  borderLeft: `2px solid ${SPRINT_LEFT_COLOR[sprint.status]}`,
+                  borderRadius: 'var(--radius-md)',
+                  overflow: 'hidden',
+                }}
               >
                 {/* Sprint header */}
-                <div className="flex items-center gap-3 px-4 py-3">
-                  {/* Expand toggle */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px' }}>
+                  {/* Expand */}
                   <button
                     onClick={() => handleExpand(sprint.id)}
-                    className="flex-shrink-0 p-1 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer"
+                    style={{ flexShrink: 0, border: 'none', background: 'transparent', padding: 2, cursor: 'pointer', color: 'var(--text-faint)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'; (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-faint)'; }}
                   >
-                    <svg
-                      className={`w-4 h-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
-                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                    <ChevronRight
+                      size={14}
+                      strokeWidth={2}
+                      style={{ transition: `transform var(--duration)`, transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                    />
                   </button>
 
                   {/* Name + meta */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-gray-900 truncate">{sprint.name}</span>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${SPRINT_STATUS_BADGE[sprint.status]}`}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+                        {sprint.name}
+                      </span>
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+                        color: sprint.status === 'ACTIVE' ? 'var(--accent)' : sprint.status === 'COMPLETED' ? '#16a34a' : 'var(--text-faint)',
+                        fontFamily: 'var(--font-mono)',
+                      }}>
                         {t(`projects.sprints.status.${sprint.status}`)}
                       </span>
                       {isExpanded && tasks.length > 0 && (
-                        <span className="text-xs text-gray-400">
+                        <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
                           {tasks.length} {tasks.length === 1 ? t('projects.sprints.task') : t('projects.sprints.tasks')}
                           {pts > 0 && ` · ${pts} pts`}
                         </span>
                       )}
                     </div>
                     {(startFmt || endFmt || sprint.goal) && (
-                      <div className="flex items-center gap-3 mt-0.5">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 1 }}>
                         {(startFmt || endFmt) && (
-                          <span className="text-xs text-gray-400">
+                          <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
                             {startFmt ?? '—'} → {endFmt ?? '—'}
                           </span>
                         )}
                         {sprint.goal && (
-                          <span className="text-xs text-gray-400 truncate italic">{sprint.goal}</span>
+                          <span style={{ fontSize: 10, color: 'var(--text-faint)', fontStyle: 'italic', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: 200 }}>
+                            {sprint.goal}
+                          </span>
                         )}
                       </div>
                     )}
                   </div>
 
-                  {/* Action buttons */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Actions */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                     {sprint.status === 'PLANNING' && canManageSprint && (
                       confirmThis === 'activate' ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-500">{t('projects.sprints.activateConfirm')}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t('projects.sprints.activateConfirm')}</span>
                           <button
                             onClick={() => handleActivate(sprint.id)}
                             disabled={actionLoading}
-                            className="text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors cursor-pointer"
+                            style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                           >
                             {t('common.confirm')}
                           </button>
                           <button
                             onClick={() => setConfirmAction(null)}
-                            className="text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                            style={{ fontSize: 11, color: 'var(--text-faint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                           >
                             {t('common.cancel')}
                           </button>
@@ -686,103 +770,132 @@ export default function SprintsPage() {
                       ) : (
                         <button
                           onClick={() => setConfirmAction({ type: 'activate', sprintId: sprint.id })}
-                          className="px-3 py-1 text-xs font-medium text-primary-600 border border-primary-200 rounded-lg hover:bg-primary-50 transition-colors cursor-pointer"
+                          style={{ ...btnOutline, color: 'var(--accent)', borderColor: 'var(--accent)' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-muted)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
                           {t('projects.sprints.activate')}
                         </button>
                       )
                     )}
+
                     {sprint.status === 'ACTIVE' && (
                       <>
                         <Link
                           to={`/workspaces/${workspaceId}/projects/${projectId}/board`}
-                          className="px-3 py-1 text-xs font-medium text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
+                          style={{ ...btnOutline, textDecoration: 'none' }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                         >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                              d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-                          </svg>
+                          <LayoutDashboard size={11} strokeWidth={1.75} />
                           {t('projects.sprints.viewBoard')}
                         </Link>
                         {canManageSprint && (
                           <button
                             onClick={() => { setReviewSprintId(sprint.id); if (!sprintTasks[sprint.id]) handleExpand(sprint.id); }}
-                            className="px-3 py-1 text-xs font-medium text-emerald-600 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer"
+                            style={{ ...btnOutline, color: '#16a34a', borderColor: '#16a34a' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(22,163,74,0.08)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
                             {t('projects.sprints.complete')}
                           </button>
                         )}
                       </>
                     )}
-                  {/* View report — shown for all statuses */}
-                  <Link
-                    to={`/workspaces/${workspaceId}/projects/${projectId}/sprints/${sprint.id}/report`}
-                    className="px-3 py-1 text-xs font-medium text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-1"
-                  >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                    </svg>
-                    {t('projects.sprints.viewReport')}
-                  </Link>
+
+                    <Link
+                      to={`/workspaces/${workspaceId}/projects/${projectId}/sprints/${sprint.id}/report`}
+                      style={{ ...btnOutline, textDecoration: 'none' }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                    >
+                      <BarChart2 size={11} strokeWidth={1.75} />
+                      {t('projects.sprints.viewReport')}
+                    </Link>
+                  </div>
                 </div>
-              </div>
 
                 {/* Expanded: task list */}
                 {isExpanded && (
-                  <div className="border-t border-gray-100">
+                  <div style={{ borderTop: '1px solid var(--border)' }}>
                     {isLoadingTasks ? (
-                      <div className="flex justify-center py-6">
-                        <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                      <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+                        <div style={{ width: 18, height: 18, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                       </div>
                     ) : tasks.length === 0 ? (
-                      <p className="text-xs text-gray-400 text-center py-5">{t('projects.sprints.noTasks')}</p>
+                      <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', padding: '20px 0' }}>
+                        {t('projects.sprints.noTasks')}
+                      </p>
                     ) : (
-                      <div className="divide-y divide-gray-50">
-                        {tasks.map((task) => (
-                          <div key={task.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50/60 transition-colors group">
-                            {/* Priority */}
-                            <span className={`flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${PRIORITY_COLORS[task.priority]}`}>
-                              {t(`tasks.priority.${task.priority}`)}
-                            </span>
+                      <div>
+                        {tasks.map((task, idx) => (
+                          <div
+                            key={task.id}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 10,
+                              padding: '7px 12px',
+                              borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            {/* Priority dot */}
+                            <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: PRIORITY_COLOR[task.priority] }} />
 
                             {/* Title */}
                             <button
                               onClick={() => { setEditTask(task); setEditTaskSprintId(sprint.id); }}
-                              className="flex-1 min-w-0 text-left"
+                              style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                             >
-                              <p className="text-sm font-medium text-gray-900 truncate group-hover:text-primary-700 transition-colors">
+                              <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                                 {task.title}
                               </p>
                               {task.description && (
-                                <p className="text-xs text-gray-400 truncate">{task.description}</p>
+                                <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                  {task.description}
+                                </p>
                               )}
                             </button>
 
                             {/* Status */}
-                            <span className={`flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[task.status]}`}>
+                            <span style={{
+                              flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
+                              textTransform: 'uppercase', color: STATUS_COLOR[task.status],
+                              fontFamily: 'var(--font-mono)',
+                            }}>
                               {t(`tasks.status.${task.status}`)}
                             </span>
 
                             {/* Story points */}
                             {task.storyPoints != null ? (
-                              <span className="flex-shrink-0 text-xs font-medium text-gray-400 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full w-14 text-center">
-                                {task.storyPoints} pts
+                              <span style={{
+                                flexShrink: 0, fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-mono)',
+                                color: 'var(--text-faint)', background: 'var(--bg-hover)',
+                                border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1px 5px',
+                              }}>
+                                {task.storyPoints}
                               </span>
                             ) : (
-                              <span className="flex-shrink-0 w-14" />
+                              <span style={{ flexShrink: 0, width: 28 }} />
                             )}
 
-                            {/* Remove from sprint */}
+                            {/* Remove */}
                             {sprint.status !== 'COMPLETED' && canPlanSprint && (
                               <button
                                 onClick={() => handleRemoveFromSprint(sprint.id, task.id)}
                                 title={t('projects.sprints.removeTask')}
-                                className="flex-shrink-0 p-1 rounded-lg text-gray-300 hover:text-red-400 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                                style={{
+                                  flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  width: 20, height: 20, border: 'none', background: 'transparent',
+                                  borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                                  color: 'var(--text-faint)', opacity: 0,
+                                  transition: `opacity var(--duration), background var(--duration), color var(--duration)`,
+                                }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--danger-bg)'; (e.currentTarget as HTMLElement).style.color = 'var(--danger)'; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-faint)'; }}
+                                // Show on parent hover via CSS can't be done inline; use always visible at lower opacity
                               >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
+                                <X size={11} strokeWidth={2} />
                               </button>
                             )}
                           </div>
@@ -792,14 +905,19 @@ export default function SprintsPage() {
 
                     {/* Sprint planning button */}
                     {sprint.status !== 'COMPLETED' && canPlanSprint && (
-                      <div className="px-4 py-2.5 border-t border-gray-50">
+                      <div style={{ padding: '6px 12px 10px', borderTop: '1px solid var(--border)' }}>
                         <button
                           onClick={() => { setPlanningSprintId(sprint.id); if (!sprintTasks[sprint.id]) handleExpand(sprint.id); }}
-                          className="flex items-center gap-1.5 text-xs font-medium text-primary-600 hover:text-primary-700 transition-colors cursor-pointer"
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            fontSize: 11, fontWeight: 500, color: 'var(--text-faint)',
+                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                            transition: `color var(--duration)`,
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                          </svg>
+                          <Plus size={11} strokeWidth={2.5} />
                           {t('projects.sprints.addTasks')}
                         </button>
                       </div>

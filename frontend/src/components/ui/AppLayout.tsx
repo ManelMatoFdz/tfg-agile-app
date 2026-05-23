@@ -50,8 +50,8 @@ export default function AppLayout() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary-50/30 relative">
       {/* Subtle background decorations */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary-100/20 rounded-full blur-[150px]" />
-        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-accent-500/5 rounded-full blur-[120px]" />
+        <div className="absolute top-[-20%] right-[-10%] w-[37.5rem] h-[37.5rem] bg-primary-100/20 rounded-full blur-[9.375rem]" />
+        <div className="absolute bottom-[-10%] left-[-5%] w-[31.25rem] h-[31.25rem] bg-accent-500/5 rounded-full blur-[7.5rem]" />
       </div>
 
       {/* Navbar */}

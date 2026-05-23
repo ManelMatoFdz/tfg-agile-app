@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { UserPlus, UserMinus, Check, X } from 'lucide-react';
 import { projectsApi } from '../../../api/projects';
 import { workspacesApi } from '../../../api/workspaces';
 import { useApiAction } from '../../../hooks/useApiAction';
@@ -12,109 +13,159 @@ import type { ProjectMember, ProjectRole, ScrumRole, WorkspaceMember } from '../
 const PROJECT_ROLES: ProjectRole[] = ['ADMIN', 'MEMBER', 'VIEWER'];
 const SCRUM_ROLES: (ScrumRole | null)[] = [null, 'PRODUCT_OWNER', 'SCRUM_MASTER', 'DEVELOPER'];
 
-const ROLE_COLORS: Record<ProjectRole, string> = {
-  ADMIN: 'bg-primary-100 text-primary-700',
-  MEMBER: 'bg-emerald-100 text-emerald-700',
-  VIEWER: 'bg-gray-100 text-gray-600',
+const ROLE_COLOR: Record<ProjectRole, { color: string; bg: string }> = {
+  ADMIN:  { color: 'var(--accent)',   bg: 'var(--accent-muted)' },
+  MEMBER: { color: '#16a34a',         bg: 'rgba(22,163,74,0.08)' },
+  VIEWER: { color: 'var(--text-faint)', bg: 'var(--bg-hover)' },
 };
+
+const selectStyle: React.CSSProperties = {
+  fontSize: 11, fontWeight: 500,
+  padding: '3px 6px',
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-sm)',
+  color: 'var(--text-muted)',
+  cursor: 'pointer',
+  outline: 'none',
+};
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '6px 10px',
+  fontSize: 12,
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--text)',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: 11,
+  fontWeight: 600,
+  color: 'var(--text-muted)',
+  marginBottom: 4,
+};
+
+function Avatar({ name, avatarUrl, size = 30 }: { name: string; avatarUrl?: string; size?: number }) {
+  const [err, setErr] = useState(false);
+  if (avatarUrl && !err) {
+    return <img src={avatarUrl} alt="" referrerPolicy="no-referrer" onError={() => setErr(true)} style={{ width: size, height: size, objectFit: 'cover', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', flexShrink: 0 }} />;
+  }
+  return (
+    <div style={{ width: size, height: size, flexShrink: 0, borderRadius: 'var(--radius-sm)', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: size * 0.38, fontWeight: 700 }}>
+      {name.charAt(0).toUpperCase()}
+    </div>
+  );
+}
 
 function MemberRow({
   member, name, avatarUrl, isSelf, isAdmin,
   isUpdatingRole, isUpdatingScrum, isRemoving,
   onRoleChange, onScrumRoleChange, onRemove,
 }: {
-  member: ProjectMember;
-  name: string;
-  avatarUrl?: string;
-  isSelf: boolean;
-  isAdmin: boolean;
-  isUpdatingRole: boolean;
-  isUpdatingScrum: boolean;
-  isRemoving: boolean;
+  member: ProjectMember; name: string; avatarUrl?: string;
+  isSelf: boolean; isAdmin: boolean;
+  isUpdatingRole: boolean; isUpdatingScrum: boolean; isRemoving: boolean;
   onRoleChange: (role: ProjectRole) => void;
   onScrumRoleChange: (role: ScrumRole | null) => void;
   onRemove: () => void;
 }) {
   const { t } = useTranslation();
-  const [imgError, setImgError] = useState(false);
+  const rc = ROLE_COLOR[member.role];
 
   return (
-    <div className="flex items-center justify-between py-3 px-2 gap-3 hover:bg-gray-50/70 rounded-xl transition-colors">
-      <div className="flex items-center gap-3 min-w-0">
-        <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0">
-          {avatarUrl && !imgError ? (
-            <img src={avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={() => setImgError(true)} />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-sm font-bold">
-              {name.charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
-        <div className="min-w-0">
-          <div className="flex items-center gap-1.5">
-            <p className="text-sm font-medium text-gray-900 truncate">{name}</p>
-            {isSelf && (
-              <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full flex-shrink-0">{t('common.you')}</span>
-            )}
+    <div
+      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', gap: 10, transition: `background var(--duration)` }}
+      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+    >
+      {/* Avatar + name */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+        <Avatar name={name} avatarUrl={avatarUrl} size={28} />
+        <div style={{ minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{name}</p>
+            {isSelf && <span style={{ fontSize: 9, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-faint)', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '0 4px', flexShrink: 0 }}>{t('common.you')}</span>}
           </div>
-          <p className="text-xs text-gray-400">
+          <p style={{ margin: 0, fontSize: 10, color: 'var(--text-faint)' }}>
             {t('common.since', { date: new Date(member.joinedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) })}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2 flex-shrink-0">
+      {/* Controls */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+        {/* Scrum role */}
         {isAdmin ? (
           <select
             value={member.scrumRole ?? ''}
             disabled={isUpdatingScrum}
             onChange={(e) => onScrumRoleChange((e.target.value as ScrumRole) || null)}
-            className="text-xs border border-gray-200 rounded-lg px-2 py-1 bg-white text-purple-700 focus:outline-none focus:ring-1 focus:ring-purple-300 disabled:opacity-50 cursor-pointer"
+            style={{ ...selectStyle, color: member.scrumRole ? '#7c3aed' : 'var(--text-faint)', opacity: isUpdatingScrum ? 0.5 : 1 }}
           >
             <option value="">{t('projects.members.scrumRoles.none')}</option>
-            {SCRUM_ROLES.filter(Boolean).map((r) => (
-              <option key={r!} value={r!}>{t(`projects.members.scrumRoles.${r}`)}</option>
-            ))}
+            {SCRUM_ROLES.filter(Boolean).map((r) => <option key={r!} value={r!}>{t(`projects.members.scrumRoles.${r}`)}</option>)}
           </select>
         ) : member.scrumRole ? (
-          <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+          <span style={{ fontSize: 10, fontWeight: 600, color: '#7c3aed', background: 'rgba(124,58,237,0.08)', borderRadius: 'var(--radius-sm)', padding: '2px 6px' }}>
             {t(`projects.members.scrumRoles.${member.scrumRole}`)}
           </span>
         ) : null}
 
+        {/* Project role */}
         {isAdmin ? (
           <select
             value={member.role}
             disabled={isUpdatingRole}
             onChange={(e) => onRoleChange(e.target.value as ProjectRole)}
-            className={`text-xs font-semibold border border-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary-300 disabled:opacity-50 cursor-pointer ${ROLE_COLORS[member.role]}`}
+            style={{ ...selectStyle, color: rc.color, background: rc.bg, opacity: isUpdatingRole ? 0.5 : 1 }}
           >
-            {PROJECT_ROLES.map((r) => (
-              <option key={r} value={r}>{t(`projects.members.roles.${r}`)}</option>
-            ))}
+            {PROJECT_ROLES.map((r) => <option key={r} value={r}>{t(`projects.members.roles.${r}`)}</option>)}
           </select>
         ) : (
-          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ROLE_COLORS[member.role]}`}>
+          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: rc.color, background: rc.bg, borderRadius: 'var(--radius-sm)', padding: '2px 6px' }}>
             {t(`projects.members.roles.${member.role}`)}
           </span>
         )}
 
+        {/* Remove */}
         {isAdmin && !isSelf && (
           <button
             onClick={onRemove}
             disabled={isRemoving}
             title={t('projects.members.removeMember')}
-            className="p-1.5 text-gray-300 hover:text-red-400 transition-colors cursor-pointer disabled:opacity-40 rounded-lg hover:bg-red-50"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 24, height: 24, border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--text-faint)', opacity: isRemoving ? 0.4 : 1, transition: `background var(--duration), color var(--duration)` }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--danger-bg)'; (e.currentTarget as HTMLElement).style.color = 'var(--danger)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-faint)'; }}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
-            </svg>
+            <UserMinus size={12} strokeWidth={2} />
           </button>
         )}
       </div>
     </div>
   );
 }
+
+// ── Modal wrapper ─────────────────────────────────────────────────────────────
+
+function ModalOverlay({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div
+      style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, backgroundColor: 'var(--bg-overlay)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div style={{ width: '100%', maxWidth: 420, background: 'var(--bg-elevated)', border: '1px solid var(--border-strong)', borderRadius: 'var(--radius-lg)' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function ProjectMembersPage() {
   const { t } = useTranslation();
@@ -129,7 +180,6 @@ export default function ProjectMembersPage() {
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [removeError, setRemoveError] = useState<string | null>(null);
 
-  // Add member modal
   const [showAddModal, setShowAddModal] = useState(false);
   const [wsMembersLoading, setWsMembersLoading] = useState(false);
   const [wsMembers, setWsMembers] = useState<WorkspaceMember[]>([]);
@@ -143,17 +193,11 @@ export default function ProjectMembersPage() {
 
   useEffect(() => {
     if (!projectId) return;
-    membersAction.run(projectsApi.getMembers(projectId)).then((data) => {
-      if (!data) return;
-      setMembers(data);
-    });
+    membersAction.run(projectsApi.getMembers(projectId)).then((data) => { if (!data) return; setMembers(data); });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
-  const allUserIds = [
-    ...members.map((m) => m.userId),
-    ...wsMembers.map((m) => m.userId),
-  ];
+  const allUserIds = [...members.map((m) => m.userId), ...wsMembers.map((m) => m.userId)];
   const userMap = useUserMap(allUserIds);
   const isAdmin = members.some((m) => m.userId === currentUser?.id && m.role === 'ADMIN');
 
@@ -162,37 +206,22 @@ export default function ProjectMembersPage() {
     return u?.fullName || u?.username || t('common.unknownUser');
   };
 
-  // ── Add member ──────────────────────────────────────────────────────────
-
   const openAddModal = async () => {
-    setShowAddModal(true);
-    setSearch('');
-    setSelectedUserId('');
-    setSelectedRole('MEMBER');
-    setAddError(null);
+    setShowAddModal(true); setSearch(''); setSelectedUserId(''); setSelectedRole('MEMBER'); setAddError(null);
     if (!workspaceId) return;
     setWsMembersLoading(true);
-    try {
-      const res = await workspacesApi.getMembers(workspaceId);
-      setWsMembers(res.data);
-    } catch {
-      setAddError(t('projects.members.add.error'));
-    } finally {
-      setWsMembersLoading(false);
-    }
+    try { const res = await workspacesApi.getMembers(workspaceId); setWsMembers(res.data); }
+    catch { setAddError(t('projects.members.add.error')); }
+    finally { setWsMembersLoading(false); }
   };
 
   const candidateMembers = wsMembers.filter(
-    (wm) =>
-      !members.some((pm) => pm.userId === wm.userId) &&
-      (search.trim() === '' ||
-        displayName(wm.userId).toLowerCase().includes(search.toLowerCase())),
+    (wm) => !members.some((pm) => pm.userId === wm.userId) && (search.trim() === '' || displayName(wm.userId).toLowerCase().includes(search.toLowerCase())),
   );
 
   const handleAddMember = async () => {
     if (!projectId || !selectedUserId) return;
-    setAdding(true);
-    setAddError(null);
+    setAdding(true); setAddError(null);
     try {
       const res = await projectsApi.addMember(projectId, { userId: selectedUserId, role: selectedRole });
       setMembers((prev) => [...prev, res.data]);
@@ -200,50 +229,34 @@ export default function ProjectMembersPage() {
     } catch (err: unknown) {
       const code = (err as { response?: { data?: { errorCode?: string } } })?.response?.data?.errorCode;
       setAddError(code ? t(`errors.${code}`) : t('projects.members.add.error'));
-    } finally {
-      setAdding(false);
-    }
+    } finally { setAdding(false); }
   };
-
-  // ── Change role ─────────────────────────────────────────────────────────
 
   const handleRoleChange = async (userId: string, role: ProjectRole) => {
     if (!projectId) return;
-    setUpdatingRoleId(userId);
-    setActionError(null);
+    setUpdatingRoleId(userId); setActionError(null);
     try {
       const res = await projectsApi.updateMemberRole(projectId, userId, role);
       setMembers((prev) => prev.map((m) => (m.userId === userId ? res.data : m)));
     } catch (err: unknown) {
       const code = (err as { response?: { data?: { errorCode?: string } } })?.response?.data?.errorCode;
       setActionError(code ? t(`errors.${code}`) : t('projects.members.errors.changeRole'));
-    } finally {
-      setUpdatingRoleId(null);
-    }
+    } finally { setUpdatingRoleId(null); }
   };
-
-  // ── Change scrum role ───────────────────────────────────────────────────
 
   const handleScrumRoleChange = async (userId: string, scrumRole: ScrumRole | null) => {
     if (!projectId) return;
-    setUpdatingScrumId(userId);
-    setActionError(null);
+    setUpdatingScrumId(userId); setActionError(null);
     try {
       const res = await projectsApi.updateScrumRole(projectId, userId, scrumRole);
       setMembers((prev) => prev.map((m) => (m.userId === userId ? res.data : m)));
-    } catch {
-      setActionError(t('projects.members.errors.changeScrumRole'));
-    } finally {
-      setUpdatingScrumId(null);
-    }
+    } catch { setActionError(t('projects.members.errors.changeScrumRole')); }
+    finally { setUpdatingScrumId(null); }
   };
-
-  // ── Remove member ───────────────────────────────────────────────────────
 
   const handleRemove = async () => {
     if (!projectId || !confirmRemove) return;
-    setRemovingId(confirmRemove.userId);
-    setRemoveError(null);
+    setRemovingId(confirmRemove.userId); setRemoveError(null);
     try {
       await projectsApi.removeMember(projectId, confirmRemove.userId);
       setMembers((prev) => prev.filter((m) => m.userId !== confirmRemove.userId));
@@ -251,65 +264,67 @@ export default function ProjectMembersPage() {
     } catch (err: unknown) {
       const code = (err as { response?: { data?: { errorCode?: string } } })?.response?.data?.errorCode;
       setRemoveError(code ? t(`errors.${code}`) : t('projects.members.errors.remove'));
-    } finally {
-      setRemovingId(null);
-    }
+    } finally { setRemovingId(null); }
   };
 
   return (
-    <div className="glass-card-strong p-6">
+    <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
       {(membersAction.error || actionError) && (
-        <Alert
-          type="error"
-          message={membersAction.error ?? actionError!}
-          onClose={() => { membersAction.reset(); setActionError(null); }}
-        />
+        <Alert type="error" message={membersAction.error ?? actionError!} onClose={() => { membersAction.reset(); setActionError(null); }} />
       )}
 
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base font-semibold text-gray-900">
-          {t('projects.members.title')}
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <h2 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+            {t('projects.members.title')}
+          </h2>
           {members.length > 0 && (
-            <span className="ml-2 text-xs font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+            <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-faint)', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '0 4px', fontFamily: 'var(--font-mono)' }}>
               {members.length}
             </span>
           )}
-        </h2>
+        </div>
         {isAdmin && (
           <button
             onClick={openAddModal}
-            className="px-3 py-1.5 text-xs font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors cursor-pointer"
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '4px 10px', fontSize: 11, fontWeight: 500, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', transition: `background var(--duration)` }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
           >
-            + {t('projects.members.addMember')}
+            <UserPlus size={11} strokeWidth={2} />
+            {t('projects.members.addMember')}
           </button>
         )}
       </div>
 
+      {/* Member list */}
       {membersAction.loading ? (
-        <div className="flex justify-center py-6">
-          <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}>
+          <div style={{ width: 20, height: 20, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
         </div>
       ) : members.length === 0 ? (
-        <p className="text-sm text-gray-400 text-center py-6">{t('projects.members.noMembers')}</p>
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '32px 0' }}>{t('projects.members.noMembers')}</p>
       ) : (
-        <div className="divide-y divide-gray-100/60">
-          {members.map((m) => {
+        <div>
+          {members.map((m, idx) => {
             const u = userMap.get(m.userId);
             return (
-              <MemberRow
-                key={m.id}
-                member={m}
-                name={displayName(m.userId)}
-                avatarUrl={u?.avatarUrl}
-                isSelf={m.userId === currentUser?.id}
-                isAdmin={isAdmin}
-                isUpdatingRole={updatingRoleId === m.userId}
-                isUpdatingScrum={updatingScrumId === m.userId}
-                isRemoving={removingId === m.userId}
-                onRoleChange={(role) => handleRoleChange(m.userId, role)}
-                onScrumRoleChange={(role) => handleScrumRoleChange(m.userId, role)}
-                onRemove={() => setConfirmRemove(m)}
-              />
+              <div key={m.id} style={{ borderTop: idx > 0 ? '1px solid var(--border)' : 'none' }}>
+                <MemberRow
+                  member={m}
+                  name={displayName(m.userId)}
+                  avatarUrl={u?.avatarUrl}
+                  isSelf={m.userId === currentUser?.id}
+                  isAdmin={isAdmin}
+                  isUpdatingRole={updatingRoleId === m.userId}
+                  isUpdatingScrum={updatingScrumId === m.userId}
+                  isRemoving={removingId === m.userId}
+                  onRoleChange={(role) => handleRoleChange(m.userId, role)}
+                  onScrumRoleChange={(role) => handleScrumRoleChange(m.userId, role)}
+                  onRemove={() => setConfirmRemove(m)}
+                />
+              </div>
             );
           })}
         </div>
@@ -317,12 +332,14 @@ export default function ProjectMembersPage() {
 
       {/* Add member modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
-          <div className="relative glass-card-strong rounded-2xl p-6 w-full max-w-md shadow-2xl animate-fade-in">
-            <h3 className="text-base font-semibold text-gray-900 mb-4">{t('projects.members.add.title')}</h3>
+        <ModalOverlay onClose={() => setShowAddModal(false)}>
+          <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>{t('projects.members.add.title')}</h3>
+            <button onClick={() => setShowAddModal(false)} style={{ display: 'flex', width: 24, height: 24, alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--text-faint)' }}><X size={13} /></button>
+          </div>
 
-            {addError && <Alert type="error" message={addError} onClose={() => setAddError(null)} />}
+          <div style={{ padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {addError && <div style={{ fontSize: 11, color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '5px 10px' }}>{addError}</div>}
 
             <input
               type="text"
@@ -330,108 +347,88 @@ export default function ProjectMembersPage() {
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t('projects.members.add.searchPlaceholder')}
               autoFocus
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60 mb-3"
+              style={inputStyle}
             />
 
             {wsMembersLoading ? (
-              <div className="flex justify-center py-6">
-                <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+                <div style={{ width: 18, height: 18, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
               </div>
             ) : candidateMembers.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">{t('projects.members.add.noResults')}</p>
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '16px 0' }}>{t('projects.members.add.noResults')}</p>
             ) : (
-              <ul className="max-h-52 overflow-y-auto divide-y divide-gray-100 mb-4 border border-gray-100 rounded-xl">
-                {candidateMembers.map((wm) => {
+              <ul style={{ margin: 0, padding: 0, listStyle: 'none', maxHeight: 200, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+                {candidateMembers.map((wm, idx) => {
                   const n = displayName(wm.userId);
+                  const selected = selectedUserId === wm.userId;
                   return (
                     <li
                       key={wm.userId}
                       onClick={() => setSelectedUserId(wm.userId)}
-                      className={`flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors ${
-                        selectedUserId === wm.userId ? 'bg-primary-50' : 'hover:bg-gray-50'
-                      }`}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10, padding: '7px 10px', cursor: 'pointer',
+                        background: selected ? 'var(--accent-muted)' : 'transparent',
+                        borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+                        transition: `background var(--duration)`,
+                      }}
+                      onMouseEnter={e => { if (!selected) (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'; }}
+                      onMouseLeave={e => { if (!selected) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                     >
-                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                        {n.charAt(0).toUpperCase()}
-                      </div>
-                      <span className="text-sm text-gray-800">{n}</span>
-                      {selectedUserId === wm.userId && (
-                        <svg className="w-4 h-4 text-primary-600 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
+                      <Avatar name={n} size={26} />
+                      <span style={{ fontSize: 12, color: 'var(--text)', flex: 1 }}>{n}</span>
+                      {selected && <Check size={12} strokeWidth={2.5} style={{ color: 'var(--accent)', flexShrink: 0 }} />}
                     </li>
                   );
                 })}
               </ul>
             )}
 
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('projects.members.add.roleLabel')}
-              </label>
-              <select
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value as ProjectRole)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 bg-white/60"
-              >
-                {PROJECT_ROLES.map((r) => (
-                  <option key={r} value={r}>{t(`projects.members.roles.${r}`)}</option>
-                ))}
+            <div>
+              <label style={labelStyle}>{t('projects.members.add.roleLabel')}</label>
+              <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value as ProjectRole)} style={inputStyle}>
+                {PROJECT_ROLES.map((r) => <option key={r} value={r}>{t(`projects.members.roles.${r}`)}</option>)}
               </select>
             </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowAddModal(false)}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                onClick={handleAddMember}
-                disabled={adding || !selectedUserId}
-                className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-              >
-                {adding ? t('projects.members.add.adding') : t('projects.members.add.submit')}
-              </button>
-            </div>
           </div>
-        </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '10px 18px 14px', borderTop: '1px solid var(--border)' }}>
+            <button onClick={() => setShowAddModal(false)} style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer' }}>{t('common.cancel')}</button>
+            <button
+              onClick={handleAddMember}
+              disabled={adding || !selectedUserId}
+              style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', opacity: adding || !selectedUserId ? 0.5 : 1 }}
+              onMouseEnter={e => { if (!adding && selectedUserId) (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent)'; }}
+            >
+              {adding ? t('projects.members.add.adding') : t('projects.members.add.submit')}
+            </button>
+          </div>
+        </ModalOverlay>
       )}
 
-      {/* Remove confirm modal */}
+      {/* Remove confirm */}
       {confirmRemove && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setConfirmRemove(null); setRemoveError(null); }} />
-          <div className="relative glass-card-strong rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in">
-            <h3 className="text-base font-semibold text-gray-900 mb-2">{t('projects.members.confirmRemove.title')}</h3>
-            <p
-              className="text-sm text-gray-600 mb-4"
+        <ModalOverlay onClose={() => { setConfirmRemove(null); setRemoveError(null); }}>
+          <div style={{ padding: '14px 18px 12px', borderBottom: '1px solid var(--border)' }}>
+            <h3 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>{t('projects.members.confirmRemove.title')}</h3>
+          </div>
+          <div style={{ padding: '12px 18px' }}>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5 }}
               dangerouslySetInnerHTML={{ __html: t('projects.members.confirmRemove.message', { name: displayName(confirmRemove.userId) }) }}
             />
-            {removeError && (
-              <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-xl px-3 py-2 mb-4">{removeError}</p>
-            )}
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setConfirmRemove(null); setRemoveError(null); }}
-                className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
-              >
-                {t('common.cancel')}
-              </button>
-              <button
-                onClick={handleRemove}
-                disabled={removingId === confirmRemove.userId}
-                className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-              >
-                {removingId === confirmRemove.userId
-                  ? t('projects.members.confirmRemove.removing')
-                  : t('projects.members.confirmRemove.confirm')}
-              </button>
-            </div>
+            {removeError && <p style={{ margin: '8px 0 0', fontSize: 11, color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '5px 10px' }}>{removeError}</p>}
           </div>
-        </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '10px 18px 14px', borderTop: '1px solid var(--border)' }}>
+            <button onClick={() => { setConfirmRemove(null); setRemoveError(null); }} style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, background: 'transparent', color: 'var(--text-muted)', border: 'none', cursor: 'pointer' }}>{t('common.cancel')}</button>
+            <button
+              onClick={handleRemove}
+              disabled={removingId === confirmRemove.userId}
+              style={{ padding: '5px 12px', fontSize: 12, fontWeight: 500, background: 'var(--danger)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', opacity: removingId === confirmRemove.userId ? 0.5 : 1 }}
+            >
+              {removingId === confirmRemove.userId ? t('projects.members.confirmRemove.removing') : t('projects.members.confirmRemove.confirm')}
+            </button>
+          </div>
+        </ModalOverlay>
       )}
     </div>
   );

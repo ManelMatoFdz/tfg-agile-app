@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import './index.css';
 import './i18n';
+import './store/themeStore'; // applies saved theme before first render
 import App from './App';
 
 const queryClient = new QueryClient();

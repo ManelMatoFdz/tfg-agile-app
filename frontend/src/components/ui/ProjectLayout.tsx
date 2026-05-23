@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ChevronRight, LayoutDashboard, ListChecks, RefreshCw, Users, Layers, BarChart2, Settings } from 'lucide-react';
 import { projectsApi } from '../../api/projects';
 import type { Project } from '../../types';
 
 const TABS = [
-  { key: 'board',    path: 'board',    icon: 'M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7' },
-  { key: 'backlog',  path: 'backlog',  icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2' },
-  { key: 'sprints',  path: 'sprints',  icon: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
-  { key: 'members',  path: 'members',  icon: 'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z' },
-  { key: 'poker',    path: 'poker',    icon: 'M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z' },
-  { key: 'metrics',  path: 'metrics',  icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
-  { key: 'settings', path: 'settings', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z' },
+  { key: 'board',    path: 'board',    Icon: LayoutDashboard },
+  { key: 'backlog',  path: 'backlog',  Icon: ListChecks      },
+  { key: 'sprints',  path: 'sprints',  Icon: RefreshCw       },
+  { key: 'members',  path: 'members',  Icon: Users           },
+  { key: 'poker',    path: 'poker',    Icon: Layers          },
+  { key: 'metrics',  path: 'metrics',  Icon: BarChart2       },
+  { key: 'settings', path: 'settings', Icon: Settings        },
 ] as const;
 
 export default function ProjectLayout() {
@@ -26,68 +27,119 @@ export default function ProjectLayout() {
 
   return (
     <div>
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-1.5 text-xs text-gray-400 mb-4">
-        <Link to={`/workspaces/${workspaceId}`} className="hover:text-primary-600 transition-colors font-medium">
+      {/* ── Breadcrumb ── */}
+      <nav className="flex items-center gap-1 mb-3" style={{ fontSize: 11 }}>
+        <Link
+          to={`/workspaces/${workspaceId}`}
+          className="transition-colors no-underline"
+          style={{ color: 'var(--text-faint)', transitionDuration: 'var(--duration)' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
+        >
           {t('projects.breadcrumb')}
         </Link>
-        <svg className="w-3 h-3 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-        </svg>
-        <span className="text-gray-600 font-semibold truncate">{project?.name ?? '…'}</span>
+        <ChevronRight size={11} style={{ color: 'var(--text-faint)', flexShrink: 0 }} strokeWidth={2} />
+        <span className="font-semibold truncate" style={{ color: 'var(--text-muted)' }}>
+          {project?.name ?? '…'}
+        </span>
       </nav>
 
-      {/* Project header + tabs — unified card */}
-      <div className="bg-white border border-gray-200 rounded-xl mb-5 overflow-hidden">
-        {/* Project info */}
-        {project && (
-          <div className="px-5 pt-4 pb-3 border-b border-gray-100">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-primary-50 border border-primary-100 flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M3 7a2 2 0 012-2h4a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2V7zm0 8a2 2 0 012-2h4a2 2 0 012 2v2a2 2 0 01-2 2H5a2 2 0 01-2-2v-2zm10-8a2 2 0 012-2h4a2 2 0 012 2v2a2 2 0 01-2 2h-4a2 2 0 01-2-2V7zm0 8a2 2 0 012-2h4a2 2 0 012 2v2a2 2 0 01-2 2h-4a2 2 0 01-2-2v-2z" />
-                </svg>
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-base font-bold text-gray-900 tracking-tight truncate">{project.name}</h1>
-                  {project.visibility === 'WORKSPACE' ? (
-                    <span className="text-[10px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200 px-1.5 py-0.5 rounded-md flex-shrink-0">
-                      {t('projects.settings.visibility.WORKSPACE')}
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-semibold bg-gray-50 text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded-md flex-shrink-0">
-                      {t('projects.settings.visibility.PRIVATE')}
-                    </span>
-                  )}
-                </div>
-                {project.description && (
-                  <p className="text-xs text-gray-400 truncate mt-0.5">{project.description}</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+      {/* ── Project header ── */}
+      <div className="mb-0 pb-3" style={{ borderBottom: '1px solid var(--border)' }}>
+        <div className="flex items-start gap-2.5">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1
+                className="font-bold truncate m-0 leading-tight"
+                style={{ fontSize: 16, color: 'var(--text)', letterSpacing: '-0.025em' }}
+              >
+                {project?.name ?? <span style={{ color: 'var(--text-faint)' }}>…</span>}
+              </h1>
 
-        {/* Tabs */}
-        <nav className="flex gap-0.5 overflow-x-auto px-3 py-2">
-          {TABS.map(({ key, path, icon }) => (
+              {project && (
+                project.visibility === 'WORKSPACE' ? (
+                  <span
+                    className="shrink-0 font-semibold leading-none"
+                    style={{
+                      fontSize: 10, letterSpacing: '0.03em',
+                      padding: '2px 6px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'var(--success-bg)',
+                      color: 'var(--success)',
+                      border: '1px solid transparent',
+                    }}
+                  >
+                    {t('projects.settings.visibility.WORKSPACE')}
+                  </span>
+                ) : (
+                  <span
+                    className="shrink-0 font-semibold leading-none"
+                    style={{
+                      fontSize: 10, letterSpacing: '0.03em',
+                      padding: '2px 6px',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'var(--bg-hover)',
+                      color: 'var(--text-faint)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    {t('projects.settings.visibility.PRIVATE')}
+                  </span>
+                )
+              )}
+            </div>
+
+            {project?.description && (
+              <p
+                className="m-0 mt-0.5 truncate"
+                style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}
+              >
+                {project.description}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Tabs ── */}
+      <div
+        className="mb-5 overflow-x-auto"
+        style={{ borderBottom: '1px solid var(--border)', marginTop: -1 }}
+      >
+        <nav className="flex" style={{ gap: 0 }}>
+          {TABS.map(({ key, path, Icon }) => (
             <NavLink
               key={key}
               to={`/workspaces/${workspaceId}/projects/${projectId}/${path}`}
-              className={({ isActive }) =>
-                `flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold whitespace-nowrap rounded-lg transition-all duration-150 ${
-                  isActive
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : 'text-gray-500 hover:text-gray-800 hover:bg-gray-100'
-                }`
-              }
+              className="no-underline shrink-0"
+              style={({ isActive }) => ({
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                padding: '9px 12px',
+                fontSize: 12,
+                fontWeight: isActive ? 600 : 500,
+                whiteSpace: 'nowrap',
+                color: isActive ? 'var(--text)' : 'var(--text-muted)',
+                borderBottom: `2px solid ${isActive ? 'var(--accent)' : 'transparent'}`,
+                marginBottom: -1,
+                transition: `color var(--duration), border-color var(--duration)`,
+                cursor: 'pointer',
+              })}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLElement;
+                if (!el.classList.contains('active')) el.style.color = 'var(--text)';
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLElement;
+                if (el.style.borderBottomColor === 'transparent' || !el.style.borderBottomColor) {
+                  el.style.color = 'var(--text-muted)';
+                }
+              }}
             >
               {({ isActive }) => (
                 <>
-                  <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={isActive ? 2.25 : 1.75} d={icon} />
-                  </svg>
+                  <Icon size={12} strokeWidth={isActive ? 2.25 : 1.75} style={{ flexShrink: 0 }} />
                   {t(`projects.tabs.${key}`)}
                 </>
               )}
@@ -96,7 +148,7 @@ export default function ProjectLayout() {
         </nav>
       </div>
 
-      {/* Tab content */}
+      {/* ── Content ── */}
       <Outlet />
     </div>
   );

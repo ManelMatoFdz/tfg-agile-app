@@ -30,7 +30,6 @@ export default function TaskModal({ task, defaultStatus = 'TODO', onClose, onSav
   const [description, setDescription] = useState(task?.description ?? '');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? 'MEDIUM');
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? defaultStatus);
-  const [storyPoints, setStoryPoints] = useState<string>(task?.storyPoints?.toString() ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -44,7 +43,6 @@ export default function TaskModal({ task, defaultStatus = 'TODO', onClose, onSav
         title: title.trim(),
         description: description.trim() || undefined,
         priority,
-        storyPoints: storyPoints ? parseInt(storyPoints, 10) : null,
       };
       await onSave(dto);
       if (isEdit && onMove && status !== task?.status) {
@@ -148,18 +146,18 @@ export default function TaskModal({ task, defaultStatus = 'TODO', onClose, onSav
             </div>
           )}
 
-          {/* Story points */}
-          <div className={isEdit ? 'col-span-2' : ''}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.storyPoints')}</label>
-            <input
-              type="number"
-              min="0"
-              max="100"
-              value={storyPoints}
-              onChange={(e) => setStoryPoints(e.target.value)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
-            />
-          </div>
+          {/* Story points (read-only, set via Planning Poker) */}
+          {isEdit && (
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.storyPoints')}</label>
+              <div className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50/60 text-gray-500">
+                {task?.storyPoints != null
+                  ? <><span className="font-semibold text-gray-800">{task.storyPoints}</span><span className="text-xs">{t('tasks.modal.storyPointsPoker')}</span></>
+                  : <span className="italic">{t('tasks.modal.storyPointsUnestimated')}</span>
+                }
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Actions */}

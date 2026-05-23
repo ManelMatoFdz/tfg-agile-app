@@ -37,12 +37,12 @@ class SprintControllerTest {
         UUID taskId = UUID.randomUUID();
 
         CreateSprintRequestDto createRequest = new CreateSprintRequestDto("Sprint", "Goal", LocalDate.now(), LocalDate.now().plusDays(14));
-        UpdateSprintRequestDto updateRequest = new UpdateSprintRequestDto("Sprint 2", "Goal 2", LocalDate.now(), LocalDate.now().plusDays(7));
+        UpdateSprintRequestDto updateRequest = new UpdateSprintRequestDto("Sprint 2", "Goal 2", LocalDate.now(), LocalDate.now().plusDays(7), null);
         AssignTaskToSprintRequestDto assignRequest = new AssignTaskToSprintRequestDto(List.of(taskId));
 
         SprintResponseDto sprintResponse = new SprintResponseDto(
                 sprintId, projectId, "Sprint", "Goal", SprintStatus.PLANNING,
-                LocalDate.now(), LocalDate.now().plusDays(14), Instant.now(), Instant.now()
+                LocalDate.now(), LocalDate.now().plusDays(14), null, Instant.now(), Instant.now()
         );
 
         TaskResponseDto taskResponse = new TaskResponseDto(
@@ -57,7 +57,7 @@ class SprintControllerTest {
         when(sprintService.createSprint(projectId, createRequest, callerId)).thenReturn(sprintResponse);
         when(sprintService.updateSprint(sprintId, updateRequest, callerId)).thenReturn(sprintResponse);
         when(sprintService.activateSprint(sprintId, callerId)).thenReturn(sprintResponse);
-        when(sprintService.completeSprint(sprintId, callerId)).thenReturn(sprintResponse);
+        when(sprintService.completeSprint(sprintId, null, callerId)).thenReturn(sprintResponse);
         when(sprintService.assignTasksToSprint(sprintId, assignRequest, callerId)).thenReturn(List.of(taskResponse));
         when(sprintService.removeTaskFromSprint(sprintId, taskId, callerId)).thenReturn(taskResponse);
 
@@ -68,7 +68,7 @@ class SprintControllerTest {
         assertThat(controller.createSprint(projectId, createRequest, callerId).getStatusCode().value()).isEqualTo(201);
         assertThat(controller.updateSprint(sprintId, updateRequest, callerId)).isEqualTo(sprintResponse);
         assertThat(controller.activateSprint(sprintId, callerId)).isEqualTo(sprintResponse);
-        assertThat(controller.completeSprint(sprintId, callerId)).isEqualTo(sprintResponse);
+        assertThat(controller.completeSprint(sprintId, null, callerId)).isEqualTo(sprintResponse);
         assertThat(controller.assignTasksToSprint(sprintId, assignRequest, callerId)).hasSize(1);
         assertThat(controller.removeTaskFromSprint(sprintId, taskId, callerId)).isEqualTo(taskResponse);
     }

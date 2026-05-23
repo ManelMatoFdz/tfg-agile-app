@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Plus, ClipboardList } from 'lucide-react';
 import type { Task, TaskPriority, TaskStatus } from '../../../types';
 import { sprintsApi } from '../../../api/sprints';
 import { tasksApi } from '../../../api/tasks';
@@ -11,18 +12,26 @@ import { useProjectMember } from '../../../hooks/useProjectMember';
 
 const PRIORITY_ORDER: TaskPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
-const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  CRITICAL: 'bg-red-100 text-red-600',
-  HIGH: 'bg-amber-100 text-amber-600',
-  MEDIUM: 'bg-blue-100 text-blue-600',
-  LOW: 'bg-gray-100 text-gray-500',
+/* Theme-independent hex values (same palette as TaskCard) */
+const PRIORITY_COLOR: Record<TaskPriority, string> = {
+  CRITICAL: '#ef4444',
+  HIGH:     '#f59e0b',
+  MEDIUM:   '#3b82f6',
+  LOW:      '#9ca3af',
 };
 
-const STATUS_COLORS: Record<TaskStatus, string> = {
-  TODO: 'bg-gray-100 text-gray-500',
-  IN_PROGRESS: 'bg-blue-100 text-blue-600',
-  IN_REVIEW: 'bg-amber-100 text-amber-600',
-  DONE: 'bg-emerald-100 text-emerald-600',
+const PRIORITY_BG: Record<TaskPriority, string> = {
+  CRITICAL: 'rgba(239,68,68,0.08)',
+  HIGH:     'rgba(245,158,11,0.08)',
+  MEDIUM:   'rgba(59,130,246,0.08)',
+  LOW:      'rgba(156,163,175,0.08)',
+};
+
+const STATUS_COLOR: Record<TaskStatus, string> = {
+  TODO:        '#9ca3af',
+  IN_PROGRESS: '#3b82f6',
+  IN_REVIEW:   '#f59e0b',
+  DONE:        '#22c55e',
 };
 
 export default function BacklogPage() {
@@ -76,34 +85,67 @@ export default function BacklogPage() {
   };
 
   return (
-    <div className="space-y-4">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <h2 className="text-base font-semibold text-gray-900">{t('projects.backlog.title')}</h2>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+            {t('projects.backlog.title')}
+          </h2>
           {!loading && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-400 bg-white border border-gray-200 px-2 py-0.5 rounded-full">
-                {tasks.length} {tasks.length === 1 ? t('projects.backlog.task') : t('projects.backlog.tasks')}
+            <>
+              <span style={{
+                fontSize: 11,
+                fontWeight: 500,
+                color: 'var(--text-faint)',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '1px 6px',
+                fontFamily: 'var(--font-mono)',
+              }}>
+                {tasks.length}
               </span>
               {totalPoints > 0 && (
-                <span className="text-xs font-medium text-primary-600 bg-primary-50 px-2 py-0.5 rounded-full">
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: 'var(--accent)',
+                  background: 'var(--accent-muted)',
+                  borderRadius: 'var(--radius-sm)',
+                  padding: '1px 6px',
+                  fontFamily: 'var(--font-mono)',
+                }}>
                   {totalPoints} pts
                 </span>
               )}
-            </div>
+            </>
           )}
         </div>
+
         {canCreateTask && (
           <button
             onClick={() => setModalTask(null)}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors cursor-pointer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              padding: '5px 10px',
+              fontSize: 12,
+              fontWeight: 500,
+              background: 'var(--accent)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 'var(--radius-md)',
+              cursor: 'pointer',
+              transition: `background var(--duration)`,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+            <Plus size={12} strokeWidth={2.5} />
             {t('projects.backlog.newTask')}
           </button>
         )}
@@ -111,65 +153,169 @@ export default function BacklogPage() {
 
       {/* Content */}
       {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+          <div style={{
+            width: 24,
+            height: 24,
+            border: '2px solid var(--border)',
+            borderTopColor: 'var(--accent)',
+            borderRadius: '50%',
+            animation: 'spin 0.7s linear infinite',
+          }} />
         </div>
       ) : tasks.length === 0 ? (
-        <div className="glass-card-strong p-12 text-center">
-          <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
+        <div style={{
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '48px 24px',
+          textAlign: 'center',
+        }}>
+          <div style={{
+            width: 40,
+            height: 40,
+            background: 'var(--bg-hover)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 12px',
+          }}>
+            <ClipboardList size={18} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
           </div>
-          <p className="text-sm font-medium text-gray-700">{t('projects.backlog.noTasks')}</p>
-          <p className="text-xs text-gray-400 mt-1">{t('projects.backlog.noTasksSubtitle')}</p>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>
+            {t('projects.backlog.noTasks')}
+          </p>
+          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
+            {t('projects.backlog.noTasksSubtitle')}
+          </p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {PRIORITY_ORDER.map((priority) => {
             const group = tasksByPriority(priority);
             if (group.length === 0) return null;
             return (
-              <div key={priority} className="glass-card-strong overflow-hidden">
+              <div
+                key={priority}
+                style={{
+                  background: 'var(--bg-elevated)',
+                  border: '1px solid var(--border)',
+                  borderLeft: `2px solid ${PRIORITY_COLOR[priority]}`,
+                  borderRadius: 'var(--radius-md)',
+                  overflow: 'hidden',
+                }}
+              >
                 {/* Priority group header */}
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50/60 border-b border-gray-100">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PRIORITY_COLORS[priority]}`}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  background: PRIORITY_BG[priority],
+                  borderBottom: '1px solid var(--border)',
+                }}>
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    color: PRIORITY_COLOR[priority],
+                  }}>
                     {t(`tasks.priority.${priority}`)}
                   </span>
-                  <span className="text-xs text-gray-400">{group.length}</span>
+                  <span style={{
+                    fontSize: 10,
+                    color: 'var(--text-faint)',
+                    fontFamily: 'var(--font-mono)',
+                    fontWeight: 600,
+                  }}>
+                    {group.length}
+                  </span>
                 </div>
 
                 {/* Task rows */}
-                <div className="divide-y divide-gray-50">
-                  {group.map((task) => (
+                <div>
+                  {group.map((task, idx) => (
                     <button
                       key={task.id}
                       onClick={() => setModalTask(task)}
-                      className="w-full text-left flex items-center gap-3 px-4 py-3 hover:bg-gray-50/60 transition-colors cursor-pointer group"
+                      style={{
+                        width: '100%',
+                        textAlign: 'left',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        padding: '8px 12px',
+                        background: 'transparent',
+                        border: 'none',
+                        borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+                        cursor: 'pointer',
+                        transition: `background var(--duration)`,
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
                       {/* Title + description */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate group-hover:text-primary-700 transition-colors">
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{
+                          margin: 0,
+                          fontSize: 12,
+                          fontWeight: 500,
+                          color: 'var(--text)',
+                          overflow: 'hidden',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis',
+                        }}>
                           {task.title}
                         </p>
                         {task.description && (
-                          <p className="text-xs text-gray-400 truncate mt-0.5">{task.description}</p>
+                          <p style={{
+                            margin: '1px 0 0',
+                            fontSize: 11,
+                            color: 'var(--text-faint)',
+                            overflow: 'hidden',
+                            whiteSpace: 'nowrap',
+                            textOverflow: 'ellipsis',
+                          }}>
+                            {task.description}
+                          </p>
                         )}
                       </div>
 
                       {/* Status */}
-                      <span className={`flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${STATUS_COLORS[task.status]}`}>
+                      <span style={{
+                        flexShrink: 0,
+                        fontSize: 10,
+                        fontWeight: 600,
+                        letterSpacing: '0.04em',
+                        textTransform: 'uppercase',
+                        color: STATUS_COLOR[task.status],
+                        fontFamily: 'var(--font-mono)',
+                      }}>
                         {t(`tasks.status.${task.status}`)}
                       </span>
 
                       {/* Story points */}
                       {task.storyPoints != null ? (
-                        <span className="flex-shrink-0 text-xs font-medium text-gray-400 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full w-14 text-center">
-                          {task.storyPoints} pts
+                        <span style={{
+                          flexShrink: 0,
+                          fontSize: 10,
+                          fontWeight: 600,
+                          color: 'var(--text-faint)',
+                          background: 'var(--bg-hover)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-sm)',
+                          padding: '1px 5px',
+                          fontFamily: 'var(--font-mono)',
+                          minWidth: 28,
+                          textAlign: 'center',
+                        }}>
+                          {task.storyPoints}
                         </span>
                       ) : (
-                        <span className="flex-shrink-0 w-14" />
+                        <span style={{ flexShrink: 0, width: 28 }} />
                       )}
                     </button>
                   ))}

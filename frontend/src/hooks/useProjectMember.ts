@@ -35,7 +35,8 @@ export function useProjectMember(projectId: string | undefined): ProjectMemberPe
     setLoading(true);
     projectsApi
       .getMembers(projectId)
-      .then((members) => {
+      .then((response) => {
+        const members = response.data;
         setMember(members.find((m) => m.userId === currentUser.id) ?? null);
       })
       .catch(() => setMember(null))

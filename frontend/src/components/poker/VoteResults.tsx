@@ -63,7 +63,7 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
             <div className="w-14 h-20 rounded-xl border-2 border-primary-300 bg-primary-50 flex items-center justify-center text-lg font-bold text-primary-700">
               {vote.value}
             </div>
-            <span className="text-xs text-gray-500 max-w-[56px] truncate">
+            <span className="text-xs text-gray-500 max-w-[3.5rem] truncate">
               {participantMap[vote.userId] ?? '?'}
             </span>
           </div>

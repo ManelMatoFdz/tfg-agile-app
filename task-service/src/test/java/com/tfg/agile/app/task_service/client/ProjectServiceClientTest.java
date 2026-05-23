@@ -59,7 +59,7 @@ class ProjectServiceClientTest {
 
         assertThatThrownBy(() -> client.getMemberPermissions(UUID.randomUUID(), UUID.randomUUID()))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Not a member of this project");
+                .hasMessage("NOT_PROJECT_MEMBER");
     }
 }
 
