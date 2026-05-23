@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.time.Instant;
 import java.util.List;
@@ -30,9 +31,12 @@ class PokerSessionControllerTest {
     @Mock
     private PokerSessionService service;
 
+    @Mock
+    private SimpMessagingTemplate messagingTemplate;
+
     @Test
     void endpoints_delegateToService() {
-        PokerSessionController controller = new PokerSessionController(service);
+        PokerSessionController controller = new PokerSessionController(service, messagingTemplate);
         UUID projectId = UUID.randomUUID();
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();

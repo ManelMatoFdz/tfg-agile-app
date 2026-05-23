@@ -15,6 +15,7 @@
     "previous": "Previous",
     "next": "Next",
     "confirm": "Confirm",
+    "close": "Close",
     "unknownUser": "Unknown user"
   },
   "auth": {
@@ -354,6 +355,21 @@
         "adding": "Adding...",
         "error": "Error adding member."
       },
+      "addTeam": {
+        "button": "Add team",
+        "title": "Add from team",
+        "noTeams": "No teams in this workspace.",
+        "selectMembers": "Select members to add",
+        "alreadyMember": "Already in project",
+        "selectAll": "Select all",
+        "deselectAll": "Deselect all",
+        "noMembersAvailable": "All team members are already in the project.",
+        "back": "Back",
+        "submit": "Add selected",
+        "adding": "Adding...",
+        "error": "Error adding team members.",
+        "selected": "{{count}} selected"
+      },
       "errors": {
         "changeRole": "Error changing role.",
         "changeScrumRole": "Error changing Scrum role.",
@@ -446,6 +462,13 @@
       "complete": "Complete",
       "completeConfirm": "Complete? Unfinished tasks will return to the backlog.",
       "completeError": "Error completing the sprint.",
+      "deleteConfirm": "Delete this sprint?",
+      "deleteError": "Error deleting the sprint.",
+      "edit": {
+        "title": "Edit sprint",
+        "submit": "Save changes",
+        "error": "Error saving the sprint."
+      },
       "loadError": "Error loading sprints.",
       "status": {
         "PLANNING": "Planning",
@@ -534,6 +557,7 @@
     "modal": {
       "titleCreate": "New task",
       "titleEdit": "Edit task",
+      "titleView": "Task details",
       "titleField": "Title",
       "titlePlaceholder": "Task name",
       "description": "Description",

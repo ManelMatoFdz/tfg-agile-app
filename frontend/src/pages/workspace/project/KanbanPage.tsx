@@ -12,7 +12,7 @@ export default function KanbanPage() {
   const { t } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
 
-  const { canMoveTask, canDeleteTask } = useProjectMember(projectId);
+  const { canMoveTask, canDeleteSprintTask } = useProjectMember(projectId);
 
   const [activeSprint, setActiveSprint] = useState<Sprint | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -145,7 +145,8 @@ export default function KanbanPage() {
             onTasksChange={setTasks}
             disableCreate={!canMoveTask}
             canMove={canMoveTask}
-            canDelete={canDeleteTask}
+            canDelete={canDeleteSprintTask}
+            readOnly={!canMoveTask}
           />
         </>
       )}

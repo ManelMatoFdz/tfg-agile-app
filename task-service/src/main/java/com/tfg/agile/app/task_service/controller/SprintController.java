@@ -77,6 +77,13 @@ public class SprintController {
         return sprintService.completeSprint(sprintId, dto, callerId);
     }
 
+    @DeleteMapping("/sprints/{sprintId}")
+    public ResponseEntity<Void> deleteSprint(@PathVariable("sprintId") UUID sprintId,
+                                             @AuthenticationPrincipal UUID callerId) {
+        sprintService.deleteSprint(sprintId, callerId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/sprints/{sprintId}/tasks")
     public List<TaskResponseDto> assignTasksToSprint(
             @PathVariable("sprintId") UUID sprintId,

@@ -208,6 +208,110 @@ function CreateSprintModal({ projectId, onClose, onCreate }: CreateSprintModalPr
   );
 }
 
+// ── EditSprintModal ───────────────────────────────────────────────────────────
+
+interface EditSprintModalProps {
+  sprint: Sprint;
+  onClose: () => void;
+  onUpdate: (sprint: Sprint) => void;
+}
+
+function EditSprintModal({ sprint, onClose, onUpdate }: EditSprintModalProps) {
+  const { t } = useTranslation();
+  const [name, setName] = useState(sprint.name);
+  const [goal, setGoal] = useState(sprint.goal ?? '');
+  const [startDate, setStartDate] = useState(sprint.startDate ?? '');
+  const [endDate, setEndDate] = useState(sprint.endDate ?? '');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    if (!name.trim()) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const updated = await sprintsApi.updateSprint(sprint.id, {
+        name: name.trim(),
+        goal: goal.trim() || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+      });
+      onUpdate(updated);
+      onClose();
+    } catch {
+      setError(t('projects.sprints.edit.error'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <ModalOverlay onClose={onClose}>
+      <div style={{ ...modalBox, maxWidth: 440 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 12px', borderBottom: '1px solid var(--border)' }}>
+          <h2 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            {t('projects.sprints.edit.title')}
+          </h2>
+          <button onClick={onClose} style={{ ...btnSecondary, padding: 4, borderRadius: 'var(--radius-sm)' }}>
+            <X size={14} />
+          </button>
+        </div>
+
+        <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {error && (
+            <div style={{ fontSize: 11, color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '6px 10px' }}>
+              {error}
+            </div>
+          )}
+          <div>
+            <label style={labelStyle}>{t('projects.sprints.create.name')}</label>
+            <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+              placeholder={t('projects.sprints.create.namePlaceholder')} autoFocus style={inputStyle} />
+          </div>
+          <div>
+            <label style={labelStyle}>
+              {t('projects.sprints.create.goal')}{' '}
+              <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
+            </label>
+            <textarea value={goal} onChange={(e) => setGoal(e.target.value)}
+              placeholder={t('projects.sprints.create.goalPlaceholder')} rows={2}
+              style={{ ...inputStyle, resize: 'none' }} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div>
+              <label style={labelStyle}>
+                {t('projects.sprints.create.startDate')}{' '}
+                <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
+              </label>
+              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>
+                {t('projects.sprints.create.endDate')}{' '}
+                <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
+              </label>
+              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '10px 18px 14px', borderTop: '1px solid var(--border)' }}>
+          <button onClick={onClose} style={btnSecondary}>{t('common.cancel')}</button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading || !name.trim()}
+            style={{ ...btnAccent, opacity: loading || !name.trim() ? 0.5 : 1, cursor: loading || !name.trim() ? 'not-allowed' : 'pointer' }}
+            onMouseEnter={e => { if (!loading && name.trim()) (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent)'; }}
+          >
+            {loading ? '…' : t('projects.sprints.edit.submit')}
+          </button>
+        </div>
+      </div>
+    </ModalOverlay>
+  );
+}
+
 // ── SprintPlanningModal ───────────────────────────────────────────────────────
 
 interface SprintPlanningModalProps {
@@ -505,13 +609,15 @@ export default function SprintsPage() {
   const { t } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
 
-  const { canManageSprint, canPlanSprint, canDeleteTask } = useProjectMember(projectId);
+  const { canManageSprint, canPlanSprint, canDeleteSprintTask } = useProjectMember(projectId);
 
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [showCreate, setShowCreate] = useState(false);
+  const [editSprint, setEditSprint] = useState<Sprint | null>(null);
+  const [confirmAction, setConfirmAction] = useState<{ type: 'activate' | 'delete'; sprintId: string } | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sprintTasks, setSprintTasks] = useState<Record<string, Task[]>>({});
   const [loadingTasksId, setLoadingTasksId] = useState<string | null>(null);
@@ -519,7 +625,6 @@ export default function SprintsPage() {
   const [reviewSprintId, setReviewSprintId] = useState<string | null>(null);
   const [editTask, setEditTask] = useState<Task | null | undefined>(undefined);
   const [editTaskSprintId, setEditTaskSprintId] = useState<string | null>(null);
-  const [confirmAction, setConfirmAction] = useState<{ type: 'activate'; sprintId: string } | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
@@ -545,6 +650,20 @@ export default function SprintsPage() {
       } finally {
         setLoadingTasksId(null);
       }
+    }
+  };
+
+  const handleDeleteSprint = async (sprintId: string) => {
+    setActionLoading(true);
+    try {
+      await sprintsApi.deleteSprint(sprintId);
+      setSprints((prev) => prev.filter((s) => s.id !== sprintId));
+      setSprintTasks((prev) => { const next = { ...prev }; delete next[sprintId]; return next; });
+      setConfirmAction(null);
+    } catch {
+      setError(t('projects.sprints.deleteError'));
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -767,15 +886,50 @@ export default function SprintsPage() {
                             {t('common.cancel')}
                           </button>
                         </div>
+                      ) : confirmThis === 'delete' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t('projects.sprints.deleteConfirm')}</span>
+                          <button
+                            onClick={() => handleDeleteSprint(sprint.id)}
+                            disabled={actionLoading}
+                            style={{ fontSize: 11, fontWeight: 600, color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          >
+                            {t('common.delete')}
+                          </button>
+                          <button
+                            onClick={() => setConfirmAction(null)}
+                            style={{ fontSize: 11, color: 'var(--text-faint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                          >
+                            {t('common.cancel')}
+                          </button>
+                        </div>
                       ) : (
-                        <button
-                          onClick={() => setConfirmAction({ type: 'activate', sprintId: sprint.id })}
-                          style={{ ...btnOutline, color: 'var(--accent)', borderColor: 'var(--accent)' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-muted)')}
-                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                        >
-                          {t('projects.sprints.activate')}
-                        </button>
+                        <>
+                          <button
+                            onClick={() => setEditSprint(sprint)}
+                            style={btnOutline}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            {t('common.edit')}
+                          </button>
+                          <button
+                            onClick={() => setConfirmAction({ type: 'delete', sprintId: sprint.id })}
+                            style={{ ...btnOutline, color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--danger-bg)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            {t('common.delete')}
+                          </button>
+                          <button
+                            onClick={() => setConfirmAction({ type: 'activate', sprintId: sprint.id })}
+                            style={{ ...btnOutline, color: 'var(--accent)', borderColor: 'var(--accent)' }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-muted)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            {t('projects.sprints.activate')}
+                          </button>
+                        </>
                       )
                     )}
 
@@ -880,7 +1034,7 @@ export default function SprintsPage() {
                             )}
 
                             {/* Remove */}
-                            {sprint.status !== 'COMPLETED' && canPlanSprint && (
+                            {sprint.status === 'PLANNING' && canPlanSprint && (
                               <button
                                 onClick={() => handleRemoveFromSprint(sprint.id, task.id)}
                                 title={t('projects.sprints.removeTask')}
@@ -888,12 +1042,11 @@ export default function SprintsPage() {
                                   flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                                   width: 20, height: 20, border: 'none', background: 'transparent',
                                   borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                                  color: 'var(--text-faint)', opacity: 0,
-                                  transition: `opacity var(--duration), background var(--duration), color var(--duration)`,
+                                  color: 'var(--text-muted)',
+                                  transition: `background var(--duration), color var(--duration)`,
                                 }}
                                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--danger-bg)'; (e.currentTarget as HTMLElement).style.color = 'var(--danger)'; }}
-                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-faint)'; }}
-                                // Show on parent hover via CSS can't be done inline; use always visible at lower opacity
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; }}
                               >
                                 <X size={11} strokeWidth={2} />
                               </button>
@@ -904,7 +1057,7 @@ export default function SprintsPage() {
                     )}
 
                     {/* Sprint planning button */}
-                    {sprint.status !== 'COMPLETED' && canPlanSprint && (
+                    {sprint.status === 'PLANNING' && canPlanSprint && (
                       <div style={{ padding: '6px 12px 10px', borderTop: '1px solid var(--border)' }}>
                         <button
                           onClick={() => { setPlanningSprintId(sprint.id); if (!sprintTasks[sprint.id]) handleExpand(sprint.id); }}
@@ -939,6 +1092,17 @@ export default function SprintsPage() {
         />
       )}
 
+      {editSprint && (
+        <EditSprintModal
+          sprint={editSprint}
+          onClose={() => setEditSprint(null)}
+          onUpdate={(updated) => {
+            setSprints((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+            setEditSprint(null);
+          }}
+        />
+      )}
+
       {planningSprintId && projectId && (
         <SprintPlanningModal
           sprintId={planningSprintId}
@@ -956,8 +1120,8 @@ export default function SprintsPage() {
           defaultStatus="TODO"
           onClose={() => { setEditTask(undefined); setEditTaskSprintId(null); }}
           onSave={handleSaveTask}
-          onMove={editTask ? handleMoveTask : undefined}
-          onDelete={editTask && canDeleteTask ? handleDeleteTask : undefined}
+          onMove={editTask && sprints.find((s) => s.id === editTaskSprintId)?.status === 'ACTIVE' ? handleMoveTask : undefined}
+          onDelete={editTask && canDeleteSprintTask ? handleDeleteTask : undefined}
         />
       )}
 

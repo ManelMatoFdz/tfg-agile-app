@@ -3,9 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Users, Zap } from 'lucide-react';
 import { pokerApi } from '../../../api/poker';
-import type { PokerSession, DeckType, SessionStatus } from '../../../types';
+import type { PokerSession, DeckType, SessionStatus, ParticipantRole } from '../../../types';
 import CreateSessionModal from '../../../components/poker/CreateSessionModal';
+import JoinSessionModal from '../../../components/poker/JoinSessionModal';
 import Alert from '../../../components/ui/Alert';
+import { useAuthStore } from '../../../store/authStore';
+import { useProjectMember } from '../../../hooks/useProjectMember';
 
 const STATUS_STYLE: Record<SessionStatus, { color: string; bg: string }> = {
   LOBBY:    { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
@@ -18,11 +21,14 @@ export default function PokerPage() {
   const { t } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
+  const { member } = useProjectMember(projectId);
 
   const [sessions, setSessions] = useState<PokerSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [pendingSession, setPendingSession] = useState<PokerSession | null>(null);
 
   useEffect(() => {
     if (!projectId) return;
@@ -39,8 +45,44 @@ export default function PokerPage() {
     setSessions((prev) => [session, ...prev]);
   };
 
-  const handleClick = (session: PokerSession) => {
-    navigate(`/workspaces/${workspaceId}/projects/${projectId}/poker/${session.id}`);
+  const goToRoom = (sessionId: string) =>
+    navigate(`/workspaces/${workspaceId}/projects/${projectId}/poker/${sessionId}`);
+
+  const handleClick = async (session: PokerSession) => {
+    if (session.status === 'CLOSED') {
+      goToRoom(session.id);
+      return;
+    }
+    const myParticipant = session.participants.find((p) => p.userId === user?.id);
+    if (myParticipant) {
+      // Already registered — reconnect silently if disconnected, then go to room
+      if (!myParticipant.connected) {
+        try {
+          await pokerApi.joinSession(session.id, {
+            displayName: myParticipant.displayName,
+            role: myParticipant.role,
+          });
+        } catch { /* room page will handle it */ }
+      }
+      goToRoom(session.id);
+      return;
+    }
+    // No scrum role → auto-join as OBSERVER and navigate
+    if (member?.scrumRole == null) {
+      const displayName = user?.fullName || user?.username || 'Observer';
+      try { await pokerApi.joinSession(session.id, { displayName, role: 'OBSERVER' }); }
+      catch { /* room page will handle it */ }
+      goToRoom(session.id);
+      return;
+    }
+    // Has scrum role → show join modal
+    setPendingSession(session);
+  };
+
+  const handleJoin = async (displayName: string, role: ParticipantRole) => {
+    if (!pendingSession) return;
+    await pokerApi.joinSession(pendingSession.id, { displayName, role });
+    goToRoom(pendingSession.id);
   };
 
   const activeSessions = sessions.filter((s) => s.status !== 'CLOSED');
@@ -219,6 +261,14 @@ export default function PokerPage() {
         <CreateSessionModal
           onClose={() => setShowCreate(false)}
           onCreate={handleCreate}
+        />
+      )}
+
+      {pendingSession && (
+        <JoinSessionModal
+          defaultRole={member?.scrumRole === 'PRODUCT_OWNER' ? 'OBSERVER' : 'VOTER'}
+          onClose={() => setPendingSession(null)}
+          onJoin={handleJoin}
         />
       )}
     </div>

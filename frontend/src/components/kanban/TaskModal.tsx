@@ -16,13 +16,14 @@ const PRIORITY_COLORS: Record<TaskPriority, string> = {
 interface Props {
   task?: Task | null;
   defaultStatus?: TaskStatus;
+  readOnly?: boolean;
   onClose: () => void;
   onSave: (dto: CreateTaskDto | UpdateTaskDto) => Promise<void>;
   onMove?: (status: TaskStatus) => Promise<void>;
   onDelete?: () => Promise<void>;
 }
 
-export default function TaskModal({ task, defaultStatus = 'TODO', onClose, onSave, onMove, onDelete }: Props) {
+export default function TaskModal({ task, defaultStatus = 'TODO', readOnly = false, onClose, onSave, onMove, onDelete }: Props) {
   const { t } = useTranslation();
   const isEdit = !!task;
 
@@ -77,7 +78,7 @@ export default function TaskModal({ task, defaultStatus = 'TODO', onClose, onSav
       <div className="w-full max-w-lg glass-card-strong p-6 space-y-4 animate-fade-in">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">
-            {isEdit ? t('tasks.modal.titleEdit') : t('tasks.modal.titleCreate')}
+            {readOnly ? t('tasks.modal.titleView') : isEdit ? t('tasks.modal.titleEdit') : t('tasks.modal.titleCreate')}
           </h2>
           <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,8 +99,9 @@ export default function TaskModal({ task, defaultStatus = 'TODO', onClose, onSav
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder={t('tasks.modal.titlePlaceholder')}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
-            autoFocus
+            readOnly={readOnly}
+            className={`w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none bg-white/60 ${readOnly ? 'text-gray-700 cursor-default' : 'focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400'}`}
+            autoFocus={!readOnly}
           />
         </div>
 
@@ -109,9 +111,10 @@ export default function TaskModal({ task, defaultStatus = 'TODO', onClose, onSav
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder={t('tasks.modal.descriptionPlaceholder')}
+            placeholder={readOnly ? '—' : t('tasks.modal.descriptionPlaceholder')}
             rows={3}
-            className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60 resize-none"
+            readOnly={readOnly}
+            className={`w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none bg-white/60 resize-none ${readOnly ? 'text-gray-700 cursor-default' : 'focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400'}`}
           />
         </div>
 
@@ -119,19 +122,25 @@ export default function TaskModal({ task, defaultStatus = 'TODO', onClose, onSav
           {/* Priority */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.priority')}</label>
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as TaskPriority)}
-              className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
-            >
-              {PRIORITIES.map((p) => (
-                <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
-              ))}
-            </select>
+            {readOnly ? (
+              <div className="flex items-center px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white/60">
+                <span className={`font-medium ${PRIORITY_COLORS[priority]}`}>{t(`tasks.priority.${priority}`)}</span>
+              </div>
+            ) : (
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
+              >
+                {PRIORITIES.map((p) => (
+                  <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
+                ))}
+              </select>
+            )}
           </div>
 
-          {/* Status (edit only) */}
-          {isEdit && (
+          {/* Status (edit only, and only when status changes are allowed i.e. sprint tasks) */}
+          {isEdit && onMove && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.status')}</label>
               <select
@@ -163,7 +172,7 @@ export default function TaskModal({ task, defaultStatus = 'TODO', onClose, onSav
         {/* Actions */}
         <div className="flex items-center justify-between pt-2">
           <div>
-            {isEdit && onDelete && (
+            {!readOnly && isEdit && onDelete && (
               confirmDelete ? (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500">{t('tasks.modal.deleteConfirm')}</span>
@@ -194,17 +203,19 @@ export default function TaskModal({ task, defaultStatus = 'TODO', onClose, onSav
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors cursor-pointer"
+              className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors cursor-pointer ${readOnly ? 'bg-primary-600 text-white hover:bg-primary-700' : 'text-gray-600 hover:text-gray-800'}`}
             >
-              {t('common.cancel')}
+              {readOnly ? t('common.close') : t('common.cancel')}
             </button>
-            <button
-              onClick={handleSave}
-              disabled={loading || !title.trim()}
-              className="px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
-            >
-              {loading ? '...' : isEdit ? t('tasks.modal.save') : t('tasks.modal.create')}
-            </button>
+            {!readOnly && (
+              <button
+                onClick={handleSave}
+                disabled={loading || !title.trim()}
+                className="px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+              >
+                {loading ? '...' : isEdit ? t('tasks.modal.save') : t('tasks.modal.create')}
+              </button>
+            )}
           </div>
         </div>
       </div>

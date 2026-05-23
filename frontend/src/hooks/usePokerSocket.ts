@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import { useAuthStore } from '../store/authStore';
-import type { PokerSession, PokerRound } from '../types';
+import type { PokerSession, PokerRound, PokerParticipant } from '../types';
 
 interface VoteStatus {
   [userId: string]: boolean;
@@ -12,6 +12,7 @@ interface UsePokerSocketReturn {
   voteStatus: VoteStatus;
   revealedRound: PokerRound | null;
   sessionState: PokerSession | null;
+  participantUpdate: PokerParticipant[] | null;
   sendVote: (value: string) => void;
   sendReveal: () => void;
   sendNext: (finalEstimate: number | null) => void;
@@ -25,6 +26,7 @@ export function usePokerSocket(sessionId: string | undefined): UsePokerSocketRet
   const [voteStatus, setVoteStatus] = useState<VoteStatus>({});
   const [revealedRound, setRevealedRound] = useState<PokerRound | null>(null);
   const [sessionState, setSessionState] = useState<PokerSession | null>(null);
+  const [participantUpdate, setParticipantUpdate] = useState<PokerParticipant[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -55,8 +57,8 @@ export function usePokerSocket(sessionId: string | undefined): UsePokerSocketRet
           setSessionState(JSON.parse(msg.body));
         });
 
-        client.subscribe(`/topic/poker/${sessionId}/participants`, () => {
-          // Participant changes are reflected via /state topic
+        client.subscribe(`/topic/poker/${sessionId}/participants`, (msg) => {
+          setParticipantUpdate(JSON.parse(msg.body));
         });
 
         client.subscribe('/user/queue/poker/errors', (msg) => {
@@ -121,6 +123,7 @@ export function usePokerSocket(sessionId: string | undefined): UsePokerSocketRet
     voteStatus,
     revealedRound,
     sessionState,
+    participantUpdate,
     sendVote,
     sendReveal,
     sendNext,

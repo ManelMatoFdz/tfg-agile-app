@@ -113,7 +113,7 @@ public class SprintService {
     public SprintResponseDto activateSprint(UUID sprintId, UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
-        requirePOOrSMOrAdmin(perms);
+        requireScrumMasterOrAdmin(perms);
 
         if (sprint.getStatus() != SprintStatus.PLANNING) {
             throw new ConflictException("SPRINT_NOT_PLANNING");
@@ -130,7 +130,7 @@ public class SprintService {
     public SprintResponseDto completeSprint(UUID sprintId, CompleteSprintRequestDto dto, UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
-        requirePOOrSMOrAdmin(perms);
+        requireScrumMasterOrAdmin(perms);
 
         if (sprint.getStatus() != SprintStatus.ACTIVE) {
             throw new ConflictException("SPRINT_NOT_ACTIVE");
@@ -153,13 +153,32 @@ public class SprintService {
     }
 
     @Transactional
+    public void deleteSprint(UUID sprintId, UUID callerId) {
+        Sprint sprint = getSprintOrThrow(sprintId);
+        MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
+        requireScrumMasterOrAdmin(perms);
+
+        if (sprint.getStatus() != SprintStatus.PLANNING) {
+            throw new ForbiddenException("ONLY_PLANNING_SPRINTS_CAN_BE_DELETED");
+        }
+
+        taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprintId)
+                .forEach(t -> {
+                    t.setSprintId(null);
+                    taskRepository.save(t);
+                });
+
+        sprintRepository.delete(sprint);
+    }
+
+    @Transactional
     public List<TaskResponseDto> assignTasksToSprint(UUID sprintId, AssignTaskToSprintRequestDto dto, UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
-        requirePOOrSMOrAdmin(perms);
+        requireDeveloperOrPOOrAdmin(perms);
 
-        if (sprint.getStatus() == SprintStatus.COMPLETED) {
-            throw new ForbiddenException("CANNOT_ADD_TASKS_COMPLETED_SPRINT");
+        if (sprint.getStatus() != SprintStatus.PLANNING) {
+            throw new ForbiddenException("CAN_ONLY_ADD_TASKS_TO_PLANNING_SPRINT");
         }
 
         return dto.taskIds().stream()
@@ -179,7 +198,11 @@ public class SprintService {
     public TaskResponseDto removeTaskFromSprint(UUID sprintId, UUID taskId, UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
-        requirePOOrSMOrAdmin(perms);
+        requireDeveloperOrPOOrAdmin(perms);
+
+        if (sprint.getStatus() != SprintStatus.PLANNING) {
+            throw new ForbiddenException("CAN_ONLY_REMOVE_TASKS_FROM_PLANNING_SPRINT");
+        }
 
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("TASK_NOT_FOUND"));
@@ -207,10 +230,11 @@ public class SprintService {
         throw new ForbiddenException("SCRUM_MASTER_OR_ADMIN_REQUIRED");
     }
 
-    private void requirePOOrSMOrAdmin(MemberPermissionsDto p) {
+    private void requireDeveloperOrPOOrAdmin(MemberPermissionsDto p) {
         if ("ADMIN".equals(p.role())) return;
-        if ("PRODUCT_OWNER".equals(p.scrumRole()) || "SCRUM_MASTER".equals(p.scrumRole())) return;
-        throw new ForbiddenException("PO_SM_OR_ADMIN_REQUIRED");
+        if ("PRODUCT_OWNER".equals(p.scrumRole())) return;
+        if (!"VIEWER".equals(p.role()) && !"SCRUM_MASTER".equals(p.scrumRole())) return;
+        throw new ForbiddenException("DEVELOPER_OR_PO_OR_ADMIN_REQUIRED");
     }
 
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {

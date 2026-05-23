@@ -15,6 +15,7 @@
     "previous": "Anterior",
     "next": "Seguinte",
     "confirm": "Confirmar",
+    "close": "Pechar",
     "unknownUser": "Usuario descoñecido"
   },
   "auth": {
@@ -354,6 +355,21 @@
         "adding": "Engadindo...",
         "error": "Erro ao engadir o membro."
       },
+      "addTeam": {
+        "button": "Engadir equipo",
+        "title": "Engadir desde equipo",
+        "noTeams": "Non hai equipos neste workspace.",
+        "selectMembers": "Selecciona os membros a engadir",
+        "alreadyMember": "Xa no proxecto",
+        "selectAll": "Seleccionar todos",
+        "deselectAll": "Deseleccionar todos",
+        "noMembersAvailable": "Todos os membros do equipo xa están no proxecto.",
+        "back": "Volver",
+        "submit": "Engadir seleccionados",
+        "adding": "Engadindo...",
+        "error": "Erro ao engadir membros do equipo.",
+        "selected": "{{count}} seleccionados"
+      },
       "errors": {
         "changeRole": "Erro ao cambiar o rol.",
         "changeScrumRole": "Erro ao cambiar o rol Scrum.",
@@ -446,6 +462,13 @@
       "complete": "Completar",
       "completeConfirm": "Completar? As tarefas non rematadas volverán ao backlog.",
       "completeError": "Erro ao completar o sprint.",
+      "deleteConfirm": "Eliminar este sprint?",
+      "deleteError": "Erro ao eliminar o sprint.",
+      "edit": {
+        "title": "Editar sprint",
+        "submit": "Gardar cambios",
+        "error": "Erro ao gardar o sprint."
+      },
       "loadError": "Erro ao cargar os sprints.",
       "status": {
         "PLANNING": "Planificación",
@@ -534,6 +557,7 @@
     "modal": {
       "titleCreate": "Nova tarefa",
       "titleEdit": "Editar tarefa",
+      "titleView": "Detalle da tarefa",
       "titleField": "Título",
       "titlePlaceholder": "Nome da tarefa",
       "description": "Descrición",

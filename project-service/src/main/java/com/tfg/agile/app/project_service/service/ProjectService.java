@@ -163,7 +163,10 @@ public class ProjectService {
         requireProjectAdmin(projectId, callerId);
         ProjectMember member = projectMemberRepository.findByProjectIdAndUserId(projectId, targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
-        member.setScrumRole(ScrumRole.valueOf(dto.scrumRole().toUpperCase()));
+        String rawRole = dto != null ? dto.scrumRole() : null;
+        member.setScrumRole(rawRole == null || rawRole.isBlank()
+                ? null
+                : ScrumRole.valueOf(rawRole.toUpperCase()));
         return ProjectMemberResponseDto.from(projectMemberRepository.save(member));
     }
 

@@ -85,7 +85,7 @@ public class ProjectController {
     public ProjectMemberResponseDto updateScrumRole(
             @PathVariable("projectId") UUID projectId,
             @PathVariable("userId") UUID userId,
-            @Valid @RequestBody UpdateScrumRoleRequestDto dto,
+            @RequestBody(required = false) UpdateScrumRoleRequestDto dto,
             @AuthenticationPrincipal UUID callerId) {
         return projectService.updateScrumRole(projectId, userId, dto, callerId);
     }

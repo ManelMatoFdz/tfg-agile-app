@@ -51,8 +51,8 @@ public class TaskService {
     @Transactional
     public TaskResponseDto create(UUID projectId, CreateTaskRequestDto dto, UUID callerId) {
         MemberPermissionsDto perms = requireMember(projectId, callerId);
-        if (isViewer(perms)) {
-            throw new ForbiddenException("VIEWER_CANNOT_CREATE_TASKS");
+        if (!isAdmin(perms) && !isProductOwner(perms)) {
+            throw new ForbiddenException("ONLY_PO_OR_ADMIN_CAN_CREATE_TASKS");
         }
 
         TaskPriority priority = dto.priority() != null
@@ -79,10 +79,17 @@ public class TaskService {
         Task task = getTaskOrThrow(taskId);
         MemberPermissionsDto perms = requireMember(task.getProjectId(), callerId);
 
-        if (isViewer(perms)) {
-            throw new ForbiddenException("VIEWER_CANNOT_EDIT_TASKS");
+        if (task.getSprintId() == null) {
+            // Backlog task: owned by the PO
+            if (!isAdmin(perms) && !isProductOwner(perms)) {
+                throw new ForbiddenException("ONLY_PO_OR_ADMIN_CAN_EDIT_BACKLOG_TASKS");
+            }
+        } else {
+            // Sprint task: owned by the Development Team
+            if (!isAdmin(perms) && !isDeveloper(perms)) {
+                throw new ForbiddenException("ONLY_DEVELOPERS_CAN_EDIT_SPRINT_TASKS");
+            }
         }
-        // In Scrum the team owns the sprint backlog collectively — any non-VIEWER can edit any task
 
         task.setTitle(dto.title());
         task.setDescription(dto.description());
@@ -99,8 +106,9 @@ public class TaskService {
         Task task = getTaskOrThrow(taskId);
         MemberPermissionsDto perms = requireMember(task.getProjectId(), callerId);
 
-        if (isViewer(perms)) {
-            throw new ForbiddenException("VIEWER_CANNOT_MOVE_TASKS");
+        // Moving tasks on the Kanban board is a Developer responsibility
+        if (!isAdmin(perms) && !isDeveloper(perms)) {
+            throw new ForbiddenException("ONLY_DEVELOPERS_CAN_MOVE_TASKS");
         }
 
         task.setStatus(TaskStatus.valueOf(dto.status().toUpperCase()));
@@ -114,8 +122,14 @@ public class TaskService {
         Task task = getTaskOrThrow(taskId);
         MemberPermissionsDto perms = requireMember(task.getProjectId(), callerId);
 
-        if (!isAdmin(perms) && !canEditAnyTask(perms)) {
-            throw new ForbiddenException("INSUFFICIENT_ROLE_DELETE_TASK");
+        if (task.getSprintId() == null) {
+            if (!isAdmin(perms) && !isProductOwner(perms)) {
+                throw new ForbiddenException("ONLY_PO_OR_ADMIN_CAN_DELETE_BACKLOG_TASKS");
+            }
+        } else {
+            if (!isAdmin(perms) && !isDeveloper(perms)) {
+                throw new ForbiddenException("ONLY_DEVELOPERS_CAN_DELETE_SPRINT_TASKS");
+            }
         }
 
         taskRepository.delete(task);
@@ -140,10 +154,17 @@ public class TaskService {
         return "VIEWER".equals(p.role());
     }
 
-    private boolean canEditAnyTask(MemberPermissionsDto p) {
-        return isAdmin(p)
-                || "PRODUCT_OWNER".equals(p.scrumRole())
-                || "SCRUM_MASTER".equals(p.scrumRole());
+    private boolean isProductOwner(MemberPermissionsDto p) {
+        return "PRODUCT_OWNER".equals(p.scrumRole());
+    }
+
+    private boolean isScrumMaster(MemberPermissionsDto p) {
+        return "SCRUM_MASTER".equals(p.scrumRole());
+    }
+
+    private boolean isDeveloper(MemberPermissionsDto p) {
+        // Any non-ADMIN, non-VIEWER member without a PO or SM scrum role is a Developer
+        return !isAdmin(p) && !isViewer(p) && !isProductOwner(p) && !isScrumMaster(p);
     }
 
     @Transactional

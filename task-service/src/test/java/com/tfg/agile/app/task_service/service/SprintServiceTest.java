@@ -262,23 +262,21 @@ class SprintServiceTest {
     }
 
     @Test
-    void activateSprint_allowsProductOwnerToActivate() {
+    void activateSprint_throwsForProductOwner() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Sprint sprint = TestDataFactory.sprint(projectId);
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
-        when(sprintRepository.existsByProjectIdAndStatus(projectId, SprintStatus.ACTIVE)).thenReturn(false);
-        when(sprintRepository.save(sprint)).thenReturn(sprint);
 
-        var response = service.activateSprint(sprint.getId(), callerId);
-
-        assertThat(response.status()).isEqualTo(SprintStatus.ACTIVE);
+        assertThatThrownBy(() -> service.activateSprint(sprint.getId(), callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("SCRUM_MASTER_OR_ADMIN_REQUIRED");
     }
 
     @Test
-    void completeSprint_allowsProductOwnerToComplete() {
+    void completeSprint_throwsForProductOwner() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Sprint sprint = TestDataFactory.sprint(projectId);
@@ -286,12 +284,58 @@ class SprintServiceTest {
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
-        when(taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprint.getId())).thenReturn(List.of());
-        when(sprintRepository.save(sprint)).thenReturn(sprint);
 
-        var response = service.completeSprint(sprint.getId(), null, callerId);
+        assertThatThrownBy(() -> service.completeSprint(sprint.getId(), null, callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("SCRUM_MASTER_OR_ADMIN_REQUIRED");
+    }
 
-        assertThat(response.status()).isEqualTo(SprintStatus.COMPLETED);
+    @Test
+    void deleteSprint_throwsForNonScrumMaster() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
+
+        assertThatThrownBy(() -> service.deleteSprint(sprint.getId(), callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("SCRUM_MASTER_OR_ADMIN_REQUIRED");
+    }
+
+    @Test
+    void deleteSprint_throwsWhenSprintIsNotPlanning() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+        sprint.setStatus(SprintStatus.ACTIVE);
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+
+        assertThatThrownBy(() -> service.deleteSprint(sprint.getId(), callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("ONLY_PLANNING_SPRINTS_CAN_BE_DELETED");
+    }
+
+    @Test
+    void deleteSprint_returnsTasksToBacklogAndDeletesSprint() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+        Task task = TestDataFactory.task(projectId, UUID.randomUUID());
+        task.setSprintId(sprint.getId());
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+        when(taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprint.getId())).thenReturn(List.of(task));
+        when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.deleteSprint(sprint.getId(), callerId);
+
+        assertThat(task.getSprintId()).isNull();
+        verify(sprintRepository).delete(sprint);
     }
 
     @Test
@@ -325,19 +369,35 @@ class SprintServiceTest {
     }
 
     @Test
-    void assignTasksToSprint_requiresPoSmOrAdmin() {
+    void assignTasksToSprint_throwsForScrumMaster() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Sprint sprint = TestDataFactory.sprint(projectId);
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
 
         assertThatThrownBy(() -> service.assignTasksToSprint(sprint.getId(),
                 new AssignTaskToSprintRequestDto(List.of(UUID.randomUUID())),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("PO_SM_OR_ADMIN_REQUIRED");
+                .hasMessage("DEVELOPER_OR_PO_OR_ADMIN_REQUIRED");
+    }
+
+    @Test
+    void assignTasksToSprint_throwsForViewer() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.viewerPermissions());
+
+        assertThatThrownBy(() -> service.assignTasksToSprint(sprint.getId(),
+                new AssignTaskToSprintRequestDto(List.of(UUID.randomUUID())),
+                callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("DEVELOPER_OR_PO_OR_ADMIN_REQUIRED");
     }
 
     @Test
@@ -354,7 +414,41 @@ class SprintServiceTest {
                 new AssignTaskToSprintRequestDto(List.of(UUID.randomUUID())),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("CANNOT_ADD_TASKS_COMPLETED_SPRINT");
+                .hasMessage("CAN_ONLY_ADD_TASKS_TO_PLANNING_SPRINT");
+    }
+
+    @Test
+    void assignTasksToSprint_throwsWhenSprintIsActive() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+        sprint.setStatus(SprintStatus.ACTIVE);
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
+
+        assertThatThrownBy(() -> service.assignTasksToSprint(sprint.getId(),
+                new AssignTaskToSprintRequestDto(List.of(UUID.randomUUID())),
+                callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("CAN_ONLY_ADD_TASKS_TO_PLANNING_SPRINT");
+    }
+
+    @Test
+    void removeTaskFromSprint_throwsWhenSprintIsActive() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+        sprint.setStatus(SprintStatus.ACTIVE);
+        Task task = TestDataFactory.task(projectId, UUID.randomUUID());
+        task.setSprintId(sprint.getId());
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
+
+        assertThatThrownBy(() -> service.removeTaskFromSprint(sprint.getId(), task.getId(), callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("CAN_ONLY_REMOVE_TASKS_FROM_PLANNING_SPRINT");
     }
 
     @Test
@@ -366,7 +460,7 @@ class SprintServiceTest {
         Task task = TestDataFactory.task(otherProjectId, UUID.randomUUID());
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
 
         assertThatThrownBy(() -> service.assignTasksToSprint(sprint.getId(),

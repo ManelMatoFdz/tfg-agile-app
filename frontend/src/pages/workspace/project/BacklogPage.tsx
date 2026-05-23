@@ -38,7 +38,7 @@ export default function BacklogPage() {
   const { t } = useTranslation();
   const { projectId } = useParams<{ projectId: string }>();
 
-  const { canCreateTask, canDeleteTask } = useProjectMember(projectId);
+  const { canCreateTask, canEditBacklogTask, canDeleteBacklogTask } = useProjectMember(projectId);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,11 +72,6 @@ export default function BacklogPage() {
     }
   };
 
-  const handleMove = async (status: TaskStatus) => {
-    if (!modalTask) return;
-    const updated = await tasksApi.move(modalTask.id, { status, position: 0 });
-    setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-  };
 
   const handleDelete = async () => {
     if (!modalTask) return;
@@ -240,7 +235,7 @@ export default function BacklogPage() {
                   {group.map((task, idx) => (
                     <button
                       key={task.id}
-                      onClick={() => setModalTask(task)}
+                      onClick={() => canEditBacklogTask && setModalTask(task)}
                       style={{
                         width: '100%',
                         textAlign: 'left',
@@ -251,10 +246,10 @@ export default function BacklogPage() {
                         background: 'transparent',
                         border: 'none',
                         borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
-                        cursor: 'pointer',
+                        cursor: canEditBacklogTask ? 'pointer' : 'default',
                         transition: `background var(--duration)`,
                       }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                      onMouseEnter={e => canEditBacklogTask && (e.currentTarget.style.background = 'var(--bg-hover)')}
                       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                     >
                       {/* Title + description */}
@@ -333,8 +328,8 @@ export default function BacklogPage() {
           defaultStatus="TODO"
           onClose={() => setModalTask(undefined)}
           onSave={handleSave}
-          onMove={modalTask ? handleMove : undefined}
-          onDelete={modalTask && canDeleteTask ? handleDelete : undefined}
+          onMove={undefined}
+          onDelete={modalTask && canDeleteBacklogTask ? handleDelete : undefined}
         />
       )}
     </div>
