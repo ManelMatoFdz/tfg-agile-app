@@ -68,7 +68,6 @@ public class TaskService {
                 .priority(priority)
                 .reporterId(callerId)
                 .assigneeId(dto.assigneeId())
-                .storyPoints(dto.storyPoints())
                 .position(position)
                 .build();
 
@@ -91,7 +90,6 @@ public class TaskService {
             task.setPriority(TaskPriority.valueOf(dto.priority().toUpperCase()));
         }
         task.setAssigneeId(dto.assigneeId());
-        task.setStoryPoints(dto.storyPoints());
 
         return TaskResponseDto.from(taskRepository.save(task));
     }

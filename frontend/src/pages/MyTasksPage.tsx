@@ -1,30 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CheckSquare } from 'lucide-react';
 import type { Task, TaskPriority, TaskStatus } from '../types';
 import { tasksApi } from '../api/tasks';
 import Alert from '../components/ui/Alert';
 
 const STATUS_ORDER: TaskStatus[] = ['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'DONE'];
 
-const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  CRITICAL: 'bg-red-100 text-red-600',
-  HIGH: 'bg-amber-100 text-amber-600',
-  MEDIUM: 'bg-blue-100 text-blue-600',
-  LOW: 'bg-gray-100 text-gray-500',
+const PRIORITY_COLOR: Record<TaskPriority, string> = {
+  CRITICAL: '#ef4444',
+  HIGH:     '#f59e0b',
+  MEDIUM:   '#3b82f6',
+  LOW:      '#9ca3af',
 };
 
-const STATUS_COLORS: Record<TaskStatus, string> = {
-  TODO: 'bg-gray-100 text-gray-500',
-  IN_PROGRESS: 'bg-blue-100 text-blue-600',
-  IN_REVIEW: 'bg-amber-100 text-amber-600',
-  DONE: 'bg-emerald-100 text-emerald-600',
+const PRIORITY_BG: Record<TaskPriority, string> = {
+  CRITICAL: 'rgba(239,68,68,0.08)',
+  HIGH:     'rgba(245,158,11,0.08)',
+  MEDIUM:   'rgba(59,130,246,0.08)',
+  LOW:      'rgba(156,163,175,0.08)',
 };
 
-const STATUS_DOT: Record<TaskStatus, string> = {
-  TODO: 'bg-gray-400',
-  IN_PROGRESS: 'bg-blue-400',
-  IN_REVIEW: 'bg-amber-400',
-  DONE: 'bg-emerald-400',
+const STATUS_COLOR: Record<TaskStatus, string> = {
+  TODO:        '#9ca3af',
+  IN_PROGRESS: '#3b82f6',
+  IN_REVIEW:   '#f59e0b',
+  DONE:        '#22c55e',
 };
 
 export default function MyTasksPage() {
@@ -45,22 +46,24 @@ export default function MyTasksPage() {
     tasks
       .filter((task) => task.status === status)
       .sort((a, b) => {
-        const priorityOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+        const priorityOrder: Record<TaskPriority, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
         return priorityOrder[a.priority] - priorityOrder[b.priority];
       });
 
   const activeTasks = tasks.filter((t) => t.status !== 'DONE').length;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div style={{ maxWidth: '40rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('myTasks.title')}</h1>
+          <h1 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+            {t('myTasks.title')}
+          </h1>
           {!loading && tasks.length > 0 && (
-            <p className="text-sm text-gray-400 mt-0.5">
+            <p style={{ margin: '0.125rem 0 0', fontSize: '0.75rem', color: 'var(--text-faint)' }}>
               {activeTasks > 0
                 ? t('myTasks.activeSummary', { count: activeTasks })
                 : t('myTasks.allDone')}
@@ -68,68 +71,156 @@ export default function MyTasksPage() {
           )}
         </div>
         {!loading && (
-          <span className="text-xs font-medium text-gray-400 bg-white border border-gray-200 px-2.5 py-1 rounded-full">
-            {tasks.length} {tasks.length === 1 ? t('myTasks.task') : t('myTasks.tasks')}
+          <span style={{
+            fontSize: '0.6875rem',
+            fontWeight: 500,
+            color: 'var(--text-faint)',
+            background: 'var(--bg-elevated)',
+            border: '0.0625rem solid var(--border)',
+            borderRadius: 'var(--radius-sm)',
+            padding: '0.0625rem 0.4375rem',
+            fontFamily: 'var(--font-mono)',
+          }}>
+            {tasks.length}
           </span>
         )}
       </div>
 
       {/* Content */}
       {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem 0' }}>
+          <div style={{
+            width: '1.5rem', height: '1.5rem',
+            border: '0.125rem solid var(--border)',
+            borderTopColor: 'var(--accent)',
+            borderRadius: '50%',
+            animation: 'spin 0.7s linear infinite',
+          }} />
         </div>
       ) : tasks.length === 0 ? (
-        <div className="glass-card-strong p-12 text-center">
-          <div className="w-14 h-14 bg-primary-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg className="w-7 h-7 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-            </svg>
+        <div style={{
+          background: 'var(--bg-elevated)',
+          border: '0.0625rem solid var(--border)',
+          borderRadius: 'var(--radius-lg)',
+          padding: '3rem 1.5rem',
+          textAlign: 'center',
+        }}>
+          <div style={{
+            width: '2.75rem', height: '2.75rem',
+            background: 'var(--accent-muted)',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            margin: '0 auto 0.75rem',
+          }}>
+            <CheckSquare size={20} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
           </div>
-          <p className="text-sm font-semibold text-gray-700">{t('myTasks.empty')}</p>
-          <p className="text-xs text-gray-400 mt-1">{t('myTasks.emptySubtitle')}</p>
+          <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>{t('myTasks.empty')}</p>
+          <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-faint)' }}>{t('myTasks.emptySubtitle')}</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
           {STATUS_ORDER.map((status) => {
             const group = tasksByStatus(status);
             if (group.length === 0) return null;
             return (
-              <div key={status} className="glass-card-strong overflow-hidden">
+              <div
+                key={status}
+                style={{
+                  background: 'var(--bg-elevated)',
+                  border: '0.0625rem solid var(--border)',
+                  borderLeft: `0.125rem solid ${STATUS_COLOR[status]}`,
+                  borderRadius: 'var(--radius-md)',
+                  overflow: 'hidden',
+                }}
+              >
                 {/* Group header */}
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50/60 border-b border-gray-100">
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${STATUS_DOT[status]}`} />
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STATUS_COLORS[status]}`}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                  padding: '0.375rem 0.75rem',
+                  background: `${STATUS_COLOR[status]}10`,
+                  borderBottom: '0.0625rem solid var(--border)',
+                }}>
+                  <span style={{
+                    fontSize: '0.625rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.05em',
+                    textTransform: 'uppercase',
+                    color: STATUS_COLOR[status],
+                  }}>
                     {t(`tasks.status.${status}`)}
                   </span>
-                  <span className="text-xs text-gray-400">{group.length}</span>
+                  <span style={{ fontSize: '0.625rem', color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                    {group.length}
+                  </span>
                 </div>
 
                 {/* Task rows */}
-                <div className="divide-y divide-gray-50">
-                  {group.map((task) => (
-                    <div key={task.id} className="flex items-center gap-3 px-4 py-3">
+                <div>
+                  {group.map((task, idx) => (
+                    <div
+                      key={task.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.625rem',
+                        padding: '0.5rem 0.75rem',
+                        borderTop: idx > 0 ? '0.0625rem solid var(--border)' : 'none',
+                      }}
+                    >
                       {/* Priority */}
-                      <span className={`flex-shrink-0 text-xs font-semibold px-2 py-0.5 rounded-full ${PRIORITY_COLORS[task.priority]}`}>
+                      <span style={{
+                        flexShrink: 0,
+                        fontSize: '0.5625rem',
+                        fontWeight: 700,
+                        letterSpacing: '0.05em',
+                        textTransform: 'uppercase',
+                        color: PRIORITY_COLOR[task.priority],
+                        background: PRIORITY_BG[task.priority],
+                        borderRadius: 'var(--radius-sm)',
+                        padding: '0.0625rem 0.3125rem',
+                      }}>
                         {t(`tasks.priority.${task.priority}`)}
                       </span>
 
                       {/* Title + description */}
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">{task.title}</p>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{
+                          margin: 0, fontSize: '0.75rem', fontWeight: 500, color: 'var(--text)',
+                          overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                        }}>
+                          {task.title}
+                        </p>
                         {task.description && (
-                          <p className="text-xs text-gray-400 truncate mt-0.5">{task.description}</p>
+                          <p style={{
+                            margin: '0.0625rem 0 0', fontSize: '0.6875rem', color: 'var(--text-faint)',
+                            overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                          }}>
+                            {task.description}
+                          </p>
                         )}
                       </div>
 
                       {/* Story points */}
                       {task.storyPoints != null ? (
-                        <span className="flex-shrink-0 text-xs font-medium text-gray-400 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full w-14 text-center">
-                          {task.storyPoints} pts
+                        <span style={{
+                          flexShrink: 0,
+                          fontSize: '0.625rem',
+                          fontWeight: 600,
+                          color: 'var(--text-faint)',
+                          background: 'var(--bg-hover)',
+                          border: '0.0625rem solid var(--border)',
+                          borderRadius: 'var(--radius-sm)',
+                          padding: '0.0625rem 0.3125rem',
+                          fontFamily: 'var(--font-mono)',
+                          minWidth: '1.75rem',
+                          textAlign: 'center',
+                        }}>
+                          {task.storyPoints}
                         </span>
                       ) : (
-                        <span className="flex-shrink-0 w-14" />
+                        <span style={{ flexShrink: 0, width: '1.75rem' }} />
                       )}
                     </div>
                   ))}

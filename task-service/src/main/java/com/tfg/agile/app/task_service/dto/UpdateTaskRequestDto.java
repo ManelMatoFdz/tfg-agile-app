@@ -8,6 +8,5 @@ public record UpdateTaskRequestDto(
         @NotBlank String title,
         String description,
         String priority,
-        UUID assigneeId,
-        Integer storyPoints
+        UUID assigneeId
 ) {}

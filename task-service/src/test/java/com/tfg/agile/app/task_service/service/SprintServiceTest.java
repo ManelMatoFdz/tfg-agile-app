@@ -87,7 +87,7 @@ class SprintServiceTest {
 
         assertThatThrownBy(() -> service.getSprint(sprintId, UUID.randomUUID()))
                 .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Sprint not found");
+                .hasMessage("SPRINT_NOT_FOUND");
     }
 
     @Test
@@ -119,7 +119,7 @@ class SprintServiceTest {
                 new CreateSprintRequestDto("Sprint", "Goal", LocalDate.now(), LocalDate.now().plusDays(14)),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Scrum Master or Admin role required");
+                .hasMessage("SCRUM_MASTER_OR_ADMIN_REQUIRED");
     }
 
     @Test
@@ -149,10 +149,10 @@ class SprintServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
 
         assertThatThrownBy(() -> service.updateSprint(sprint.getId(),
-                new UpdateSprintRequestDto("Name", "Goal", LocalDate.now(), LocalDate.now().plusDays(7)),
+                new UpdateSprintRequestDto("Name", "Goal", LocalDate.now(), LocalDate.now().plusDays(7), null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Cannot edit a completed sprint");
+                .hasMessage("CANNOT_EDIT_COMPLETED_SPRINT");
     }
 
     @Test
@@ -167,7 +167,7 @@ class SprintServiceTest {
 
         assertThatThrownBy(() -> service.activateSprint(sprint.getId(), callerId))
                 .isInstanceOf(ConflictException.class)
-                .hasMessage("Only PLANNING sprints can be activated");
+                .hasMessage("SPRINT_NOT_PLANNING");
     }
 
     @Test
@@ -182,7 +182,7 @@ class SprintServiceTest {
 
         assertThatThrownBy(() -> service.activateSprint(sprint.getId(), callerId))
                 .isInstanceOf(ConflictException.class)
-                .hasMessage("There is already an active sprint for this project");
+                .hasMessage("SPRINT_ALREADY_ACTIVE");
     }
 
     @Test
@@ -212,7 +212,7 @@ class SprintServiceTest {
 
         assertThatThrownBy(() -> service.completeSprint(sprint.getId(), null, callerId))
                 .isInstanceOf(ConflictException.class)
-                .hasMessage("Only ACTIVE sprints can be completed");
+                .hasMessage("SPRINT_NOT_ACTIVE");
     }
 
     @Test
@@ -337,7 +337,7 @@ class SprintServiceTest {
                 new AssignTaskToSprintRequestDto(List.of(UUID.randomUUID())),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Product Owner, Scrum Master, or Admin role required");
+                .hasMessage("PO_SM_OR_ADMIN_REQUIRED");
     }
 
     @Test
@@ -354,7 +354,7 @@ class SprintServiceTest {
                 new AssignTaskToSprintRequestDto(List.of(UUID.randomUUID())),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Cannot add tasks to a completed sprint");
+                .hasMessage("CANNOT_ADD_TASKS_COMPLETED_SPRINT");
     }
 
     @Test
@@ -373,7 +373,7 @@ class SprintServiceTest {
                 new AssignTaskToSprintRequestDto(List.of(task.getId())),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Task does not belong to this project");
+                .hasMessage("TASK_WRONG_PROJECT");
     }
 
     @Test
@@ -415,7 +415,7 @@ class SprintServiceTest {
 
         assertThatThrownBy(() -> service.removeTaskFromSprint(sprint.getId(), task.getId(), callerId))
                 .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Task is not in this sprint");
+                .hasMessage("TASK_NOT_IN_SPRINT");
     }
 
     @Test

@@ -1,20 +1,79 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ArrowLeftRight, UserMinus, UserPlus } from 'lucide-react';
 import { workspacesApi } from '../../api/workspaces';
 import { usersApi } from '../../api/users';
 import { useApiAction } from '../../hooks/useApiAction';
 import { useAuthStore } from '../../store/authStore';
 import { useUserMap } from '../../hooks/useUserMap';
-import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
 import Alert from '../../components/ui/Alert';
 import type { WorkspaceMember, WorkspaceRole, UserLookup } from '../../types';
 
-const ROLE_COLORS: Record<WorkspaceRole, string> = {
-  ADMIN: 'bg-primary-100 text-primary-700',
-  MEMBER: 'bg-gray-100 text-gray-600',
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '0.375rem 0.625rem',
+  fontSize: '0.75rem',
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--text)',
+  fontFamily: 'inherit',
+  outline: 'none',
+  boxSizing: 'border-box',
 };
+
+const card: React.CSSProperties = {
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  padding: '0.25rem 0',
+};
+
+const ROLE_STYLE: Record<WorkspaceRole, { color: string; bg: string }> = {
+  ADMIN:  { color: 'var(--accent)',    bg: 'var(--accent-muted)' },
+  MEMBER: { color: '#16a34a',          bg: 'rgba(22,163,74,0.08)' },
+};
+
+function Avatar({ name, avatarUrl, size = 32 }: { name: string; avatarUrl?: string; size?: number }) {
+  const [imgError, setImgError] = useState(false);
+  const initials = name.charAt(0).toUpperCase();
+  const sizeRem = `${size / 16}rem`;
+  const fontSizeRem = `${(size * 0.38) / 16}rem`;
+  return (
+    <div style={{
+      width: sizeRem,
+      height: sizeRem,
+      borderRadius: 'var(--radius-sm)',
+      overflow: 'hidden',
+      flexShrink: 0,
+    }}>
+      {avatarUrl && !imgError ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          referrerPolicy="no-referrer"
+          onError={() => setImgError(true)}
+        />
+      ) : (
+        <div style={{
+          width: '100%',
+          height: '100%',
+          background: 'var(--accent)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#fff',
+          fontSize: fontSizeRem,
+          fontWeight: 700,
+        }}>
+          {initials}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function MemberRow({
   member,
@@ -38,55 +97,111 @@ function MemberRow({
   removingId: string | null;
 }) {
   const { t } = useTranslation();
+  const [hovered, setHovered] = useState(false);
   const otherRole: WorkspaceRole = member.role === 'ADMIN' ? 'MEMBER' : 'ADMIN';
   const isUpdating = updatingId === member.userId;
   const isRemoving = removingId === member.userId;
-  const [imgError, setImgError] = useState(false);
+  const roleStyle = ROLE_STYLE[member.role];
 
   return (
-    <div className="flex items-center justify-between py-3 px-4 rounded-xl hover:bg-gray-50/70 transition-colors group">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0">
-          {avatarUrl && !imgError ? (
-            <img src={avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={() => setImgError(true)} />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-sm font-bold">
-              {displayName.charAt(0).toUpperCase()}
-            </div>
-          )}
-        </div>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0.5rem 0.75rem',
+        background: hovered ? 'var(--bg-hover)' : 'transparent',
+        transition: `background var(--duration)`,
+        borderRadius: 'var(--radius-sm)',
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+        <Avatar name={displayName} avatarUrl={avatarUrl} size={32} />
         <div>
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-gray-900">{displayName}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--text)' }}>{displayName}</span>
             {isSelf && (
-              <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">{t('common.you')}</span>
+              <span style={{
+                fontSize: '0.625rem',
+                color: 'var(--text-faint)',
+                background: 'var(--bg-hover)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+                padding: '0 0.3125rem',
+              }}>
+                {t('common.you')}
+              </span>
             )}
           </div>
-          <p className="text-xs text-gray-400">
-            {t('common.since', { date: new Date(member.joinedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) })}
+          <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--text-faint)' }}>
+            {t('common.since', {
+              date: new Date(member.joinedAt).toLocaleDateString(undefined, {
+                day: 'numeric', month: 'short', year: 'numeric',
+              }),
+            })}
           </p>
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ROLE_COLORS[member.role]}`}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+        <span style={{
+          fontSize: '0.625rem',
+          fontWeight: 600,
+          color: roleStyle.color,
+          background: roleStyle.bg,
+          borderRadius: 'var(--radius-sm)',
+          padding: '0.125rem 0.4375rem',
+          letterSpacing: '0.03em',
+        }}>
           {t(`workspace.members.roles.${member.role}`)}
         </span>
 
         {isAdmin && (
-          <>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.125rem',
+            opacity: hovered ? 1 : 0,
+            transition: `opacity var(--duration)`,
+          }}>
             <button
               onClick={() => onRoleChange(member.userId, otherRole)}
               disabled={isUpdating || isRemoving}
               title={t('workspace.members.changeRoleTitle', { role: t(`workspace.members.roles.${otherRole}`) })}
-              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '1.625rem',
+                height: '1.625rem',
+                border: 'none',
+                borderRadius: 'var(--radius-sm)',
+                background: 'transparent',
+                color: 'var(--text-faint)',
+                cursor: isUpdating || isRemoving ? 'not-allowed' : 'pointer',
+                transition: `background var(--duration), color var(--duration)`,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'var(--accent-muted)';
+                e.currentTarget.style.color = 'var(--accent)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = 'var(--text-faint)';
+              }}
             >
               {isUpdating ? (
-                <div className="w-4 h-4 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+                <div style={{
+                  width: '0.75rem', height: '0.75rem',
+                  border: '0.125rem solid var(--border)',
+                  borderTopColor: 'var(--accent)',
+                  borderRadius: '50%',
+                  animation: 'spin 0.7s linear infinite',
+                }} />
               ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
+                <ArrowLeftRight size={12} strokeWidth={2} />
               )}
             </button>
 
@@ -95,18 +210,42 @@ function MemberRow({
                 onClick={() => onRemove(member.userId)}
                 disabled={isUpdating || isRemoving}
                 title={t('workspace.members.removeMember')}
-                className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200 cursor-pointer disabled:cursor-not-allowed"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '1.625rem',
+                  height: '1.625rem',
+                  border: 'none',
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'transparent',
+                  color: 'var(--text-faint)',
+                  cursor: isUpdating || isRemoving ? 'not-allowed' : 'pointer',
+                  transition: `background var(--duration), color var(--duration)`,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'var(--danger-bg)';
+                  e.currentTarget.style.color = 'var(--danger)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                  e.currentTarget.style.color = 'var(--text-faint)';
+                }}
               >
                 {isRemoving ? (
-                  <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                  <div style={{
+                    width: '0.75rem', height: '0.75rem',
+                    border: '0.125rem solid var(--border)',
+                    borderTopColor: 'var(--danger)',
+                    borderRadius: '50%',
+                    animation: 'spin 0.7s linear infinite',
+                  }} />
                 ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <UserMinus size={12} strokeWidth={2} />
                 )}
               </button>
             )}
-          </>
+          </div>
         )}
       </div>
     </div>
@@ -114,25 +253,8 @@ function MemberRow({
 }
 
 function LookedUpAvatar({ user }: { user: UserLookup }) {
-  const [imgError, setImgError] = useState(false);
-  const initials = (user.fullName || user.username).charAt(0).toUpperCase();
-  return (
-    <div className="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0">
-      {user.avatarUrl && !imgError ? (
-        <img
-          src={user.avatarUrl}
-          alt=""
-          className="w-full h-full object-cover"
-          referrerPolicy="no-referrer"
-          onError={() => setImgError(true)}
-        />
-      ) : (
-        <div className="w-full h-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-sm font-bold">
-          {initials}
-        </div>
-      )}
-    </div>
-  );
+  const label = user.fullName || user.username;
+  return <Avatar name={label} avatarUrl={user.avatarUrl} size={32} />;
 }
 
 export default function WorkspaceMembersPage() {
@@ -183,8 +305,7 @@ export default function WorkspaceMembersPage() {
   };
 
   const handleInvite = async () => {
-    if (!workspaceId || !inviteEmail.trim()) return;
-    if (!lookedUpUser) return;
+    if (!workspaceId || !inviteEmail.trim() || !lookedUpUser) return;
     const data = await inviteAction.run(workspacesApi.createInvitation(workspaceId, lookedUpUser.id, inviteEmail.trim()));
     if (data !== null) {
       setInviteSuccess(true);
@@ -244,25 +365,103 @@ export default function WorkspaceMembersPage() {
   const admins = members.filter((m) => m.role === 'ADMIN');
   const regularMembers = members.filter((m) => m.role === 'MEMBER');
 
+  const sectionLabel: React.CSSProperties = {
+    fontSize: '0.625rem',
+    fontWeight: 700,
+    letterSpacing: '0.06em',
+    textTransform: 'uppercase',
+    color: 'var(--text-faint)',
+    padding: '0.375rem 0.75rem 0.125rem',
+  };
+
+  const modalOverlay: React.CSSProperties = {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 50,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '1rem',
+  };
+
+  const modalBg: React.CSSProperties = {
+    position: 'absolute',
+    inset: 0,
+    backgroundColor: 'var(--bg-overlay)',
+  };
+
+  const modalCard: React.CSSProperties = {
+    position: 'relative',
+    background: 'var(--bg-elevated)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-lg)',
+    padding: '1.25rem',
+    width: '100%',
+    maxWidth: '22.5rem',
+    boxShadow: '0 1.25rem 3.75rem rgba(0,0,0,0.15)',
+  };
+
+  const btnPrimary: React.CSSProperties = {
+    flex: 1,
+    padding: '0.4375rem 0.875rem',
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    background: 'var(--accent)',
+    color: '#fff',
+    border: 'none',
+    borderRadius: 'var(--radius-md)',
+    cursor: 'pointer',
+  };
+
+  const btnSecondary: React.CSSProperties = {
+    flex: 1,
+    padding: '0.4375rem 0.875rem',
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    background: 'var(--bg-hover)',
+    color: 'var(--text-muted)',
+    border: '1px solid var(--border)',
+    borderRadius: 'var(--radius-md)',
+    cursor: 'pointer',
+  };
+
   return (
     <div>
-      {/* Page header */}
-      <div className="flex items-center justify-between mb-8">
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{t('workspace.members.title')}</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <h1 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+            {t('workspace.members.title')}
+          </h1>
+          <p style={{ margin: '0.125rem 0 0', fontSize: '0.75rem', color: 'var(--text-faint)' }}>
             {members.length === 0
               ? '…'
               : t('workspace.members.count', { count: members.length })}
           </p>
         </div>
         {!showAddForm && isAdmin && (
-          <Button onClick={() => setShowAddForm(true)}>
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+          <button
+            onClick={() => setShowAddForm(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3125rem',
+              padding: '0.3125rem 0.625rem',
+              fontSize: '0.75rem',
+              fontWeight: 500,
+              background: 'var(--accent)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 'var(--radius-md)',
+              cursor: 'pointer',
+              transition: `background var(--duration)`,
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-hover)')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--accent)')}
+          >
+            <UserPlus size={12} strokeWidth={2.5} />
             {t('workspace.members.addMember')}
-          </Button>
+          </button>
         )}
       </div>
 
@@ -273,21 +472,37 @@ export default function WorkspaceMembersPage() {
         <Alert type="error" message={actionError} onClose={() => setActionError(null)} />
       )}
 
-      {/* Invite member form */}
+      {/* Invite form */}
       {showAddForm && isAdmin && (
-        <div className="glass-card-strong p-6 mb-6 animate-fade-in">
-          <h3 className="text-base font-semibold text-gray-900 mb-4">{t('workspace.members.invite.title')}</h3>
+        <div style={{
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-md)',
+          padding: '1rem',
+          marginBottom: '1rem',
+        }}>
+          <h3 style={{ margin: '0 0 0.75rem', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)' }}>
+            {t('workspace.members.invite.title')}
+          </h3>
           {inviteAction.error && (
             <Alert type="error" message={inviteAction.error} onClose={inviteAction.reset} />
           )}
           {inviteSuccess && (
             <Alert type="success" message={t('workspace.members.invite.success')} />
           )}
-          <div className="space-y-4">
-            <div className="flex gap-2 items-end">
-              <div className="flex-1">
-                <Input
-                  label={t('workspace.members.invite.emailLabel')}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+              <div style={{ flex: 1 }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: '0.6875rem',
+                  fontWeight: 500,
+                  color: 'var(--text-muted)',
+                  marginBottom: '0.25rem',
+                }}>
+                  {t('workspace.members.invite.emailLabel')}
+                </label>
+                <input
                   type="email"
                   placeholder={t('workspace.members.invite.emailPlaceholder')}
                   value={inviteEmail}
@@ -297,45 +512,112 @@ export default function WorkspaceMembersPage() {
                     setLookupError(null);
                   }}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleLookup(); } }}
+                  style={inputStyle}
                 />
               </div>
-              <Button
+              <button
                 type="button"
-                variant="secondary"
-                loading={lookupLoading}
                 onClick={handleLookup}
-                className="mb-0.5"
+                disabled={lookupLoading}
+                style={{
+                  padding: '0.375rem 0.75rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  background: 'var(--bg-hover)',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: lookupLoading ? 'not-allowed' : 'pointer',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                }}
               >
+                {lookupLoading && (
+                  <div style={{
+                    width: '0.625rem', height: '0.625rem',
+                    border: '0.125rem solid var(--border)',
+                    borderTopColor: 'var(--accent)',
+                    borderRadius: '50%',
+                    animation: 'spin 0.7s linear infinite',
+                  }} />
+                )}
                 {t('workspace.members.invite.searchUser')}
-              </Button>
+              </button>
             </div>
 
             {lookupError && (
-              <p className="text-sm text-red-500">{lookupError}</p>
+              <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--danger)' }}>{lookupError}</p>
             )}
 
             {lookedUpUser && (
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-green-50 border border-green-100">
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.625rem',
+                padding: '0.5rem 0.625rem',
+                background: 'rgba(34,197,94,0.06)',
+                border: '1px solid rgba(34,197,94,0.2)',
+                borderRadius: 'var(--radius-md)',
+              }}>
                 <LookedUpAvatar user={lookedUpUser} />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{lookedUpUser.fullName || lookedUpUser.username}</p>
-                  <p className="text-xs text-gray-500">{lookedUpUser.email}</p>
+                  <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 500, color: 'var(--text)' }}>
+                    {lookedUpUser.fullName || lookedUpUser.username}
+                  </p>
+                  <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--text-faint)' }}>{lookedUpUser.email}</p>
                 </div>
               </div>
             )}
 
-            <div className="flex gap-3 pt-1">
-              <Button
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              <button
                 type="button"
-                loading={inviteAction.loading}
-                disabled={!lookedUpUser}
+                disabled={inviteAction.loading || !lookedUpUser}
                 onClick={handleInvite}
+                style={{
+                  padding: '0.375rem 0.875rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: inviteAction.loading || !lookedUpUser ? 'not-allowed' : 'pointer',
+                  opacity: inviteAction.loading || !lookedUpUser ? 0.5 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem',
+                }}
               >
+                {inviteAction.loading && (
+                  <div style={{
+                    width: '0.625rem', height: '0.625rem',
+                    border: '0.125rem solid rgba(255,255,255,0.4)',
+                    borderTopColor: '#fff',
+                    borderRadius: '50%',
+                    animation: 'spin 0.7s linear infinite',
+                  }} />
+                )}
                 {t('workspace.members.invite.sendInvitation')}
-              </Button>
-              <Button type="button" variant="secondary" onClick={closeAddForm}>
+              </button>
+              <button
+                type="button"
+                onClick={closeAddForm}
+                style={{
+                  padding: '0.375rem 0.875rem',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  background: 'var(--bg-hover)',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer',
+                }}
+              >
                 {t('common.cancel')}
-              </Button>
+              </button>
             </div>
           </div>
         </div>
@@ -343,66 +625,66 @@ export default function WorkspaceMembersPage() {
 
       {/* Members list */}
       {listAction.loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem 0' }}>
+          <div style={{
+            width: '1.5rem', height: '1.5rem',
+            border: '0.125rem solid var(--border)',
+            borderTopColor: 'var(--accent)',
+            borderRadius: '50%',
+            animation: 'spin 0.7s linear infinite',
+          }} />
         </div>
       ) : members.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="text-gray-500 font-medium">{t('workspace.members.count', { count: 0 })}</p>
+        <div style={{ textAlign: 'center', padding: '3.75rem 0' }}>
+          <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>
+            {t('workspace.members.count', { count: 0 })}
+          </p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           {admins.length > 0 && (
-            <div className="glass-card-strong p-4">
-              <p className="px-4 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                {t('workspace.members.admins')}
-              </p>
-              <div className="divide-y divide-gray-100/60">
-                {admins.map((m) => {
-                  const u = userMap.get(m.userId);
-                  return (
-                    <MemberRow
-                      key={m.id}
-                      member={m}
-                      isSelf={m.userId === currentUser?.id}
-                      isAdmin={isAdmin}
-                      displayName={u?.fullName || u?.username || t('common.unknownUser')}
-                      avatarUrl={u?.avatarUrl}
-                      onRoleChange={(userId, role) => setConfirmRoleChange({ userId, role })}
-                      onRemove={setConfirmRemoveId}
-                      updatingId={updatingId}
-                      removingId={removingId}
-                    />
-                  );
-                })}
-              </div>
+            <div style={card}>
+              <p style={sectionLabel}>{t('workspace.members.admins')}</p>
+              {admins.map((m) => {
+                const u = userMap.get(m.userId);
+                return (
+                  <MemberRow
+                    key={m.id}
+                    member={m}
+                    isSelf={m.userId === currentUser?.id}
+                    isAdmin={isAdmin}
+                    displayName={u?.fullName || u?.username || t('common.unknownUser')}
+                    avatarUrl={u?.avatarUrl}
+                    onRoleChange={(userId, role) => setConfirmRoleChange({ userId, role })}
+                    onRemove={setConfirmRemoveId}
+                    updatingId={updatingId}
+                    removingId={removingId}
+                  />
+                );
+              })}
             </div>
           )}
 
           {regularMembers.length > 0 && (
-            <div className="glass-card-strong p-4">
-              <p className="px-4 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">
-                {t('workspace.members.membersGroup')}
-              </p>
-              <div className="divide-y divide-gray-100/60">
-                {regularMembers.map((m) => {
-                  const u = userMap.get(m.userId);
-                  return (
-                    <MemberRow
-                      key={m.id}
-                      member={m}
-                      isSelf={m.userId === currentUser?.id}
-                      isAdmin={isAdmin}
-                      displayName={u?.fullName || u?.username || t('common.unknownUser')}
-                      avatarUrl={u?.avatarUrl}
-                      onRoleChange={(userId, role) => setConfirmRoleChange({ userId, role })}
-                      onRemove={setConfirmRemoveId}
-                      updatingId={updatingId}
-                      removingId={removingId}
-                    />
-                  );
-                })}
-              </div>
+            <div style={card}>
+              <p style={sectionLabel}>{t('workspace.members.membersGroup')}</p>
+              {regularMembers.map((m) => {
+                const u = userMap.get(m.userId);
+                return (
+                  <MemberRow
+                    key={m.id}
+                    member={m}
+                    isSelf={m.userId === currentUser?.id}
+                    isAdmin={isAdmin}
+                    displayName={u?.fullName || u?.username || t('common.unknownUser')}
+                    avatarUrl={u?.avatarUrl}
+                    onRoleChange={(userId, role) => setConfirmRoleChange({ userId, role })}
+                    onRemove={setConfirmRemoveId}
+                    updatingId={updatingId}
+                    removingId={removingId}
+                  />
+                );
+              })}
             </div>
           )}
         </div>
@@ -414,35 +696,65 @@ export default function WorkspaceMembersPage() {
         const displayName = u?.fullName || u?.username || t('common.unknownUser');
         const newRoleLabel = t(`workspace.members.roles.${confirmRoleChange.role}`);
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setConfirmRoleChange(null); setActionError(null); }} />
-            <div className="relative glass-card-strong rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                  </svg>
+          <div style={modalOverlay}>
+            <div style={modalBg} onClick={() => { setConfirmRoleChange(null); setActionError(null); }} />
+            <div style={modalCard}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.75rem' }}>
+                <div style={{
+                  width: '2.25rem', height: '2.25rem',
+                  background: 'var(--accent-muted)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <ArrowLeftRight size={16} strokeWidth={2} style={{ color: 'var(--accent)' }} />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-gray-900">{t('workspace.members.confirmRoleChange.title')}</h3>
-                  <p className="text-sm text-gray-500">{t('workspace.members.confirmRoleChange.subtitle', { name: displayName, role: newRoleLabel })}</p>
+                  <h3 style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>
+                    {t('workspace.members.confirmRoleChange.title')}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--text-faint)' }}>
+                    {t('workspace.members.confirmRoleChange.subtitle', { name: displayName, role: newRoleLabel })}
+                  </p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mb-4">{t('workspace.members.confirmRoleChange.description', { role: newRoleLabel })}</p>
+              <p style={{ margin: '0 0 0.875rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {t('workspace.members.confirmRoleChange.description', { role: newRoleLabel })}
+              </p>
               {actionError && (
                 <Alert type="error" message={actionError} onClose={() => setActionError(null)} />
               )}
-              <div className="flex gap-3">
-                <Button variant="secondary" className="flex-1" onClick={() => { setConfirmRoleChange(null); setActionError(null); }}>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button
+                  style={btnSecondary}
+                  onClick={() => { setConfirmRoleChange(null); setActionError(null); }}
+                >
                   {t('common.cancel')}
-                </Button>
-                <Button
-                  className="flex-1"
-                  loading={updatingId === confirmRoleChange.userId}
+                </button>
+                <button
+                  style={{
+                    ...btnPrimary,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.375rem',
+                    opacity: updatingId === confirmRoleChange.userId ? 0.7 : 1,
+                    cursor: updatingId === confirmRoleChange.userId ? 'not-allowed' : 'pointer',
+                  }}
+                  disabled={updatingId === confirmRoleChange.userId}
                   onClick={() => handleRoleChange(confirmRoleChange.userId, confirmRoleChange.role)}
                 >
+                  {updatingId === confirmRoleChange.userId && (
+                    <div style={{
+                        width: '0.625rem', height: '0.625rem',
+                        border: '0.125rem solid rgba(255,255,255,0.4)',
+                      borderTopColor: '#fff',
+                      borderRadius: '50%',
+                      animation: 'spin 0.7s linear infinite',
+                    }} />
+                  )}
                   {t('common.confirm')}
-                </Button>
+                </button>
               </div>
             </div>
           </div>
@@ -454,39 +766,60 @@ export default function WorkspaceMembersPage() {
         const u = userMap.get(confirmRemoveId);
         const displayName = u?.fullName || u?.username || t('common.unknownUser');
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmRemoveId(null)} />
-            <div className="relative glass-card-strong rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-fade-in">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
-                  <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
-                  </svg>
+          <div style={modalOverlay}>
+            <div style={modalBg} onClick={() => setConfirmRemoveId(null)} />
+            <div style={modalCard}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', marginBottom: '0.75rem' }}>
+                <div style={{
+                  width: '2.25rem', height: '2.25rem',
+                  background: 'var(--danger-bg)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  flexShrink: 0,
+                }}>
+                  <UserMinus size={16} strokeWidth={2} style={{ color: 'var(--danger)' }} />
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-gray-900">{t('workspace.members.confirmRemove.title')}</h3>
-                  <p className="text-sm text-gray-500">{t('workspace.members.confirmRemove.subtitle', { name: displayName })}</p>
+                  <h3 style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text)' }}>
+                    {t('workspace.members.confirmRemove.title')}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.6875rem', color: 'var(--text-faint)' }}>
+                    {t('workspace.members.confirmRemove.subtitle', { name: displayName })}
+                  </p>
                 </div>
               </div>
-              <p className="text-sm text-gray-600 mb-6">{t('workspace.members.confirmRemove.description')}</p>
-              <div className="flex gap-3">
-                <Button
-                  variant="secondary"
-                  className="flex-1"
-                  onClick={() => setConfirmRemoveId(null)}
-                >
+              <p style={{ margin: '0 0 1rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                {t('workspace.members.confirmRemove.description')}
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button style={btnSecondary} onClick={() => setConfirmRemoveId(null)}>
                   {t('common.cancel')}
-                </Button>
+                </button>
                 <button
-                  onClick={() => handleRemove(confirmRemoveId)}
+                  style={{
+                    ...btnPrimary,
+                    background: 'var(--danger)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.375rem',
+                    opacity: removingId === confirmRemoveId ? 0.7 : 1,
+                    cursor: removingId === confirmRemoveId ? 'not-allowed' : 'pointer',
+                  }}
                   disabled={removingId === confirmRemoveId}
-                  className="flex-1 px-4 py-2 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-xl transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                  onClick={() => handleRemove(confirmRemoveId)}
                 >
                   {removingId === confirmRemoveId ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    <>
+                      <div style={{
+                        width: '0.625rem', height: '0.625rem',
+                        border: '0.125rem solid rgba(255,255,255,0.4)',
+                        borderTopColor: '#fff',
+                        borderRadius: '50%',
+                        animation: 'spin 0.7s linear infinite',
+                      }} />
                       {t('workspace.members.confirmRemove.removing')}
-                    </span>
+                    </>
                   ) : t('workspace.members.confirmRemove.confirm')}
                 </button>
               </div>

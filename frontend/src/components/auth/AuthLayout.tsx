@@ -9,10 +9,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <div className="hidden lg:flex lg:w-[55%] relative overflow-hidden bg-[#0f0a2a]">
         {/* Mesh gradient blobs */}
         <div className="absolute inset-0">
-          <div className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] rounded-full bg-primary-600/50 blur-[120px] animate-mesh-1" />
-          <div className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] rounded-full bg-accent-500/40 blur-[140px] animate-mesh-2" />
-          <div className="absolute top-[40%] left-[30%] w-[400px] h-[400px] rounded-full bg-primary-400/30 blur-[100px] animate-mesh-3" />
-          <div className="absolute top-[20%] right-[20%] w-[300px] h-[300px] rounded-full bg-blue-500/20 blur-[80px] animate-mesh-2" />
+          <div className="absolute top-[-10%] left-[-5%] w-[31.25rem] h-[31.25rem] rounded-full bg-primary-600/50 blur-[7.5rem] animate-mesh-1" />
+          <div className="absolute bottom-[-10%] right-[-5%] w-[37.5rem] h-[37.5rem] rounded-full bg-accent-500/40 blur-[8.75rem] animate-mesh-2" />
+          <div className="absolute top-[40%] left-[30%] w-[25rem] h-[25rem] rounded-full bg-primary-400/30 blur-[6.25rem] animate-mesh-3" />
+          <div className="absolute top-[20%] right-[20%] w-[18.75rem] h-[18.75rem] rounded-full bg-blue-500/20 blur-[5rem] animate-mesh-2" />
         </div>
 
         {/* Noise overlay for texture */}
@@ -24,7 +24,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           style={{
             backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px),
                               linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-            backgroundSize: '60px 60px',
+            backgroundSize: '3.75rem 3.75rem',
           }}
         />
 
@@ -74,8 +74,8 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       {/* Right panel — form area */}
       <div className="flex w-full lg:w-[45%] items-center justify-center p-6 sm:p-12 bg-gray-50/50 relative">
         {/* Subtle background decoration */}
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary-100/30 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4" />
-        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-accent-500/5 rounded-full blur-[100px] translate-y-1/3 -translate-x-1/4" />
+        <div className="absolute top-0 right-0 w-[25rem] h-[25rem] bg-primary-100/30 rounded-full blur-[7.5rem] -translate-y-1/2 translate-x-1/4" />
+        <div className="absolute bottom-0 left-0 w-[18.75rem] h-[18.75rem] bg-accent-500/5 rounded-full blur-[6.25rem] translate-y-1/3 -translate-x-1/4" />
 
         {/* Mobile logo */}
         <div className="lg:hidden absolute top-6 left-6 flex items-center gap-2.5">
@@ -87,7 +87,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <span className="text-lg font-bold text-gray-900">Agile App</span>
         </div>
 
-        <div className="w-full max-w-[420px] relative z-10 animate-slide-up-fade">
+        <div className="w-full max-w-[26.25rem] relative z-10 animate-slide-up-fade">
           {children}
         </div>
       </div>

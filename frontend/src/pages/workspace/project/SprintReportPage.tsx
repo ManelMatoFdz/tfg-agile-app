@@ -1,31 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ChevronLeft, ChevronRight, CheckCircle2, TrendingUp, Calendar, BarChart3, LineChart as LineChartIcon } from 'lucide-react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
+  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, Legend,
 } from 'recharts';
 import type { Sprint, Task, TaskPriority, TaskStatus } from '../../../types';
 import { sprintsApi } from '../../../api/sprints';
 import Alert from '../../../components/ui/Alert';
 
-// ── Colours ──────────────────────────────────────────────────────────────────
+// ── Chart colors (theme-independent hex) ─────────────────────────────────────
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
-  DONE: '#10b981',
+  DONE:        '#22c55e',
   IN_PROGRESS: '#3b82f6',
-  IN_REVIEW: '#f59e0b',
-  TODO: '#9ca3af',
+  IN_REVIEW:   '#f59e0b',
+  TODO:        '#9ca3af',
 };
 
-const PRIORITY_COLORS: Record<TaskPriority, { bar: string; badge: string }> = {
-  CRITICAL: { bar: '#ef4444', badge: 'bg-red-100 text-red-600' },
-  HIGH:     { bar: '#f59e0b', badge: 'bg-amber-100 text-amber-600' },
-  MEDIUM:   { bar: '#3b82f6', badge: 'bg-blue-100 text-blue-600' },
-  LOW:      { bar: '#9ca3af', badge: 'bg-gray-100 text-gray-500' },
+const PRIORITY_COLOR: Record<TaskPriority, string> = {
+  CRITICAL: '#ef4444',
+  HIGH:     '#f59e0b',
+  MEDIUM:   '#3b82f6',
+  LOW:      '#9ca3af',
 };
 
-// ── Health score ─────────────────────────────────────────────────────────────
+// ── Health score ──────────────────────────────────────────────────────────────
 
 type HealthLevel = 'excellent' | 'good' | 'acceptable' | 'poor';
 
@@ -36,26 +37,26 @@ function getHealth(donePct: number): HealthLevel {
   return 'poor';
 }
 
-const HEALTH_CONFIG: Record<HealthLevel, { bg: string; text: string; accent: string; icon: string }> = {
-  excellent: { bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-800', accent: '#10b981', icon: '🏆' },
-  good:      { bg: 'bg-blue-50 border-blue-200',       text: 'text-blue-800',    accent: '#3b82f6', icon: '👍' },
-  acceptable:{ bg: 'bg-amber-50 border-amber-200',     text: 'text-amber-800',   accent: '#f59e0b', icon: '⚠️' },
-  poor:      { bg: 'bg-red-50 border-red-200',         text: 'text-red-800',     accent: '#ef4444', icon: '📉' },
+const HEALTH_CONFIG: Record<HealthLevel, { accent: string; bg: string; textColor: string }> = {
+  excellent: { accent: '#22c55e', bg: 'rgba(34,197,94,0.07)',   textColor: '#166534' },
+  good:      { accent: '#3b82f6', bg: 'rgba(59,130,246,0.07)',  textColor: '#1e40af' },
+  acceptable:{ accent: '#f59e0b', bg: 'rgba(245,158,11,0.07)', textColor: '#92400e' },
+  poor:      { accent: '#ef4444', bg: 'rgba(239,68,68,0.07)',   textColor: '#991b1b' },
 };
 
 // ── Circular progress ring ────────────────────────────────────────────────────
 
-function CircularProgress({ pct, color, size = 88 }: { pct: number; color: string; size?: number }) {
-  const r = size / 2 - 7;
+function CircularProgress({ pct, color, size = 80 }: { pct: number; color: string; size?: number }) {
+  const r = size / 2 - 6;
   const circ = 2 * Math.PI * r;
   const [animated, setAnimated] = useState(false);
   useEffect(() => { requestAnimationFrame(() => setAnimated(true)); }, []);
   return (
-    <svg width={size} height={size} className="-rotate-90">
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#f3f4f6" strokeWidth={6} />
+    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--bg-hover)" strokeWidth={5} />
       <circle
         cx={size / 2} cy={size / 2} r={r}
-        fill="none" stroke={color} strokeWidth={6}
+        fill="none" stroke={color} strokeWidth={5}
         strokeLinecap="round"
         strokeDasharray={circ}
         strokeDashoffset={animated ? circ * (1 - pct) : circ}
@@ -65,7 +66,7 @@ function CircularProgress({ pct, color, size = 88 }: { pct: number; color: strin
   );
 }
 
-// ── Animated counter ─────────────────────────────────────────────────────────
+// ── Animated counter ──────────────────────────────────────────────────────────
 
 function AnimatedNumber({ target }: { target: number }) {
   const [val, setVal] = useState(0);
@@ -86,87 +87,64 @@ function AnimatedNumber({ target }: { target: number }) {
 
 // ── Burndown data ─────────────────────────────────────────────────────────────
 
-interface BurndownPoint {
-  label: string;
-  ideal: number;
-  actual: number | null;
-}
+interface BurndownPoint { label: string; ideal: number; actual: number | null; }
 
 function buildBurndown(sprint: Sprint, tasks: Task[]): BurndownPoint[] | null {
   if (!sprint.startDate || !sprint.endDate) return null;
-
-  const start = new Date(sprint.startDate);
-  start.setHours(0, 0, 0, 0);
-  const end = new Date(sprint.endDate);
-  end.setHours(23, 59, 59, 999);
+  const start = new Date(sprint.startDate); start.setHours(0, 0, 0, 0);
+  const end = new Date(sprint.endDate); end.setHours(23, 59, 59, 999);
   const today = new Date();
-
   const totalSP = tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
   if (totalSP === 0) return null;
-
   const doneTasks = tasks.filter((t) => t.status === 'DONE');
   const totalMs = end.getTime() - start.getTime();
   const totalDays = Math.max(Math.ceil(totalMs / 86_400_000), 1);
-
   const points: BurndownPoint[] = [];
-
   for (let i = 0; i <= totalDays; i++) {
     const day = new Date(start.getTime() + i * 86_400_000);
     const ideal = Math.round(totalSP * (1 - i / totalDays));
-
-    const completedSP = doneTasks
-      .filter((t) => new Date(t.updatedAt) <= day)
-      .reduce((s, t) => s + (t.storyPoints ?? 0), 0);
-
+    const completedSP = doneTasks.filter((t) => new Date(t.updatedAt) <= day).reduce((s, t) => s + (t.storyPoints ?? 0), 0);
     const actual = day <= today ? totalSP - completedSP : null;
-
-    points.push({
-      label: day.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
-      ideal,
-      actual,
-    });
+    points.push({ label: day.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), ideal, actual });
   }
-
   return points;
 }
 
-// ── Custom tooltip for burndown ───────────────────────────────────────────────
+// ── Custom tooltip ────────────────────────────────────────────────────────────
 
 function BurndownTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="glass-card-strong px-3 py-2 text-xs space-y-1 shadow-lg">
-      <p className="font-semibold text-gray-700">{label}</p>
+    <div style={{
+      background: 'var(--bg-elevated)', border: '1px solid var(--border-strong)',
+      borderRadius: 'var(--radius-md)', padding: '8px 10px',
+      fontSize: 11, boxShadow: '0 4px 12px rgba(0,0,0,.08)',
+    }}>
+      <p style={{ margin: '0 0 4px', fontWeight: 600, color: 'var(--text-muted)' }}>{label}</p>
       {payload.map((p) => (
-        <div key={p.name} className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-          <span className="text-gray-500">{p.name}:</span>
-          <span className="font-medium text-gray-800">{p.value} pts</span>
+        <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '2px 0' }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
+          <span style={{ color: 'var(--text-faint)' }}>{p.name}:</span>
+          <span style={{ fontWeight: 600, color: 'var(--text)' }}>{p.value} pts</span>
         </div>
       ))}
     </div>
   );
 }
 
-// ── Donut label ───────────────────────────────────────────────────────────────
+// ── Card wrapper ──────────────────────────────────────────────────────────────
 
-function DonutLabel({ cx, cy, total }: { cx: number; cy: number; total: number }) {
-  return (
-    <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" className="fill-gray-900 font-bold text-lg">
-      {total}
-    </text>
-  );
-}
+const card: React.CSSProperties = {
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+};
 
 // ── SprintReportPage ──────────────────────────────────────────────────────────
 
 export default function SprintReportPage() {
   const { t } = useTranslation();
-  const { workspaceId, projectId, sprintId } = useParams<{
-    workspaceId: string;
-    projectId: string;
-    sprintId: string;
-  }>();
+  const { workspaceId, projectId, sprintId } = useParams<{ workspaceId: string; projectId: string; sprintId: string }>();
 
   const [sprint, setSprint] = useState<Sprint | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -183,21 +161,20 @@ export default function SprintReportPage() {
   }, [sprintId, t]);
 
   if (loading) return (
-    <div className="flex justify-center py-20">
-      <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+      <div style={{ width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
     </div>
   );
 
   if (!sprint) return null;
 
-  // ── Derived metrics ──────────────────────────────────────────────────────────
+  // ── Derived ───────────────────────────────────────────────────────────────
 
   const total = tasks.length;
   const done = tasks.filter((t) => t.status === 'DONE').length;
   const inProgress = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
   const inReview = tasks.filter((t) => t.status === 'IN_REVIEW').length;
   const todo = tasks.filter((t) => t.status === 'TODO').length;
-
   const totalSP = tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
   const doneSP = tasks.filter((t) => t.status === 'DONE').reduce((s, t) => s + (t.storyPoints ?? 0), 0);
 
@@ -207,16 +184,10 @@ export default function SprintReportPage() {
 
   const startDate = sprint.startDate ? new Date(sprint.startDate) : null;
   const endDate = sprint.endDate ? new Date(sprint.endDate) : null;
-  const durationDays = startDate && endDate
-    ? Math.ceil((endDate.getTime() - startDate.getTime()) / 86_400_000)
-    : null;
-
+  const durationDays = startDate && endDate ? Math.ceil((endDate.getTime() - startDate.getTime()) / 86_400_000) : null;
   const velocity = durationDays && durationDays > 0 ? (doneSP / durationDays).toFixed(1) : null;
 
-  const formatDate = (d: Date) =>
-    d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
-
-  // ── Chart data ───────────────────────────────────────────────────────────────
+  const formatDate = (d: Date) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
   const pieData = [
     { name: t('tasks.status.DONE'), value: done, color: STATUS_COLORS.DONE },
@@ -230,262 +201,240 @@ export default function SprintReportPage() {
     name: t(`tasks.priority.${p}`),
     total: tasks.filter((t) => t.priority === p).length,
     done: tasks.filter((t) => t.priority === p && t.status === 'DONE').length,
-    color: PRIORITY_COLORS[p].bar,
+    color: PRIORITY_COLOR[p],
   })).filter((d) => d.total > 0);
 
   const burndown = buildBurndown(sprint, tasks);
 
-  const statusGroups: { status: TaskStatus; tasks: Task[] }[] = [
-    { status: 'IN_PROGRESS', tasks: tasks.filter((t) => t.status === 'IN_PROGRESS') },
-    { status: 'IN_REVIEW',   tasks: tasks.filter((t) => t.status === 'IN_REVIEW') },
-    { status: 'TODO',        tasks: tasks.filter((t) => t.status === 'TODO') },
-    { status: 'DONE',        tasks: tasks.filter((t) => t.status === 'DONE') },
-  ].filter((g) => g.tasks.length > 0);
+  const statusGroups = (['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'DONE'] as TaskStatus[])
+    .map((status) => ({
+      status,
+      tasks: tasks.filter((t) => t.status === status),
+    }))
+    .filter((g) => g.tasks.length > 0);
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-5 pb-8">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 32 }}>
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
-      {/* ── Back + header ────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
+      {/* Back + header */}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <Link
             to={`/workspaces/${workspaceId}/projects/${projectId}/sprints`}
-            className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-primary-600 transition-colors"
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--text-faint)', textDecoration: 'none', transition: `color var(--duration)` }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
           >
-            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ChevronLeft size={12} strokeWidth={2} />
             {t('projects.sprints.board.back')}
           </Link>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-xl font-bold text-gray-900 tracking-tight">{sprint.name}</h1>
-            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-              sprint.status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700'
-              : sprint.status === 'ACTIVE' ? 'bg-primary-100 text-primary-700'
-              : 'bg-gray-100 text-gray-500'
-            }`}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <h1 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.025em' }}>
+              {sprint.name}
+            </h1>
+            <span style={{
+              fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+              color: sprint.status === 'COMPLETED' ? '#16a34a' : sprint.status === 'ACTIVE' ? 'var(--accent)' : 'var(--text-faint)',
+              fontFamily: 'var(--font-mono)',
+            }}>
               {t(`projects.sprints.status.${sprint.status}`)}
             </span>
           </div>
           {(startDate || endDate || sprint.goal) && (
-            <div className="flex items-center gap-3 text-xs text-gray-400">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               {startDate && endDate && (
-                <span>{formatDate(startDate)} → {formatDate(endDate)}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+                  {formatDate(startDate)} → {formatDate(endDate)}
+                </span>
               )}
-              {sprint.goal && <span className="italic">{sprint.goal}</span>}
+              {sprint.goal && (
+                <span style={{ fontSize: 11, color: 'var(--text-faint)', fontStyle: 'italic' }}>{sprint.goal}</span>
+              )}
             </div>
           )}
         </div>
-        <div className="text-xs text-gray-400 text-right flex-shrink-0">
+        <div style={{ fontSize: 10, color: 'var(--text-faint)', textAlign: 'right', flexShrink: 0 }}>
           {t('projects.sprints.report.generatedAt')}<br />
-          <span className="font-medium text-gray-600">
+          <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>
             {new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}
           </span>
         </div>
       </div>
 
-      {/* ── Health banner ────────────────────────────────────────────────────── */}
-      <div className={`border rounded-2xl px-5 py-4 flex items-center gap-4 ${hConf.bg}`}>
-        <span className="text-3xl">{hConf.icon}</span>
-        <div className="flex-1">
-          <p className={`text-sm font-bold ${hConf.text}`}>
+      {/* Health banner */}
+      <div style={{
+        background: hConf.bg, border: `1px solid ${hConf.accent}33`,
+        borderRadius: 'var(--radius-md)', padding: '12px 16px',
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        <div style={{ flex: 1 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: hConf.textColor }}>
             {t(`projects.sprints.report.health.${health}`)}
           </p>
-          <p className={`text-xs mt-0.5 ${hConf.text} opacity-75`}>
-            {t('projects.sprints.report.healthSummary', {
-              done,
-              total,
-              doneSP,
-              totalSP,
-            })}
+          <p style={{ margin: '2px 0 0', fontSize: 11, color: hConf.textColor, opacity: 0.75 }}>
+            {t('projects.sprints.report.healthSummary', { done, total, doneSP, totalSP })}
           </p>
         </div>
-        <div className="flex-shrink-0 text-right">
-          <span className={`text-2xl font-extrabold ${hConf.text}`}>
+        <div style={{ flexShrink: 0, textAlign: 'right' }}>
+          <span style={{ fontSize: 22, fontWeight: 800, color: hConf.accent, fontFamily: 'var(--font-mono)' }}>
             {Math.round(donePct * 100)}%
           </span>
-          <p className={`text-xs ${hConf.text} opacity-70`}>{t('projects.sprints.report.completion')}</p>
+          <p style={{ margin: '1px 0 0', fontSize: 9, letterSpacing: '0.04em', textTransform: 'uppercase', color: hConf.textColor, opacity: 0.7 }}>
+            {t('projects.sprints.report.completion')}
+          </p>
         </div>
       </div>
 
-      {/* ── Metric cards ─────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* Metric cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
         {/* Tasks done */}
-        <div className="glass-card-strong p-4 flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-            <CircularProgress pct={donePct} color={hConf.accent} />
-            <div className="absolute inset-0 flex items-center justify-center rotate-90">
-              <span className="text-xs font-bold text-gray-700">
-                <AnimatedNumber target={done} />/{total}
+        <div style={{ ...card, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{ position: 'relative', flexShrink: 0 }}>
+            <CircularProgress pct={donePct} color={hConf.accent} size={72} />
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(90deg)' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                {done}/{total}
               </span>
             </div>
           </div>
           <div>
-            <p className="text-lg font-bold text-gray-900">
-              <AnimatedNumber target={done} />
-              <span className="text-sm text-gray-400 font-normal">/{total}</span>
-            </p>
-            <p className="text-xs text-gray-400">{t('projects.sprints.report.tasksDone')}</p>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+              <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
+                <AnimatedNumber target={done} />
+              </span>
+              <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>/{total}</span>
+            </div>
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)' }}>{t('projects.sprints.report.tasksDone')}</p>
           </div>
         </div>
 
         {/* Story points */}
-        <div className="glass-card-strong p-4 flex flex-col justify-between gap-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-400">{t('projects.sprints.report.storyPoints')}</p>
-            <svg className="w-4 h-4 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+        <div style={{ ...card, padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)' }}>{t('projects.sprints.report.storyPoints')}</p>
+            <TrendingUp size={14} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
           </div>
-          <p className="text-2xl font-extrabold text-gray-900">
-            <AnimatedNumber target={doneSP} />
-            <span className="text-sm font-normal text-gray-400">/{totalSP} pts</span>
-          </p>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+            <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
+              <AnimatedNumber target={doneSP} />
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>/{totalSP} pts</span>
+          </div>
           {totalSP > 0 && (
-            <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-              <div
-                className="h-1.5 rounded-full bg-primary-500 transition-all duration-1000"
-                style={{ width: `${Math.round((doneSP / totalSP) * 100)}%` }}
-              />
+            <div style={{ width: '100%', height: 3, background: 'var(--bg-hover)', borderRadius: 2, overflow: 'hidden' }}>
+              <div style={{ height: 3, borderRadius: 2, background: hConf.accent, width: `${Math.round((doneSP / totalSP) * 100)}%`, transition: 'width 1s ease' }} />
             </div>
           )}
         </div>
 
         {/* Duration */}
-        <div className="glass-card-strong p-4 flex flex-col justify-between gap-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-400">{t('projects.sprints.report.duration')}</p>
-            <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+        <div style={{ ...card, padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)' }}>{t('projects.sprints.report.duration')}</p>
+            <Calendar size={14} strokeWidth={1.75} style={{ color: '#f59e0b' }} />
           </div>
-          <p className="text-2xl font-extrabold text-gray-900">
-            {durationDays != null ? <><AnimatedNumber target={durationDays} /><span className="text-sm font-normal text-gray-400"> {t('projects.sprints.report.days')}</span></> : '—'}
-          </p>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+            <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
+              {durationDays != null ? <AnimatedNumber target={durationDays} /> : '—'}
+            </span>
+            {durationDays != null && <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t('projects.sprints.report.days')}</span>}
+          </div>
           {startDate && endDate && (
-            <p className="text-xs text-gray-400 truncate">
+            <p style={{ margin: 0, fontSize: 10, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
               {formatDate(startDate)} → {formatDate(endDate)}
             </p>
           )}
         </div>
 
         {/* Velocity */}
-        <div className="glass-card-strong p-4 flex flex-col justify-between gap-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-gray-400">{t('projects.sprints.report.velocity')}</p>
-            <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
+        <div style={{ ...card, padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)' }}>{t('projects.sprints.report.velocity')}</p>
+            <BarChart3 size={14} strokeWidth={1.75} style={{ color: '#22c55e' }} />
           </div>
-          <p className="text-2xl font-extrabold text-gray-900">
-            {velocity ?? '—'}
-            {velocity && <span className="text-sm font-normal text-gray-400"> pts/{t('projects.sprints.report.day')}</span>}
-          </p>
-          <p className="text-xs text-gray-400">{t('projects.sprints.report.velocityDesc')}</p>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+            <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
+              {velocity ?? '—'}
+            </span>
+            {velocity && <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>pts/{t('projects.sprints.report.day')}</span>}
+          </div>
+          <p style={{ margin: 0, fontSize: 10, color: 'var(--text-faint)' }}>{t('projects.sprints.report.velocityDesc')}</p>
         </div>
       </div>
 
-      {/* ── Charts row ───────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      {/* Charts row */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
 
-        {/* Burndown chart */}
+        {/* Burndown */}
         {burndown && burndown.length > 1 ? (
-          <div className="glass-card-strong p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-gray-900">{t('projects.sprints.report.burndown')}</h3>
-              <div className="flex items-center gap-3 text-xs text-gray-400">
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-0.5 bg-gray-300 rounded inline-block" style={{ borderTop: '2px dashed #d1d5db', height: 0 }} />
+          <div style={{ ...card, padding: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+              <h3 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+                {t('projects.sprints.report.burndown')}
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 10, color: 'var(--text-faint)' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ width: 12, height: 0, borderTop: '2px dashed #9ca3af', display: 'inline-block' }} />
                   {t('projects.sprints.report.ideal')}
                 </span>
-                <span className="flex items-center gap-1">
-                  <span className="w-3 h-0.5 bg-primary-500 rounded inline-block" />
+                <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <span style={{ width: 12, height: 2, background: 'var(--accent)', borderRadius: 1, display: 'inline-block' }} />
                   {t('projects.sprints.report.actual')}
                 </span>
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={200}>
               <LineChart data={burndown} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                <XAxis
-                  dataKey="label"
-                  tick={{ fontSize: 10, fill: '#9ca3af' }}
-                  interval="preserveStartEnd"
-                />
-                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'var(--text-faint)' } as object} interval="preserveStartEnd" />
+                <YAxis tick={{ fontSize: 9, fill: 'var(--text-faint)' } as object} />
                 <Tooltip content={<BurndownTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey="ideal"
-                  name={t('projects.sprints.report.ideal')}
-                  stroke="#d1d5db"
-                  strokeWidth={2}
-                  strokeDasharray="5 4"
-                  dot={false}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="actual"
-                  name={t('projects.sprints.report.actual')}
-                  stroke="#6366f1"
-                  strokeWidth={2.5}
-                  dot={{ r: 3, fill: '#6366f1' }}
-                  connectNulls={false}
-                />
+                <Line type="monotone" dataKey="ideal" name={t('projects.sprints.report.ideal')} stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
+                <Line type="monotone" dataKey="actual" name={t('projects.sprints.report.actual')} stroke="var(--accent)" strokeWidth={2} dot={{ r: 2.5, fill: 'var(--accent)' } as object} connectNulls={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
         ) : (
-          <div className="glass-card-strong p-5 flex flex-col items-center justify-center text-center min-h-[200px] gap-3">
-            <svg className="w-8 h-8 text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-                d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-            </svg>
-            <p className="text-xs text-gray-400">{t('projects.sprints.report.burndownNoData')}</p>
+          <div style={{ ...card, padding: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minHeight: 200, gap: 10 }}>
+            <LineChartIcon size={28} strokeWidth={1.25} style={{ color: 'var(--text-faint)' }} />
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)' }}>{t('projects.sprints.report.burndownNoData')}</p>
           </div>
         )}
 
-        {/* Donut — task distribution */}
-        <div className="glass-card-strong p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('projects.sprints.report.distribution')}</h3>
+        {/* Donut */}
+        <div style={{ ...card, padding: 18 }}>
+          <h3 style={{ margin: '0 0 14px', fontSize: 12, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+            {t('projects.sprints.report.distribution')}
+          </h3>
           {total > 0 ? (
-            <div className="flex items-center gap-6">
-              <ResponsiveContainer width={160} height={160}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <ResponsiveContainer width={140} height={140}>
                 <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={48}
-                    outerRadius={72}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={false}
-                  >
-                    {pieData.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                    <DonutLabel cx={80} cy={80} total={total} />
+                  <Pie data={pieData} cx="50%" cy="50%" innerRadius={42} outerRadius={64} paddingAngle={2} dataKey="value" label={false}>
+                    {pieData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
+                    <text x={70} y={70} textAnchor="middle" dominantBaseline="central" style={{ fill: 'var(--text)', fontWeight: 700, fontSize: 16 }}>
+                      {total}
+                    </text>
                   </Pie>
                   <Tooltip
-                    formatter={(v: number, name: string) => [`${v} (${Math.round((v / total) * 100)}%)`, name]}
-                    contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                    formatter={(value) => {
+                      const v = typeof value === 'number' ? value : 0;
+                      return [`${v} (${Math.round((v / total) * 100)}%)`];
+                    }}
+                    contentStyle={{ fontSize: 11, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-elevated)' } as object}
                   />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="flex-1 space-y-2">
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 5 }}>
                 {pieData.map((d) => (
-                  <div key={d.name} className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: d.color }} />
-                    <span className="text-xs text-gray-600 flex-1 truncate">{d.name}</span>
-                    <span className="text-xs font-semibold text-gray-800">{d.value}</span>
-                    <span className="text-xs text-gray-400 w-9 text-right">
+                  <div key={d.name} style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)', flex: 1, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{d.name}</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{d.value}</span>
+                    <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', minWidth: 30, textAlign: 'right' }}>
                       {Math.round((d.value / total) * 100)}%
                     </span>
                   </div>
@@ -493,110 +442,105 @@ export default function SprintReportPage() {
               </div>
             </div>
           ) : (
-            <p className="text-xs text-gray-400 text-center py-10">{t('projects.sprints.report.noTasks')}</p>
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', padding: '40px 0' }}>
+              {t('projects.sprints.report.noTasks')}
+            </p>
           )}
         </div>
       </div>
 
-      {/* ── Priority breakdown bar chart ─────────────────────────────────────── */}
+      {/* Priority bar chart */}
       {priorityData.length > 0 && (
-        <div className="glass-card-strong p-5">
-          <h3 className="text-sm font-semibold text-gray-900 mb-4">{t('projects.sprints.report.byPriority')}</h3>
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart
-              data={priorityData}
-              layout="vertical"
-              margin={{ top: 0, right: 20, bottom: 0, left: 10 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} allowDecimals={false} />
-              <YAxis
-                type="category"
-                dataKey="name"
-                tick={{ fontSize: 11, fill: '#6b7280' }}
-                width={60}
-              />
+        <div style={{ ...card, padding: 18 }}>
+          <h3 style={{ margin: '0 0 14px', fontSize: 12, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+            {t('projects.sprints.report.byPriority')}
+          </h3>
+          <ResponsiveContainer width="100%" height={150}>
+            <BarChart data={priorityData} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 10 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 9, fill: 'var(--text-faint)' } as object} allowDecimals={false} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'var(--text-muted)' } as object} width={56} />
               <Tooltip
-                formatter={(v: number, name: string) => [v, name]}
-                contentStyle={{ fontSize: 11, borderRadius: 8 }}
+                formatter={(value, name) => {
+                  const v = typeof value === 'number' ? value : 0;
+                  const label = typeof name === 'string' ? name : String(name ?? '');
+                  return [v, label];
+                }}
+                contentStyle={{ fontSize: 11, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-elevated)' } as object}
               />
-              <Legend
-                iconSize={8}
-                iconType="circle"
-                wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-              />
-              <Bar dataKey="done" name={t('tasks.status.DONE')} radius={[0, 4, 4, 0]} fill="#10b981" />
-              <Bar dataKey="total" name={t('projects.sprints.report.totalTasks')} radius={[0, 4, 4, 0]} fill="#e5e7eb" />
+              <Legend iconSize={7} iconType="circle" wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
+              <Bar dataKey="done" name={t('tasks.status.DONE')} radius={[0, 3, 3, 0]} fill="#22c55e" />
+              <Bar dataKey="total" name={t('projects.sprints.report.totalTasks')} radius={[0, 3, 3, 0]} fill="var(--bg-hover)" />
             </BarChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* ── Task list ────────────────────────────────────────────────────────── */}
-      <div className="glass-card-strong overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-gray-100">
-          <h3 className="text-sm font-semibold text-gray-900">{t('projects.sprints.report.taskList')}</h3>
+      {/* Task list */}
+      <div style={{ ...card, overflow: 'hidden' }}>
+        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)' }}>
+          <h3 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+            {t('projects.sprints.report.taskList')}
+          </h3>
         </div>
 
         {total === 0 ? (
-          <p className="text-xs text-gray-400 text-center py-8">{t('projects.sprints.report.noTasks')}</p>
+          <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', padding: '32px 0' }}>
+            {t('projects.sprints.report.noTasks')}
+          </p>
         ) : (
           <div>
-            {statusGroups.map(({ status, tasks: groupTasks }) => {
+            {statusGroups.map(({ status, tasks: groupTasks }, gi) => {
               const isOpen = expandedStatus === status;
               return (
-                <div key={status} className="border-b border-gray-50 last:border-b-0">
-                  {/* Group header */}
+                <div key={status} style={{ borderTop: gi > 0 ? '1px solid var(--border)' : 'none' }}>
                   <button
                     onClick={() => setExpandedStatus(isOpen ? null : status)}
-                    className="w-full flex items-center gap-3 px-5 py-3 hover:bg-gray-50/60 transition-colors cursor-pointer text-left"
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                      padding: '9px 16px', background: 'transparent', border: 'none', cursor: 'pointer',
+                      textAlign: 'left', transition: `background var(--duration)`,
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ background: STATUS_COLORS[status] }}
-                    />
-                    <span className="text-xs font-semibold text-gray-700 flex-1">
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: STATUS_COLORS[status], flexShrink: 0 }} />
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', flex: 1 }}>
                       {t(`tasks.status.${status}`)}
                     </span>
-                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                    <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '0 4px' }}>
                       {groupTasks.length}
                     </span>
                     {totalSP > 0 && (
-                      <span className="text-xs text-gray-400">
+                      <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
                         {groupTasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0)} pts
                       </span>
                     )}
-                    <svg
-                      className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${isOpen ? 'rotate-90' : ''}`}
-                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
+                    <ChevronRight size={12} strokeWidth={2} style={{ color: 'var(--text-faint)', transition: `transform var(--duration)`, transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
                   </button>
 
-                  {/* Task rows */}
                   {isOpen && (
-                    <div className="divide-y divide-gray-50 bg-gray-50/30">
-                      {groupTasks.map((task) => (
-                        <div key={task.id} className="flex items-center gap-3 px-5 py-2.5">
-                          <span className={`flex-shrink-0 text-xs font-semibold px-1.5 py-0.5 rounded-full ${PRIORITY_COLORS[task.priority].badge}`}>
-                            {t(`tasks.priority.${task.priority}`)}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-gray-800 truncate">{task.title}</p>
+                    <div style={{ background: 'var(--bg-hover)' }}>
+                      {groupTasks.map((task, idx) => (
+                        <div key={task.id} style={{
+                          display: 'flex', alignItems: 'center', gap: 10,
+                          padding: '7px 16px',
+                          borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+                        }}>
+                          <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: PRIORITY_COLOR[task.priority] }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ margin: 0, fontSize: 12, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.title}</p>
                             {task.description && (
-                              <p className="text-xs text-gray-400 truncate">{task.description}</p>
+                              <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.description}</p>
                             )}
                           </div>
                           {task.storyPoints != null && (
-                            <span className="flex-shrink-0 text-xs text-gray-400 font-medium">
-                              {task.storyPoints} pts
+                            <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 600, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1px 5px' }}>
+                              {task.storyPoints}
                             </span>
                           )}
                           {status === 'DONE' && (
-                            <svg className="flex-shrink-0 w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                            </svg>
+                            <CheckCircle2 size={13} strokeWidth={2} style={{ flexShrink: 0, color: '#22c55e' }} />
                           )}
                         </div>
                       ))}

@@ -25,53 +25,91 @@ export default function ProfilePage() {
   }, [avatarSrc]);
 
   return (
-    <div className="space-y-8 animate-slide-up-fade">
-      {/* Profile header card */}
-      <div className="glass-card-strong rounded-2xl p-8 relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 bg-gradient-to-r from-primary-500/5 via-accent-500/5 to-primary-500/5" />
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-200/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/4" />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      {/* Profile header */}
+      <div style={{
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-lg)',
+        padding: 24,
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* Subtle background accent */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          right: 0,
+          width: 200,
+          height: 200,
+          background: 'var(--accent-muted)',
+          borderRadius: '50%',
+          filter: 'blur(80px)',
+          transform: 'translate(30%, -50%)',
+          pointerEvents: 'none',
+        }} />
 
-        <div className="relative flex flex-col sm:flex-row items-center sm:items-start gap-6">
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap' }}>
           {/* Avatar */}
-          <div className="relative">
+          <div style={{ position: 'relative', flexShrink: 0 }}>
             {avatarSrc && !avatarLoadError ? (
               <img
                 src={avatarSrc}
                 alt=""
-                className="w-20 h-20 rounded-2xl object-cover ring-4 ring-white shadow-xl"
+                style={{
+                  width: 72, height: 72,
+                  borderRadius: 'var(--radius-md)',
+                  objectFit: 'cover',
+                  border: '2px solid var(--border)',
+                }}
                 referrerPolicy="no-referrer"
                 onError={() => setAvatarLoadError(true)}
               />
             ) : (
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-400 via-accent-400 to-primary-600 flex items-center justify-center text-white text-3xl font-bold ring-4 ring-white shadow-xl">
+              <div style={{
+                width: 72, height: 72,
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--accent)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#fff', fontSize: 28, fontWeight: 700,
+                border: '2px solid var(--border)',
+              }}>
                 {user?.username?.charAt(0).toUpperCase() ?? '?'}
               </div>
             )}
-            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-400 border-[3px] border-white rounded-full" />
+            {/* Online dot */}
+            <div style={{
+              position: 'absolute', bottom: -2, right: -2,
+              width: 14, height: 14,
+              background: '#22c55e',
+              border: '2px solid var(--bg-elevated)',
+              borderRadius: '50%',
+            }} />
           </div>
 
           {/* User info */}
-          <div className="text-center sm:text-left">
-            <h1 className="text-2xl font-bold text-gray-900">
+          <div>
+            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
               {user?.fullName || user?.username || t('profile.defaultUser')}
             </h1>
-            <p className="text-gray-500 mt-0.5">@{user?.username}</p>
-            <p className="text-sm text-gray-400 mt-1">{user?.email}</p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+              @{user?.username}
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>{user?.email}</p>
             {user?.bio && (
-              <p className="text-sm text-gray-600 mt-3 max-w-lg">{user.bio}</p>
+              <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-muted)', maxWidth: 480 }}>{user.bio}</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 stagger-children">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <ProfileInfo />
           <ChangePassword />
         </div>
-        <div className="space-y-6">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <AvatarUpload />
           <NotificationPreferences />
         </div>

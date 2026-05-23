@@ -81,7 +81,7 @@ class TaskServiceTest {
 
         assertThatThrownBy(() -> service.findById(taskId, UUID.randomUUID()))
                 .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessage("Task not found");
+                .hasMessage("TASK_NOT_FOUND");
     }
 
     @Test
@@ -107,10 +107,10 @@ class TaskServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.viewerPermissions());
 
         assertThatThrownBy(() -> service.create(projectId,
-                new CreateTaskRequestDto("Task", "Desc", null, null, null),
+                new CreateTaskRequestDto("Task", "Desc", null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Viewers cannot create tasks");
+                .hasMessage("VIEWER_CANNOT_CREATE_TASKS");
     }
 
     @Test
@@ -123,7 +123,7 @@ class TaskServiceTest {
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = service.create(projectId,
-                new CreateTaskRequestDto("Task", "Desc", null, null, 8),
+                new CreateTaskRequestDto("Task", "Desc", null, null),
                 callerId);
 
         assertThat(response.priority()).isEqualTo(TaskPriority.MEDIUM);
@@ -141,10 +141,10 @@ class TaskServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.viewerPermissions());
 
         assertThatThrownBy(() -> service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, 3),
+                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Viewers cannot edit tasks");
+                .hasMessage("VIEWER_CANNOT_EDIT_TASKS");
     }
 
     @Test
@@ -159,7 +159,7 @@ class TaskServiceTest {
         when(taskRepository.save(task)).thenReturn(task);
 
         var response = service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated by Member", "Desc", "HIGH", null, 3),
+                new UpdateTaskRequestDto("Updated by Member", "Desc", "HIGH", null),
                 callerId);
 
         assertThat(response.title()).isEqualTo("Updated by Member");
@@ -176,7 +176,7 @@ class TaskServiceTest {
         when(taskRepository.save(task)).thenReturn(task);
 
         var response = service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", callerId, 13),
+                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", callerId),
                 callerId);
 
         assertThat(response.title()).isEqualTo("Updated");
@@ -194,7 +194,7 @@ class TaskServiceTest {
         when(taskRepository.save(task)).thenReturn(task);
 
         var response = service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated by PO", "Desc", "CRITICAL", null, 21),
+                new UpdateTaskRequestDto("Updated by PO", "Desc", "CRITICAL", null),
                 callerId);
 
         assertThat(response.title()).isEqualTo("Updated by PO");
@@ -212,7 +212,7 @@ class TaskServiceTest {
 
         assertThatThrownBy(() -> service.move(task.getId(), new MoveTaskRequestDto("done", 1), callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Viewers cannot move tasks");
+                .hasMessage("VIEWER_CANNOT_MOVE_TASKS");
     }
 
     @Test

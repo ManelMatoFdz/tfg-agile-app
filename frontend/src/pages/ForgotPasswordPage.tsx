@@ -1,13 +1,26 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Mail, ArrowLeft, KeyRound } from 'lucide-react';
 import AuthLayout from '../components/auth/AuthLayout';
-import Input from '../components/ui/Input';
-import Button from '../components/ui/Button';
 import Alert from '../components/ui/Alert';
 import LanguageSwitcher from '../components/ui/LanguageSwitcher';
 import { authApi } from '../api/auth';
 import { useApiAction } from '../hooks/useApiAction';
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '0.5625rem 0.625rem 0.5625rem 2.125rem',
+  fontSize: '0.8125rem',
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--text)',
+  fontFamily: 'inherit',
+  outline: 'none',
+  boxSizing: 'border-box',
+  transition: `border-color var(--duration)`,
+};
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation();
@@ -21,16 +34,22 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthLayout>
-      <div className="space-y-8">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div>
           {/* Icon */}
-          <div className="w-14 h-14 bg-gradient-to-br from-primary-100 to-primary-50 rounded-2xl flex items-center justify-center mb-6 shadow-sm">
-            <svg className="w-7 h-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-            </svg>
+          <div style={{
+            width: '3rem', height: '3rem',
+            background: 'var(--accent-muted)',
+            borderRadius: 'var(--radius-md)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            marginBottom: '1rem',
+          }}>
+            <KeyRound size={22} strokeWidth={1.6} style={{ color: 'var(--accent)' }} />
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 tracking-tight">{t('auth.forgotPassword.title')}</h2>
-          <p className="mt-2 text-gray-500">
+          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            {t('auth.forgotPassword.title')}
+          </h2>
+          <p style={{ margin: '0.375rem 0 0', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
             {t('auth.forgotPassword.subtitle')}
           </p>
         </div>
@@ -41,36 +60,95 @@ export default function ForgotPasswordPage() {
         )}
 
         {!success && (
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <Input
-              label={t('auth.forgotPassword.email')}
-              type="email"
-              placeholder={t('auth.forgotPassword.emailPlaceholder')}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              icon={
-                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-              }
-            />
-            <Button type="submit" loading={loading} className="w-full h-12 text-base">
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+            <div>
+              <label style={{
+                display: 'block',
+                fontSize: '0.75rem',
+                fontWeight: 500,
+                color: 'var(--text-muted)',
+                marginBottom: '0.3125rem',
+              }}>
+                {t('auth.forgotPassword.email')}
+              </label>
+              <div style={{ position: 'relative' }}>
+                <span style={{
+                  position: 'absolute', left: '0.625rem', top: '50%', transform: 'translateY(-50%)',
+                  color: 'var(--text-faint)', pointerEvents: 'none', display: 'flex', alignItems: 'center',
+                }}>
+                  <Mail size={14} strokeWidth={1.8} />
+                </span>
+                <input
+                  type="email"
+                  placeholder={t('auth.forgotPassword.emailPlaceholder')}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                  onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '0.6875rem',
+                fontSize: '0.8125rem',
+                fontWeight: 600,
+                background: 'var(--accent)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 'var(--radius-md)',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                transition: `background var(--duration)`,
+              }}
+              onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = 'var(--accent-hover)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent)'; }}
+            >
+              {loading && (
+                <div style={{
+                  width: '0.875rem', height: '0.875rem',
+                  border: '0.125rem solid rgba(255,255,255,0.4)',
+                  borderTopColor: '#fff',
+                  borderRadius: '50%',
+                  animation: 'spin 0.7s linear infinite',
+                }} />
+              )}
               {t('auth.forgotPassword.submit')}
-            </Button>
+            </button>
           </form>
         )}
 
-        <p className="text-center text-sm text-gray-500">
-          <Link to="/login" className="font-semibold text-primary-600 hover:text-primary-700 hover:underline underline-offset-4 transition-all inline-flex items-center gap-1.5">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
+          <Link
+            to="/login"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3125rem',
+              fontSize: '0.8125rem',
+              fontWeight: 500,
+              color: 'var(--accent)',
+              textDecoration: 'none',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
+            onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
+          >
+            <ArrowLeft size={13} strokeWidth={2} />
             {t('auth.forgotPassword.backToLogin')}
           </Link>
-        </p>
+        </div>
 
-        <div className="flex justify-center pt-2">
+        <div style={{ display: 'flex', justifyContent: 'center' }}>
           <LanguageSwitcher compact />
         </div>
       </div>

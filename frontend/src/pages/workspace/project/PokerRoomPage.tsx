@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ChevronLeft, Zap } from 'lucide-react';
 import { pokerApi } from '../../../api/poker';
 import { useAuthStore } from '../../../store/authStore';
 import { usePokerSocket } from '../../../hooks/usePokerSocket';
@@ -12,6 +13,13 @@ import RoundHistory from '../../../components/poker/RoundHistory';
 import SelectTaskModal from '../../../components/poker/SelectTaskModal';
 import JoinSessionModal from '../../../components/poker/JoinSessionModal';
 import Alert from '../../../components/ui/Alert';
+
+const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
+  LOBBY:    { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+  VOTING:   { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
+  REVEALED: { color: '#7c3aed', bg: 'rgba(124,58,237,0.1)' },
+  CLOSED:   { color: '#9ca3af', bg: 'rgba(156,163,175,0.1)' },
+};
 
 export default function PokerRoomPage() {
   const { t } = useTranslation();
@@ -44,7 +52,6 @@ export default function PokerRoomPage() {
     error: wsError,
   } = usePokerSocket(sessionId);
 
-  // Load session data
   useEffect(() => {
     if (!sessionId) return;
     setLoading(true);
@@ -55,7 +62,6 @@ export default function PokerRoomPage() {
       .then(([s, r]) => {
         setSession(s);
         setRounds(r);
-        // Check if user needs to join
         const isParticipant = s.participants.some((p) => p.userId === user?.id);
         if (!isParticipant && s.status !== 'CLOSED') {
           setShowJoinModal(true);
@@ -65,11 +71,8 @@ export default function PokerRoomPage() {
       .finally(() => setLoading(false));
   }, [sessionId, user?.id, t]);
 
-  // Sync WebSocket state updates
   useEffect(() => {
-    if (sessionState) {
-      setSession(sessionState);
-    }
+    if (sessionState) setSession(sessionState);
   }, [sessionState]);
 
   useEffect(() => {
@@ -160,8 +163,14 @@ export default function PokerRoomPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+        <div style={{
+          width: 24, height: 24,
+          border: '2px solid var(--border)',
+          borderTopColor: 'var(--accent)',
+          borderRadius: '50%',
+          animation: 'spin 0.7s linear infinite',
+        }} />
       </div>
     );
   }
@@ -171,53 +180,73 @@ export default function PokerRoomPage() {
   }
 
   const isClosed = session.status === 'CLOSED';
+  const statusStyle = STATUS_STYLE[session.status] ?? STATUS_STYLE.CLOSED;
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {(error || wsError) && (
-        <div className="mb-4">
-          <Alert type="error" message={error || wsError!} onClose={() => setError(null)} />
-        </div>
+        <Alert type="error" message={error || wsError!} onClose={() => setError(null)} />
       )}
 
       {/* Header */}
-      <div className="glass-card-strong p-4 mb-4">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
+      <div style={{
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-md)',
+        padding: '12px 16px',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             <button
               onClick={() => navigate(`/workspaces/${workspaceId}/projects/${projectId}/poker`)}
-              className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer shrink-0"
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 28, height: 28, flexShrink: 0,
+                background: 'none', border: 'none', borderRadius: 'var(--radius-sm)',
+                color: 'var(--text-faint)', cursor: 'pointer',
+                transition: `background var(--duration), color var(--duration)`,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-faint)'; }}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
+              <ChevronLeft size={16} strokeWidth={2} />
             </button>
-            <div className="min-w-0">
-              <h2 className="text-lg font-bold text-gray-900 truncate">{session.name}</h2>
-              <div className="flex items-center gap-2 text-xs text-gray-400">
-                <span className={`px-2 py-0.5 rounded-full font-medium ${
-                  isClosed ? 'bg-gray-100 text-gray-500' :
-                  session.status === 'VOTING' ? 'bg-amber-100 text-amber-700' :
-                  session.status === 'REVEALED' ? 'bg-purple-100 text-purple-700' :
-                  'bg-blue-100 text-blue-700'
-                }`}>
+            <div style={{ minWidth: 0 }}>
+              <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {session.name}
+              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                <span style={{
+                  fontSize: 10, fontWeight: 600,
+                  color: statusStyle.color, background: statusStyle.bg,
+                  borderRadius: 'var(--radius-sm)', padding: '1px 6px',
+                  letterSpacing: '0.03em',
+                }}>
                   {t(`poker.status.${session.status}`)}
                 </span>
-                <span>{t(`poker.decks.${session.deck}`)}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t(`poker.decks.${session.deck}`)}</span>
                 {connected && (
-                  <span className="flex items-center gap-1 text-emerald-500">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#22c55e' }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e', display: 'inline-block' }} />
                     {t('poker.room.connected')}
                   </span>
                 )}
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             {!isClosed && (
               <button
                 onClick={handleLeave}
-                className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg transition-colors cursor-pointer"
+                style={{
+                  padding: '5px 10px', fontSize: 11, fontWeight: 500,
+                  color: 'var(--text-muted)', background: 'none',
+                  border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)',
+                  cursor: 'pointer', transition: `background var(--duration)`,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
               >
                 {t('poker.room.leave')}
               </button>
@@ -226,7 +255,16 @@ export default function PokerRoomPage() {
               <button
                 onClick={handleClose}
                 disabled={closing}
-                className="px-3 py-1.5 text-xs text-red-600 hover:text-red-700 border border-red-200 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                style={{
+                  padding: '5px 10px', fontSize: 11, fontWeight: 500,
+                  color: 'var(--danger)', background: 'none',
+                  border: '1px solid var(--danger)', borderRadius: 'var(--radius-sm)',
+                  cursor: closing ? 'not-allowed' : 'pointer',
+                  opacity: closing ? 0.5 : 1,
+                  transition: `background var(--duration)`,
+                }}
+                onMouseEnter={(e) => { if (!closing) e.currentTarget.style.background = 'var(--danger-bg)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
               >
                 {t('poker.room.closeSession')}
               </button>
@@ -237,9 +275,11 @@ export default function PokerRoomPage() {
 
       {/* Closed state */}
       {isClosed && (
-        <div className="space-y-4">
-          <div className="text-center py-8">
-            <p className="text-gray-500 font-medium">{t('poker.room.sessionClosed')}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>
+              {t('poker.room.sessionClosed')}
+            </p>
           </div>
           <RoundHistory rounds={rounds} />
         </div>
@@ -249,29 +289,58 @@ export default function PokerRoomPage() {
       {!isClosed && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
           {/* Main area */}
-          <div className="lg:col-span-3 space-y-4">
-            {/* Current task info */}
+          <div className="lg:col-span-3" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Current task */}
             {currentRound && (
-              <div className="glass-card-strong p-4">
-                <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{t('poker.room.estimating')}</p>
-                <p className="text-base font-semibold text-gray-900">{currentRound.taskTitle}</p>
+              <div style={{
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-md)',
+                padding: '12px 16px',
+              }}>
+                <p style={{ margin: '0 0 2px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+                  {t('poker.room.estimating')}
+                </p>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                  {currentRound.taskTitle}
+                </p>
               </div>
             )}
 
-            {/* Lobby state - no active round */}
+            {/* Lobby — no active round */}
             {session.status === 'LOBBY' && !currentRound && (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary-50 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-primary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 10h4l3-7 4 14 3-7h4" />
-                  </svg>
+              <div style={{
+                textAlign: 'center',
+                padding: '48px 24px',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                borderRadius: 'var(--radius-lg)',
+              }}>
+                <div style={{
+                  width: 44, height: 44, background: 'var(--accent-muted)',
+                  borderRadius: 'var(--radius-md)', display: 'flex',
+                  alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 12px',
+                }}>
+                  <Zap size={20} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
                 </div>
-                <p className="text-gray-600 font-medium mb-1">{t('poker.room.lobbyTitle')}</p>
-                <p className="text-sm text-gray-400 mb-4">{t('poker.room.lobbySubtitle')}</p>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>
+                  {t('poker.room.lobbyTitle')}
+                </p>
+                <p style={{ margin: '4px 0 16px', fontSize: 12, color: 'var(--text-faint)' }}>
+                  {t('poker.room.lobbySubtitle')}
+                </p>
                 {isFacilitator && (
                   <button
                     onClick={() => setShowTaskModal(true)}
-                    className="px-5 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-xl transition-colors cursor-pointer"
+                    style={{
+                      padding: '8px 18px', fontSize: 12, fontWeight: 600,
+                      background: 'var(--accent)', color: '#fff',
+                      border: 'none', borderRadius: 'var(--radius-md)',
+                      cursor: 'pointer', transition: `background var(--duration)`,
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-hover)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--accent)')}
                   >
                     {t('poker.room.startRound')}
                   </button>
@@ -281,7 +350,7 @@ export default function PokerRoomPage() {
 
             {/* Voting state */}
             {session.status === 'VOTING' && currentRound?.status === 'VOTING' && (
-              <div className="space-y-4">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {isVoter ? (
                   <VotingCards
                     deck={session.deck}
@@ -289,17 +358,29 @@ export default function PokerRoomPage() {
                     onVote={handleVote}
                   />
                 ) : (
-                  <div className="text-center py-8 glass-card-strong">
-                    <p className="text-gray-500">{t('poker.room.waitingVotes')}</p>
+                  <div style={{
+                    textAlign: 'center', padding: '32px',
+                    background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                  }}>
+                    <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>
+                      {t('poker.room.waitingVotes')}
+                    </p>
                   </div>
                 )}
 
-                {/* Facilitator reveal button */}
                 {isFacilitator && (
-                  <div className="flex justify-center">
+                  <div style={{ display: 'flex', justifyContent: 'center' }}>
                     <button
                       onClick={sendReveal}
-                      className="px-6 py-2.5 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-xl transition-colors cursor-pointer"
+                      style={{
+                        padding: '8px 20px', fontSize: 12, fontWeight: 600,
+                        background: '#7c3aed', color: '#fff',
+                        border: 'none', borderRadius: 'var(--radius-md)',
+                        cursor: 'pointer', transition: `background var(--duration)`,
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = '#6d28d9')}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = '#7c3aed')}
                     >
                       {t('poker.room.revealVotes')}
                     </button>
@@ -319,23 +400,28 @@ export default function PokerRoomPage() {
               />
             )}
 
-            {/* Round history */}
             <RoundHistory rounds={rounds} />
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-4">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <ParticipantsList
               participants={session.participants}
               voteStatus={voteStatus}
               currentUserId={user?.id}
             />
 
-            {/* Facilitator: start next round */}
             {isFacilitator && session.status === 'LOBBY' && !currentRound && rounds.length > 0 && (
               <button
                 onClick={() => setShowTaskModal(true)}
-                className="w-full px-4 py-2.5 text-sm font-medium text-primary-700 bg-primary-50 hover:bg-primary-100 rounded-xl transition-colors cursor-pointer"
+                style={{
+                  width: '100%', padding: '8px', fontSize: 12, fontWeight: 500,
+                  color: 'var(--accent)', background: 'var(--accent-muted)',
+                  border: '1px solid var(--accent)', borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer', transition: `background var(--duration)`,
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-muted)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--accent-muted)')}
               >
                 {t('poker.room.nextTask')}
               </button>
@@ -344,7 +430,6 @@ export default function PokerRoomPage() {
         </div>
       )}
 
-      {/* Modals */}
       {showTaskModal && projectId && (
         <SelectTaskModal
           projectId={projectId}

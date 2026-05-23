@@ -1,47 +1,126 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ChevronRight, Plus, ArrowLeftRight, UserMinus, LogOut, Trash2, Users } from 'lucide-react';
 import { teamsApi } from '../../api/teams';
 import { workspacesApi } from '../../api/workspaces';
 import { useApiAction } from '../../hooks/useApiAction';
 import { useUserMap } from '../../hooks/useUserMap';
 import { useAuthStore } from '../../store/authStore';
-import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
 import Alert from '../../components/ui/Alert';
 import type { Team, TeamMember, TeamRole, UserSummary } from '../../types';
 
-function RoleBadge({ role }: { role: TeamRole }) {
-  const { t } = useTranslation();
-  if (role === 'ADMIN') {
-    return (
-      <span className="text-xs font-medium bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full">
-        {t('teams.detail.roles.ADMIN')}
-      </span>
-    );
-  }
-  return (
-    <span className="text-xs font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
-      {t('teams.detail.roles.MEMBER')}
-    </span>
-  );
-}
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '6px 10px',
+  fontSize: 12,
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--text)',
+  fontFamily: 'inherit',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
 
-function UserAvatar({ user, size = 'md' }: { user: UserSummary; size?: 'sm' | 'md' }) {
+const modalOverlay: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 50,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 16,
+};
+
+const modalBg: React.CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  backgroundColor: 'var(--bg-overlay)',
+};
+
+const modalCard: React.CSSProperties = {
+  position: 'relative',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-lg)',
+  padding: 20,
+  width: '100%',
+  maxWidth: 360,
+  boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+};
+
+const btnPrimary: React.CSSProperties = {
+  flex: 1,
+  padding: '7px 14px',
+  fontSize: 12,
+  fontWeight: 500,
+  background: 'var(--accent)',
+  color: '#fff',
+  border: 'none',
+  borderRadius: 'var(--radius-md)',
+  cursor: 'pointer',
+};
+
+const btnSecondary: React.CSSProperties = {
+  flex: 1,
+  padding: '7px 14px',
+  fontSize: 12,
+  fontWeight: 500,
+  background: 'var(--bg-hover)',
+  color: 'var(--text-muted)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  cursor: 'pointer',
+};
+
+function Avatar({ name, avatarUrl, size = 32 }: { name: string; avatarUrl?: string; size?: number }) {
   const [imgError, setImgError] = useState(false);
-  const dim = size === 'sm' ? 'w-8 h-8' : 'w-9 h-9';
-  const text = size === 'sm' ? 'text-xs' : 'text-sm';
-  const label = user.fullName || user.username;
   return (
-    <div className={`${dim} rounded-xl overflow-hidden flex-shrink-0`}>
-      {user.avatarUrl && !imgError ? (
-        <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" onError={() => setImgError(true)} />
+    <div style={{
+      width: size, height: size,
+      borderRadius: 'var(--radius-sm)',
+      overflow: 'hidden',
+      flexShrink: 0,
+    }}>
+      {avatarUrl && !imgError ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+          referrerPolicy="no-referrer"
+          onError={() => setImgError(true)}
+        />
       ) : (
-        <div className={`w-full h-full bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white ${text} font-bold`}>
-          {label.charAt(0).toUpperCase()}
+        <div style={{
+          width: '100%', height: '100%',
+          background: 'var(--accent)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: '#fff', fontSize: size * 0.38, fontWeight: 700,
+        }}>
+          {name.charAt(0).toUpperCase()}
         </div>
       )}
     </div>
+  );
+}
+
+function RoleBadge({ role }: { role: TeamRole }) {
+  const { t } = useTranslation();
+  const isAdmin = role === 'ADMIN';
+  return (
+    <span style={{
+      fontSize: 10,
+      fontWeight: 600,
+      color: isAdmin ? 'var(--accent)' : 'var(--text-faint)',
+      background: isAdmin ? 'var(--accent-muted)' : 'var(--bg-hover)',
+      border: `1px solid ${isAdmin ? 'var(--accent)' : 'var(--border)'}`,
+      borderRadius: 'var(--radius-sm)',
+      padding: '1px 6px',
+      letterSpacing: '0.03em',
+    }}>
+      {t(`teams.detail.roles.${role}`)}
+    </span>
   );
 }
 
@@ -63,77 +142,93 @@ function MemberRow({
   removing: boolean;
 }) {
   const { t } = useTranslation();
+  const [hovered, setHovered] = useState(false);
   const newRole: TeamRole = member.role === 'ADMIN' ? 'MEMBER' : 'ADMIN';
   const displayName = user?.fullName || user?.username || t('common.unknownUser');
-  const fakeUser: UserSummary = { id: member.userId, username: displayName, fullName: user?.fullName, avatarUrl: user?.avatarUrl };
 
   return (
-    <div className="flex items-center justify-between py-3 px-4 rounded-xl hover:bg-gray-50/70 transition-colors group">
-      <div className="flex items-center gap-3">
-        <UserAvatar user={fakeUser} />
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '8px 12px',
+        background: hovered ? 'var(--bg-hover)' : 'transparent',
+        borderRadius: 'var(--radius-sm)',
+        transition: `background var(--duration)`,
+      }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Avatar name={displayName} avatarUrl={user?.avatarUrl} size={32} />
         <div>
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-medium text-gray-900">{displayName}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)' }}>{displayName}</span>
             <RoleBadge role={member.role} />
           </div>
-          <p className="text-xs text-gray-400">
-            {t('common.since', { date: new Date(member.joinedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) })}
+          <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)' }}>
+            {t('common.since', {
+              date: new Date(member.joinedAt).toLocaleDateString(undefined, {
+                day: 'numeric', month: 'short', year: 'numeric',
+              }),
+            })}
           </p>
         </div>
       </div>
+
       {canManage && (
-        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-all duration-200">
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 2,
+          opacity: hovered ? 1 : 0,
+          transition: `opacity var(--duration)`,
+        }}>
           <button
             onClick={() => onChangeRole(member.userId, newRole)}
             disabled={removing}
-            className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-all duration-200 cursor-pointer flex-shrink-0"
             title={member.role === 'ADMIN' ? t('teams.detail.demoteToMember') : t('teams.detail.promoteToAdmin')}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 26, height: 26, border: 'none', borderRadius: 'var(--radius-sm)',
+              background: 'transparent', color: 'var(--text-faint)',
+              cursor: removing ? 'not-allowed' : 'pointer',
+              transition: `background var(--duration), color var(--duration)`,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-muted)'; e.currentTarget.style.color = 'var(--accent)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-faint)'; }}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-            </svg>
+            <ArrowLeftRight size={12} strokeWidth={2} />
           </button>
           {!isSelf && (
             <button
               onClick={() => onRemove(member.userId)}
               disabled={removing}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200 cursor-pointer flex-shrink-0"
               title={t('teams.detail.removeMember')}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                width: 26, height: 26, border: 'none', borderRadius: 'var(--radius-sm)',
+                background: 'transparent', color: 'var(--text-faint)',
+                cursor: removing ? 'not-allowed' : 'pointer',
+                transition: `background var(--duration), color var(--duration)`,
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger-bg)'; e.currentTarget.style.color = 'var(--danger)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-faint)'; }}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
+              {removing ? (
+                <div style={{
+                  width: 10, height: 10,
+                  border: '2px solid var(--border)',
+                  borderTopColor: 'var(--danger)',
+                  borderRadius: '50%',
+                  animation: 'spin 0.7s linear infinite',
+                }} />
+              ) : (
+                <UserMinus size={12} strokeWidth={2} />
+              )}
             </button>
           )}
         </div>
       )}
-    </div>
-  );
-}
-
-function MemberList({ members, userMap, canManage, currentUserId, onRemove, onChangeRole, removingId }: {
-  members: TeamMember[];
-  userMap: Map<string, UserSummary>;
-  canManage: boolean;
-  currentUserId?: string;
-  onRemove: (userId: string) => void;
-  onChangeRole: (userId: string, newRole: TeamRole) => void;
-  removingId: string | null;
-}) {
-  return (
-    <div className="divide-y divide-gray-100/60">
-      {members.map((m) => (
-        <MemberRow
-          key={m.id}
-          member={m}
-          user={userMap.get(m.userId)}
-          canManage={canManage}
-          isSelf={m.userId === currentUserId}
-          onRemove={onRemove}
-          onChangeRole={onChangeRole}
-          removing={removingId === m.userId}
-        />
-      ))}
     </div>
   );
 }
@@ -160,44 +255,73 @@ function MemberPicker({
   const { t } = useTranslation();
 
   return (
-    <div className="mb-4 animate-fade-in">
+    <div style={{ marginBottom: 12 }}>
       {error && <Alert type="error" message={error} onClose={onErrorClose} />}
-      <Input
+      <input
         placeholder={t('teams.detail.searchPlaceholder')}
         value={search}
         onChange={(e) => onSearch(e.target.value)}
         autoFocus
-        className="w-full"
+        style={inputStyle}
       />
-      <div className="mt-2 max-h-52 overflow-y-auto rounded-xl border border-gray-100 bg-white shadow-sm">
+      <div style={{
+        marginTop: 4,
+        maxHeight: 200,
+        overflowY: 'auto',
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-md)',
+      }}>
         {loading ? (
-          <div className="flex justify-center py-4">
-            <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
+            <div style={{
+              width: 16, height: 16,
+              border: '2px solid var(--border)',
+              borderTopColor: 'var(--accent)',
+              borderRadius: '50%',
+              animation: 'spin 0.7s linear infinite',
+            }} />
           </div>
         ) : candidates.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-4">{t('teams.detail.noResults')}</p>
+          <p style={{ margin: 0, padding: '14px 12px', fontSize: 12, color: 'var(--text-faint)', textAlign: 'center' }}>
+            {t('teams.detail.noResults')}
+          </p>
         ) : (
-          <div className="divide-y divide-gray-50">
-            {candidates.map((u) => (
-              <button
-                key={u.id}
-                onClick={() => onSelect(u.id)}
-                className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-primary-50/60 transition-colors text-left cursor-pointer"
-              >
-                <UserAvatar user={u} size="sm" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{u.fullName || u.username}</p>
-                  <p className="text-xs text-gray-400">@{u.username}</p>
-                </div>
-              </button>
-            ))}
-          </div>
+          candidates.map((u, idx) => (
+            <button
+              key={u.id}
+              onClick={() => onSelect(u.id)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '7px 10px',
+                background: 'transparent',
+                border: 'none',
+                borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+                textAlign: 'left',
+                cursor: 'pointer',
+                transition: `background var(--duration)`,
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            >
+              <Avatar name={u.fullName || u.username} avatarUrl={u.avatarUrl} size={28} />
+              <div>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: 'var(--text)' }}>
+                  {u.fullName || u.username}
+                </p>
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)' }}>@{u.username}</p>
+              </div>
+            </button>
+          ))
         )}
       </div>
-      <div className="mt-2 flex justify-end">
-        <Button variant="secondary" onClick={onCancel}>
+      <div style={{ marginTop: 6, display: 'flex', justifyContent: 'flex-end' }}>
+        <button onClick={onCancel} style={{ ...btnSecondary, flex: 'none', padding: '5px 12px' }}>
           {t('common.cancel')}
-        </Button>
+        </button>
       </div>
     </div>
   );
@@ -228,7 +352,6 @@ export default function TeamDetailPage() {
   const leaveAction = useApiAction<void>();
   const roleChangeAction = useApiAction<TeamMember>();
 
-  // userMap covers both team members and all workspace members for the picker
   const allTrackedIds = [...new Set([...members.map((m) => m.userId), ...workspaceMemberIds])];
   const userMap = useUserMap(allTrackedIds);
 
@@ -324,14 +447,19 @@ export default function TeamDetailPage() {
   return (
     <div>
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-gray-400 mb-6">
-        <Link to={`/workspaces/${workspaceId}/teams`} className="hover:text-primary-600 transition-colors">
+      <nav style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 20 }}>
+        <Link
+          to={`/workspaces/${workspaceId}/teams`}
+          style={{ fontSize: 12, color: 'var(--text-faint)', textDecoration: 'none', transition: `color var(--duration)` }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+          onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-faint)')}
+        >
           {t('teams.detail.breadcrumb')}
         </Link>
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-        <span className="text-gray-700 font-medium truncate">{team?.name ?? '...'}</span>
+        <ChevronRight size={12} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+        <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {team?.name ?? '…'}
+        </span>
       </nav>
 
       {teamAction.error && (
@@ -339,49 +467,87 @@ export default function TeamDetailPage() {
       )}
 
       {teamAction.loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+        <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+          <div style={{
+            width: 24, height: 24,
+            border: '2px solid var(--border)',
+            borderTopColor: 'var(--accent)',
+            borderRadius: '50%',
+            animation: 'spin 0.7s linear infinite',
+          }} />
         </div>
       ) : team ? (
-        <div className="space-y-6">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {/* Team header */}
-          <div className="glass-card-strong p-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-xl font-bold shadow-md flex-shrink-0">
+          <div style={{
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            padding: 20,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                <div style={{
+                  width: 44, height: 44,
+                  background: 'var(--accent)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: '#fff', fontSize: 20, fontWeight: 700, flexShrink: 0,
+                }}>
                   {team.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900 tracking-tight">{team.name}</h1>
+                  <h1 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+                    {team.name}
+                  </h1>
                   {team.description && (
-                    <p className="text-gray-500 mt-0.5">{team.description}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>{team.description}</p>
                   )}
-                  <p className="text-xs text-gray-400 mt-1.5">
-                    {t('common.createdAt', { date: new Date(team.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' }) })}
+                  <p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+                    {t('common.createdAt', {
+                      date: new Date(team.createdAt).toLocaleDateString(undefined, {
+                        day: 'numeric', month: 'long', year: 'numeric',
+                      }),
+                    })}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-1">
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 {isCurrentUserMember && (
                   <button
                     onClick={() => setShowLeaveConfirm(true)}
-                    className="p-2 rounded-lg text-gray-400 hover:text-amber-600 hover:bg-amber-50 transition-all duration-200 cursor-pointer flex-shrink-0"
                     title={t('teams.detail.leaveTeam')}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 30, height: 30, border: 'none',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'transparent', color: 'var(--text-faint)',
+                      cursor: 'pointer',
+                      transition: `background var(--duration), color var(--duration)`,
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(234,179,8,0.1)'; e.currentTarget.style.color = '#ca8a04'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-faint)'; }}
                   >
-                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
+                    <LogOut size={14} strokeWidth={2} />
                   </button>
                 )}
                 {canManage && (
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200 cursor-pointer flex-shrink-0"
                     title={t('teams.detail.delete')}
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: 30, height: 30, border: 'none',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'transparent', color: 'var(--text-faint)',
+                      cursor: 'pointer',
+                      transition: `background var(--duration), color var(--duration)`,
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger-bg)'; e.currentTarget.style.color = 'var(--danger)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-faint)'; }}
                   >
-                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
+                    <Trash2 size={14} strokeWidth={2} />
                   </button>
                 )}
               </div>
@@ -389,30 +555,47 @@ export default function TeamDetailPage() {
           </div>
 
           {/* Members */}
-          <div className="glass-card-strong p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-gray-900">
-                {t('teams.detail.members')}
+          <div style={{
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            padding: 16,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <h2 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+                  {t('teams.detail.members')}
+                </h2>
                 {members.length > 0 && (
-                  <span className="ml-2 text-xs font-medium bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, color: 'var(--text-faint)',
+                    background: 'var(--bg-hover)', border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-sm)', padding: '1px 5px',
+                    fontFamily: 'var(--font-mono)',
+                  }}>
                     {members.length}
                   </span>
                 )}
-              </h2>
+              </div>
               {canManage && !showAddMember && (
                 <button
                   onClick={() => setShowAddMember(true)}
-                  className="flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors cursor-pointer"
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    fontSize: 11, fontWeight: 500, color: 'var(--accent)',
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    padding: '3px 6px', borderRadius: 'var(--radius-sm)',
+                    transition: `background var(--duration)`,
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-muted)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
+                  <Plus size={11} strokeWidth={2.5} />
                   {t('teams.detail.addMember')}
                 </button>
               )}
             </div>
 
-            {/* Member picker */}
             {showAddMember && (
               <MemberPicker
                 candidates={candidates}
@@ -427,147 +610,219 @@ export default function TeamDetailPage() {
             )}
 
             {membersAction.loading ? (
-              <div className="flex justify-center py-6">
-                <div className="w-6 h-6 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+                <div style={{
+                  width: 18, height: 18,
+                  border: '2px solid var(--border)',
+                  borderTopColor: 'var(--accent)',
+                  borderRadius: '50%',
+                  animation: 'spin 0.7s linear infinite',
+                }} />
               </div>
             ) : members.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-sm text-gray-400">{t('teams.detail.noMembers')}</p>
+              <div style={{ textAlign: 'center', padding: '24px 0' }}>
+                <Users size={24} strokeWidth={1.5} style={{ color: 'var(--text-faint)', marginBottom: 6 }} />
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-faint)' }}>{t('teams.detail.noMembers')}</p>
                 {canManage && !showAddMember && (
                   <button
                     onClick={() => setShowAddMember(true)}
-                    className="mt-3 text-sm font-medium text-primary-600 hover:text-primary-700 cursor-pointer transition-colors"
+                    style={{
+                      marginTop: 8, fontSize: 11, fontWeight: 500, color: 'var(--accent)',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                    }}
                   >
                     {t('teams.detail.addFirst')}
                   </button>
                 )}
               </div>
             ) : (
-              <MemberList
-                members={members}
-                userMap={userMap}
-                canManage={canManage}
-                currentUserId={currentUser?.id}
-                onRemove={(userId) => setConfirmRemoveId(userId)}
-                onChangeRole={(userId, newRole) => setConfirmRoleChange({ userId, newRole })}
-                removingId={removingId}
-              />
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {members.map((m) => (
+                  <MemberRow
+                    key={m.id}
+                    member={m}
+                    user={userMap.get(m.userId)}
+                    canManage={canManage}
+                    isSelf={m.userId === currentUser?.id}
+                    onRemove={(userId) => setConfirmRemoveId(userId)}
+                    onChangeRole={(userId, newRole) => setConfirmRoleChange({ userId, newRole })}
+                    removing={removingId === m.userId}
+                  />
+                ))}
+              </div>
             )}
           </div>
         </div>
       ) : null}
 
-      {/* Leave team confirm modal */}
+      {/* Leave team confirm */}
       {showLeaveConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setShowLeaveConfirm(false); leaveAction.reset(); }} />
-          <div className="relative z-10 w-full max-w-sm glass-card-strong p-6 shadow-2xl animate-fade-in">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
+        <div style={modalOverlay}>
+          <div style={modalBg} onClick={() => { setShowLeaveConfirm(false); leaveAction.reset(); }} />
+          <div style={modalCard}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{
+                width: 36, height: 36,
+                background: 'rgba(234,179,8,0.1)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <LogOut size={16} strokeWidth={2} style={{ color: '#ca8a04' }} />
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">{t('teams.detail.confirmLeave.title')}</h2>
+              <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                {t('teams.detail.confirmLeave.title')}
+              </h2>
             </div>
             <p
-              className="text-sm text-gray-500 mb-5"
+              style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--text-muted)' }}
               dangerouslySetInnerHTML={{ __html: t('teams.detail.confirmLeave.message', { name: team?.name ?? '' }) }}
             />
             {leaveAction.error && (
               <Alert type="error" message={leaveAction.error} onClose={leaveAction.reset} />
             )}
-            <div className="flex gap-3">
-              <Button
-                variant="danger"
-                loading={leaveAction.loading}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                style={{
+                  ...btnPrimary,
+                  background: 'var(--danger)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  opacity: leaveAction.loading ? 0.7 : 1,
+                  cursor: leaveAction.loading ? 'not-allowed' : 'pointer',
+                }}
+                disabled={leaveAction.loading}
                 onClick={handleLeaveTeam}
-                className="flex-1"
               >
+                {leaveAction.loading && (
+                  <div style={{
+                    width: 10, height: 10,
+                    border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff',
+                    borderRadius: '50%', animation: 'spin 0.7s linear infinite',
+                  }} />
+                )}
                 {t('teams.detail.confirmLeave.submit')}
-              </Button>
-              <Button variant="secondary" onClick={() => { setShowLeaveConfirm(false); leaveAction.reset(); }}>
+              </button>
+              <button
+                style={btnSecondary}
+                onClick={() => { setShowLeaveConfirm(false); leaveAction.reset(); }}
+              >
                 {t('common.cancel')}
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Delete team confirm modal */}
+      {/* Delete team confirm */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setShowDeleteConfirm(false)} />
-          <div className="relative z-10 w-full max-w-sm glass-card-strong p-6 shadow-2xl animate-fade-in">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">{t('teams.detail.deleteConfirm.title')}</h2>
+        <div style={modalOverlay}>
+          <div style={modalBg} onClick={() => setShowDeleteConfirm(false)} />
+          <div style={modalCard}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{
+                width: 36, height: 36,
+                background: 'var(--danger-bg)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <Trash2 size={16} strokeWidth={2} style={{ color: 'var(--danger)' }} />
+              </div>
+              <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                {t('teams.detail.deleteConfirm.title')}
+              </h2>
+            </div>
             <p
-              className="text-sm text-gray-500 mb-5"
+              style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--text-muted)' }}
               dangerouslySetInnerHTML={{ __html: t('teams.detail.deleteConfirm.message', { name: team?.name ?? '' }) }}
             />
             {deleteAction.error && (
               <Alert type="error" message={deleteAction.error} onClose={deleteAction.reset} />
             )}
-            <div className="flex gap-3">
-              <Button
-                variant="danger"
-                loading={deleteAction.loading}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                style={{
+                  ...btnPrimary,
+                  background: 'var(--danger)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  opacity: deleteAction.loading ? 0.7 : 1,
+                  cursor: deleteAction.loading ? 'not-allowed' : 'pointer',
+                }}
+                disabled={deleteAction.loading}
                 onClick={handleDeleteTeam}
-                className="flex-1"
               >
+                {deleteAction.loading && (
+                  <div style={{
+                    width: 10, height: 10,
+                    border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff',
+                    borderRadius: '50%', animation: 'spin 0.7s linear infinite',
+                  }} />
+                )}
                 {t('teams.detail.deleteConfirm.submit')}
-              </Button>
-              <Button variant="secondary" onClick={() => setShowDeleteConfirm(false)}>
+              </button>
+              <button style={btnSecondary} onClick={() => setShowDeleteConfirm(false)}>
                 {t('common.cancel')}
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Remove member confirm modal */}
+      {/* Remove member confirm */}
       {confirmRemoveId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setConfirmRemoveId(null)} />
-          <div className="relative z-10 w-full max-w-sm glass-card-strong p-6 shadow-2xl animate-fade-in">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
-                </svg>
+        <div style={modalOverlay}>
+          <div style={modalBg} onClick={() => setConfirmRemoveId(null)} />
+          <div style={modalCard}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{
+                width: 36, height: 36,
+                background: 'var(--danger-bg)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <UserMinus size={16} strokeWidth={2} style={{ color: 'var(--danger)' }} />
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">{t('teams.detail.confirmRemove.title')}</h2>
+              <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                {t('teams.detail.confirmRemove.title')}
+              </h2>
             </div>
             <p
-              className="text-sm text-gray-500 mb-5"
+              style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--text-muted)' }}
               dangerouslySetInnerHTML={{ __html: t('teams.detail.confirmRemove.message', { name: getDisplayName(confirmRemoveId) }) }}
             />
-            <div className="flex gap-3">
-              <Button variant="danger" onClick={handleRemoveMember} className="flex-1">
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                style={{ ...btnPrimary, background: 'var(--danger)' }}
+                onClick={handleRemoveMember}
+              >
                 {t('teams.detail.confirmRemove.submit')}
-              </Button>
-              <Button variant="secondary" onClick={() => setConfirmRemoveId(null)}>
+              </button>
+              <button style={btnSecondary} onClick={() => setConfirmRemoveId(null)}>
                 {t('common.cancel')}
-              </Button>
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Role change confirm modal */}
+      {/* Role change confirm */}
       {confirmRoleChange && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => { setConfirmRoleChange(null); roleChangeAction.reset(); }} />
-          <div className="relative z-10 w-full max-w-sm glass-card-strong p-6 shadow-2xl animate-fade-in">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-xl bg-primary-100 flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                </svg>
+        <div style={modalOverlay}>
+          <div style={modalBg} onClick={() => { setConfirmRoleChange(null); roleChangeAction.reset(); }} />
+          <div style={modalCard}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{
+                width: 36, height: 36,
+                background: 'var(--accent-muted)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}>
+                <ArrowLeftRight size={16} strokeWidth={2} style={{ color: 'var(--accent)' }} />
               </div>
-              <h2 className="text-lg font-semibold text-gray-900">{t('teams.detail.confirmRoleChange.title')}</h2>
+              <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                {t('teams.detail.confirmRoleChange.title')}
+              </h2>
             </div>
             <p
-              className="text-sm text-gray-500 mb-4"
+              style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text-muted)' }}
               dangerouslySetInnerHTML={{
                 __html: confirmRoleChange.newRole === 'ADMIN'
                   ? t('teams.detail.confirmRoleChange.messageToAdmin', { name: getDisplayName(confirmRoleChange.userId) })
@@ -577,13 +832,32 @@ export default function TeamDetailPage() {
             {roleChangeAction.error && (
               <Alert type="error" message={roleChangeAction.error} onClose={roleChangeAction.reset} />
             )}
-            <div className="flex gap-3">
-              <Button loading={roleChangeAction.loading} onClick={handleRoleChange} className="flex-1">
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                style={{
+                  ...btnPrimary,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                  opacity: roleChangeAction.loading ? 0.7 : 1,
+                  cursor: roleChangeAction.loading ? 'not-allowed' : 'pointer',
+                }}
+                disabled={roleChangeAction.loading}
+                onClick={handleRoleChange}
+              >
+                {roleChangeAction.loading && (
+                  <div style={{
+                    width: 10, height: 10,
+                    border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff',
+                    borderRadius: '50%', animation: 'spin 0.7s linear infinite',
+                  }} />
+                )}
                 {t('teams.detail.confirmRoleChange.submit')}
-              </Button>
-              <Button variant="secondary" onClick={() => { setConfirmRoleChange(null); roleChangeAction.reset(); }}>
+              </button>
+              <button
+                style={btnSecondary}
+                onClick={() => { setConfirmRoleChange(null); roleChangeAction.reset(); }}
+              >
                 {t('common.cancel')}
-              </Button>
+              </button>
             </div>
           </div>
         </div>

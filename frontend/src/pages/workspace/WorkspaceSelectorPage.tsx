@@ -1,14 +1,33 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Plus, ChevronRight, LayoutGrid } from 'lucide-react';
 import { workspacesApi } from '../../api/workspaces';
 import { invitationsApi } from '../../api/invitations';
 import { useApiAction } from '../../hooks/useApiAction';
 import { useWorkspaceStore } from '../../store/workspaceStore';
-import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
 import Alert from '../../components/ui/Alert';
 import type { Workspace, WorkspaceInvitation } from '../../types';
+
+const inputStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '7px 10px',
+  fontSize: 13,
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--text)',
+  outline: 'none',
+  boxSizing: 'border-box',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: 12,
+  fontWeight: 600,
+  color: 'var(--text-muted)',
+  marginBottom: 5,
+};
 
 export default function WorkspaceSelectorPage() {
   const { t } = useTranslation();
@@ -22,6 +41,7 @@ export default function WorkspaceSelectorPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [actingInvitationId, setActingInvitationId] = useState<string | null>(null);
+  const [hoveredWorkspaceId, setHoveredWorkspaceId] = useState<string | null>(null);
 
   const listAction = useApiAction<Workspace[]>();
   const createAction = useApiAction<Workspace>();
@@ -70,64 +90,89 @@ export default function WorkspaceSelectorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary-50/30 flex flex-col items-center justify-center px-4 py-12">
-      {/* Background decorations */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] bg-primary-100/20 rounded-full blur-[150px]" />
-        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-accent-500/5 rounded-full blur-[120px]" />
-      </div>
-
-      <div className="relative z-10 w-full max-w-2xl animate-fade-in">
+    <div style={{
+      minHeight: '100vh',
+      background: 'var(--bg)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+      padding: '48px 16px',
+    }}>
+      <div style={{ width: '100%', maxWidth: 520 }}>
         {/* Header */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br from-primary-500 to-accent-600 rounded-2xl shadow-xl shadow-primary-500/25 mb-5">
-            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
+          <div style={{
+            width: 48, height: 48, margin: '0 auto 14px',
+            background: 'var(--accent)', borderRadius: 'var(--radius-md)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <LayoutGrid size={22} strokeWidth={1.75} style={{ color: '#fff' }} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">{t('workspace.selector.title')}</h1>
-          <p className="mt-2 text-gray-500">{t('workspace.selector.subtitle')}</p>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            {t('workspace.selector.title')}
+          </h1>
+          <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--text-faint)' }}>
+            {t('workspace.selector.subtitle')}
+          </p>
         </div>
 
         {loadError && <Alert type="error" message={loadError} onClose={() => setLoadError(null)} />}
 
         {/* Pending invitations */}
         {invitations.length > 0 && (
-          <div className="mb-6">
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-1">
+          <div style={{ marginBottom: 20 }}>
+            <p style={{ margin: '0 0 8px', fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
               {t('workspace.selector.pendingInvitations')}
             </p>
-            <div className="space-y-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {invitations.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="glass-card-strong p-4 flex items-center justify-between gap-4"
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                <div key={inv.id} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                  background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)', padding: '10px 14px',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+                    <div style={{
+                      width: 32, height: 32, flexShrink: 0,
+                      background: '#f97316', borderRadius: 'var(--radius-sm)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', fontSize: 12, fontWeight: 700,
+                    }}>
                       {inv.workspaceName.charAt(0).toUpperCase()}
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 truncate">{inv.workspaceName}</p>
-                      <p className="text-xs text-gray-400">{t('workspace.selector.invitedToJoin')}</p>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                        {inv.workspaceName}
+                      </p>
+                      <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-faint)' }}>
+                        {t('workspace.selector.invitedToJoin')}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     <button
                       onClick={() => handleInvitationAction(inv.id, 'accept')}
                       disabled={actingInvitationId === inv.id}
-                      className="px-3 py-1.5 text-xs font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                      style={{
+                        padding: '4px 10px', fontSize: 11, fontWeight: 600,
+                        color: '#fff', background: '#16a34a',
+                        border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                        opacity: actingInvitationId === inv.id ? 0.5 : 1,
+                      }}
+                      onMouseEnter={e => { if (actingInvitationId !== inv.id) (e.currentTarget as HTMLElement).style.background = '#15803d'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#16a34a'; }}
                     >
-                      {actingInvitationId === inv.id ? (
-                        <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        t('workspace.members.invite.accept')
-                      )}
+                      {actingInvitationId === inv.id ? '…' : t('workspace.members.invite.accept')}
                     </button>
                     <button
                       onClick={() => handleInvitationAction(inv.id, 'reject')}
                       disabled={actingInvitationId === inv.id}
-                      className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+                      style={{
+                        padding: '4px 10px', fontSize: 11, fontWeight: 500,
+                        color: 'var(--text-muted)', background: 'var(--bg-hover)',
+                        border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                        opacity: actingInvitationId === inv.id ? 0.5 : 1,
+                      }}
+                      onMouseEnter={e => { if (actingInvitationId !== inv.id) (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)'; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'; }}
                     >
                       {t('workspace.members.invite.reject')}
                     </button>
@@ -140,44 +185,67 @@ export default function WorkspaceSelectorPage() {
 
         {/* Workspace list */}
         {listAction.loading ? (
-          <div className="flex justify-center py-12">
-            <div className="w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+            <div style={{
+              width: 24, height: 24,
+              border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
+              borderRadius: '50%', animation: 'spin 0.7s linear infinite',
+            }} />
           </div>
         ) : workspaces.length > 0 ? (
-          <div className="space-y-3 mb-6">
-            {workspaces.map((ws) => (
-              <button
-                key={ws.id}
-                onClick={() => handleSelect(ws)}
-                className="w-full glass-card-strong p-5 text-left hover:shadow-lg hover:shadow-primary-500/10 hover:-translate-y-0.5 transition-all duration-200 group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-lg font-bold shadow-md flex-shrink-0">
-                    {ws.name.charAt(0).toUpperCase()}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+            {workspaces.map((ws) => {
+              const hovered = hoveredWorkspaceId === ws.id;
+              return (
+                <button
+                  key={ws.id}
+                  onClick={() => handleSelect(ws)}
+                  style={{
+                    width: '100%', textAlign: 'left', cursor: 'pointer',
+                    background: hovered ? 'var(--bg-hover)' : 'var(--bg-elevated)',
+                    border: `1px solid ${hovered ? 'var(--accent)' : 'var(--border)'}`,
+                    borderRadius: 'var(--radius-md)', padding: '12px 14px',
+                    transition: `border-color var(--duration), background var(--duration)`,
+                  }}
+                  onMouseEnter={() => setHoveredWorkspaceId(ws.id)}
+                  onMouseLeave={() => setHoveredWorkspaceId(null)}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 36, height: 36, flexShrink: 0,
+                      background: 'var(--accent)', borderRadius: 'var(--radius-md)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', fontSize: 15, fontWeight: 700,
+                    }}>
+                      {ws.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{ws.name}</p>
+                      {ws.description && (
+                        <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                          {ws.description}
+                        </p>
+                      )}
+                    </div>
+                    <ChevronRight size={14} strokeWidth={2} style={{ color: hovered ? 'var(--accent)' : 'var(--text-faint)', flexShrink: 0, transition: `color var(--duration)` }} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">{ws.name}</p>
-                    {ws.description && (
-                      <p className="text-sm text-gray-500 truncate mt-0.5">{ws.description}</p>
-                    )}
-                  </div>
-                  <svg className="w-5 h-5 text-gray-300 group-hover:text-primary-500 transition-colors flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
-              </button>
-            ))}
+                </button>
+              );
+            })}
           </div>
         ) : (
           !listAction.loading && (
-            <div className="text-center py-10 mb-6">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5" />
-                </svg>
-              </div>
-              <p className="text-gray-500 font-medium">{t('workspace.selector.noWorkspaces')}</p>
-              <p className="text-sm text-gray-400 mt-1">{t('workspace.selector.noWorkspacesSubtitle')}</p>
+            <div style={{
+              background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)', padding: '32px 24px',
+              textAlign: 'center', marginBottom: 16,
+            }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>
+                {t('workspace.selector.noWorkspaces')}
+              </p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
+                {t('workspace.selector.noWorkspacesSubtitle')}
+              </p>
             </div>
           )
         )}
@@ -186,44 +254,86 @@ export default function WorkspaceSelectorPage() {
         {!showCreateForm ? (
           <button
             onClick={() => setShowCreateForm(true)}
-            className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl border-2 border-dashed border-gray-200 text-gray-500 hover:border-primary-300 hover:text-primary-600 hover:bg-primary-50/40 transition-all duration-200 font-medium text-sm cursor-pointer"
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              padding: '11px 16px', fontSize: 12, fontWeight: 500,
+              color: 'var(--text-muted)', background: 'transparent',
+              border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+              transition: `border-color var(--duration), color var(--duration)`,
+              boxSizing: 'border-box',
+            }}
+            onMouseEnter={e => { (e.currentTarget.style.borderColor = 'var(--accent)'); (e.currentTarget.style.color = 'var(--accent)'); }}
+            onMouseLeave={e => { (e.currentTarget.style.borderColor = 'var(--border)'); (e.currentTarget.style.color = 'var(--text-muted)'); }}
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
+            <Plus size={14} strokeWidth={2.5} />
             {t('workspace.selector.createNew')}
           </button>
         ) : (
-          <div className="glass-card-strong p-6">
-            <h3 className="text-base font-semibold text-gray-900 mb-4">{t('workspace.selector.form.title')}</h3>
+          <div style={{
+            background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)', padding: 16,
+          }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+              {t('workspace.selector.form.title')}
+            </h3>
             {createAction.error && (
               <Alert type="error" message={createAction.error} onClose={createAction.reset} />
             )}
-            <form onSubmit={handleCreate} className="space-y-4">
-              <Input
-                label={t('workspace.selector.form.name')}
-                placeholder={t('workspace.selector.form.namePlaceholder')}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-              <Input
-                label={t('workspace.selector.form.description', { optional: t('common.optional') })}
-                placeholder={t('workspace.selector.form.descriptionPlaceholder')}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-              <div className="flex gap-3 pt-1">
-                <Button type="submit" loading={createAction.loading} className="flex-1">
-                  {t('workspace.selector.form.submit')}
-                </Button>
-                <Button
+            <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div>
+                <label style={labelStyle}>{t('workspace.selector.form.name')}</label>
+                <input
+                  type="text"
+                  placeholder={t('workspace.selector.form.namePlaceholder')}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  autoFocus
+                  style={inputStyle}
+                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>
+                  {t('workspace.selector.form.description', { optional: t('common.optional') })}
+                </label>
+                <input
+                  type="text"
+                  placeholder={t('workspace.selector.form.descriptionPlaceholder')}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  style={inputStyle}
+                  onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                  onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                />
+              </div>
+              <div style={{ display: 'flex', gap: 6, paddingTop: 2 }}>
+                <button
+                  type="submit"
+                  disabled={createAction.loading || !name.trim()}
+                  style={{
+                    flex: 1, padding: '7px 12px', fontSize: 12, fontWeight: 500,
+                    background: 'var(--accent)', color: '#fff',
+                    border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                    opacity: createAction.loading || !name.trim() ? 0.5 : 1,
+                  }}
+                  onMouseEnter={e => { if (!createAction.loading && name.trim()) (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent)'; }}
+                >
+                  {createAction.loading ? '…' : t('workspace.selector.form.submit')}
+                </button>
+                <button
                   type="button"
-                  variant="secondary"
                   onClick={() => { setShowCreateForm(false); createAction.reset(); }}
+                  style={{
+                    padding: '7px 12px', fontSize: 12, fontWeight: 500,
+                    background: 'transparent', color: 'var(--text-muted)',
+                    border: 'none', cursor: 'pointer',
+                  }}
                 >
                   {t('common.cancel')}
-                </Button>
+                </button>
               </div>
             </form>
           </div>

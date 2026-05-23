@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import Button from '../components/ui/Button';
+import { CheckCircle2, Bell, ChevronLeft, ChevronRight } from 'lucide-react';
 import Alert from '../components/ui/Alert';
 import { notificationsApi } from '../api/notifications';
 import { invitationsApi } from '../api/invitations';
@@ -33,26 +33,26 @@ function timeAgo(dateStr: string, t: TFunction): string {
   return t('notifications.timeAgo.days', { count: days });
 }
 
-const typeConfig: Record<string, { icon: string; color: string; bg: string }> = {
+const typeConfig: Record<string, { iconPath: string; color: string; bg: string }> = {
   PROJECT_UPDATE: {
-    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
-    color: 'text-blue-600',
-    bg: 'bg-blue-100',
+    iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
+    color: '#3b82f6',
+    bg: 'rgba(59,130,246,0.1)',
   },
   TASK_REMINDER: {
-    icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
-    color: 'text-amber-600',
-    bg: 'bg-amber-100',
+    iconPath: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+    color: '#f59e0b',
+    bg: 'rgba(245,158,11,0.1)',
   },
   WORKSPACE_INVITATION: {
-    icon: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
-    color: 'text-green-600',
-    bg: 'bg-green-100',
+    iconPath: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
+    color: '#22c55e',
+    bg: 'rgba(34,197,94,0.1)',
   },
   DEFAULT: {
-    icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
-    color: 'text-primary-600',
-    bg: 'bg-primary-100',
+    iconPath: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
+    color: 'var(--accent)',
+    bg: 'var(--accent-muted)',
   },
 };
 
@@ -120,47 +120,87 @@ export default function NotificationsPage() {
     }
   };
 
+  const tabBtn = (active: boolean): React.CSSProperties => ({
+    padding: '0.3125rem 0.75rem',
+    fontSize: '0.75rem',
+    fontWeight: 500,
+    border: 'none',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+    background: active ? 'var(--bg-elevated)' : 'transparent',
+    color: active ? (unreadOnly ? 'var(--accent)' : 'var(--text)') : 'var(--text-faint)',
+    boxShadow: active ? '0 0.0625rem 0.1875rem rgba(0,0,0,0.06)' : 'none',
+    transition: `background var(--duration), color var(--duration)`,
+  });
+
   return (
-    <div className="space-y-6 animate-slide-up-fade">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{t('notifications.title')}</h1>
-          <p className="text-sm text-gray-400 mt-1">{t('notifications.subtitle')}</p>
+          <h1 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+            {t('notifications.title')}
+          </h1>
+          <p style={{ margin: '0.125rem 0 0', fontSize: '0.75rem', color: 'var(--text-faint)' }}>
+            {t('notifications.subtitle')}
+          </p>
         </div>
-        <div className="flex gap-2">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           {/* Filter tabs */}
-          <div className="flex bg-gray-100/60 backdrop-blur-sm rounded-xl p-1">
+          <div style={{
+            display: 'flex',
+            background: 'var(--bg-hover)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0.1875rem',
+            border: '0.0625rem solid var(--border)',
+          }}>
             <button
               type="button"
               onClick={() => { setUnreadOnly(false); setPage(0); }}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 cursor-pointer ${
-                !unreadOnly ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
+              style={tabBtn(!unreadOnly)}
             >
               {t('notifications.all')}
             </button>
             <button
               type="button"
               onClick={() => { setUnreadOnly(true); setPage(0); }}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all duration-300 cursor-pointer ${
-                unreadOnly ? 'bg-white text-primary-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
+              style={tabBtn(unreadOnly)}
             >
               {t('notifications.unread')}
             </button>
           </div>
-          <Button
-            variant="ghost"
-            onClick={handleMarkAll}
-            loading={markAllAction.loading}
+
+          <button
             type="button"
+            onClick={handleMarkAll}
+            disabled={markAllAction.loading}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.3125rem',
+              padding: '0.3125rem 0.625rem', fontSize: '0.75rem', fontWeight: 500,
+              background: 'var(--bg-elevated)',
+              color: 'var(--text-muted)',
+              border: '0.0625rem solid var(--border)',
+              borderRadius: 'var(--radius-md)',
+              cursor: markAllAction.loading ? 'not-allowed' : 'pointer',
+              opacity: markAllAction.loading ? 0.6 : 1,
+              transition: `background var(--duration)`,
+            }}
+            onMouseEnter={(e) => { if (!markAllAction.loading) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; }}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            {markAllAction.loading ? (
+              <div style={{
+                width: '0.75rem', height: '0.75rem',
+                border: '0.125rem solid var(--border)',
+                borderTopColor: 'var(--accent)',
+                borderRadius: '50%',
+                animation: 'spin 0.7s linear infinite',
+              }} />
+            ) : (
+              <CheckCircle2 size={12} strokeWidth={2} />
+            )}
             <span className="hidden sm:inline">{t('notifications.markAll')}</span>
-          </Button>
+          </button>
         </div>
       </div>
 
@@ -168,67 +208,116 @@ export default function NotificationsPage() {
       {markAllAction.error && <Alert type="error" message={markAllAction.error} />}
 
       {/* Notification list */}
-      <div className="glass-card-strong rounded-2xl overflow-hidden">
+      <div style={{
+        background: 'var(--bg-elevated)',
+        border: '0.0625rem solid var(--border)',
+        borderRadius: 'var(--radius-md)',
+        overflow: 'hidden',
+      }}>
         {loadingList ? (
-          <div className="divide-y divide-gray-100/50">
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
             {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="p-5 flex gap-4">
-                <div className="w-10 h-10 skeleton-shimmer rounded-xl shrink-0" />
-                <div className="flex-1 space-y-2.5">
-                  <div className="h-4 skeleton-shimmer rounded-lg w-3/4" />
-                  <div className="h-3 skeleton-shimmer rounded-lg w-1/2" />
+              <div key={i} style={{
+                display: 'flex', gap: '0.75rem', padding: '0.875rem 1rem',
+                borderBottom: i < 5 ? '0.0625rem solid var(--border)' : 'none',
+              }}>
+                <div style={{
+                  width: '2.25rem', height: '2.25rem',
+                  background: 'var(--bg-hover)',
+                  borderRadius: 'var(--radius-sm)',
+                  flexShrink: 0,
+                  animation: 'pulse 1.5s ease-in-out infinite',
+                }} />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                  <div style={{ height: '0.75rem', width: '70%', background: 'var(--bg-hover)', borderRadius: '0.25rem', animation: 'pulse 1.5s ease-in-out infinite' }} />
+                  <div style={{ height: '0.625rem', width: '45%', background: 'var(--bg-hover)', borderRadius: '0.25rem', animation: 'pulse 1.5s ease-in-out infinite' }} />
                 </div>
               </div>
             ))}
           </div>
         ) : notifications.length === 0 ? (
-          <div className="py-20 text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
+          <div style={{ padding: '3.75rem 1.5rem', textAlign: 'center' }}>
+            <div style={{
+              width: '3rem', height: '3rem',
+              background: 'var(--bg-hover)',
+              border: '0.0625rem solid var(--border)',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              margin: '0 auto 0.75rem',
+            }}>
+              <Bell size={22} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
             </div>
-            <p className="text-gray-500 font-medium">{t('notifications.empty')}</p>
-            <p className="text-sm text-gray-400 mt-1">{t('notifications.emptySubtitle')}</p>
+            <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>{t('notifications.empty')}</p>
+            <p style={{ margin: '0.1875rem 0 0', fontSize: '0.75rem', color: 'var(--text-faint)' }}>{t('notifications.emptySubtitle')}</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-100/40 stagger-children">
-            {notifications.map((n) => {
+          <div>
+            {notifications.map((n, idx) => {
               const cfg = typeConfig[n.type] ?? typeConfig.DEFAULT;
               return (
                 <div
                   key={n.id}
-                  className={`flex items-start gap-4 p-5 transition-all duration-300 hover:bg-gray-50/40 group ${
-                    !n.read ? 'bg-primary-50/20' : ''
-                  }`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '0.75rem',
+                    padding: '0.75rem 1rem',
+                    borderTop: idx > 0 ? '0.0625rem solid var(--border)' : 'none',
+                    background: !n.read ? 'var(--accent-muted)' : 'transparent',
+                    transition: `background var(--duration)`,
+                  }}
+                  onMouseEnter={(e) => { if (n.read) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = !n.read ? 'var(--accent-muted)' : 'transparent'; }}
                 >
                   {/* Type icon */}
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-transform duration-300 group-hover:scale-110 ${
-                    !n.read ? `${cfg.bg} ${cfg.color}` : 'bg-gray-100 text-gray-400'
-                  }`}>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={cfg.icon} />
+                  <div style={{
+                    width: '2.125rem', height: '2.125rem',
+                    borderRadius: 'var(--radius-sm)',
+                    background: !n.read ? cfg.bg : 'var(--bg-hover)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    flexShrink: 0,
+                  }}>
+                    <svg width={16} height={16} fill="none" stroke={!n.read ? cfg.color : 'var(--text-faint)'} viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+                      <path d={cfg.iconPath} />
                     </svg>
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <p className={`text-sm ${!n.read ? 'font-semibold text-gray-900' : 'text-gray-600'}`}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                        <p style={{
+                          margin: 0, fontSize: '0.75rem',
+                          fontWeight: !n.read ? 600 : 400,
+                          color: !n.read ? 'var(--text)' : 'var(--text-muted)',
+                        }}>
                           {n.title}
                         </p>
                         {!n.read && (
-                          <span className="w-2 h-2 bg-primary-500 rounded-full shrink-0 animate-glow-pulse" />
+                          <span style={{
+                            width: '0.375rem', height: '0.375rem',
+                            background: 'var(--accent)',
+                            borderRadius: '50%',
+                            flexShrink: 0,
+                            display: 'inline-block',
+                          }} />
                         )}
                       </div>
-                      <span className="text-xs text-gray-400 whitespace-nowrap shrink-0 tabular-nums">
+                      <span style={{
+                        fontSize: '0.625rem',
+                        color: 'var(--text-faint)',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        fontFamily: 'var(--font-mono)',
+                      }}>
                         {timeAgo(n.createdAt, t)}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">{n.message}</p>
+                    <p style={{ margin: '0.125rem 0 0', fontSize: '0.6875rem', color: 'var(--text-faint)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                      {n.message}
+                    </p>
 
-                    {/* Invitation accept/reject buttons */}
+                    {/* Invitation actions */}
                     {n.type === 'WORKSPACE_INVITATION' && !n.read && (() => {
                       let invitationId: string | null = null;
                       try {
@@ -238,12 +327,18 @@ export default function NotificationsPage() {
                       if (!invitationId) return null;
                       const isActing = invitationActingId === n.id;
                       return (
-                        <div className="flex gap-2 mt-3">
+                        <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.5rem' }}>
                           <button
                             type="button"
                             disabled={isActing}
                             onClick={() => handleInvitationAction(n.id, invitationId!, 'accept')}
-                            className="px-3 py-1.5 text-xs font-medium text-white bg-green-500 hover:bg-green-600 rounded-lg transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                            style={{
+                              padding: '0.25rem 0.625rem', fontSize: '0.6875rem', fontWeight: 500,
+                              color: '#fff', background: '#22c55e',
+                              border: 'none', borderRadius: 'var(--radius-sm)',
+                              cursor: isActing ? 'not-allowed' : 'pointer',
+                              opacity: isActing ? 0.5 : 1,
+                            }}
                           >
                             {t('workspace.members.invite.accept')}
                           </button>
@@ -251,7 +346,13 @@ export default function NotificationsPage() {
                             type="button"
                             disabled={isActing}
                             onClick={() => handleInvitationAction(n.id, invitationId!, 'reject')}
-                            className="px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                            style={{
+                              padding: '0.25rem 0.625rem', fontSize: '0.6875rem', fontWeight: 500,
+                              color: 'var(--text-muted)', background: 'var(--bg-hover)',
+                              border: '0.0625rem solid var(--border)', borderRadius: 'var(--radius-sm)',
+                              cursor: isActing ? 'not-allowed' : 'pointer',
+                              opacity: isActing ? 0.5 : 1,
+                            }}
                           >
                             {t('workspace.members.invite.reject')}
                           </button>
@@ -260,16 +361,24 @@ export default function NotificationsPage() {
                     })()}
                   </div>
 
-                  {/* Mark read button */}
+                  {/* Mark read */}
                   {!n.read && (
                     <button
                       onClick={() => handleMarkRead(n.id)}
                       title={t('notifications.markRead')}
-                      className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-primary-50 transition-all duration-200 cursor-pointer"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: '1.625rem', height: '1.625rem', flexShrink: 0,
+                        background: 'none', border: 'none',
+                        borderRadius: 'var(--radius-sm)',
+                        color: 'var(--text-faint)',
+                        cursor: 'pointer',
+                        transition: `background var(--duration), color var(--duration)`,
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-muted)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-faint)'; }}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
+                      <CheckCircle2 size={14} strokeWidth={2} />
                     </button>
                   )}
                 </div>
@@ -281,47 +390,63 @@ export default function NotificationsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button
-            variant="ghost"
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem' }}>
+          <button
+            type="button"
             disabled={page === 0}
             onClick={() => setPage((p) => p - 1)}
-            type="button"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.25rem',
+              padding: '0.3125rem 0.625rem', fontSize: '0.75rem', fontWeight: 500,
+              background: 'var(--bg-elevated)', color: 'var(--text-muted)',
+              border: '0.0625rem solid var(--border)', borderRadius: 'var(--radius-md)',
+              cursor: page === 0 ? 'not-allowed' : 'pointer',
+              opacity: page === 0 ? 0.4 : 1,
+            }}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ChevronLeft size={12} strokeWidth={2} />
             {t('common.previous')}
-          </Button>
+          </button>
 
-          <div className="flex items-center gap-1 px-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
             {Array.from({ length: totalPages }, (_, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setPage(i)}
-                className={`w-8 h-8 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
-                  i === page
-                    ? 'bg-primary-600 text-white shadow-md shadow-primary-500/25'
-                    : 'text-gray-500 hover:bg-gray-100'
-                }`}
+                style={{
+                  width: '1.75rem', height: '1.75rem', fontSize: '0.6875rem', fontWeight: 500,
+                  borderRadius: 'var(--radius-sm)',
+                  border: 'none',
+                  background: i === page ? 'var(--accent)' : 'transparent',
+                  color: i === page ? '#fff' : 'var(--text-muted)',
+                  cursor: 'pointer',
+                  transition: `background var(--duration), color var(--duration)`,
+                }}
+                onMouseEnter={(e) => { if (i !== page) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                onMouseLeave={(e) => { if (i !== page) e.currentTarget.style.background = 'transparent'; }}
               >
                 {i + 1}
               </button>
             ))}
           </div>
 
-          <Button
-            variant="ghost"
+          <button
+            type="button"
             disabled={page >= totalPages - 1}
             onClick={() => setPage((p) => p + 1)}
-            type="button"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '0.25rem',
+              padding: '0.3125rem 0.625rem', fontSize: '0.75rem', fontWeight: 500,
+              background: 'var(--bg-elevated)', color: 'var(--text-muted)',
+              border: '0.0625rem solid var(--border)', borderRadius: 'var(--radius-md)',
+              cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer',
+              opacity: page >= totalPages - 1 ? 0.4 : 1,
+            }}
           >
             {t('common.next')}
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Button>
+            <ChevronRight size={12} strokeWidth={2} />
+          </button>
         </div>
       )}
     </div>
