@@ -12,6 +12,7 @@ import com.tfg.agile.app.task_service.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -68,6 +69,7 @@ public class TaskService {
                 .priority(priority)
                 .reporterId(callerId)
                 .assigneeId(dto.assigneeId())
+                .dueDate(dto.dueDate())
                 .position(position)
                 .build();
 
@@ -97,6 +99,7 @@ public class TaskService {
             task.setPriority(TaskPriority.valueOf(dto.priority().toUpperCase()));
         }
         task.setAssigneeId(dto.assigneeId());
+        task.setDueDate(dto.dueDate());
 
         return TaskResponseDto.from(taskRepository.save(task));
     }
@@ -111,8 +114,16 @@ public class TaskService {
             throw new ForbiddenException("ONLY_DEVELOPERS_CAN_MOVE_TASKS");
         }
 
-        task.setStatus(TaskStatus.valueOf(dto.status().toUpperCase()));
+        TaskStatus newStatus = TaskStatus.valueOf(dto.status().toUpperCase());
+        task.setStatus(newStatus);
         task.setPosition(dto.position());
+
+        // Manage completedAt automatically
+        if (newStatus == TaskStatus.DONE && task.getCompletedAt() == null) {
+            task.setCompletedAt(Instant.now());
+        } else if (newStatus != TaskStatus.DONE) {
+            task.setCompletedAt(null);
+        }
 
         return TaskResponseDto.from(taskRepository.save(task));
     }

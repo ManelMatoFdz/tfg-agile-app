@@ -42,12 +42,14 @@ class SprintControllerTest {
 
         SprintResponseDto sprintResponse = new SprintResponseDto(
                 sprintId, projectId, "Sprint", "Goal", SprintStatus.PLANNING,
-                LocalDate.now(), LocalDate.now().plusDays(14), null, Instant.now(), Instant.now()
+                LocalDate.now(), LocalDate.now().plusDays(14), null,
+                null, null, null, null, null,
+                Instant.now(), Instant.now()
         );
 
         TaskResponseDto taskResponse = new TaskResponseDto(
                 taskId, projectId, sprintId, "Task", "Desc", TaskStatus.TODO, TaskPriority.MEDIUM,
-                callerId, null, 3, 0, Instant.now(), Instant.now()
+                callerId, null, null, null, 3, 0, Instant.now(), Instant.now()
         );
 
         when(sprintService.getBacklog(projectId, callerId)).thenReturn(List.of(taskResponse));

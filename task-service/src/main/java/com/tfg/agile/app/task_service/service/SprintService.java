@@ -5,12 +5,14 @@ import com.tfg.agile.app.task_service.client.ProjectServiceClient;
 import com.tfg.agile.app.task_service.dto.*;
 import com.tfg.agile.app.task_service.entity.Sprint;
 import com.tfg.agile.app.task_service.entity.SprintStatus;
+import com.tfg.agile.app.task_service.entity.SprintTaskSnapshot;
 import com.tfg.agile.app.task_service.entity.Task;
 import com.tfg.agile.app.task_service.entity.TaskStatus;
 import com.tfg.agile.app.task_service.exception.ConflictException;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
 import com.tfg.agile.app.task_service.repository.SprintRepository;
+import com.tfg.agile.app.task_service.repository.SprintTaskSnapshotRepository;
 import com.tfg.agile.app.task_service.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,13 +26,16 @@ public class SprintService {
 
     private final SprintRepository sprintRepository;
     private final TaskRepository taskRepository;
+    private final SprintTaskSnapshotRepository snapshotRepository;
     private final ProjectServiceClient projectServiceClient;
 
     public SprintService(SprintRepository sprintRepository,
                          TaskRepository taskRepository,
+                         SprintTaskSnapshotRepository snapshotRepository,
                          ProjectServiceClient projectServiceClient) {
         this.sprintRepository = sprintRepository;
         this.taskRepository = taskRepository;
+        this.snapshotRepository = snapshotRepository;
         this.projectServiceClient = projectServiceClient;
     }
 
@@ -123,6 +128,7 @@ public class SprintService {
         }
 
         sprint.setStatus(SprintStatus.ACTIVE);
+        sprint.setStartDate(LocalDate.now());
         return SprintResponseDto.from(sprintRepository.save(sprint));
     }
 
@@ -136,8 +142,40 @@ public class SprintService {
             throw new ConflictException("SPRINT_NOT_ACTIVE");
         }
 
+        List<Task> allSprintTasks = taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprintId);
+
+        // Capture snapshot before moving tasks back to backlog
+        int closedTotal = allSprintTasks.size();
+        int closedDone = (int) allSprintTasks.stream().filter(t -> t.getStatus() == TaskStatus.DONE).count();
+        int closedTotalSP = allSprintTasks.stream().mapToInt(t -> t.getStoryPoints() != null ? t.getStoryPoints() : 0).sum();
+        int closedDoneSP = allSprintTasks.stream().filter(t -> t.getStatus() == TaskStatus.DONE).mapToInt(t -> t.getStoryPoints() != null ? t.getStoryPoints() : 0).sum();
+
+        sprint.setClosedTotalTasks(closedTotal);
+        sprint.setClosedDoneTasks(closedDone);
+        sprint.setClosedIncompleteTasks(closedTotal - closedDone);
+        sprint.setClosedTotalStoryPoints(closedTotalSP);
+        sprint.setClosedDoneStoryPoints(closedDoneSP);
+
+        // Persist per-task snapshots for full sprint report fidelity
+        List<SprintTaskSnapshot> snapshots = allSprintTasks.stream()
+                .map(t -> SprintTaskSnapshot.builder()
+                        .sprintId(sprintId)
+                        .taskId(t.getId())
+                        .title(t.getTitle())
+                        .description(t.getDescription())
+                        .statusAtEnd(t.getStatus())
+                        .priority(t.getPriority())
+                        .dueDate(t.getDueDate())
+                        .completedAt(t.getCompletedAt())
+                        .storyPoints(t.getStoryPoints())
+                        .completed(t.getStatus() == TaskStatus.DONE)
+                        .returnedToBacklog(t.getStatus() != TaskStatus.DONE)
+                        .build())
+                .toList();
+        snapshotRepository.saveAll(snapshots);
+
         // Move non-DONE tasks back to backlog
-        taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprintId).stream()
+        allSprintTasks.stream()
                 .filter(t -> t.getStatus() != TaskStatus.DONE)
                 .forEach(t -> {
                     t.setSprintId(null);
@@ -149,6 +187,7 @@ public class SprintService {
             sprint.setReviewNotes(dto.reviewNotes());
         }
         sprint.setStatus(SprintStatus.COMPLETED);
+        sprint.setEndDate(LocalDate.now());
         return SprintResponseDto.from(sprintRepository.save(sprint));
     }
 
@@ -175,10 +214,13 @@ public class SprintService {
     public List<TaskResponseDto> assignTasksToSprint(UUID sprintId, AssignTaskToSprintRequestDto dto, UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
-        requireDeveloperOrPOOrAdmin(perms);
 
-        if (sprint.getStatus() != SprintStatus.PLANNING) {
-            throw new ForbiddenException("CAN_ONLY_ADD_TASKS_TO_PLANNING_SPRINT");
+        if (sprint.getStatus() == SprintStatus.PLANNING) {
+            requireDeveloperOrPOOrAdmin(perms);
+        } else if (sprint.getStatus() == SprintStatus.ACTIVE) {
+            requireDeveloperOrAdmin(perms);
+        } else {
+            throw new ForbiddenException("CAN_ONLY_ADD_TASKS_TO_PLANNING_OR_ACTIVE_SPRINT");
         }
 
         return dto.taskIds().stream()
@@ -198,10 +240,13 @@ public class SprintService {
     public TaskResponseDto removeTaskFromSprint(UUID sprintId, UUID taskId, UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
-        requireDeveloperOrPOOrAdmin(perms);
 
-        if (sprint.getStatus() != SprintStatus.PLANNING) {
-            throw new ForbiddenException("CAN_ONLY_REMOVE_TASKS_FROM_PLANNING_SPRINT");
+        if (sprint.getStatus() == SprintStatus.PLANNING) {
+            requireDeveloperOrPOOrAdmin(perms);
+        } else if (sprint.getStatus() == SprintStatus.ACTIVE) {
+            requireDeveloperOrAdmin(perms);
+        } else {
+            throw new ForbiddenException("CAN_ONLY_REMOVE_TASKS_FROM_PLANNING_OR_ACTIVE_SPRINT");
         }
 
         Task task = taskRepository.findById(taskId)
@@ -211,6 +256,15 @@ public class SprintService {
         }
         task.setSprintId(null);
         return TaskResponseDto.from(taskRepository.save(task));
+    }
+
+    @Transactional(readOnly = true)
+    public List<SprintTaskSnapshotDto> getSprintSnapshots(UUID sprintId, UUID callerId) {
+        Sprint sprint = getSprintOrThrow(sprintId);
+        requireMember(sprint.getProjectId(), callerId);
+        return snapshotRepository.findBySprintId(sprintId).stream()
+                .map(SprintTaskSnapshotDto::from)
+                .toList();
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -228,6 +282,13 @@ public class SprintService {
         if ("ADMIN".equals(p.role())) return;
         if ("SCRUM_MASTER".equals(p.scrumRole())) return;
         throw new ForbiddenException("SCRUM_MASTER_OR_ADMIN_REQUIRED");
+    }
+
+    private void requireDeveloperOrAdmin(MemberPermissionsDto p) {
+        if ("ADMIN".equals(p.role())) return;
+        if ("DEVELOPER".equals(p.scrumRole())) return;
+        if (!"VIEWER".equals(p.role()) && p.scrumRole() == null) return; // MEMBER sin rol = Developer
+        throw new ForbiddenException("DEVELOPER_OR_ADMIN_REQUIRED");
     }
 
     private void requireDeveloperOrPOOrAdmin(MemberPermissionsDto p) {

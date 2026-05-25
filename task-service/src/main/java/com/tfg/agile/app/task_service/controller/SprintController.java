@@ -98,4 +98,10 @@ public class SprintController {
                                                 @AuthenticationPrincipal UUID callerId) {
         return sprintService.removeTaskFromSprint(sprintId, taskId, callerId);
     }
+
+    @GetMapping("/sprints/{sprintId}/snapshots")
+    public List<SprintTaskSnapshotDto> getSprintSnapshots(@PathVariable("sprintId") UUID sprintId,
+                                                          @AuthenticationPrincipal UUID callerId) {
+        return sprintService.getSprintSnapshots(sprintId, callerId);
+    }
 }

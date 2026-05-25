@@ -5,6 +5,7 @@ import com.tfg.agile.app.task_service.entity.TaskPriority;
 import com.tfg.agile.app.task_service.entity.TaskStatus;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 public record TaskResponseDto(
@@ -17,6 +18,8 @@ public record TaskResponseDto(
         TaskPriority priority,
         UUID reporterId,
         UUID assigneeId,
+        LocalDate dueDate,
+        Instant completedAt,
         Integer storyPoints,
         int position,
         Instant createdAt,
@@ -26,6 +29,7 @@ public record TaskResponseDto(
         return new TaskResponseDto(
                 t.getId(), t.getProjectId(), t.getSprintId(), t.getTitle(), t.getDescription(),
                 t.getStatus(), t.getPriority(), t.getReporterId(), t.getAssigneeId(),
+                t.getDueDate(), t.getCompletedAt(),
                 t.getStoryPoints(), t.getPosition(), t.getCreatedAt(), t.getUpdatedAt()
         );
     }

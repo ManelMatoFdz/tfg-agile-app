@@ -13,6 +13,7 @@ import com.tfg.agile.app.task_service.exception.ConflictException;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
 import com.tfg.agile.app.task_service.repository.SprintRepository;
+import com.tfg.agile.app.task_service.repository.SprintTaskSnapshotRepository;
 import com.tfg.agile.app.task_service.repository.TaskRepository;
 import com.tfg.agile.app.task_service.support.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,13 +41,15 @@ class SprintServiceTest {
     @Mock
     private TaskRepository taskRepository;
     @Mock
+    private SprintTaskSnapshotRepository snapshotRepository;
+    @Mock
     private ProjectServiceClient projectServiceClient;
 
     private SprintService service;
 
     @BeforeEach
     void setUp() {
-        service = new SprintService(sprintRepository, taskRepository, projectServiceClient);
+        service = new SprintService(sprintRepository, taskRepository, snapshotRepository, projectServiceClient);
     }
 
     @Test
@@ -414,11 +417,12 @@ class SprintServiceTest {
                 new AssignTaskToSprintRequestDto(List.of(UUID.randomUUID())),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("CAN_ONLY_ADD_TASKS_TO_PLANNING_SPRINT");
+                .hasMessage("CAN_ONLY_ADD_TASKS_TO_PLANNING_OR_ACTIVE_SPRINT");
     }
 
     @Test
-    void assignTasksToSprint_throwsWhenSprintIsActive() {
+    void assignTasksToSprint_throwsForProductOwnerOnActiveSprint() {
+        // PO can only plan during PLANNING; during ACTIVE only Developer/Admin can pull work in
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Sprint sprint = TestDataFactory.sprint(projectId);
@@ -431,11 +435,12 @@ class SprintServiceTest {
                 new AssignTaskToSprintRequestDto(List.of(UUID.randomUUID())),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("CAN_ONLY_ADD_TASKS_TO_PLANNING_SPRINT");
+                .hasMessage("DEVELOPER_OR_ADMIN_REQUIRED");
     }
 
     @Test
-    void removeTaskFromSprint_throwsWhenSprintIsActive() {
+    void removeTaskFromSprint_throwsForProductOwnerOnActiveSprint() {
+        // PO can only remove tasks during PLANNING; during ACTIVE only Developer/Admin can
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Sprint sprint = TestDataFactory.sprint(projectId);
@@ -448,7 +453,7 @@ class SprintServiceTest {
 
         assertThatThrownBy(() -> service.removeTaskFromSprint(sprint.getId(), task.getId(), callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("CAN_ONLY_REMOVE_TASKS_FROM_PLANNING_SPRINT");
+                .hasMessage("DEVELOPER_OR_ADMIN_REQUIRED");
     }
 
     @Test

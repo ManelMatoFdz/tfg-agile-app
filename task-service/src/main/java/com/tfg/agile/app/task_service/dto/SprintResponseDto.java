@@ -16,6 +16,11 @@ public record SprintResponseDto(
         LocalDate startDate,
         LocalDate endDate,
         String reviewNotes,
+        Integer closedTotalTasks,
+        Integer closedDoneTasks,
+        Integer closedIncompleteTasks,
+        Integer closedTotalStoryPoints,
+        Integer closedDoneStoryPoints,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -23,7 +28,10 @@ public record SprintResponseDto(
         return new SprintResponseDto(
                 s.getId(), s.getProjectId(), s.getName(), s.getGoal(),
                 s.getStatus(), s.getStartDate(), s.getEndDate(),
-                s.getReviewNotes(), s.getCreatedAt(), s.getUpdatedAt()
+                s.getReviewNotes(),
+                s.getClosedTotalTasks(), s.getClosedDoneTasks(), s.getClosedIncompleteTasks(),
+                s.getClosedTotalStoryPoints(), s.getClosedDoneStoryPoints(),
+                s.getCreatedAt(), s.getUpdatedAt()
         );
     }
 }

@@ -143,6 +143,8 @@ export interface Task {
   priority: TaskPriority;
   reporterId: string;
   assigneeId?: string | null;
+  dueDate?: string | null;
+  completedAt?: string | null;
   storyPoints?: number | null;
   position: number;
   createdAt: string;
@@ -158,8 +160,29 @@ export interface Sprint {
   startDate?: string | null;
   endDate?: string | null;
   reviewNotes?: string | null;
+  // Snapshot captured at completion — only present when status === 'COMPLETED'
+  closedTotalTasks?: number | null;
+  closedDoneTasks?: number | null;
+  closedIncompleteTasks?: number | null;
+  closedTotalStoryPoints?: number | null;
+  closedDoneStoryPoints?: number | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface SprintTaskSnapshot {
+  id: string;
+  sprintId: string;
+  taskId: string | null;
+  title: string;
+  description?: string | null;
+  statusAtEnd: TaskStatus;
+  priority: TaskPriority;
+  dueDate?: string | null;
+  completedAt?: string | null;
+  storyPoints?: number | null;
+  completed: boolean;
+  returnedToBacklog: boolean;
 }
 
 export type TeamRole = 'ADMIN' | 'MEMBER';

@@ -320,7 +320,8 @@
       "noTasks": "No tasks",
       "loadError": "Error loading tasks.",
       "noActiveSprint": "No active sprint",
-      "noActiveSprintSub": "Activate a sprint from the"
+      "noActiveSprintSub": "Activate a sprint from the",
+      "overdueBanner": "This sprint is {{days}} day(s) overdue. {{pending}} task(s) still pending."
     },
     "members": {
       "title": "Members",
@@ -489,10 +490,14 @@
         "days": "days",
         "day": "day",
         "velocity": "Velocity",
-        "velocityDesc": "Story points completed per day",
+        "velocityDesc": "Story points completed in the sprint",
+        "inProgress": "Sprint in progress",
+        "returnedToBacklog": "tasks returned to backlog",
         "burndown": "Burndown chart",
         "ideal": "Ideal",
         "actual": "Actual",
+        "burndownByTasks": "No story points — showing remaining tasks",
+        "tasks": "tasks",
         "burndownNoData": "Add start and end dates to the sprint to see the burndown.",
         "distribution": "Task distribution",
         "byPriority": "Tasks by priority",
@@ -505,7 +510,12 @@
           "acceptable": "Performance could be improved",
           "poor": "Sprint had difficulties"
         },
-        "healthSummary": "{{done}} of {{total}} tasks completed · {{doneSP}} of {{totalSP}} story points"
+        "healthSummary": "{{done}} of {{total}} tasks completed · {{doneSP}} of {{totalSP}} story points",
+        "retrospective": "Retrospective notes",
+        "backlogBadge": "→ backlog",
+        "lateBadge": "late",
+        "lateCount": "{{count}} completed after sprint deadline",
+        "returnedBanner": "This task was returned to the backlog when the sprint was completed."
       },
       "create": {
         "title": "New sprint",
@@ -567,11 +577,18 @@
       "storyPoints": "Story points",
       "storyPointsPoker": "— assigned via Planning Poker",
       "storyPointsUnestimated": "Unestimated — use Planning Poker to estimate this task",
+      "assignee": "Assigned to",
+      "unassigned": "Unassigned",
+      "dueDate": "Due date",
+      "completedAt": "Completed at",
       "create": "Create task",
       "save": "Save changes",
       "deleteTask": "Delete task",
       "deleteConfirm": "Are you sure you want to delete this task? This action cannot be undone.",
       "loadError": "Error saving the task."
+    },
+    "card": {
+      "overdue": "Overdue"
     }
   },
   "notifications": {

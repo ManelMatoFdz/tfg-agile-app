@@ -9,21 +9,24 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
-@Table(name = "tasks")
+@Table(name = "sprint_task_snapshots")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Task {
+public class SprintTaskSnapshot {
 
     @Id
     @UuidGenerator
     @Column(updatable = false, nullable = false)
     private UUID id;
 
-    @Column(nullable = false, updatable = false)
-    private UUID projectId;
+    @Column(nullable = false)
+    private UUID sprintId;
+
+    @Column
+    private UUID taskId;
 
     @Column(nullable = false)
     private String title;
@@ -33,22 +36,11 @@ public class Task {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    @Builder.Default
-    private TaskStatus status = TaskStatus.TODO;
+    private TaskStatus statusAtEnd;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    @Builder.Default
-    private TaskPriority priority = TaskPriority.MEDIUM;
-
-    @Column(nullable = false, updatable = false)
-    private UUID reporterId;
-
-    @Column
-    private UUID assigneeId;
-
-    @Column
-    private UUID sprintId;
+    private TaskPriority priority;
 
     @Column
     private LocalDate dueDate;
@@ -60,23 +52,16 @@ public class Task {
     private Integer storyPoints;
 
     @Column(nullable = false)
-    @Builder.Default
-    private int position = 0;
+    private boolean completed;
+
+    @Column(nullable = false)
+    private boolean returnedToBacklog;
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(nullable = false)
-    private Instant updatedAt;
-
     @PrePersist
     void prePersist() {
         createdAt = Instant.now();
-        updatedAt = createdAt;
-    }
-
-    @PreUpdate
-    void preUpdate() {
-        updatedAt = Instant.now();
     }
 }

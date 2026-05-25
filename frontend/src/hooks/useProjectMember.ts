@@ -25,6 +25,8 @@ export interface ProjectMemberPermissions {
   canMoveTask: boolean;
   /** Developer, PO or ADMIN — Sprint Planning: Developers select, PO proposes */
   canPlanSprint: boolean;
+  /** Developer or ADMIN — add/remove tasks from an ACTIVE sprint (team self-organizes) */
+  canAddToActiveSprint: boolean;
   /** SM or ADMIN — sprint lifecycle (create, activate, complete) */
   canManageSprint: boolean;
 }
@@ -64,6 +66,7 @@ export function useProjectMember(projectId: string | undefined): ProjectMemberPe
   const canDeleteSprintTask = isAdmin || isDeveloper;
   const canMoveTask = isAdmin || isDeveloper;
   const canPlanSprint = isAdmin || isProductOwner || isDeveloper;
+  const canAddToActiveSprint = isAdmin || isDeveloper;
   const canManageSprint = isAdmin || isScrumMaster;
 
   return {
@@ -81,6 +84,7 @@ export function useProjectMember(projectId: string | undefined): ProjectMemberPe
     canDeleteSprintTask,
     canMoveTask,
     canPlanSprint,
+    canAddToActiveSprint,
     canManageSprint,
   };
 }

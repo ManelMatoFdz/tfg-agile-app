@@ -45,6 +45,14 @@ public class Sprint {
     @Column(columnDefinition = "TEXT")
     private String reviewNotes;
 
+    // Snapshot captured at completion time — source of truth for the report
+    // once the sprint is COMPLETED (incomplete tasks are moved back to backlog)
+    @Column private Integer closedTotalTasks;
+    @Column private Integer closedDoneTasks;
+    @Column private Integer closedIncompleteTasks;
+    @Column private Integer closedTotalStoryPoints;
+    @Column private Integer closedDoneStoryPoints;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

@@ -39,7 +39,7 @@ class TaskControllerTest {
 
         TaskResponseDto response = new TaskResponseDto(
                 taskId, projectId, null, "Task", "Desc", TaskStatus.TODO, TaskPriority.MEDIUM,
-                callerId, null, 5, 0, Instant.now(), Instant.now()
+                callerId, null, null, null, 5, 0, Instant.now(), Instant.now()
         );
 
         when(taskService.findMyTasks(callerId)).thenReturn(List.of(response));

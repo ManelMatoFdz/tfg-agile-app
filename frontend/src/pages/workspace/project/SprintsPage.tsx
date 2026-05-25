@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, ChevronRight, LayoutDashboard, BarChart2, X, Zap } from 'lucide-react';
-import type { Sprint, Task, TaskPriority, TaskStatus } from '../../../types';
+import type { Sprint, SprintTaskSnapshot, Task, TaskPriority, TaskStatus } from '../../../types';
 import { sprintsApi, type CreateSprintDto } from '../../../api/sprints';
 import { tasksApi, type UpdateTaskDto, type CreateTaskDto } from '../../../api/tasks';
 import TaskModal from '../../../components/kanban/TaskModal';
+import SnapshotModal from '../../../components/sprints/SnapshotModal';
 import Alert from '../../../components/ui/Alert';
 import { useProjectMember } from '../../../hooks/useProjectMember';
 
@@ -609,7 +610,7 @@ export default function SprintsPage() {
   const { t } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
 
-  const { canManageSprint, canPlanSprint, canDeleteSprintTask } = useProjectMember(projectId);
+  const { canManageSprint, canPlanSprint, canAddToActiveSprint, canEditSprintTask, canMoveTask, canDeleteSprintTask } = useProjectMember(projectId);
 
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -620,11 +621,13 @@ export default function SprintsPage() {
   const [confirmAction, setConfirmAction] = useState<{ type: 'activate' | 'delete'; sprintId: string } | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sprintTasks, setSprintTasks] = useState<Record<string, Task[]>>({});
+  const [sprintSnapshots, setSprintSnapshots] = useState<Record<string, SprintTaskSnapshot[]>>({});
   const [loadingTasksId, setLoadingTasksId] = useState<string | null>(null);
   const [planningSprintId, setPlanningSprintId] = useState<string | null>(null);
   const [reviewSprintId, setReviewSprintId] = useState<string | null>(null);
   const [editTask, setEditTask] = useState<Task | null | undefined>(undefined);
   const [editTaskSprintId, setEditTaskSprintId] = useState<string | null>(null);
+  const [selectedSnapshot, setSelectedSnapshot] = useState<SprintTaskSnapshot | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
@@ -640,7 +643,21 @@ export default function SprintsPage() {
   const handleExpand = async (sprintId: string) => {
     if (expandedId === sprintId) { setExpandedId(null); return; }
     setExpandedId(sprintId);
-    if (!sprintTasks[sprintId]) {
+    const sprint = sprints.find((s) => s.id === sprintId);
+    const isCompleted = sprint?.status === 'COMPLETED';
+    if (isCompleted && !sprintSnapshots[sprintId]) {
+      setLoadingTasksId(sprintId);
+      try {
+        const snaps = await sprintsApi.getSprintSnapshots(sprintId);
+        setSprintSnapshots((prev) => ({ ...prev, [sprintId]: snaps }));
+        // also populate sprintTasks with empty so the regular path doesn't refetch
+        setSprintTasks((prev) => ({ ...prev, [sprintId]: prev[sprintId] ?? [] }));
+      } catch {
+        setError(t('projects.sprints.loadError'));
+      } finally {
+        setLoadingTasksId(null);
+      }
+    } else if (!isCompleted && !sprintTasks[sprintId]) {
       setLoadingTasksId(sprintId);
       try {
         const tasks = await sprintsApi.getSprintTasks(sprintId);
@@ -797,10 +814,19 @@ export default function SprintsPage() {
           {sprints.map((sprint) => {
             const isExpanded = expandedId === sprint.id;
             const tasks = sprintTasks[sprint.id] ?? [];
+            const snaps = sprintSnapshots[sprint.id] ?? [];
             const isLoadingTasks = loadingTasksId === sprint.id;
+            const isCompletedSprint = sprint.status === 'COMPLETED';
             const pts = totalPoints(sprint.id);
             const startFmt = formatDate(sprint.startDate);
             const endFmt = formatDate(sprint.endDate);
+            const overdueDays = (() => {
+              if (sprint.status !== 'ACTIVE' || !sprint.endDate) return 0;
+              const end = new Date(sprint.endDate); end.setHours(23, 59, 59, 999);
+              const today = new Date();
+              return today > end ? Math.ceil((today.getTime() - end.getTime()) / 86_400_000) : 0;
+            })();
+            const pendingCount = tasks.filter((t) => t.status !== 'DONE').length;
             const confirmThis = confirmAction?.sprintId === sprint.id ? confirmAction.type : null;
 
             return (
@@ -843,12 +869,16 @@ export default function SprintsPage() {
                       }}>
                         {t(`projects.sprints.status.${sprint.status}`)}
                       </span>
-                      {isExpanded && tasks.length > 0 && (
-                        <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-                          {tasks.length} {tasks.length === 1 ? t('projects.sprints.task') : t('projects.sprints.tasks')}
-                          {pts > 0 && ` · ${pts} pts`}
-                        </span>
-                      )}
+                      {isExpanded && (isCompletedSprint ? snaps.length > 0 : tasks.length > 0) && (() => {
+                        const count = isCompletedSprint ? snaps.length : tasks.length;
+                        const snapPts = isCompletedSprint ? snaps.reduce((s, snap) => s + (snap.storyPoints ?? 0), 0) : pts;
+                        return (
+                          <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+                            {count} {count === 1 ? t('projects.sprints.task') : t('projects.sprints.tasks')}
+                            {snapPts > 0 && ` · ${snapPts} pts`}
+                          </span>
+                        );
+                      })()}
                     </div>
                     {(startFmt || endFmt || sprint.goal) && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 1 }}>
@@ -969,6 +999,21 @@ export default function SprintsPage() {
                   </div>
                 </div>
 
+                {/* Overdue banner */}
+                {overdueDays > 0 && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '6px 12px',
+                    background: 'rgba(245,158,11,0.07)',
+                    borderTop: '1px solid rgba(245,158,11,0.25)',
+                  }}>
+                    <span style={{ fontSize: 12 }}>⚠</span>
+                    <p style={{ margin: 0, fontSize: 11, color: '#92400e' }}>
+                      {t('projects.kanban.overdueBanner', { days: overdueDays, pending: pendingCount })}
+                    </p>
+                  </div>
+                )}
+
                 {/* Expanded: task list */}
                 {isExpanded && (
                   <div style={{ borderTop: '1px solid var(--border)' }}>
@@ -976,6 +1021,73 @@ export default function SprintsPage() {
                       <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
                         <div style={{ width: 18, height: 18, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
                       </div>
+                    ) : isCompletedSprint ? (
+                      snaps.length === 0 ? (
+                        <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', padding: '20px 0' }}>
+                          {t('projects.sprints.noTasks')}
+                        </p>
+                      ) : (
+                        <div>
+                          {snaps.map((snap, idx) => (
+                            <div
+                              key={snap.id}
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => setSelectedSnapshot(snap)}
+                              onKeyDown={(e) => e.key === 'Enter' && setSelectedSnapshot(snap)}
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 10,
+                                padding: '7px 12px',
+                                borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+                                opacity: snap.returnedToBacklog ? 0.7 : 1,
+                                cursor: 'pointer',
+                              }}
+                              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                            >
+                              <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: PRIORITY_COLOR[snap.priority] }} />
+
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                    {snap.title}
+                                  </p>
+                                  {snap.returnedToBacklog && (
+                                    <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 600, color: '#d97706', background: 'rgba(217,119,6,0.1)', border: '1px solid rgba(217,119,6,0.25)', borderRadius: 'var(--radius-sm)', padding: '0 4px', whiteSpace: 'nowrap' }}>
+                                      {t('projects.sprints.report.backlogBadge')}
+                                    </span>
+                                  )}
+                                </div>
+                                {snap.description && (
+                                  <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                    {snap.description}
+                                  </p>
+                                )}
+                              </div>
+
+                              <span style={{
+                                flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
+                                textTransform: 'uppercase', color: STATUS_COLOR[snap.statusAtEnd],
+                                fontFamily: 'var(--font-mono)',
+                              }}>
+                                {t(`tasks.status.${snap.statusAtEnd}`)}
+                              </span>
+
+                              {snap.storyPoints != null ? (
+                                <span style={{
+                                  flexShrink: 0, fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-mono)',
+                                  color: 'var(--text-faint)', background: 'var(--bg-hover)',
+                                  border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1px 5px',
+                                }}>
+                                  {snap.storyPoints}
+                                </span>
+                              ) : (
+                                <span style={{ flexShrink: 0, width: 28 }} />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )
                     ) : tasks.length === 0 ? (
                       <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', padding: '20px 0' }}>
                         {t('projects.sprints.noTasks')}
@@ -1034,7 +1146,7 @@ export default function SprintsPage() {
                             )}
 
                             {/* Remove */}
-                            {sprint.status === 'PLANNING' && canPlanSprint && (
+                            {((sprint.status === 'PLANNING' && canPlanSprint) || (sprint.status === 'ACTIVE' && canAddToActiveSprint)) && (
                               <button
                                 onClick={() => handleRemoveFromSprint(sprint.id, task.id)}
                                 title={t('projects.sprints.removeTask')}
@@ -1056,8 +1168,8 @@ export default function SprintsPage() {
                       </div>
                     )}
 
-                    {/* Sprint planning button */}
-                    {sprint.status === 'PLANNING' && canPlanSprint && (
+                    {/* Add tasks button */}
+                    {((sprint.status === 'PLANNING' && canPlanSprint) || (sprint.status === 'ACTIVE' && canAddToActiveSprint)) && (
                       <div style={{ padding: '6px 12px 10px', borderTop: '1px solid var(--border)' }}>
                         <button
                           onClick={() => { setPlanningSprintId(sprint.id); if (!sprintTasks[sprint.id]) handleExpand(sprint.id); }}
@@ -1114,14 +1226,28 @@ export default function SprintsPage() {
         />
       )}
 
-      {editTask !== undefined && (
-        <TaskModal
-          task={editTask}
-          defaultStatus="TODO"
-          onClose={() => { setEditTask(undefined); setEditTaskSprintId(null); }}
-          onSave={handleSaveTask}
-          onMove={editTask && sprints.find((s) => s.id === editTaskSprintId)?.status === 'ACTIVE' ? handleMoveTask : undefined}
-          onDelete={editTask && canDeleteSprintTask ? handleDeleteTask : undefined}
+      {editTask !== undefined && (() => {
+        const taskSprint = sprints.find((s) => s.id === editTaskSprintId);
+        const isCompleted = taskSprint?.status === 'COMPLETED';
+        const isActive = taskSprint?.status === 'ACTIVE';
+        return (
+          <TaskModal
+            task={editTask}
+            projectId={projectId}
+            defaultStatus="TODO"
+            readOnly={isCompleted || (isActive && !canEditSprintTask)}
+            onClose={() => { setEditTask(undefined); setEditTaskSprintId(null); }}
+            onSave={!isCompleted && canEditSprintTask ? handleSaveTask : undefined}
+            onMove={editTask && isActive && canMoveTask ? handleMoveTask : undefined}
+            onDelete={editTask && !isCompleted && canDeleteSprintTask ? handleDeleteTask : undefined}
+          />
+        );
+      })()}
+
+      {selectedSnapshot && (
+        <SnapshotModal
+          snapshot={selectedSnapshot}
+          onClose={() => setSelectedSnapshot(null)}
         />
       )}
 

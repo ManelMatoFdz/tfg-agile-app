@@ -35,8 +35,30 @@ export default function KanbanPage() {
       .finally(() => setLoading(false));
   }, [projectId, t]);
 
+  const refreshTasks = async () => {
+    if (!activeSprint) return;
+    try {
+      const fresh = await sprintsApi.getSprintTasks(activeSprint.id);
+      setTasks((prev) => {
+        if (JSON.stringify(fresh) === JSON.stringify(prev)) return prev;
+        return fresh;
+      });
+    } catch {
+      // silent — no error shown for background refresh
+    }
+  };
+
   const formatDate = (date: string | null | undefined) =>
     date ? new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : null;
+
+  const sprintOverdueDays = (() => {
+    if (!activeSprint?.endDate) return 0;
+    const end = new Date(activeSprint.endDate);
+    end.setHours(23, 59, 59, 999);
+    const today = new Date();
+    return today > end ? Math.ceil((today.getTime() - end.getTime()) / 86_400_000) : 0;
+  })();
+  const pendingTasks = tasks.filter((t) => t.status !== 'DONE').length;
 
   return (
     <div>
@@ -139,11 +161,27 @@ export default function KanbanPage() {
             )}
           </div>
 
+          {sprintOverdueDays > 0 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '8px 14px', marginBottom: 12,
+              background: 'rgba(245,158,11,0.07)',
+              border: '1px solid rgba(245,158,11,0.3)',
+              borderRadius: 'var(--radius-md)',
+            }}>
+              <span style={{ fontSize: 13 }}>⚠</span>
+              <p style={{ margin: 0, fontSize: 12, color: '#92400e' }}>
+                {t('projects.kanban.overdueBanner', { days: sprintOverdueDays, pending: pendingTasks })}
+              </p>
+            </div>
+          )}
+
           <KanbanBoard
             projectId={projectId!}
             tasks={tasks}
             onTasksChange={setTasks}
-            disableCreate={!canMoveTask}
+            onRefresh={refreshTasks}
+            disableCreate={true}
             canMove={canMoveTask}
             canDelete={canDeleteSprintTask}
             readOnly={!canMoveTask}

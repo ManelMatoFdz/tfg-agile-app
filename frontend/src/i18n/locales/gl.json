@@ -320,7 +320,8 @@
       "noTasks": "Non hai tarefas",
       "loadError": "Erro ao cargar as tarefas.",
       "noActiveSprint": "Non hai ningún sprint activo",
-      "noActiveSprintSub": "Activa un sprint desde a sección"
+      "noActiveSprintSub": "Activa un sprint desde a sección",
+      "overdueBanner": "Este sprint venceu hai {{days}} día(s). {{pending}} tarefa(s) pendentes."
     },
     "members": {
       "title": "Membros",
@@ -489,10 +490,14 @@
         "days": "días",
         "day": "día",
         "velocity": "Velocidade",
-        "velocityDesc": "Story points completados por día",
+        "velocityDesc": "Story points completados no sprint",
+        "inProgress": "Sprint en progreso",
+        "returnedToBacklog": "tarefas devolvidas ao backlog",
         "burndown": "Burndown chart",
         "ideal": "Ideal",
         "actual": "Real",
+        "burndownByTasks": "Sen story points — mostrando tarefas restantes",
+        "tasks": "tarefas",
         "burndownNoData": "Engade datas de inicio e fin ao sprint para ver o burndown.",
         "distribution": "Distribución de tarefas",
         "byPriority": "Tarefas por prioridade",
@@ -505,7 +510,12 @@
           "acceptable": "Rendemento mellorable",
           "poor": "Sprint con dificultades"
         },
-        "healthSummary": "{{done}} de {{total}} tarefas completadas · {{doneSP}} de {{totalSP}} story points"
+        "healthSummary": "{{done}} de {{total}} tarefas completadas · {{doneSP}} de {{totalSP}} story points",
+        "retrospective": "Notas de retrospectiva",
+        "backlogBadge": "→ backlog",
+        "lateBadge": "tarde",
+        "lateCount": "{{count}} completada(s) fóra do prazo do sprint",
+        "returnedBanner": "Esta tarefa foi devoluta ao backlog ao completar o sprint."
       },
       "create": {
         "title": "Novo sprint",
@@ -571,7 +581,14 @@
       "save": "Gardar cambios",
       "deleteTask": "Eliminar tarefa",
       "deleteConfirm": "Seguro que queres eliminar esta tarefa? Esta acción non se pode desfacer.",
+      "assignee": "Asignado a",
+      "unassigned": "Sen asignar",
+      "dueDate": "Data límite",
+      "completedAt": "Completada o",
       "loadError": "Erro ao gardar a tarefa."
+    },
+    "card": {
+      "overdue": "Vencida"
     }
   },
   "notifications": {

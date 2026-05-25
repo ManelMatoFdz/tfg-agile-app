@@ -202,7 +202,7 @@ class PokerWebSocketControllerTest {
 
         assertThatThrownBy(() -> controller.reveal(UUID.randomUUID(), SimpMessageHeaderAccessor.create()))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Not authenticated");
+                .hasMessage("NOT_AUTHENTICATED");
     }
 
     private SimpMessageHeaderAccessor headers(UUID userId) {

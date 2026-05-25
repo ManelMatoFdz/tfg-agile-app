@@ -1,6 +1,7 @@
 package com.tfg.agile.app.poker_service.service;
 
 import com.tfg.agile.app.poker_service.client.TaskServiceClient;
+import com.tfg.agile.app.poker_service.config.DisconnectScheduler;
 import com.tfg.agile.app.poker_service.dto.CreateSessionRequestDto;
 import com.tfg.agile.app.poker_service.dto.JoinSessionRequestDto;
 import com.tfg.agile.app.poker_service.dto.StartRoundRequestDto;
@@ -45,12 +46,14 @@ class PokerSessionServiceTest {
     private PokerVoteRepository voteRepository;
     @Mock
     private TaskServiceClient taskServiceClient;
+    @Mock
+    private DisconnectScheduler disconnectScheduler;
 
     private PokerSessionService service;
 
     @BeforeEach
     void setUp() {
-        service = new PokerSessionService(sessionRepository, participantRepository, roundRepository, voteRepository, taskServiceClient);
+        service = new PokerSessionService(sessionRepository, participantRepository, roundRepository, voteRepository, taskServiceClient, disconnectScheduler);
     }
 
     @Test
@@ -89,7 +92,7 @@ class PokerSessionServiceTest {
 
         assertThatThrownBy(() -> service.getSession(sessionId))
                 .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Session not found");
+                .hasMessageContaining("SESSION_NOT_FOUND");
     }
 
     @Test
@@ -136,7 +139,7 @@ class PokerSessionServiceTest {
 
         assertThatThrownBy(() -> service.joinSession(sessionId, UUID.randomUUID(), new JoinSessionRequestDto("User", null)))
                 .isInstanceOf(ConflictException.class)
-                .hasMessage("Session is closed");
+                .hasMessage("SESSION_CLOSED");
     }
 
     @Test
@@ -163,7 +166,7 @@ class PokerSessionServiceTest {
 
         assertThatThrownBy(() -> service.closeSession(sessionId, UUID.randomUUID()))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Only the session creator can close it");
+                .hasMessage("SESSION_CREATOR_REQUIRED");
     }
 
     @Test
@@ -190,7 +193,7 @@ class PokerSessionServiceTest {
         assertThatThrownBy(() -> service.startRound(sessionId, UUID.randomUUID(),
                 new StartRoundRequestDto(UUID.randomUUID(), "Task")))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("Only the session facilitator can perform this action");
+                .hasMessage("SESSION_FACILITATOR_REQUIRED");
     }
 
     @Test
@@ -223,7 +226,7 @@ class PokerSessionServiceTest {
 
         assertThatThrownBy(() -> service.revealRound(sessionId, userId))
                 .isInstanceOf(ConflictException.class)
-                .hasMessage("No active voting round");
+                .hasMessage("NO_ACTIVE_ROUND");
     }
 
     @Test
@@ -316,4 +319,3 @@ class PokerSessionServiceTest {
         assertThat(service.getRounds(sessionId)).hasSize(1);
     }
 }
-

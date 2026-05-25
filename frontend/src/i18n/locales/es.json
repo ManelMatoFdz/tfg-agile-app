@@ -320,7 +320,8 @@
       "noTasks": "No hay tareas",
       "loadError": "Error al cargar las tareas.",
       "noActiveSprint": "No hay ningún sprint activo",
-      "noActiveSprintSub": "Activa un sprint desde la sección"
+      "noActiveSprintSub": "Activa un sprint desde la sección",
+      "overdueBanner": "Este sprint venció hace {{days}} día(s). {{pending}} tarea(s) pendientes."
     },
     "members": {
       "title": "Miembros",
@@ -489,10 +490,14 @@
         "days": "días",
         "day": "día",
         "velocity": "Velocidad",
-        "velocityDesc": "Story points completados por día",
+        "velocityDesc": "Story points completados en el sprint",
+        "inProgress": "Sprint en progreso",
+        "returnedToBacklog": "tareas devueltas al backlog",
         "burndown": "Burndown chart",
         "ideal": "Ideal",
         "actual": "Real",
+        "burndownByTasks": "Sin story points — mostrando tareas restantes",
+        "tasks": "tareas",
         "burndownNoData": "Añade fechas de inicio y fin al sprint para ver el burndown.",
         "distribution": "Distribución de tareas",
         "byPriority": "Tareas por prioridad",
@@ -505,7 +510,12 @@
           "acceptable": "Rendimiento mejorable",
           "poor": "Sprint con dificultades"
         },
-        "healthSummary": "{{done}} de {{total}} tareas completadas · {{doneSP}} de {{totalSP}} story points"
+        "healthSummary": "{{done}} de {{total}} tareas completadas · {{doneSP}} de {{totalSP}} story points",
+        "retrospective": "Notas de retrospectiva",
+        "backlogBadge": "→ backlog",
+        "lateBadge": "tarde",
+        "lateCount": "{{count}} completada(s) fuera del plazo del sprint",
+        "returnedBanner": "Esta tarea fue devuelta al backlog al completar el sprint."
       },
       "create": {
         "title": "Nuevo sprint",
@@ -567,11 +577,18 @@
       "storyPoints": "Story points",
       "storyPointsPoker": "— asignado vía Planning Poker",
       "storyPointsUnestimated": "Sin estimar — usa Planning Poker para estimar esta tarea",
+      "assignee": "Asignado a",
+      "unassigned": "Sin asignar",
+      "dueDate": "Fecha límite",
+      "completedAt": "Completada el",
       "create": "Crear tarea",
       "save": "Guardar cambios",
       "deleteTask": "Eliminar tarea",
       "deleteConfirm": "¿Seguro que quieres eliminar esta tarea? Esta acción no se puede deshacer.",
       "loadError": "Error al guardar la tarea."
+    },
+    "card": {
+      "overdue": "Vencida"
     }
   },
   "notifications": {

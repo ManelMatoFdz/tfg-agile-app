@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Task, TaskStatus, TaskPriority } from '../../types';
 import type { CreateTaskDto, UpdateTaskDto } from '../../api/tasks';
+import { useProjectMembers } from '../../hooks/useProjectMembers';
 
 const STATUSES: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
 const PRIORITIES: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -15,15 +16,16 @@ const PRIORITY_COLORS: Record<TaskPriority, string> = {
 
 interface Props {
   task?: Task | null;
+  projectId?: string;
   defaultStatus?: TaskStatus;
   readOnly?: boolean;
   onClose: () => void;
-  onSave: (dto: CreateTaskDto | UpdateTaskDto) => Promise<void>;
+  onSave?: (dto: CreateTaskDto | UpdateTaskDto) => Promise<void>;
   onMove?: (status: TaskStatus) => Promise<void>;
   onDelete?: () => Promise<void>;
 }
 
-export default function TaskModal({ task, defaultStatus = 'TODO', readOnly = false, onClose, onSave, onMove, onDelete }: Props) {
+export default function TaskModal({ task, projectId, defaultStatus = 'TODO', readOnly = false, onClose, onSave, onMove, onDelete }: Props) {
   const { t } = useTranslation();
   const isEdit = !!task;
 
@@ -31,9 +33,13 @@ export default function TaskModal({ task, defaultStatus = 'TODO', readOnly = fal
   const [description, setDescription] = useState(task?.description ?? '');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? 'MEDIUM');
   const [status, setStatus] = useState<TaskStatus>(task?.status ?? defaultStatus);
+  const [assigneeId, setAssigneeId] = useState<string>(task?.assigneeId ?? '');
+  const [dueDate, setDueDate] = useState<string>(task?.dueDate ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const { members, userMap } = useProjectMembers(projectId);
 
   const handleSave = async () => {
     if (!title.trim()) return;
@@ -44,8 +50,10 @@ export default function TaskModal({ task, defaultStatus = 'TODO', readOnly = fal
         title: title.trim(),
         description: description.trim() || undefined,
         priority,
+        assigneeId: assigneeId || null,
+        dueDate: dueDate || null,
       };
-      await onSave(dto);
+      await onSave?.(dto);
       if (isEdit && onMove && status !== task?.status) {
         await onMove(status);
       }
@@ -69,6 +77,10 @@ export default function TaskModal({ task, defaultStatus = 'TODO', readOnly = fal
       setLoading(false);
     }
   };
+
+  const completedAtFormatted = task?.completedAt
+    ? new Date(task.completedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+    : null;
 
   return (
     <div
@@ -139,7 +151,7 @@ export default function TaskModal({ task, defaultStatus = 'TODO', readOnly = fal
             )}
           </div>
 
-          {/* Status (edit only, and only when status changes are allowed i.e. sprint tasks) */}
+          {/* Status (edit only, sprint tasks) */}
           {isEdit && onMove && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.status')}</label>
@@ -155,15 +167,76 @@ export default function TaskModal({ task, defaultStatus = 'TODO', readOnly = fal
             </div>
           )}
 
+          {/* Assignee */}
+          {members.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.assignee')}</label>
+              {readOnly ? (
+                <div className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white/60">
+                  {assigneeId && userMap[assigneeId] ? (
+                    <>
+                      <AssigneeAvatar name={userMap[assigneeId].fullName ?? userMap[assigneeId].username} size={18} />
+                      <span className="text-gray-700">{userMap[assigneeId].fullName ?? userMap[assigneeId].username}</span>
+                    </>
+                  ) : (
+                    <span className="text-gray-400 italic">{t('tasks.modal.unassigned')}</span>
+                  )}
+                </div>
+              ) : (
+                <select
+                  value={assigneeId}
+                  onChange={(e) => setAssigneeId(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
+                >
+                  <option value="">{t('tasks.modal.unassigned')}</option>
+                  {members.map((m) => {
+                    const u = userMap[m.userId];
+                    const label = u ? (u.fullName ?? u.username) : m.userId;
+                    return <option key={m.userId} value={m.userId}>{label}</option>;
+                  })}
+                </select>
+              )}
+            </div>
+          )}
+
+          {/* Due date */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.dueDate')}</label>
+            {readOnly ? (
+              <div className="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white/60 text-gray-700">
+                {dueDate
+                  ? new Date(dueDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+                  : <span className="text-gray-400 italic">—</span>}
+              </div>
+            ) : (
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
+              />
+            )}
+          </div>
+
           {/* Story points (read-only, set via Planning Poker) */}
           {isEdit && (
-            <div className="col-span-2">
+            <div className={members.length > 0 ? 'col-span-2' : ''}>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.storyPoints')}</label>
               <div className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50/60 text-gray-500">
                 {task?.storyPoints != null
                   ? <><span className="font-semibold text-gray-800">{task.storyPoints}</span><span className="text-xs">{t('tasks.modal.storyPointsPoker')}</span></>
                   : <span className="italic">{t('tasks.modal.storyPointsUnestimated')}</span>
                 }
+              </div>
+            </div>
+          )}
+
+          {/* Completed at (read-only, informative) */}
+          {isEdit && completedAtFormatted && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.completedAt')}</label>
+              <div className="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50/60 text-gray-600">
+                {completedAtFormatted}
               </div>
             </div>
           )}
@@ -220,5 +293,46 @@ export default function TaskModal({ task, defaultStatus = 'TODO', readOnly = fal
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Assignee avatar (initials + deterministic color) ──────────────────────────
+
+const AVATAR_COLORS = [
+  '#e85d2f', '#6b2d5c', '#4a6741', '#c9a449', '#1e3a5f',
+  '#3b82f6', '#f59e0b', '#22c55e', '#a855f7', '#ef4444',
+];
+
+function nameToColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+export function AssigneeAvatar({ name, size = 22 }: { name: string; size?: number }) {
+  const initials = name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('');
+  const color = nameToColor(name);
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: size,
+      height: size,
+      borderRadius: '50%',
+      background: color,
+      color: '#fff',
+      fontSize: size * 0.42,
+      fontWeight: 700,
+      flexShrink: 0,
+      letterSpacing: '-0.02em',
+    }}>
+      {initials}
+    </span>
   );
 }

@@ -6,6 +6,7 @@ export interface CreateTaskDto {
   description?: string;
   priority?: string;
   assigneeId?: string;
+  dueDate?: string;
 }
 
 export interface UpdateTaskDto {
@@ -13,6 +14,7 @@ export interface UpdateTaskDto {
   description?: string;
   priority?: string;
   assigneeId?: string | null;
+  dueDate?: string | null;
 }
 
 export interface MoveTaskDto {

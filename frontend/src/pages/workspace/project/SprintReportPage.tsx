@@ -6,9 +6,10 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, Legend,
 } from 'recharts';
-import type { Sprint, Task, TaskPriority, TaskStatus } from '../../../types';
+import type { Sprint, SprintTaskSnapshot, Task, TaskPriority, TaskStatus } from '../../../types';
 import { sprintsApi } from '../../../api/sprints';
 import Alert from '../../../components/ui/Alert';
+import SnapshotModal from '../../../components/sprints/SnapshotModal';
 
 // ── Chart colors (theme-independent hex) ─────────────────────────────────────
 
@@ -89,30 +90,34 @@ function AnimatedNumber({ target }: { target: number }) {
 
 interface BurndownPoint { label: string; ideal: number; actual: number | null; }
 
-function buildBurndown(sprint: Sprint, tasks: Task[]): BurndownPoint[] | null {
-  if (!sprint.startDate || !sprint.endDate) return null;
+function buildBurndown(sprint: Sprint, tasks: Task[]): { points: BurndownPoint[]; useTaskCount: boolean } | null {
+  if (!sprint.startDate || !sprint.endDate || tasks.length === 0) return null;
   const start = new Date(sprint.startDate); start.setHours(0, 0, 0, 0);
   const end = new Date(sprint.endDate); end.setHours(23, 59, 59, 999);
   const today = new Date();
   const totalSP = tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
-  if (totalSP === 0) return null;
+  // Fall back to task count when no story points are assigned
+  const useTaskCount = totalSP === 0;
+  const total = useTaskCount ? tasks.length : totalSP;
   const doneTasks = tasks.filter((t) => t.status === 'DONE');
   const totalMs = end.getTime() - start.getTime();
   const totalDays = Math.max(Math.ceil(totalMs / 86_400_000), 1);
   const points: BurndownPoint[] = [];
   for (let i = 0; i <= totalDays; i++) {
     const day = new Date(start.getTime() + i * 86_400_000);
-    const ideal = Math.round(totalSP * (1 - i / totalDays));
-    const completedSP = doneTasks.filter((t) => new Date(t.updatedAt) <= day).reduce((s, t) => s + (t.storyPoints ?? 0), 0);
-    const actual = day <= today ? totalSP - completedSP : null;
+    const ideal = Math.round(total * (1 - i / totalDays));
+    const completed = useTaskCount
+      ? doneTasks.filter((t) => new Date(t.updatedAt) <= day).length
+      : doneTasks.filter((t) => new Date(t.updatedAt) <= day).reduce((s, t) => s + (t.storyPoints ?? 0), 0);
+    const actual = day <= today ? total - completed : null;
     points.push({ label: day.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }), ideal, actual });
   }
-  return points;
+  return { points, useTaskCount };
 }
 
 // ── Custom tooltip ────────────────────────────────────────────────────────────
 
-function BurndownTooltip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
+function BurndownTooltip({ active, payload, label, unit }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string; unit?: string }) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
@@ -125,7 +130,7 @@ function BurndownTooltip({ active, payload, label }: { active?: boolean; payload
         <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '2px 0' }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: p.color, flexShrink: 0 }} />
           <span style={{ color: 'var(--text-faint)' }}>{p.name}:</span>
-          <span style={{ fontWeight: 600, color: 'var(--text)' }}>{p.value} pts</span>
+          <span style={{ fontWeight: 600, color: 'var(--text)' }}>{p.value} {unit}</span>
         </div>
       ))}
     </div>
@@ -148,14 +153,27 @@ export default function SprintReportPage() {
 
   const [sprint, setSprint] = useState<Sprint | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [snapshots, setSnapshots] = useState<SprintTaskSnapshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedStatus, setExpandedStatus] = useState<TaskStatus | null>('DONE');
+  const [selectedSnapshot, setSelectedSnapshot] = useState<SprintTaskSnapshot | null>(null);
 
   useEffect(() => {
     if (!sprintId) return;
     Promise.all([sprintsApi.getSprint(sprintId), sprintsApi.getSprintTasks(sprintId)])
-      .then(([s, t]) => { setSprint(s); setTasks(t); })
+      .then(async ([s, taskList]) => {
+        setSprint(s);
+        setTasks(taskList);
+        if (s.status === 'COMPLETED') {
+          try {
+            const snaps = await sprintsApi.getSprintSnapshots(sprintId);
+            setSnapshots(snaps);
+          } catch {
+            // snapshots not critical — fall back to sprint aggregate counters
+          }
+        }
+      })
       .catch(() => setError(t('projects.sprints.report.loadError')))
       .finally(() => setLoading(false));
   }, [sprintId, t]);
@@ -170,22 +188,57 @@ export default function SprintReportPage() {
 
   // ── Derived ───────────────────────────────────────────────────────────────
 
-  const total = tasks.length;
-  const done = tasks.filter((t) => t.status === 'DONE').length;
-  const inProgress = tasks.filter((t) => t.status === 'IN_PROGRESS').length;
-  const inReview = tasks.filter((t) => t.status === 'IN_REVIEW').length;
-  const todo = tasks.filter((t) => t.status === 'TODO').length;
-  const totalSP = tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
-  const doneSP = tasks.filter((t) => t.status === 'DONE').reduce((s, t) => s + (t.storyPoints ?? 0), 0);
+  const isCompleted = sprint.status === 'COMPLETED';
+  const isActive = sprint.status === 'ACTIVE';
+
+  // For completed sprints, use per-task snapshots when available, otherwise
+  // fall back to the aggregate counters captured on the Sprint entity.
+  const hasSnapshots = isCompleted && snapshots.length > 0;
+
+  const total    = hasSnapshots ? snapshots.length
+    : isCompleted ? (sprint.closedTotalTasks ?? tasks.length)
+    : tasks.length;
+  const done     = hasSnapshots ? snapshots.filter((s) => s.completed).length
+    : isCompleted ? (sprint.closedDoneTasks ?? tasks.filter((t) => t.status === 'DONE').length)
+    : tasks.filter((t) => t.status === 'DONE').length;
+  const totalSP  = hasSnapshots ? snapshots.reduce((sum, s) => sum + (s.storyPoints ?? 0), 0)
+    : isCompleted ? (sprint.closedTotalStoryPoints ?? tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0))
+    : tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
+  const doneSP   = hasSnapshots ? snapshots.filter((s) => s.completed).reduce((sum, s) => sum + (s.storyPoints ?? 0), 0)
+    : isCompleted ? (sprint.closedDoneStoryPoints ?? tasks.filter((t) => t.status === 'DONE').reduce((s, t) => s + (t.storyPoints ?? 0), 0))
+    : tasks.filter((t) => t.status === 'DONE').reduce((s, t) => s + (t.storyPoints ?? 0), 0);
+  const incomplete = hasSnapshots ? snapshots.filter((s) => s.returnedToBacklog).length
+    : isCompleted ? (sprint.closedIncompleteTasks ?? 0)
+    : 0;
+
+  const inProgress = hasSnapshots
+    ? snapshots.filter((s) => s.statusAtEnd === 'IN_PROGRESS').length
+    : tasks.filter((t) => t.status === 'IN_PROGRESS').length;
+  const inReview   = hasSnapshots
+    ? snapshots.filter((s) => s.statusAtEnd === 'IN_REVIEW').length
+    : tasks.filter((t) => t.status === 'IN_REVIEW').length;
+  const todo       = hasSnapshots
+    ? snapshots.filter((s) => s.statusAtEnd === 'TODO').length
+    : tasks.filter((t) => t.status === 'TODO').length;
 
   const donePct = total > 0 ? done / total : 0;
-  const health = getHealth(donePct);
+
+  // Tasks completed after sprint.endDate (only meaningful when sprint is COMPLETED and has endDate)
+  const lateCount = hasSnapshots && sprint.endDate
+    ? snapshots.filter((s) => {
+        if (!s.completed || s.returnedToBacklog || !s.completedAt) return false;
+        return new Date(s.completedAt) > new Date(sprint.endDate!);
+      }).length
+    : 0;
+  // Only show health for completed sprints — for active ones the % is misleading
+  const health = isCompleted ? getHealth(donePct) : ('acceptable' as HealthLevel);
   const hConf = HEALTH_CONFIG[health];
 
   const startDate = sprint.startDate ? new Date(sprint.startDate) : null;
   const endDate = sprint.endDate ? new Date(sprint.endDate) : null;
   const durationDays = startDate && endDate ? Math.ceil((endDate.getTime() - startDate.getTime()) / 86_400_000) : null;
-  const velocity = durationDays && durationDays > 0 ? (doneSP / durationDays).toFixed(1) : null;
+  // Velocity = story points completed per sprint (not per day)
+  const velocity = doneSP > 0 ? doneSP : null;
 
   const formatDate = (d: Date) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -199,19 +252,35 @@ export default function SprintReportPage() {
   const priorities: TaskPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
   const priorityData = priorities.map((p) => ({
     name: t(`tasks.priority.${p}`),
-    total: tasks.filter((t) => t.priority === p).length,
-    done: tasks.filter((t) => t.priority === p && t.status === 'DONE').length,
+    total: hasSnapshots
+      ? snapshots.filter((s) => s.priority === p).length
+      : tasks.filter((t) => t.priority === p).length,
+    done: hasSnapshots
+      ? snapshots.filter((s) => s.priority === p && s.completed).length
+      : tasks.filter((t) => t.priority === p && t.status === 'DONE').length,
     color: PRIORITY_COLOR[p],
   })).filter((d) => d.total > 0);
 
-  const burndown = buildBurndown(sprint, tasks);
+  const burndownResult = buildBurndown(sprint, tasks);
+  const burndown = burndownResult?.points ?? null;
+  const burndownUsesTaskCount = burndownResult?.useTaskCount ?? false;
 
-  const statusGroups = (['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'DONE'] as TaskStatus[])
-    .map((status) => ({
-      status,
-      tasks: tasks.filter((t) => t.status === status),
-    }))
-    .filter((g) => g.tasks.length > 0);
+  // For completed sprints with snapshots, show all tasks grouped by statusAtEnd
+  const statusGroups = hasSnapshots
+    ? (['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'DONE'] as TaskStatus[])
+        .map((status) => ({
+          status,
+          snapshots: snapshots.filter((s) => s.statusAtEnd === status),
+          tasks: [] as Task[],
+        }))
+        .filter((g) => g.snapshots.length > 0)
+    : (['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'DONE'] as TaskStatus[])
+        .map((status) => ({
+          status,
+          snapshots: [] as SprintTaskSnapshot[],
+          tasks: tasks.filter((t) => t.status === status),
+        }))
+        .filter((g) => g.tasks.length > 0);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -272,10 +341,14 @@ export default function SprintReportPage() {
       }}>
         <div style={{ flex: 1 }}>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: hConf.textColor }}>
-            {t(`projects.sprints.report.health.${health}`)}
+            {isActive
+              ? t('projects.sprints.report.inProgress')
+              : t(`projects.sprints.report.health.${health}`)}
           </p>
           <p style={{ margin: '2px 0 0', fontSize: 11, color: hConf.textColor, opacity: 0.75 }}>
             {t('projects.sprints.report.healthSummary', { done, total, doneSP, totalSP })}
+            {isCompleted && incomplete > 0 && ` · ${incomplete} ${t('projects.sprints.report.returnedToBacklog')}`}
+            {isCompleted && lateCount > 0 && ` · ${t('projects.sprints.report.lateCount', { count: lateCount })}`}
           </p>
         </div>
         <div style={{ flexShrink: 0, textAlign: 'right' }}>
@@ -359,7 +432,7 @@ export default function SprintReportPage() {
             <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
               {velocity ?? '—'}
             </span>
-            {velocity && <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>pts/{t('projects.sprints.report.day')}</span>}
+            {velocity && <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>pts</span>}
           </div>
           <p style={{ margin: 0, fontSize: 10, color: 'var(--text-faint)' }}>{t('projects.sprints.report.velocityDesc')}</p>
         </div>
@@ -371,7 +444,7 @@ export default function SprintReportPage() {
         {/* Burndown */}
         {burndown && burndown.length > 1 ? (
           <div style={{ ...card, padding: 18 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: burndownUsesTaskCount ? 6 : 14 }}>
               <h3 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
                 {t('projects.sprints.report.burndown')}
               </h3>
@@ -386,12 +459,17 @@ export default function SprintReportPage() {
                 </span>
               </div>
             </div>
+            {burndownUsesTaskCount && (
+              <p style={{ margin: '0 0 10px', fontSize: 10, color: 'var(--text-faint)', fontStyle: 'italic' }}>
+                {t('projects.sprints.report.burndownByTasks')}
+              </p>
+            )}
             <ResponsiveContainer width="100%" height={200}>
               <LineChart data={burndown} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="label" tick={{ fontSize: 9, fill: 'var(--text-faint)' } as object} interval="preserveStartEnd" />
-                <YAxis tick={{ fontSize: 9, fill: 'var(--text-faint)' } as object} />
-                <Tooltip content={<BurndownTooltip />} />
+                <YAxis tick={{ fontSize: 9, fill: 'var(--text-faint)' } as object} allowDecimals={false} />
+                <Tooltip content={<BurndownTooltip unit={burndownUsesTaskCount ? t('projects.sprints.report.tasks') : 'pts'} />} />
                 <Line type="monotone" dataKey="ideal" name={t('projects.sprints.report.ideal')} stroke="#9ca3af" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
                 <Line type="monotone" dataKey="actual" name={t('projects.sprints.report.actual')} stroke="var(--accent)" strokeWidth={2} dot={{ r: 2.5, fill: 'var(--accent)' } as object} connectNulls={false} />
               </LineChart>
@@ -490,8 +568,12 @@ export default function SprintReportPage() {
           </p>
         ) : (
           <div>
-            {statusGroups.map(({ status, tasks: groupTasks }, gi) => {
+            {statusGroups.map(({ status, tasks: groupTasks, snapshots: groupSnaps }, gi) => {
               const isOpen = expandedStatus === status;
+              const itemCount = hasSnapshots ? groupSnaps.length : groupTasks.length;
+              const groupSP = hasSnapshots
+                ? groupSnaps.reduce((s, snap) => s + (snap.storyPoints ?? 0), 0)
+                : groupTasks.reduce((s, task) => s + (task.storyPoints ?? 0), 0);
               return (
                 <div key={status} style={{ borderTop: gi > 0 ? '1px solid var(--border)' : 'none' }}>
                   <button
@@ -509,11 +591,11 @@ export default function SprintReportPage() {
                       {t(`tasks.status.${status}`)}
                     </span>
                     <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '0 4px' }}>
-                      {groupTasks.length}
+                      {itemCount}
                     </span>
                     {totalSP > 0 && (
                       <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-                        {groupTasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0)} pts
+                        {groupSP} pts
                       </span>
                     )}
                     <ChevronRight size={12} strokeWidth={2} style={{ color: 'var(--text-faint)', transition: `transform var(--duration)`, transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
@@ -521,29 +603,77 @@ export default function SprintReportPage() {
 
                   {isOpen && (
                     <div style={{ background: 'var(--bg-hover)' }}>
-                      {groupTasks.map((task, idx) => (
-                        <div key={task.id} style={{
-                          display: 'flex', alignItems: 'center', gap: 10,
-                          padding: '7px 16px',
-                          borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
-                        }}>
-                          <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: PRIORITY_COLOR[task.priority] }} />
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: 0, fontSize: 12, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.title}</p>
-                            {task.description && (
-                              <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.description}</p>
+                      {hasSnapshots
+                        ? groupSnaps.map((snap, idx) => (
+                          <div
+                            key={snap.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setSelectedSnapshot(snap)}
+                            onKeyDown={(e) => e.key === 'Enter' && setSelectedSnapshot(snap)}
+                            style={{
+                              display: 'flex', alignItems: 'center', gap: 10,
+                              padding: '7px 16px',
+                              borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+                              opacity: snap.returnedToBacklog ? 0.7 : 1,
+                              cursor: 'pointer',
+                            }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-elevated)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                          >
+                            <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: PRIORITY_COLOR[snap.priority] }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <p style={{ margin: 0, fontSize: 12, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{snap.title}</p>
+                                {snap.returnedToBacklog && (
+                                  <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 600, color: '#d97706', background: 'rgba(217,119,6,0.1)', border: '1px solid rgba(217,119,6,0.25)', borderRadius: 'var(--radius-sm)', padding: '0 4px', whiteSpace: 'nowrap' }}>
+                                    {t('projects.sprints.report.backlogBadge')}
+                                  </span>
+                                )}
+                                {snap.completed && !snap.returnedToBacklog && snap.completedAt && sprint.endDate && new Date(snap.completedAt) > new Date(sprint.endDate) && (
+                                  <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 600, color: '#dc2626', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.25)', borderRadius: 'var(--radius-sm)', padding: '0 4px', whiteSpace: 'nowrap' }}>
+                                    {t('projects.sprints.report.lateBadge')}
+                                  </span>
+                                )}
+                              </div>
+                              {snap.description && (
+                                <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{snap.description}</p>
+                              )}
+                            </div>
+                            {snap.storyPoints != null && (
+                              <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 600, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1px 5px' }}>
+                                {snap.storyPoints}
+                              </span>
+                            )}
+                            {snap.completed && (
+                              <CheckCircle2 size={13} strokeWidth={2} style={{ flexShrink: 0, color: '#22c55e' }} />
                             )}
                           </div>
-                          {task.storyPoints != null && (
-                            <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 600, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1px 5px' }}>
-                              {task.storyPoints}
-                            </span>
-                          )}
-                          {status === 'DONE' && (
-                            <CheckCircle2 size={13} strokeWidth={2} style={{ flexShrink: 0, color: '#22c55e' }} />
-                          )}
-                        </div>
-                      ))}
+                        ))
+                        : groupTasks.map((task, idx) => (
+                          <div key={task.id} style={{
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '7px 16px',
+                            borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+                          }}>
+                            <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: PRIORITY_COLOR[task.priority] }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ margin: 0, fontSize: 12, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.title}</p>
+                              {task.description && (
+                                <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.description}</p>
+                              )}
+                            </div>
+                            {task.storyPoints != null && (
+                              <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 600, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1px 5px' }}>
+                                {task.storyPoints}
+                              </span>
+                            )}
+                            {status === 'DONE' && (
+                              <CheckCircle2 size={13} strokeWidth={2} style={{ flexShrink: 0, color: '#22c55e' }} />
+                            )}
+                          </div>
+                        ))
+                      }
                     </div>
                   )}
                 </div>
@@ -552,6 +682,31 @@ export default function SprintReportPage() {
           </div>
         )}
       </div>
+
+      {/* Retrospective notes — only shown when completed and notes exist */}
+      {isCompleted && sprint.reviewNotes && (
+        <div style={{ ...card, padding: 18 }}>
+          <h3 style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+            {t('projects.sprints.report.retrospective')}
+          </h3>
+          <p style={{
+            margin: 0,
+            fontSize: 12,
+            color: 'var(--text-muted)',
+            lineHeight: 1.6,
+            whiteSpace: 'pre-wrap',
+          }}>
+            {sprint.reviewNotes}
+          </p>
+        </div>
+      )}
+
+      {selectedSnapshot && (
+        <SnapshotModal
+          snapshot={selectedSnapshot}
+          onClose={() => setSelectedSnapshot(null)}
+        />
+      )}
     </div>
   );
 }

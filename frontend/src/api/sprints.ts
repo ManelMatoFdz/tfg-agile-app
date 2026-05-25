@@ -1,5 +1,5 @@
 import taskClient from './taskClient';
-import type { Sprint, Task } from '../types';
+import type { Sprint, SprintTaskSnapshot, Task } from '../types';
 
 export interface CreateSprintDto {
   name: string;
@@ -49,4 +49,7 @@ export const sprintsApi = {
 
   removeTaskFromSprint: (sprintId: string, taskId: string) =>
     taskClient.delete<Task>(`/sprints/${sprintId}/tasks/${taskId}`).then((r) => r.data),
+
+  getSprintSnapshots: (sprintId: string) =>
+    taskClient.get<SprintTaskSnapshot[]>(`/sprints/${sprintId}/snapshots`).then((r) => r.data),
 };

@@ -1,4 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import type { Task, TaskPriority } from '../../types';
+import type { UserSummary } from '../../types';
+import { AssigneeAvatar } from './TaskModal';
 
 /* Priority → left-border color (theme-independent) */
 const PRIORITY_COLOR: Record<TaskPriority, string> = {
@@ -10,10 +13,22 @@ const PRIORITY_COLOR: Record<TaskPriority, string> = {
 
 interface Props {
   task: Task;
+  assignee?: UserSummary;
   onClick: () => void;
 }
 
-export default function TaskCard({ task, onClick }: Props) {
+function isOverdue(task: Task): boolean {
+  if (!task.dueDate || task.status === 'DONE') return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(task.dueDate) < today;
+}
+
+export default function TaskCard({ task, assignee, onClick }: Props) {
+  const { t } = useTranslation();
+  const overdue = isOverdue(task);
+  const hasFooter = task.storyPoints != null || assignee || overdue;
+
   return (
     <button
       onClick={onClick}
@@ -73,22 +88,50 @@ export default function TaskCard({ task, onClick }: Props) {
         </p>
       )}
 
-      {/* Footer — only shown if there's metadata */}
-      {task.storyPoints != null && (
-        <div style={{ marginTop: '0.3125rem', display: 'flex', justifyContent: 'flex-end' }}>
-          <span style={{
-            fontFamily:  'var(--font-mono)',
-            fontSize:    '0.625rem',
-            fontWeight:  600,
-            color:       'var(--text-faint)',
-            background:  'var(--bg-hover)',
-            border:      '1px solid var(--border)',
-            borderRadius: 'var(--radius-sm)',
-            padding:     '0.0625rem 0.3125rem',
-            letterSpacing: 0,
-          }}>
-            {task.storyPoints}
-          </span>
+      {/* Footer */}
+      {hasFooter && (
+        <div style={{ marginTop: '0.3125rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            {overdue && (
+              <span style={{
+                fontSize:    '0.5625rem',
+                fontWeight:  700,
+                color:       '#ef4444',
+                background:  'rgba(239,68,68,0.08)',
+                border:      '1px solid rgba(239,68,68,0.25)',
+                borderRadius: 'var(--radius-sm)',
+                padding:     '0 0.25rem',
+                letterSpacing: '0.03em',
+                textTransform: 'uppercase',
+                whiteSpace:  'nowrap',
+              }}>
+                {t('tasks.card.overdue')}
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3125rem' }}>
+            {task.storyPoints != null && (
+              <span style={{
+                fontFamily:  'var(--font-mono)',
+                fontSize:    '0.625rem',
+                fontWeight:  600,
+                color:       'var(--text-faint)',
+                background:  'var(--bg-hover)',
+                border:      '1px solid var(--border)',
+                borderRadius: 'var(--radius-sm)',
+                padding:     '0.0625rem 0.3125rem',
+                letterSpacing: 0,
+              }}>
+                {task.storyPoints}
+              </span>
+            )}
+            {assignee && (
+              <AssigneeAvatar
+                name={assignee.fullName ?? assignee.username}
+                size={18}
+              />
+            )}
+          </div>
         </div>
       )}
     </button>
