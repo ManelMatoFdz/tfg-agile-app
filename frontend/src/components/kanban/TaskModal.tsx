@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { X } from 'lucide-react';
 import type { Task, TaskStatus, TaskPriority } from '../../types';
 import type { CreateTaskDto, UpdateTaskDto } from '../../api/tasks';
 import { useProjectMembers } from '../../hooks/useProjectMembers';
@@ -7,11 +8,41 @@ import { useProjectMembers } from '../../hooks/useProjectMembers';
 const STATUSES: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
 const PRIORITIES: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
-const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  LOW: 'text-gray-500',
-  MEDIUM: 'text-blue-500',
-  HIGH: 'text-amber-500',
-  CRITICAL: 'text-red-500',
+const PRIORITY_COLOR: Record<TaskPriority, string> = {
+  LOW: '#94A3B8',
+  MEDIUM: '#2563EB',
+  HIGH: '#D97706',
+  CRITICAL: '#DC2626',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: 11,
+  fontWeight: 600,
+  letterSpacing: '0.06em',
+  textTransform: 'uppercase',
+  color: 'var(--text-muted)',
+  marginBottom: 6,
+};
+
+const fieldStyle: React.CSSProperties = {
+  width: '100%',
+  padding: '10px 12px',
+  fontSize: 13,
+  fontFamily: 'var(--font-sans)',
+  color: 'var(--text)',
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  outline: 'none',
+  boxSizing: 'border-box' as const,
+  transition: 'border-color 150ms ease, box-shadow 150ms ease',
+};
+
+const readOnlyFieldStyle: React.CSSProperties = {
+  ...fieldStyle,
+  background: 'var(--bg-hover)',
+  cursor: 'default',
 };
 
 interface Props {
@@ -84,181 +115,281 @@ export default function TaskModal({ task, projectId, defaultStatus = 'TODO', rea
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+        background: 'var(--bg-overlay)',
+        backdropFilter: 'blur(8px)',
+        WebkitBackdropFilter: 'blur(8px)',
+        animation: 'fade-in 200ms ease both',
+      }}
     >
-      <div className="w-full max-w-lg glass-card-strong p-6 space-y-4 animate-fade-in">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">
+      <div style={{
+        width: '100%',
+        maxWidth: 560,
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-lg)',
+        display: 'flex',
+        flexDirection: 'column',
+        animation: 'scale-in var(--duration-panel) var(--ease-out) both',
+        overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '18px 24px',
+          borderBottom: '1px solid var(--border)',
+        }}>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
             {readOnly ? t('tasks.modal.titleView') : isEdit ? t('tasks.modal.titleEdit') : t('tasks.modal.titleCreate')}
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+          <button
+            onClick={onClose}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              borderRadius: 'var(--radius-md)',
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--text-faint)',
+              cursor: 'pointer',
+              transition: 'color 150ms, background 150ms',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.background = 'var(--bg-hover)'; }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.background = 'transparent'; }}
+          >
+            <X size={18} strokeWidth={2} />
           </button>
         </div>
 
-        {error && (
-          <div className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</div>
-        )}
-
-        {/* Title */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.titleField')}</label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={t('tasks.modal.titlePlaceholder')}
-            readOnly={readOnly}
-            className={`w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none bg-white/60 ${readOnly ? 'text-gray-700 cursor-default' : 'focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400'}`}
-            autoFocus={!readOnly}
-          />
-        </div>
-
-        {/* Description */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.description')}</label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder={readOnly ? '—' : t('tasks.modal.descriptionPlaceholder')}
-            rows={3}
-            readOnly={readOnly}
-            className={`w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none bg-white/60 resize-none ${readOnly ? 'text-gray-700 cursor-default' : 'focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400'}`}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {/* Priority */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.priority')}</label>
-            {readOnly ? (
-              <div className="flex items-center px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white/60">
-                <span className={`font-medium ${PRIORITY_COLORS[priority]}`}>{t(`tasks.priority.${priority}`)}</span>
-              </div>
-            ) : (
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          {/* Status (edit only, sprint tasks) */}
-          {isEdit && onMove && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.status')}</label>
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value as TaskStatus)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
-              >
-                {STATUSES.map((s) => (
-                  <option key={s} value={s}>{t(`tasks.status.${s}`)}</option>
-                ))}
-              </select>
+        {/* Body */}
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {error && (
+            <div style={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: '#DC2626',
+              background: 'rgba(220,38,38,0.06)',
+              borderLeft: '3px solid #DC2626',
+              borderRadius: 'var(--radius-md)',
+              padding: '10px 14px',
+            }}>
+              {error}
             </div>
           )}
 
-          {/* Assignee */}
-          {members.length > 0 && (
+          <div>
+            <label style={labelStyle}>{t('tasks.modal.titleField')}</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder={t('tasks.modal.titlePlaceholder')}
+              readOnly={readOnly}
+              autoFocus={!readOnly}
+              style={readOnly ? readOnlyFieldStyle : fieldStyle}
+              onFocus={e => { if (!readOnly) { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; } }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>{t('tasks.modal.description')}</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder={readOnly ? '--' : t('tasks.modal.descriptionPlaceholder')}
+              rows={3}
+              readOnly={readOnly}
+              style={{ ...(readOnly ? readOnlyFieldStyle : fieldStyle), resize: 'none' }}
+              onFocus={e => { if (!readOnly) { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; } }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+            />
+          </div>
+
+          <div className="task-modal-grid">
+            <style>{`.task-modal-grid{display:grid;gap:14px;grid-template-columns:1fr 1fr}`}</style>
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.assignee')}</label>
+              <label style={labelStyle}>{t('tasks.modal.priority')}</label>
               {readOnly ? (
-                <div className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white/60">
-                  {assigneeId && userMap[assigneeId] ? (
-                    <>
-                      <AssigneeAvatar name={userMap[assigneeId].fullName ?? userMap[assigneeId].username} size={18} />
-                      <span className="text-gray-700">{userMap[assigneeId].fullName ?? userMap[assigneeId].username}</span>
-                    </>
-                  ) : (
-                    <span className="text-gray-400 italic">{t('tasks.modal.unassigned')}</span>
-                  )}
+                <div style={readOnlyFieldStyle}>
+                  <span style={{ fontWeight: 600, color: PRIORITY_COLOR[priority] }}>{t(`tasks.priority.${priority}`)}</span>
                 </div>
               ) : (
                 <select
-                  value={assigneeId}
-                  onChange={(e) => setAssigneeId(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
+                  value={priority}
+                  onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                  style={fieldStyle}
+                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
                 >
-                  <option value="">{t('tasks.modal.unassigned')}</option>
-                  {members.map((m) => {
-                    const u = userMap[m.userId];
-                    const label = u ? (u.fullName ?? u.username) : m.userId;
-                    return <option key={m.userId} value={m.userId}>{label}</option>;
-                  })}
+                  {PRIORITIES.map((p) => (
+                    <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
+                  ))}
                 </select>
               )}
             </div>
-          )}
 
-          {/* Due date */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.dueDate')}</label>
-            {readOnly ? (
-              <div className="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-white/60 text-gray-700">
-                {dueDate
-                  ? new Date(dueDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-                  : <span className="text-gray-400 italic">—</span>}
+            {isEdit && onMove && (
+              <div>
+                <label style={labelStyle}>{t('tasks.modal.status')}</label>
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as TaskStatus)}
+                  style={fieldStyle}
+                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+                >
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>{t(`tasks.status.${s}`)}</option>
+                  ))}
+                </select>
               </div>
-            ) : (
-              <input
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-400 bg-white/60"
-              />
+            )}
+
+            {members.length > 0 && (
+              <div>
+                <label style={labelStyle}>{t('tasks.modal.assignee')}</label>
+                {readOnly ? (
+                  <div style={{ ...readOnlyFieldStyle, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {assigneeId && userMap[assigneeId] ? (
+                      <>
+                        <AssigneeAvatar name={userMap[assigneeId].fullName ?? userMap[assigneeId].username} size={22} />
+                        <span style={{ color: 'var(--text)' }}>{userMap[assigneeId].fullName ?? userMap[assigneeId].username}</span>
+                      </>
+                    ) : (
+                      <span style={{ color: 'var(--text-faint)', fontStyle: 'italic' }}>{t('tasks.modal.unassigned')}</span>
+                    )}
+                  </div>
+                ) : (
+                  <select
+                    value={assigneeId}
+                    onChange={(e) => setAssigneeId(e.target.value)}
+                    style={fieldStyle}
+                    onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+                  >
+                    <option value="">{t('tasks.modal.unassigned')}</option>
+                    {members.map((m) => {
+                      const u = userMap[m.userId];
+                      const label = u ? (u.fullName ?? u.username) : m.userId;
+                      return <option key={m.userId} value={m.userId}>{label}</option>;
+                    })}
+                  </select>
+                )}
+              </div>
+            )}
+
+            <div>
+              <label style={labelStyle}>{t('tasks.modal.dueDate')}</label>
+              {readOnly ? (
+                <div style={readOnlyFieldStyle}>
+                  {dueDate
+                    ? new Date(dueDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+                    : <span style={{ color: 'var(--text-faint)', fontStyle: 'italic' }}>--</span>}
+                </div>
+              ) : (
+                <input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  style={fieldStyle}
+                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+                />
+              )}
+            </div>
+
+            {isEdit && (
+              <div style={members.length > 0 ? { gridColumn: '1 / -1' } : undefined}>
+                <label style={labelStyle}>{t('tasks.modal.storyPoints')}</label>
+                <div style={{ ...readOnlyFieldStyle, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {task?.storyPoints != null
+                    ? <>
+                        <span style={{
+                          fontWeight: 700,
+                          color: 'var(--accent)',
+                          background: 'var(--accent-muted)',
+                          borderRadius: 'var(--radius-pill)',
+                          width: 28,
+                          height: 28,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 13,
+                          fontFamily: 'var(--font-mono)',
+                        }}>
+                          {task.storyPoints}
+                        </span>
+                        <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{t('tasks.modal.storyPointsPoker')}</span>
+                      </>
+                    : <span style={{ fontStyle: 'italic', color: 'var(--text-faint)' }}>{t('tasks.modal.storyPointsUnestimated')}</span>
+                  }
+                </div>
+              </div>
+            )}
+
+            {isEdit && completedAtFormatted && (
+              <div>
+                <label style={labelStyle}>{t('tasks.modal.completedAt')}</label>
+                <div style={readOnlyFieldStyle}>
+                  {completedAtFormatted}
+                </div>
+              </div>
             )}
           </div>
-
-          {/* Story points (read-only, set via Planning Poker) */}
-          {isEdit && (
-            <div className={members.length > 0 ? 'col-span-2' : ''}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.storyPoints')}</label>
-              <div className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50/60 text-gray-500">
-                {task?.storyPoints != null
-                  ? <><span className="font-semibold text-gray-800">{task.storyPoints}</span><span className="text-xs">{t('tasks.modal.storyPointsPoker')}</span></>
-                  : <span className="italic">{t('tasks.modal.storyPointsUnestimated')}</span>
-                }
-              </div>
-            </div>
-          )}
-
-          {/* Completed at (read-only, informative) */}
-          {isEdit && completedAtFormatted && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('tasks.modal.completedAt')}</label>
-              <div className="px-3 py-2 text-sm border border-gray-200 rounded-xl bg-gray-50/60 text-gray-600">
-                {completedAtFormatted}
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center justify-between pt-2">
+        {/* Footer */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '16px 24px',
+          borderTop: '1px solid var(--border)',
+          background: 'var(--bg)',
+        }}>
           <div>
             {!readOnly && isEdit && onDelete && (
               confirmDelete ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">{t('tasks.modal.deleteConfirm')}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('tasks.modal.deleteConfirm')}</span>
                   <button
                     onClick={handleDelete}
                     disabled={loading}
-                    className="text-xs font-medium text-red-600 hover:text-red-700 transition-colors cursor-pointer"
+                    style={{
+                      fontSize: 12, fontWeight: 600, color: '#DC2626',
+                      background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                      transition: 'opacity 150ms',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.opacity = '0.7'; }}
+                    onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
                   >
                     {t('common.delete')}
                   </button>
                   <button
                     onClick={() => setConfirmDelete(false)}
-                    className="text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                    style={{
+                      fontSize: 12, fontWeight: 600, color: 'var(--text-muted)',
+                      background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                      transition: 'opacity 150ms',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.opacity = '0.7'; }}
+                    onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
                   >
                     {t('common.cancel')}
                   </button>
@@ -266,17 +397,42 @@ export default function TaskModal({ task, projectId, defaultStatus = 'TODO', rea
               ) : (
                 <button
                   onClick={() => setConfirmDelete(true)}
-                  className="text-xs font-medium text-red-500 hover:text-red-600 transition-colors cursor-pointer"
+                  style={{
+                    fontSize: 12, fontWeight: 600, color: '#DC2626',
+                    background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                    transition: 'opacity 150ms',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '0.7'; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
                 >
                   {t('tasks.modal.deleteTask')}
                 </button>
               )
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <button
               onClick={onClose}
-              className={`px-4 py-2 text-sm font-medium rounded-xl transition-colors cursor-pointer ${readOnly ? 'bg-primary-600 text-white hover:bg-primary-700' : 'text-gray-600 hover:text-gray-800'}`}
+              style={{
+                padding: '9px 20px',
+                fontSize: 13,
+                fontWeight: 600,
+                borderRadius: 'var(--radius-md)',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-sans)',
+                transition: 'background 150ms, color 150ms',
+                ...(readOnly
+                  ? { background: 'var(--accent)', color: '#FFFFFF', border: 'none' }
+                  : { background: 'var(--bg-elevated)', color: 'var(--text-muted)', border: '1px solid var(--border-strong)' }),
+              }}
+              onMouseEnter={e => {
+                if (readOnly) { e.currentTarget.style.background = 'var(--accent-hover)'; }
+                else { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }
+              }}
+              onMouseLeave={e => {
+                if (readOnly) { e.currentTarget.style.background = 'var(--accent)'; }
+                else { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.color = 'var(--text-muted)'; }
+              }}
             >
               {readOnly ? t('common.close') : t('common.cancel')}
             </button>
@@ -284,7 +440,21 @@ export default function TaskModal({ task, projectId, defaultStatus = 'TODO', rea
               <button
                 onClick={handleSave}
                 disabled={loading || !title.trim()}
-                className="px-4 py-2 text-sm font-medium bg-primary-600 text-white rounded-xl hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                style={{
+                  padding: '9px 20px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: 'var(--accent)',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: loading || !title.trim() ? 'not-allowed' : 'pointer',
+                  opacity: loading || !title.trim() ? 0.5 : 1,
+                  fontFamily: 'var(--font-sans)',
+                  transition: 'background 150ms',
+                }}
+                onMouseEnter={e => { if (!loading && title.trim()) e.currentTarget.style.background = 'var(--accent-hover)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; }}
               >
                 {loading ? '...' : isEdit ? t('tasks.modal.save') : t('tasks.modal.create')}
               </button>
@@ -296,11 +466,9 @@ export default function TaskModal({ task, projectId, defaultStatus = 'TODO', rea
   );
 }
 
-// ── Assignee avatar (initials + deterministic color) ──────────────────────────
-
 const AVATAR_COLORS = [
-  '#e85d2f', '#6b2d5c', '#4a6741', '#c9a449', '#1e3a5f',
-  '#3b82f6', '#f59e0b', '#22c55e', '#a855f7', '#ef4444',
+  '#2563EB', '#7C3AED', '#16A34A', '#D97706', '#DC2626',
+  '#0891B2', '#4F46E5', '#059669', '#EA580C', '#DB2777',
 ];
 
 function nameToColor(name: string): string {
@@ -324,9 +492,9 @@ export function AssigneeAvatar({ name, size = 22 }: { name: string; size?: numbe
       justifyContent: 'center',
       width: size,
       height: size,
-      borderRadius: '50%',
+      borderRadius: 'var(--radius-pill)',
       background: color,
-      color: '#fff',
+      color: '#FFFFFF',
       fontSize: size * 0.42,
       fontWeight: 700,
       flexShrink: 0,

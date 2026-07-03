@@ -123,6 +123,12 @@ public class SprintService {
         if (sprint.getStatus() != SprintStatus.PLANNING) {
             throw new ConflictException("SPRINT_NOT_PLANNING");
         }
+        if (sprint.getEndDate() == null) {
+            throw new IllegalArgumentException("SPRINT_END_DATE_REQUIRED");
+        }
+        if (sprint.getEndDate().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("SPRINT_END_DATE_IN_PAST");
+        }
         if (sprintRepository.existsByProjectIdAndStatus(sprint.getProjectId(), SprintStatus.ACTIVE)) {
             throw new ConflictException("SPRINT_ALREADY_ACTIVE");
         }
@@ -132,19 +138,15 @@ public class SprintService {
         return SprintResponseDto.from(sprintRepository.save(sprint));
     }
 
+    /**
+     * Internal method that performs the actual sprint completion logic.
+     * Used by the scheduler for automatic closure at endDate.
+     */
     @Transactional
-    public SprintResponseDto completeSprint(UUID sprintId, CompleteSprintRequestDto dto, UUID callerId) {
-        Sprint sprint = getSprintOrThrow(sprintId);
-        MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
-        requireScrumMasterOrAdmin(perms);
-
-        if (sprint.getStatus() != SprintStatus.ACTIVE) {
-            throw new ConflictException("SPRINT_NOT_ACTIVE");
-        }
-
+    public void completeSprintInternal(Sprint sprint) {
+        UUID sprintId = sprint.getId();
         List<Task> allSprintTasks = taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprintId);
 
-        // Capture snapshot before moving tasks back to backlog
         int closedTotal = allSprintTasks.size();
         int closedDone = (int) allSprintTasks.stream().filter(t -> t.getStatus() == TaskStatus.DONE).count();
         int closedTotalSP = allSprintTasks.stream().mapToInt(t -> t.getStoryPoints() != null ? t.getStoryPoints() : 0).sum();
@@ -156,7 +158,6 @@ public class SprintService {
         sprint.setClosedTotalStoryPoints(closedTotalSP);
         sprint.setClosedDoneStoryPoints(closedDoneSP);
 
-        // Persist per-task snapshots for full sprint report fidelity
         List<SprintTaskSnapshot> snapshots = allSprintTasks.stream()
                 .map(t -> SprintTaskSnapshot.builder()
                         .sprintId(sprintId)
@@ -174,7 +175,6 @@ public class SprintService {
                 .toList();
         snapshotRepository.saveAll(snapshots);
 
-        // Move non-DONE tasks back to backlog
         allSprintTasks.stream()
                 .filter(t -> t.getStatus() != TaskStatus.DONE)
                 .forEach(t -> {
@@ -183,12 +183,8 @@ public class SprintService {
                     taskRepository.save(t);
                 });
 
-        if (dto != null && dto.reviewNotes() != null) {
-            sprint.setReviewNotes(dto.reviewNotes());
-        }
         sprint.setStatus(SprintStatus.COMPLETED);
-        sprint.setEndDate(LocalDate.now());
-        return SprintResponseDto.from(sprintRepository.save(sprint));
+        sprintRepository.save(sprint);
     }
 
     @Transactional

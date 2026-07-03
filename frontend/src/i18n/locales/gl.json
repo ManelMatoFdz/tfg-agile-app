@@ -82,7 +82,8 @@
       }
     },
     "layout": {
-      "description": "Xestiona os teus proxectos con metodoloxías áxiles. Colabora co teu equipo de forma eficiente e visual."
+      "headline": "Domina o teu fluxo de traballo con AgileFlow",
+      "description": "A plataforma todo en un para planificar, xestionar e entregar proxectos de calidade con rapidez e precisión."
     }
   },
   "workspace": {
@@ -114,7 +115,10 @@
       "settings": "Configuración",
       "profile": "Perfil",
       "notifications": "Notificacións",
-      "logout": "Pechar sesión"
+      "logout": "Pechar sesión",
+      "myTasks": "As miñas tarefas",
+      "lightMode": "Modo claro",
+      "darkMode": "Modo escuro"
     },
     "dashboard": {
       "title": "Proxectos",
@@ -460,6 +464,7 @@
       "activate": "Activar",
       "activateConfirm": "Activar este sprint?",
       "activateError": "Erro ao activar o sprint.",
+      "activateEndDateRequired": "Debes establecer unha data de fin antes de activar o sprint.",
       "complete": "Completar",
       "completeConfirm": "Completar? As tarefas non rematadas volverán ao backlog.",
       "completeError": "Erro ao completar o sprint.",

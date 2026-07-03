@@ -8,13 +8,21 @@ interface Props {
 
 export default function Toggle({ label, description, checked, onChange, disabled }: Props) {
   return (
-    <label className="flex items-center justify-between gap-4 cursor-pointer group py-1">
-      <div className="select-none">
-        <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors duration-200">
+    <label style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 16,
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      padding: '4px 0',
+      opacity: disabled ? 0.5 : 1,
+    }}>
+      <div>
+        <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)' }}>
           {label}
         </span>
         {description && (
-          <p className="text-xs text-gray-400 mt-0.5 group-hover:text-gray-500 transition-colors duration-200">
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
             {description}
           </p>
         )}
@@ -25,30 +33,34 @@ export default function Toggle({ label, description, checked, onChange, disabled
         aria-checked={checked}
         disabled={disabled}
         onClick={() => onChange(!checked)}
-        className={`
-          relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full
-          transition-all duration-300 ease-out
-          focus:outline-none focus:ring-4 focus:ring-primary-500/15 focus:ring-offset-2
-          disabled:opacity-50 disabled:cursor-not-allowed
-          ${checked
-            ? 'bg-gradient-to-r from-primary-600 to-primary-500 shadow-md shadow-primary-500/25'
-            : 'bg-gray-200 hover:bg-gray-300'
-          }
-        `}
+        style={{
+          position: 'relative',
+          display: 'inline-flex',
+          width: 40,
+          height: 22,
+          flexShrink: 0,
+          borderRadius: 'var(--radius-pill)',
+          border: 'none',
+          background: checked ? 'var(--accent)' : 'var(--border-strong)',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          transition: 'background var(--duration) var(--ease-in-out)',
+          padding: 0,
+          outline: 'none',
+        }}
       >
         <span
-          className={`
-            pointer-events-none inline-block h-5.5 w-5.5 rounded-full bg-white
-            shadow-md ring-0
-            transition-all duration-300 ease-out
-            ${checked ? 'translate-x-[22px] shadow-primary-500/20' : 'translate-x-[3px]'}
-            mt-[3px]
-          `}
+          style={{
+            display: 'block',
+            width: 16,
+            height: 16,
+            borderRadius: 'var(--radius-pill)',
+            background: '#fff',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+            transform: checked ? 'translateX(20px)' : 'translateX(3px)',
+            marginTop: 3,
+            transition: 'transform var(--duration) var(--ease-out)',
+          }}
         />
-        {/* Glow effect when checked */}
-        {checked && (
-          <div className="absolute inset-0 rounded-full bg-primary-400/20 blur-md -z-10" />
-        )}
       </button>
     </label>
   );

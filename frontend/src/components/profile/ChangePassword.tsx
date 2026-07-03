@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Lock } from 'lucide-react';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import Alert from '../ui/Alert';
@@ -48,16 +49,35 @@ export default function ChangePassword() {
   };
 
   return (
-    <div className="glass-card-strong rounded-2xl p-6 space-y-6 hover:shadow-xl transition-shadow duration-500">
-      <div className="flex items-start gap-4">
-        <div className="w-10 h-10 bg-gradient-to-br from-amber-100 to-amber-50 rounded-xl flex items-center justify-center shrink-0">
-          <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
+    <div style={{
+      background: 'var(--bg-elevated)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-md)',
+      padding: 24,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 20,
+    }}>
+      <style>{`.pwd-grid{display:grid;gap:16px;grid-template-columns:1fr}@media(min-width:640px){.pwd-grid{grid-template-columns:1fr 1fr}}`}</style>
+
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+        <div style={{
+          width: 36,
+          height: 36,
+          background: 'var(--ochre-soft)',
+          borderRadius: 'var(--radius-md)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <Lock size={18} strokeWidth={1.75} style={{ color: 'var(--ochre)' }} />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">{t('profile.password.title')}</h3>
-          <p className="text-sm text-gray-400 mt-0.5">
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            {t('profile.password.title')}
+          </h3>
+          <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
             {requiresCurrentPassword ? t('profile.password.subtitle') : t('profile.password.subtitleCreate')}
           </p>
         </div>
@@ -68,7 +88,7 @@ export default function ChangePassword() {
       )}
       {success && <Alert type="success" message={t('profile.password.successMessage')} onClose={reset} />}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {requiresCurrentPassword && (
           <Input
             label={t('profile.password.currentPassword')}
@@ -79,7 +99,7 @@ export default function ChangePassword() {
             required
           />
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="pwd-grid">
           <Input
             label={t('profile.password.newPassword')}
             type="password"
@@ -98,7 +118,7 @@ export default function ChangePassword() {
             required
           />
         </div>
-        <div className="flex justify-end pt-2">
+        <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
           <Button type="submit" loading={loading}>
             {requiresCurrentPassword ? t('profile.password.change') : t('profile.password.create')}
           </Button>

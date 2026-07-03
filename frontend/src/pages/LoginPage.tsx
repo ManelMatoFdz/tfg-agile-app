@@ -2,11 +2,11 @@ import { useState, type FormEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useGoogleLogin } from '@react-oauth/google';
 import { useTranslation } from 'react-i18next';
-import { Mail, Lock, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '../components/auth/AuthLayout';
 import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 import Alert from '../components/ui/Alert';
-import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+import PageTitle from '../components/motion/PageTitle';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 import { useApiAction } from '../hooks/useApiAction';
@@ -15,29 +15,29 @@ import { consumeFlashNotice } from '../utils/flashNotice';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '9px 10px 9px 34px',
-  fontSize: 13,
+  padding: '10px 12px 10px 38px',
+  fontSize: 14,
   background: 'var(--bg)',
   border: '1px solid var(--border)',
   borderRadius: 'var(--radius-md)',
   color: 'var(--text)',
-  fontFamily: 'inherit',
+  fontFamily: 'var(--font-sans)',
   outline: 'none',
   boxSizing: 'border-box',
-  transition: `border-color var(--duration)`,
+  transition: 'border-color 0.15s ease',
 };
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
-  fontSize: 12,
+  fontSize: 13,
   fontWeight: 500,
-  color: 'var(--text-muted)',
-  marginBottom: 5,
+  color: 'var(--text)',
+  marginBottom: 6,
 };
 
 const iconWrap: React.CSSProperties = {
   position: 'absolute',
-  left: 10,
+  left: 12,
   top: '50%',
   transform: 'translateY(-50%)',
   color: 'var(--text-faint)',
@@ -45,44 +45,6 @@ const iconWrap: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
 };
-
-function FieldInput({
-  label,
-  type = 'text',
-  placeholder,
-  value,
-  onChange,
-  required,
-  icon,
-}: {
-  label: string;
-  type?: string;
-  placeholder?: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  required?: boolean;
-  icon: React.ReactNode;
-}) {
-  const [focused, setFocused] = useState(false);
-  return (
-    <div>
-      <label style={labelStyle}>{label}</label>
-      <div style={{ position: 'relative' }}>
-        <span style={iconWrap}>{icon}</span>
-        <input
-          type={type}
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          required={required}
-          onFocus={(e) => { setFocused(true); e.currentTarget.style.borderColor = 'var(--accent)'; }}
-          onBlur={(e) => { setFocused(false); e.currentTarget.style.borderColor = focused ? 'var(--accent)' : 'var(--border)'; }}
-          style={inputStyle}
-        />
-      </div>
-    </div>
-  );
-}
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -93,6 +55,7 @@ export default function LoginPage() {
   const googleEnabled = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [googleError, setGoogleError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(() => {
     const noticeFromState = (location.state as { notice?: string } | null)?.notice ?? null;
@@ -126,10 +89,10 @@ export default function LoginPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* Header */}
         <div>
-          <h2 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+          <PageTitle as="h2" style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
             {t('auth.login.title')}
-          </h2>
-          <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
+          </PageTitle>
+          <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5 }}>
             {t('auth.login.subtitle')}
           </p>
         </div>
@@ -144,30 +107,67 @@ export default function LoginPage() {
         {notice && <Alert type="info" message={notice} onClose={() => setNotice(null)} />}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <FieldInput
-            label={t('auth.login.email')}
-            type="email"
-            placeholder={t('auth.login.emailPlaceholder')}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            icon={<Mail size={14} strokeWidth={1.8} />}
-          />
-          <FieldInput
-            label={t('auth.login.password')}
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            icon={<Lock size={14} strokeWidth={1.8} />}
-          />
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Email */}
+          <div>
+            <label style={labelStyle}>{t('auth.login.email')}</label>
+            <div style={{ position: 'relative' }}>
+              <span style={iconWrap}><Mail size={16} strokeWidth={1.8} /></span>
+              <input
+                type="email"
+                placeholder={t('auth.login.emailPlaceholder')}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+                style={inputStyle}
+              />
+            </div>
+          </div>
 
+          {/* Password */}
+          <div>
+            <label style={labelStyle}>{t('auth.login.password')}</label>
+            <div style={{ position: 'relative' }}>
+              <span style={iconWrap}><Lock size={16} strokeWidth={1.8} /></span>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="--------"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+                style={{ ...inputStyle, paddingRight: 40 }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: 10,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--text-faint)',
+                  padding: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                {showPassword ? <EyeOff size={16} strokeWidth={1.8} /> : <Eye size={16} strokeWidth={1.8} />}
+              </button>
+            </div>
+          </div>
+
+          {/* Forgot password */}
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Link
               to="/forgot-password"
-              style={{ fontSize: 12, fontWeight: 500, color: 'var(--accent)', textDecoration: 'none' }}
+              style={{ fontSize: 13, fontWeight: 500, color: 'var(--accent)', textDecoration: 'none' }}
               onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
               onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
             >
@@ -175,13 +175,14 @@ export default function LoginPage() {
             </Link>
           </div>
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
             style={{
               width: '100%',
-              padding: '11px',
-              fontSize: 13,
+              padding: 12,
+              fontSize: 14,
               fontWeight: 600,
               background: 'var(--accent)',
               color: '#fff',
@@ -193,14 +194,15 @@ export default function LoginPage() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: 8,
-              transition: `background var(--duration)`,
+              transition: 'background 0.15s ease',
+              fontFamily: 'var(--font-sans)',
             }}
             onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = 'var(--accent-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent)'; }}
           >
             {loading && (
               <div style={{
-                width: 14, height: 14,
+                width: 16, height: 16,
                 border: '2px solid rgba(255,255,255,0.4)',
                 borderTopColor: '#fff',
                 borderRadius: '50%',
@@ -214,18 +216,14 @@ export default function LoginPage() {
         {/* Divider */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
-          <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-faint)', whiteSpace: 'nowrap', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {t('auth.login.orContinueWith')}
           </span>
           <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
         </div>
 
         {/* Google Sign-In */}
-        {googleEnabled && (
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <GoogleLoginButton onClick={() => googleLogin()} />
-          </div>
-        )}
+        {googleEnabled && <GoogleLoginButton onClick={() => googleLogin()} />}
 
         {/* Register link */}
         <p style={{ margin: 0, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
@@ -239,10 +237,6 @@ export default function LoginPage() {
             {t('auth.login.registerLink')}
           </Link>
         </p>
-
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <LanguageSwitcher compact />
-        </div>
       </div>
     </AuthLayout>
   );

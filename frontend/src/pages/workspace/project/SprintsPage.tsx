@@ -8,22 +8,23 @@ import { tasksApi, type UpdateTaskDto, type CreateTaskDto } from '../../../api/t
 import TaskModal from '../../../components/kanban/TaskModal';
 import SnapshotModal from '../../../components/sprints/SnapshotModal';
 import Alert from '../../../components/ui/Alert';
+import PageTitle from '../../../components/motion/PageTitle';
 import { useProjectMember } from '../../../hooks/useProjectMember';
 
 // ── Color maps (theme-independent hex) ───────────────────────────────────────
 
 const PRIORITY_COLOR: Record<TaskPriority, string> = {
-  CRITICAL: '#ef4444',
-  HIGH:     '#f59e0b',
-  MEDIUM:   '#3b82f6',
-  LOW:      '#9ca3af',
+  CRITICAL: 'var(--danger)',
+  HIGH:     'var(--ochre)',
+  MEDIUM:   'var(--ink-blue)',
+  LOW:      'var(--text-faint)',
 };
 
 const STATUS_COLOR: Record<TaskStatus, string> = {
-  TODO:        '#9ca3af',
-  IN_PROGRESS: '#3b82f6',
-  IN_REVIEW:   '#f59e0b',
-  DONE:        '#22c55e',
+  TODO:        'var(--text-faint)',
+  IN_PROGRESS: 'var(--ink-blue)',
+  IN_REVIEW:   'var(--ochre)',
+  DONE:        'var(--success)',
 };
 
 const SPRINT_LEFT_COLOR: Record<Sprint['status'], string> = {
@@ -57,7 +58,7 @@ const labelStyle: React.CSSProperties = {
 const btnAccent: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 5,
   padding: '5px 12px', fontSize: 12, fontWeight: 500,
-  background: 'var(--accent)', color: '#fff',
+  background: 'var(--accent)', color: 'var(--accent-fg)',
   border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
 };
 
@@ -85,6 +86,8 @@ function ModalOverlay({ onClose, children }: { onClose: () => void; children: Re
         position: 'fixed', inset: 0, zIndex: 50,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
         backgroundColor: 'var(--bg-overlay)',
+        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        animation: 'fade-in 200ms ease both',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
@@ -97,7 +100,7 @@ const modalBox: React.CSSProperties = {
   width: '100%',
   background: 'var(--bg-elevated)',
   border: '1px solid var(--border-strong)',
-  borderRadius: 'var(--radius-lg)',
+  borderRadius: 'var(--radius-md)',
 };
 
 // ── CreateSprintModal ─────────────────────────────────────────────────────────
@@ -402,8 +405,8 @@ function SprintPlanningModal({ sprintId, projectId, sprintGoal, existingTaskIds,
 
           {!loading && unestimatedCount > 0 && (
             <div style={{
-              fontSize: 11, color: '#d97706',
-              background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.2)',
+              fontSize: 11, color: 'var(--ochre)',
+              background: 'var(--ochre-soft)', border: '1px solid var(--ochre)',
               borderRadius: 'var(--radius-sm)', padding: '5px 10px',
             }}>
               {t('projects.sprints.planning.unestimated', { count: unestimatedCount })}
@@ -457,7 +460,7 @@ function SprintPlanningModal({ sprintId, projectId, sprintGoal, existingTaskIds,
                     )}
                   </div>
                   <span style={{
-                    flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
+                    flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
                     color: PRIORITY_COLOR[task.priority],
                     fontFamily: 'var(--font-mono)',
                   }}>
@@ -474,8 +477,8 @@ function SprintPlanningModal({ sprintId, projectId, sprintGoal, existingTaskIds,
                   ) : (
                     <span style={{
                       flexShrink: 0, fontSize: 9, fontWeight: 600, letterSpacing: '0.03em',
-                      color: '#d97706', background: 'rgba(217,119,6,0.08)',
-                      border: '1px solid rgba(217,119,6,0.2)',
+                      color: 'var(--ochre)', background: 'var(--ochre-soft)',
+                      border: '1px solid var(--ochre)',
                       borderRadius: 'var(--radius-sm)', padding: '1px 5px',
                     }}>
                       {t('projects.sprints.planning.noEstimate')}
@@ -513,97 +516,6 @@ function SprintPlanningModal({ sprintId, projectId, sprintGoal, existingTaskIds,
   );
 }
 
-// ── SprintReviewModal ─────────────────────────────────────────────────────────
-
-interface SprintReviewModalProps {
-  sprint: Sprint;
-  sprintTasks: Task[];
-  onClose: () => void;
-  onConfirm: (reviewNotes: string) => void;
-  loading: boolean;
-}
-
-function SprintReviewModal({ sprint, sprintTasks, onClose, onConfirm, loading }: SprintReviewModalProps) {
-  const { t } = useTranslation();
-  const [reviewNotes, setReviewNotes] = useState('');
-
-  const doneTasks = sprintTasks.filter((t) => t.status === 'DONE');
-  const incompleteTasks = sprintTasks.filter((t) => t.status !== 'DONE');
-  const donePoints = doneTasks.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
-
-  return (
-    <ModalOverlay onClose={onClose}>
-      <div style={{ ...modalBox, maxWidth: 500, display: 'flex', flexDirection: 'column', maxHeight: 'calc(100vh - 2rem)' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 12px', borderBottom: '1px solid var(--border)' }}>
-          <h2 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-            {t('projects.sprints.review.title')}
-          </h2>
-          <button onClick={onClose} style={{ ...btnSecondary, padding: 4, borderRadius: 'var(--radius-sm)' }}>
-            <X size={14} />
-          </button>
-        </div>
-
-        <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Stats */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
-            {[
-              { value: doneTasks.length, label: t('projects.sprints.review.done'), color: '#22c55e', bg: 'rgba(34,197,94,0.08)' },
-              { value: incompleteTasks.length, label: t('projects.sprints.review.incomplete'), color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
-              { value: donePoints, label: t('projects.sprints.review.velocity'), color: 'var(--accent)', bg: 'var(--accent-muted)' },
-            ].map((stat) => (
-              <div key={stat.label} style={{ background: stat.bg, borderRadius: 'var(--radius-md)', padding: '10px 8px', textAlign: 'center' }}>
-                <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: stat.color, fontFamily: 'var(--font-mono)' }}>{stat.value}</p>
-                <p style={{ margin: '2px 0 0', fontSize: 10, color: stat.color, opacity: 0.8 }}>{stat.label}</p>
-              </div>
-            ))}
-          </div>
-
-          {incompleteTasks.length > 0 && (
-            <div style={{
-              fontSize: 11, color: '#d97706',
-              background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.2)',
-              borderRadius: 'var(--radius-sm)', padding: '6px 10px',
-            }}>
-              {t('projects.sprints.review.incompleteWarning', { count: incompleteTasks.length })}
-            </div>
-          )}
-
-          <div>
-            <label style={labelStyle}>
-              {t('projects.sprints.review.notes')}{' '}
-              <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
-            </label>
-            <textarea
-              value={reviewNotes}
-              onChange={(e) => setReviewNotes(e.target.value)}
-              placeholder={t('projects.sprints.review.notesPlaceholder')}
-              rows={4}
-              style={{ ...inputStyle, resize: 'none' }}
-            />
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '10px 18px 14px', borderTop: '1px solid var(--border)' }}>
-          <button onClick={onClose} style={btnSecondary}>{t('common.cancel')}</button>
-          <button
-            onClick={() => onConfirm(reviewNotes)}
-            disabled={loading}
-            style={{
-              ...btnAccent, opacity: loading ? 0.5 : 1, cursor: loading ? 'not-allowed' : 'pointer',
-              background: '#16a34a',
-            }}
-            onMouseEnter={e => { if (!loading) (e.currentTarget as HTMLElement).style.background = '#15803d'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#16a34a'; }}
-          >
-            {loading ? '…' : t('projects.sprints.review.complete')}
-          </button>
-        </div>
-      </div>
-    </ModalOverlay>
-  );
-}
-
 // ── SprintsPage ───────────────────────────────────────────────────────────────
 
 export default function SprintsPage() {
@@ -624,7 +536,6 @@ export default function SprintsPage() {
   const [sprintSnapshots, setSprintSnapshots] = useState<Record<string, SprintTaskSnapshot[]>>({});
   const [loadingTasksId, setLoadingTasksId] = useState<string | null>(null);
   const [planningSprintId, setPlanningSprintId] = useState<string | null>(null);
-  const [reviewSprintId, setReviewSprintId] = useState<string | null>(null);
   const [editTask, setEditTask] = useState<Task | null | undefined>(undefined);
   const [editTaskSprintId, setEditTaskSprintId] = useState<string | null>(null);
   const [selectedSnapshot, setSelectedSnapshot] = useState<SprintTaskSnapshot | null>(null);
@@ -685,6 +596,12 @@ export default function SprintsPage() {
   };
 
   const handleActivate = async (sprintId: string) => {
+    const sprint = sprints.find((s) => s.id === sprintId);
+    if (sprint && !sprint.endDate) {
+      setError(t('projects.sprints.activateEndDateRequired'));
+      setConfirmAction(null);
+      return;
+    }
     setActionLoading(true);
     try {
       const updated = await sprintsApi.activateSprint(sprintId);
@@ -692,20 +609,6 @@ export default function SprintsPage() {
       setConfirmAction(null);
     } catch {
       setError(t('projects.sprints.activateError'));
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleComplete = async (sprintId: string, reviewNotes?: string) => {
-    setActionLoading(true);
-    try {
-      const updated = await sprintsApi.completeSprint(sprintId, reviewNotes ? { reviewNotes } : undefined);
-      setSprints((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-      setSprintTasks((prev) => ({ ...prev, [sprintId]: [] }));
-      setReviewSprintId(null);
-    } catch {
-      setError(t('projects.sprints.completeError'));
     } finally {
       setActionLoading(false);
     }
@@ -770,9 +673,9 @@ export default function SprintsPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+          <PageTitle as="h2" style={{ fontSize: 20 }}>
             {t('projects.sprints.title')}
-          </h2>
+          </PageTitle>
           {!loading && (
             <span style={{
               fontSize: 11, fontWeight: 600, color: 'var(--text-faint)',
@@ -802,7 +705,7 @@ export default function SprintsPage() {
           <div style={{ width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
         </div>
       ) : sprints.length === 0 ? (
-        <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '48px 24px', textAlign: 'center' }}>
+        <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '48px 24px', textAlign: 'center' }}>
           <div style={{ width: 40, height: 40, background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
             <Zap size={18} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
           </div>
@@ -863,8 +766,8 @@ export default function SprintsPage() {
                         {sprint.name}
                       </span>
                       <span style={{
-                        fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
-                        color: sprint.status === 'ACTIVE' ? 'var(--accent)' : sprint.status === 'COMPLETED' ? '#16a34a' : 'var(--text-faint)',
+                        fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                        color: sprint.status === 'ACTIVE' ? 'var(--accent)' : sprint.status === 'COMPLETED' ? 'var(--success)' : 'var(--text-faint)',
                         fontFamily: 'var(--font-mono)',
                       }}>
                         {t(`projects.sprints.status.${sprint.status}`)}
@@ -964,27 +867,15 @@ export default function SprintsPage() {
                     )}
 
                     {sprint.status === 'ACTIVE' && (
-                      <>
-                        <Link
-                          to={`/workspaces/${workspaceId}/projects/${projectId}/board`}
-                          style={{ ...btnOutline, textDecoration: 'none' }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                        >
-                          <LayoutDashboard size={11} strokeWidth={1.75} />
-                          {t('projects.sprints.viewBoard')}
-                        </Link>
-                        {canManageSprint && (
-                          <button
-                            onClick={() => { setReviewSprintId(sprint.id); if (!sprintTasks[sprint.id]) handleExpand(sprint.id); }}
-                            style={{ ...btnOutline, color: '#16a34a', borderColor: '#16a34a' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(22,163,74,0.08)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                          >
-                            {t('projects.sprints.complete')}
-                          </button>
-                        )}
-                      </>
+                      <Link
+                        to={`/workspaces/${workspaceId}/projects/${projectId}/board`}
+                        style={{ ...btnOutline, textDecoration: 'none' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <LayoutDashboard size={11} strokeWidth={1.75} />
+                        {t('projects.sprints.viewBoard')}
+                      </Link>
                     )}
 
                     <Link
@@ -1004,11 +895,11 @@ export default function SprintsPage() {
                   <div style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '6px 12px',
-                    background: 'rgba(245,158,11,0.07)',
-                    borderTop: '1px solid rgba(245,158,11,0.25)',
+                    background: 'var(--ochre-soft)',
+                    borderTop: '1px solid var(--ochre)',
                   }}>
                     <span style={{ fontSize: 12 }}>⚠</span>
-                    <p style={{ margin: 0, fontSize: 11, color: '#92400e' }}>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--ochre)' }}>
                       {t('projects.kanban.overdueBanner', { days: overdueDays, pending: pendingCount })}
                     </p>
                   </div>
@@ -1053,7 +944,7 @@ export default function SprintsPage() {
                                     {snap.title}
                                   </p>
                                   {snap.returnedToBacklog && (
-                                    <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 600, color: '#d97706', background: 'rgba(217,119,6,0.1)', border: '1px solid rgba(217,119,6,0.25)', borderRadius: 'var(--radius-sm)', padding: '0 4px', whiteSpace: 'nowrap' }}>
+                                    <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 600, color: 'var(--ochre)', background: 'var(--ochre-soft)', border: '1px solid var(--ochre)', borderRadius: 'var(--radius-sm)', padding: '0 4px', whiteSpace: 'nowrap' }}>
                                       {t('projects.sprints.report.backlogBadge')}
                                     </span>
                                   )}
@@ -1066,7 +957,7 @@ export default function SprintsPage() {
                               </div>
 
                               <span style={{
-                                flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
+                                flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
                                 textTransform: 'uppercase', color: STATUS_COLOR[snap.statusAtEnd],
                                 fontFamily: 'var(--font-mono)',
                               }}>
@@ -1125,7 +1016,7 @@ export default function SprintsPage() {
 
                             {/* Status */}
                             <span style={{
-                              flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.04em',
+                              flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
                               textTransform: 'uppercase', color: STATUS_COLOR[task.status],
                               fontFamily: 'var(--font-mono)',
                             }}>
@@ -1251,19 +1142,6 @@ export default function SprintsPage() {
         />
       )}
 
-      {reviewSprintId && (() => {
-        const sprint = sprints.find((s) => s.id === reviewSprintId);
-        if (!sprint) return null;
-        return (
-          <SprintReviewModal
-            sprint={sprint}
-            sprintTasks={sprintTasks[reviewSprintId] ?? []}
-            onClose={() => setReviewSprintId(null)}
-            onConfirm={(notes) => handleComplete(reviewSprintId, notes)}
-            loading={actionLoading}
-          />
-        );
-      })()}
     </div>
   );
 }

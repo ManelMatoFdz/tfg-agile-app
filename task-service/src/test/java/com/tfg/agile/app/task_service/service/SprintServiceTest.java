@@ -174,6 +174,36 @@ class SprintServiceTest {
     }
 
     @Test
+    void activateSprint_throwsWhenEndDateIsMissing() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+        sprint.setEndDate(null);
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+
+        assertThatThrownBy(() -> service.activateSprint(sprint.getId(), callerId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("SPRINT_END_DATE_REQUIRED");
+    }
+
+    @Test
+    void activateSprint_throwsWhenEndDateIsInThePast() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+        sprint.setEndDate(LocalDate.now().minusDays(1));
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+
+        assertThatThrownBy(() -> service.activateSprint(sprint.getId(), callerId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("SPRINT_END_DATE_IN_PAST");
+    }
+
+    @Test
     void activateSprint_throwsWhenThereIsAnotherActiveSprint() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
@@ -205,22 +235,7 @@ class SprintServiceTest {
     }
 
     @Test
-    void completeSprint_throwsWhenSprintIsNotActive() {
-        UUID callerId = UUID.randomUUID();
-        UUID projectId = UUID.randomUUID();
-        Sprint sprint = TestDataFactory.sprint(projectId);
-
-        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
-
-        assertThatThrownBy(() -> service.completeSprint(sprint.getId(), null, callerId))
-                .isInstanceOf(ConflictException.class)
-                .hasMessage("SPRINT_NOT_ACTIVE");
-    }
-
-    @Test
-    void completeSprint_movesOpenTasksToBacklogAndCompletesSprint() {
-        UUID callerId = UUID.randomUUID();
+    void completeSprintInternal_movesOpenTasksToBacklogAndCompletesSprint() {
         UUID projectId = UUID.randomUUID();
         Sprint sprint = TestDataFactory.sprint(projectId);
         sprint.setStatus(SprintStatus.ACTIVE);
@@ -233,35 +248,16 @@ class SprintServiceTest {
         doneTask.setSprintId(sprint.getId());
         doneTask.setStatus(TaskStatus.DONE);
 
-        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
         when(taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprint.getId())).thenReturn(List.of(openTask, doneTask));
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(sprintRepository.save(sprint)).thenReturn(sprint);
 
-        var response = service.completeSprint(sprint.getId(), null, callerId);
+        service.completeSprintInternal(sprint);
 
-        assertThat(response.status()).isEqualTo(SprintStatus.COMPLETED);
+        assertThat(sprint.getStatus()).isEqualTo(SprintStatus.COMPLETED);
         assertThat(openTask.getSprintId()).isNull();
         assertThat(openTask.getStatus()).isEqualTo(TaskStatus.TODO);
         assertThat(doneTask.getSprintId()).isEqualTo(sprint.getId());
-    }
-
-    @Test
-    void completeSprint_savesReviewNotesWhenProvided() {
-        UUID callerId = UUID.randomUUID();
-        UUID projectId = UUID.randomUUID();
-        Sprint sprint = TestDataFactory.sprint(projectId);
-        sprint.setStatus(SprintStatus.ACTIVE);
-
-        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
-        when(taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprint.getId())).thenReturn(List.of());
-        when(sprintRepository.save(sprint)).thenReturn(sprint);
-
-        service.completeSprint(sprint.getId(), new CompleteSprintRequestDto("Great sprint!"), callerId);
-
-        assertThat(sprint.getReviewNotes()).isEqualTo("Great sprint!");
     }
 
     @Test
@@ -274,21 +270,6 @@ class SprintServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
 
         assertThatThrownBy(() -> service.activateSprint(sprint.getId(), callerId))
-                .isInstanceOf(ForbiddenException.class)
-                .hasMessage("SCRUM_MASTER_OR_ADMIN_REQUIRED");
-    }
-
-    @Test
-    void completeSprint_throwsForProductOwner() {
-        UUID callerId = UUID.randomUUID();
-        UUID projectId = UUID.randomUUID();
-        Sprint sprint = TestDataFactory.sprint(projectId);
-        sprint.setStatus(SprintStatus.ACTIVE);
-
-        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
-
-        assertThatThrownBy(() -> service.completeSprint(sprint.getId(), null, callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("SCRUM_MASTER_OR_ADMIN_REQUIRED");
     }

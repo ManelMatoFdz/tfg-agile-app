@@ -17,11 +17,11 @@ import { useProjectMembers } from '../../hooks/useProjectMembers';
 import TaskCard from './TaskCard';
 import TaskModal from './TaskModal';
 
-const STATUS_COLOR: Record<TaskStatus, string> = {
-  TODO:        '#9ca3af',
-  IN_PROGRESS: '#3b82f6',
-  IN_REVIEW:   '#f59e0b',
-  DONE:        '#22c55e',
+const STATUS_COLOR: Record<TaskStatus, { header: string; accent: string }> = {
+  TODO:        { header: '#2563EB', accent: '#2563EB' },
+  IN_PROGRESS: { header: '#D97706', accent: '#D97706' },
+  IN_REVIEW:   { header: '#7C3AED', accent: '#7C3AED' },
+  DONE:        { header: '#16A34A', accent: '#16A34A' },
 };
 
 const COLUMNS: { status: TaskStatus }[] = [
@@ -31,7 +31,7 @@ const COLUMNS: { status: TaskStatus }[] = [
   { status: 'DONE'        },
 ];
 
-// ── Draggable task card wrapper ───────────────────────────────────────────────
+// -- Draggable task card wrapper --
 
 function DraggableCard({
   task,
@@ -68,7 +68,7 @@ function DraggableCard({
   );
 }
 
-// ── Droppable column tasks area ───────────────────────────────────────────────
+// -- Droppable column tasks area --
 
 function DroppableArea({
   status,
@@ -86,14 +86,14 @@ function DroppableArea({
       ref={setNodeRef}
       style={{
         flex: 1,
-        padding: '0 0.375rem 0.375rem',
+        padding: '4px 8px 8px',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.3125rem',
-        borderRadius: '0 0 var(--radius-md) var(--radius-md)',
-        background: isOver ? 'var(--bg-hover)' : 'transparent',
-        transition: 'background 0.15s',
-        minHeight: '3rem',
+        gap: 6,
+        borderRadius: '0 0 var(--radius-lg) var(--radius-lg)',
+        background: isOver ? 'var(--accent-muted)' : 'transparent',
+        transition: 'background 0.15s ease',
+        minHeight: 60,
       }}
     >
       {children}
@@ -101,7 +101,7 @@ function DroppableArea({
   );
 }
 
-// ── KanbanBoard ───────────────────────────────────────────────────────────────
+// -- KanbanBoard --
 
 interface Props {
   projectId: string;
@@ -171,12 +171,12 @@ export default function KanbanBoard({
 
   const openTaskModal = async (task: Task) => {
     setModalTask(task);
-    setModalKey((k) => k + 1); // mount with cached data
+    setModalKey((k) => k + 1);
     try {
       const fresh = await tasksApi.getById(task.id);
       if (JSON.stringify(fresh) !== JSON.stringify(task)) {
         setModalTask(fresh);
-        setModalKey((k) => k + 1); // remount with fresh data — reinitializes form fields
+        setModalKey((k) => k + 1);
         onTasksChange(tasks.map((t) => (t.id === fresh.id ? fresh : t)));
       }
     } catch {
@@ -184,7 +184,7 @@ export default function KanbanBoard({
     }
   };
 
-  // ── Drag handlers ───────────────────────────────────────────────────────────
+  // -- Drag handlers --
 
   const handleDragStart = (event: DragStartEvent) => {
     const task = tasks.find((t) => t.id === event.active.id);
@@ -218,10 +218,9 @@ export default function KanbanBoard({
     try {
       const updated = await tasksApi.move(taskId, { status: newStatus, position: newPosition });
       onTasksChange(optimistic.map((t) => (t.id === updated.id ? updated : t)));
-      // Silently refresh to pick up concurrent changes by other users
       onRefresh?.();
     } catch {
-      onTasksChange(tasks); // revert on error
+      onTasksChange(tasks);
     }
   };
 
@@ -239,10 +238,10 @@ export default function KanbanBoard({
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div style={{ display: 'flex', gap: '0.625rem', overflowX: 'auto', paddingBottom: '0.5rem', alignItems: 'flex-start' }}>
+        <div className="stagger-children" style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, alignItems: 'flex-start' }}>
           {COLUMNS.map(({ status }) => {
             const col = tasksByStatus(status);
-            const accentColor = STATUS_COLOR[status];
+            const colors = STATUS_COLOR[status];
             const isOver = overColumn === status;
 
             return (
@@ -250,15 +249,15 @@ export default function KanbanBoard({
                 key={status}
                 style={{
                   flexShrink: 0,
-                  width: '15rem',
+                  width: 272,
                   background: 'var(--bg-elevated)',
-                  border: `0.0625rem solid ${isOver ? 'var(--border-strong)' : 'var(--border)'}`,
-                  borderTop: `0.125rem solid ${accentColor}`,
-                  borderRadius: 'var(--radius-md)',
+                  border: `1px solid ${isOver ? 'var(--accent)' : 'var(--border)'}`,
+                  borderRadius: 'var(--radius-lg)',
                   display: 'flex',
                   flexDirection: 'column',
-                  minHeight: '12.5rem',
-                  transition: 'border-color 0.15s',
+                  minHeight: 200,
+                  transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
+                  boxShadow: isOver ? '0 0 0 2px var(--accent-muted)' : 'var(--shadow-sm)',
                 }}
               >
                 {/* Column header */}
@@ -266,30 +265,30 @@ export default function KanbanBoard({
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '0.5rem 0.625rem 0.375rem',
+                  padding: '12px 14px 10px',
+                  borderBottom: `2px solid ${colors.accent}`,
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{
-                      fontSize: '0.6875rem',
-                      fontWeight: 600,
-                      color: 'var(--text-muted)',
-                      letterSpacing: '0.04em',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: colors.header,
+                      letterSpacing: '0.06em',
                       textTransform: 'uppercase',
                     }}>
                       {t(`tasks.status.${status}`)}
                     </span>
                     <span style={{
-                      fontSize: '0.625rem',
-                      fontWeight: 600,
-                      color: 'var(--text-faint)',
-                      fontFamily: 'var(--font-mono)',
-                      background: 'var(--bg-hover)',
-                      border: '0.0625rem solid var(--border)',
-                      borderRadius: 'var(--radius-sm)',
-                      padding: '0 0.25rem',
-                      lineHeight: '1rem',
-                      minWidth: '1rem',
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: colors.header,
+                      background: `${colors.accent}14`,
+                      borderRadius: 'var(--radius-pill)',
+                      padding: '1px 8px',
+                      lineHeight: '18px',
+                      minWidth: 22,
                       textAlign: 'center',
+                      fontFamily: 'var(--font-mono)',
                     }}>
                       {col.length}
                     </span>
@@ -300,8 +299,8 @@ export default function KanbanBoard({
                       onClick={() => openCreate(status)}
                       title={t('projects.kanban.newTask')}
                       style={{
-                        width: '1.375rem',
-                        height: '1.375rem',
+                        width: 26,
+                        height: 26,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -310,21 +309,21 @@ export default function KanbanBoard({
                         background: 'transparent',
                         color: 'var(--text-faint)',
                         cursor: 'pointer',
-                        transition: `background var(--duration), color var(--duration)`,
+                        transition: 'background 150ms, color 150ms',
                         padding: 0,
                       }}
                       onMouseEnter={e => {
-                        const el = e.currentTarget as HTMLElement;
+                        const el = e.currentTarget;
                         el.style.background = 'var(--bg-hover)';
                         el.style.color = 'var(--text)';
                       }}
                       onMouseLeave={e => {
-                        const el = e.currentTarget as HTMLElement;
+                        const el = e.currentTarget;
                         el.style.background = 'transparent';
                         el.style.color = 'var(--text-faint)';
                       }}
                     >
-                      <Plus size={12} strokeWidth={2.5} />
+                      <Plus size={14} strokeWidth={2.5} />
                     </button>
                   )}
                 </div>
@@ -334,10 +333,10 @@ export default function KanbanBoard({
                   {col.length === 0 ? (
                     <p style={{
                       margin: 0,
-                      fontSize: '0.6875rem',
+                      fontSize: 12,
                       color: 'var(--text-faint)',
                       textAlign: 'center',
-                      padding: '1.25rem 0',
+                      padding: '24px 0',
                     }}>
                       {t('projects.kanban.noTasks')}
                     </p>
@@ -361,7 +360,13 @@ export default function KanbanBoard({
         {/* Ghost card shown while dragging */}
         <DragOverlay dropAnimation={null}>
           {activeTask && (
-            <div style={{ opacity: 0.9, transform: 'rotate(1.5deg)', cursor: 'grabbing' }}>
+            <div style={{
+              opacity: 0.92,
+              transform: 'scale(1.03) rotate(1.5deg)',
+              cursor: 'grabbing',
+              boxShadow: '0 12px 32px rgba(0,0,0,0.15)',
+              borderRadius: 'var(--radius-card)',
+            }}>
               <TaskCard
                 task={activeTask}
                 assignee={activeTask.assigneeId ? userMap[activeTask.assigneeId] : undefined}

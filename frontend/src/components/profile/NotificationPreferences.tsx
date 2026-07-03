@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Settings, Mail, Bell, ClipboardList, Clock } from 'lucide-react';
 import Toggle from '../ui/Toggle';
 import Alert from '../ui/Alert';
 import { notificationsApi } from '../../api/notifications';
 import type { NotificationSettings } from '../../types';
 
-const TOGGLE_ICONS: Record<string, string> = {
-  emailNotificationsEnabled: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
-  inAppNotificationsEnabled: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
-  projectUpdatesEnabled: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
-  taskRemindersEnabled: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
+const TOGGLE_ICONS: Record<string, React.ElementType> = {
+  emailNotificationsEnabled: Mail,
+  inAppNotificationsEnabled: Bell,
+  projectUpdatesEnabled: ClipboardList,
+  taskRemindersEnabled: Clock,
 };
 
 const TOGGLE_KEYS: Array<{ key: keyof NotificationSettings; tKey: string }> = [
@@ -74,32 +75,53 @@ export default function NotificationPreferences() {
   if (isError) return <Alert type="error" message={t('profile.notificationSettings.loadError')} />;
   if (isLoading || !settings) {
     return (
-      <div className="glass-card-strong rounded-2xl p-6">
-        <div className="space-y-4">
-          <div className="h-5 skeleton-shimmer rounded w-48" />
-          <div className="h-4 skeleton-shimmer rounded w-72" />
-          <div className="space-y-3">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-14 skeleton-shimmer rounded-xl" />
-            ))}
-          </div>
+      <div style={{
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-md)',
+        padding: 24,
+      }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="skeleton-shimmer" style={{ height: 20, width: 192, borderRadius: 'var(--radius-sm)' }} />
+          <div className="skeleton-shimmer" style={{ height: 16, width: 288, borderRadius: 'var(--radius-sm)' }} />
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="skeleton-shimmer" style={{ height: 48, borderRadius: 'var(--radius-md)' }} />
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="glass-card-strong rounded-2xl p-6 space-y-6 hover:shadow-xl transition-shadow duration-500">
-      <div className="flex items-start gap-4">
-        <div className="w-10 h-10 bg-gradient-to-br from-emerald-100 to-emerald-50 rounded-xl flex items-center justify-center shrink-0">
-          <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
+    <div style={{
+      background: 'var(--bg-elevated)',
+      border: '1px solid var(--border)',
+      borderRadius: 'var(--radius-md)',
+      padding: 24,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 20,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+        <div style={{
+          width: 36,
+          height: 36,
+          background: 'var(--moss-soft)',
+          borderRadius: 'var(--radius-md)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}>
+          <Settings size={18} strokeWidth={1.75} style={{ color: 'var(--moss)' }} />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">{t('profile.notificationSettings.title')}</h3>
-          <p className="text-sm text-gray-400 mt-0.5">{t('profile.notificationSettings.subtitle')}</p>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            {t('profile.notificationSettings.title')}
+          </h3>
+          <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
+            {t('profile.notificationSettings.subtitle')}
+          </p>
         </div>
       </div>
 
@@ -111,30 +133,48 @@ export default function NotificationPreferences() {
         />
       )}
 
-      <div className="space-y-1 stagger-children">
-        {TOGGLE_KEYS.map(({ key, tKey }, i) => (
-          <div
-            key={key}
-            className={`flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50/50 transition-colors duration-200 ${
-              i < TOGGLE_KEYS.length - 1 ? 'border-b border-gray-100/50' : ''
-            }`}
-          >
-            <div className="w-8 h-8 bg-gray-100/80 rounded-lg flex items-center justify-center shrink-0">
-              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={TOGGLE_ICONS[key]} />
-              </svg>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {TOGGLE_KEYS.map(({ key, tKey }, i) => {
+          const Icon = TOGGLE_ICONS[key];
+          return (
+            <div
+              key={key}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 12,
+                padding: 12,
+                borderRadius: 'var(--radius-md)',
+                borderBottom: i < TOGGLE_KEYS.length - 1 ? '1px solid var(--border)' : 'none',
+                transition: `background var(--duration-micro) var(--ease-micro)`,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <div style={{
+                width: 28,
+                height: 28,
+                background: 'var(--bg-sunken)',
+                borderRadius: 'var(--radius-sm)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <Icon size={14} strokeWidth={1.75} style={{ color: 'var(--text-faint)' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <Toggle
+                  label={t(`profile.notificationSettings.${tKey}.label`)}
+                  description={t(`profile.notificationSettings.${tKey}.description`)}
+                  checked={settings[key]}
+                  onChange={(v) => handleToggle(key, v)}
+                  disabled={mutation.isPending}
+                />
+              </div>
             </div>
-            <div className="flex-1">
-              <Toggle
-                label={t(`profile.notificationSettings.${tKey}.label`)}
-                description={t(`profile.notificationSettings.${tKey}.description`)}
-                checked={settings[key]}
-                onChange={(v) => handleToggle(key, v)}
-                disabled={mutation.isPending}
-              />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

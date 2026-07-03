@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Columns } from 'lucide-react';
+import { Columns, Clock, AlertTriangle } from 'lucide-react';
 import { sprintsApi } from '../../../api/sprints';
 import type { Sprint, Task } from '@/types';
 import KanbanBoard from '../../../components/kanban/KanbanBoard';
@@ -58,6 +58,16 @@ export default function KanbanPage() {
     const today = new Date();
     return today > end ? Math.ceil((today.getTime() - end.getTime()) / 86_400_000) : 0;
   })();
+
+  const daysRemaining = (() => {
+    if (!activeSprint?.endDate) return null;
+    const end = new Date(activeSprint.endDate);
+    end.setHours(23, 59, 59, 999);
+    const today = new Date();
+    if (today > end) return null;
+    return Math.ceil((end.getTime() - today.getTime()) / 86_400_000);
+  })();
+
   const pendingTasks = tasks.filter((t) => t.status !== 'DONE').length;
 
   return (
@@ -67,9 +77,9 @@ export default function KanbanPage() {
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
           <div style={{
-            width: 24,
-            height: 24,
-            border: `2px solid var(--border)`,
+            width: 28,
+            height: 28,
+            border: '3px solid var(--border)',
             borderTopColor: 'var(--accent)',
             borderRadius: '50%',
             animation: 'spin 0.7s linear infinite',
@@ -80,31 +90,31 @@ export default function KanbanPage() {
           background: 'var(--bg-elevated)',
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
-          padding: '48px 24px',
+          padding: '64px 32px',
           textAlign: 'center',
+          boxShadow: 'var(--shadow-sm)',
         }}>
           <div style={{
-            width: 40,
-            height: 40,
-            background: 'var(--bg-hover)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-md)',
+            width: 56,
+            height: 56,
+            background: 'var(--accent-muted)',
+            borderRadius: 'var(--radius-lg)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            margin: '0 auto 12px',
+            margin: '0 auto 16px',
           }}>
-            <Columns size={18} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
+            <Columns size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
           </div>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
             {t('projects.kanban.noActiveSprint')}
           </p>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
+          <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-muted)', maxWidth: 360, marginLeft: 'auto', marginRight: 'auto' }}>
             {t('projects.kanban.noActiveSprintSub')}{' '}
             {workspaceId && projectId && (
               <Link
                 to={`/workspaces/${workspaceId}/projects/${projectId}/sprints`}
-                style={{ color: 'var(--accent)', textDecoration: 'none' }}
+                style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}
                 onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                 onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
               >
@@ -119,58 +129,83 @@ export default function KanbanPage() {
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
-            marginBottom: 12,
+            justifyContent: 'space-between',
+            gap: 12,
+            marginBottom: 16,
             flexWrap: 'wrap',
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: '14px 20px',
+            boxShadow: 'var(--shadow-sm)',
           }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
-              {activeSprint.name}
-            </span>
-
-            <span style={{
-              fontSize: 10,
-              fontWeight: 600,
-              letterSpacing: '0.04em',
-              textTransform: 'uppercase',
-              padding: '2px 6px',
-              borderRadius: 'var(--radius-sm)',
-              background: 'var(--success-bg)',
-              color: 'var(--success)',
-            }}>
-              {t('projects.sprints.status.ACTIVE')}
-            </span>
-
-            {(activeSprint.startDate || activeSprint.endDate) && (
-              <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-                {formatDate(activeSprint.startDate) ?? '—'} → {formatDate(activeSprint.endDate) ?? '—'}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+                {activeSprint.name}
               </span>
-            )}
 
-            {activeSprint.goal && (
               <span style={{
                 fontSize: 11,
-                color: 'var(--text-faint)',
-                fontStyle: 'italic',
-                overflow: 'hidden',
-                whiteSpace: 'nowrap',
-                textOverflow: 'ellipsis',
-                maxWidth: 260,
+                fontWeight: 700,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                padding: '3px 10px',
+                borderRadius: 'var(--radius-pill)',
+                background: 'var(--success-bg)',
+                color: 'var(--success)',
               }}>
-                {activeSprint.goal}
+                {t('projects.sprints.status.ACTIVE')}
               </span>
-            )}
+
+              {activeSprint.goal && (
+                <span style={{
+                  fontSize: 12,
+                  color: 'var(--text-muted)',
+                  fontStyle: 'italic',
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                  maxWidth: 280,
+                }}>
+                  {activeSprint.goal}
+                </span>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              {(activeSprint.startDate || activeSprint.endDate) && (
+                <span style={{
+                  display: 'flex', alignItems: 'center', gap: 5,
+                  fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)',
+                }}>
+                  <Clock size={13} strokeWidth={1.75} />
+                  {formatDate(activeSprint.startDate) ?? '--'} - {formatDate(activeSprint.endDate) ?? '--'}
+                </span>
+              )}
+
+              {daysRemaining != null && (
+                <span style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: daysRemaining <= 3 ? 'var(--warning)' : 'var(--text-muted)',
+                  fontFamily: 'var(--font-mono)',
+                }}>
+                  {daysRemaining}d left
+                </span>
+              )}
+            </div>
           </div>
 
           {sprintOverdueDays > 0 && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
-              padding: '8px 14px', marginBottom: 12,
-              background: 'rgba(245,158,11,0.07)',
-              border: '1px solid rgba(245,158,11,0.3)',
+              padding: '12px 16px', marginBottom: 16,
+              background: 'var(--warning-bg)',
+              border: '1px solid var(--warning)',
               borderRadius: 'var(--radius-md)',
             }}>
-              <span style={{ fontSize: 13 }}>⚠</span>
-              <p style={{ margin: 0, fontSize: 12, color: '#92400e' }}>
+              <AlertTriangle size={16} strokeWidth={2} style={{ color: 'var(--warning)', flexShrink: 0 }} />
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--warning)', fontWeight: 500 }}>
                 {t('projects.kanban.overdueBanner', { days: sprintOverdueDays, pending: pendingTasks })}
               </p>
             </div>

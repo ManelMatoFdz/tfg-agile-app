@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'react-router-dom';
 import { usersApi } from '../api/users';
 import { useAuthStore } from '../store/authStore';
 import ProfileInfo from '../components/profile/ProfileInfo';
@@ -7,12 +8,17 @@ import AvatarUpload from '../components/profile/AvatarUpload';
 import ChangePassword from '../components/profile/ChangePassword';
 import NotificationPreferences from '../components/profile/NotificationPreferences';
 import { buildAvatarSrc } from '../utils/avatarUrl';
+import PageTitle from '../components/motion/PageTitle';
+import TopBar from '../components/ui/TopBar';
 
 export default function ProfilePage() {
   const { t } = useTranslation();
+  const location = useLocation();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
   const [avatarLoadError, setAvatarLoadError] = useState(false);
+
+  const isStandalone = location.pathname === '/profile';
 
   useEffect(() => {
     usersApi.getMe().then((res) => setUser(res.data)).catch(() => {});
@@ -24,32 +30,16 @@ export default function ProfilePage() {
     setAvatarLoadError(false);
   }, [avatarSrc]);
 
-  return (
+  const content = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      {/* Profile header */}
+      <style>{`.profile-grid{display:grid;gap:24px;grid-template-columns:1fr}@media(min-width:1024px){.profile-grid{grid-template-columns:2fr 1fr}.profile-main{grid-column:1}}`}</style>
       <div style={{
         background: 'var(--bg-elevated)',
         border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-lg)',
+        borderRadius: 'var(--radius-card)',
         padding: 24,
-        position: 'relative',
-        overflow: 'hidden',
       }}>
-        {/* Subtle background accent */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: 200,
-          height: 200,
-          background: 'var(--accent-muted)',
-          borderRadius: '50%',
-          filter: 'blur(80px)',
-          transform: 'translate(30%, -50%)',
-          pointerEvents: 'none',
-        }} />
-
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20, flexWrap: 'wrap' }}>
           {/* Avatar */}
           <div style={{ position: 'relative', flexShrink: 0 }}>
             {avatarSrc && !avatarLoadError ? (
@@ -71,7 +61,7 @@ export default function ProfilePage() {
                 borderRadius: 'var(--radius-md)',
                 background: 'var(--accent)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontSize: 28, fontWeight: 700,
+                color: 'var(--accent-fg)', fontSize: 28, fontWeight: 700,
                 border: '2px solid var(--border)',
               }}>
                 {user?.username?.charAt(0).toUpperCase() ?? '?'}
@@ -81,7 +71,7 @@ export default function ProfilePage() {
             <div style={{
               position: 'absolute', bottom: -2, right: -2,
               width: 14, height: 14,
-              background: '#22c55e',
+              background: 'var(--success)',
               border: '2px solid var(--bg-elevated)',
               borderRadius: '50%',
             }} />
@@ -89,9 +79,9 @@ export default function ProfilePage() {
 
           {/* User info */}
           <div>
-            <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            <PageTitle style={{ fontSize: 24 }}>
               {user?.fullName || user?.username || t('profile.defaultUser')}
-            </h1>
+            </PageTitle>
             <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
               @{user?.username}
             </p>
@@ -104,8 +94,8 @@ export default function ProfilePage() {
       </div>
 
       {/* Content grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div className="profile-grid">
+        <div className="profile-main" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <ProfileInfo />
           <ChangePassword />
         </div>
@@ -113,6 +103,23 @@ export default function ProfilePage() {
           <AvatarUpload />
           <NotificationPreferences />
         </div>
+      </div>
+    </div>
+  );
+
+  if (!isStandalone) return content;
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+      <TopBar />
+
+      <style>{`
+        .profile-standalone-content{max-width:900px;margin:0 auto;padding:32px 24px}
+        @media(min-width:1280px){.profile-standalone-content{max-width:1100px;padding:40px 48px}}
+        @media(min-width:1536px){.profile-standalone-content{max-width:1300px;padding:48px 64px}}
+      `}</style>
+      <div className="profile-standalone-content">
+        {content}
       </div>
     </div>
   );

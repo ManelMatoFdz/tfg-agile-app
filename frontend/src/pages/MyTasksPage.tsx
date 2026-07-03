@@ -4,28 +4,29 @@ import { CheckSquare } from 'lucide-react';
 import type { Task, TaskPriority, TaskStatus } from '../types';
 import { tasksApi } from '../api/tasks';
 import Alert from '../components/ui/Alert';
+import PageTitle from '../components/motion/PageTitle';
 
 const STATUS_ORDER: TaskStatus[] = ['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'DONE'];
 
 const PRIORITY_COLOR: Record<TaskPriority, string> = {
-  CRITICAL: '#ef4444',
-  HIGH:     '#f59e0b',
-  MEDIUM:   '#3b82f6',
-  LOW:      '#9ca3af',
+  CRITICAL: 'var(--danger)',
+  HIGH:     'var(--ochre)',
+  MEDIUM:   'var(--ink-blue)',
+  LOW:      'var(--text-faint)',
 };
 
 const PRIORITY_BG: Record<TaskPriority, string> = {
-  CRITICAL: 'rgba(239,68,68,0.08)',
-  HIGH:     'rgba(245,158,11,0.08)',
-  MEDIUM:   'rgba(59,130,246,0.08)',
-  LOW:      'rgba(156,163,175,0.08)',
+  CRITICAL: 'var(--danger-bg)',
+  HIGH:     'var(--warning-bg)',
+  MEDIUM:   'var(--info-bg)',
+  LOW:      'var(--bg-hover)',
 };
 
 const STATUS_COLOR: Record<TaskStatus, string> = {
-  TODO:        '#9ca3af',
-  IN_PROGRESS: '#3b82f6',
-  IN_REVIEW:   '#f59e0b',
-  DONE:        '#22c55e',
+  TODO:        'var(--text-faint)',
+  IN_PROGRESS: 'var(--ink-blue)',
+  IN_REVIEW:   'var(--ochre)',
+  DONE:        'var(--success)',
 };
 
 export default function MyTasksPage() {
@@ -59,9 +60,9 @@ export default function MyTasksPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+          <PageTitle>
             {t('myTasks.title')}
-          </h1>
+          </PageTitle>
           {!loading && tasks.length > 0 && (
             <p style={{ margin: '0.125rem 0 0', fontSize: '0.75rem', color: 'var(--text-faint)' }}>
               {activeTasks > 0
@@ -101,7 +102,7 @@ export default function MyTasksPage() {
         <div style={{
           background: 'var(--bg-elevated)',
           border: '0.0625rem solid var(--border)',
-          borderRadius: 'var(--radius-lg)',
+          borderRadius: 'var(--radius-card)',
           padding: '3rem 1.5rem',
           textAlign: 'center',
         }}>
@@ -145,7 +146,7 @@ export default function MyTasksPage() {
                   <span style={{
                     fontSize: '0.625rem',
                     fontWeight: 700,
-                    letterSpacing: '0.05em',
+                    letterSpacing: '0.08em',
                     textTransform: 'uppercase',
                     color: STATUS_COLOR[status],
                   }}>
@@ -174,7 +175,7 @@ export default function MyTasksPage() {
                         flexShrink: 0,
                         fontSize: '0.5625rem',
                         fontWeight: 700,
-                        letterSpacing: '0.05em',
+                        letterSpacing: '0.08em',
                         textTransform: 'uppercase',
                         color: PRIORITY_COLOR[task.priority],
                         background: PRIORITY_BG[task.priority],

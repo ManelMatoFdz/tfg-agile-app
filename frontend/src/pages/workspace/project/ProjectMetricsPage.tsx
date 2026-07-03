@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -11,41 +11,27 @@ import { sprintsApi } from '../../../api/sprints';
 import { projectsApi } from '../../../api/projects';
 import { usersApi } from '../../../api/users';
 import Alert from '../../../components/ui/Alert';
+import PageTitle from '../../../components/motion/PageTitle';
+import CountUp from '../../../components/motion/CountUp';
 
 // ── Colours ───────────────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<TaskStatus, string> = {
-  DONE: '#22c55e',
-  IN_PROGRESS: '#3b82f6',
-  IN_REVIEW: '#f59e0b',
-  TODO: '#9ca3af',
+  DONE: 'var(--success)',
+  IN_PROGRESS: 'var(--ink-blue)',
+  IN_REVIEW: 'var(--ochre)',
+  TODO: 'var(--text-faint)',
 };
 
 const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  CRITICAL: '#ef4444',
-  HIGH: '#f59e0b',
-  MEDIUM: '#3b82f6',
-  LOW: '#9ca3af',
+  CRITICAL: 'var(--danger)',
+  HIGH: 'var(--ochre)',
+  MEDIUM: 'var(--ink-blue)',
+  LOW: 'var(--text-faint)',
 };
 
 // ── Animated counter ──────────────────────────────────────────────────────────
 
-function AnimatedNumber({ target }: { target: number }) {
-  const [val, setVal] = useState(0);
-  const ref = useRef<ReturnType<typeof setInterval> | null>(null);
-  useEffect(() => {
-    if (target === 0) { setVal(0); return; }
-    let current = 0;
-    const step = Math.ceil(target / 30);
-    ref.current = setInterval(() => {
-      current = Math.min(current + step, target);
-      setVal(current);
-      if (current >= target && ref.current) clearInterval(ref.current);
-    }, 30);
-    return () => { if (ref.current) clearInterval(ref.current); };
-  }, [target]);
-  return <>{val}</>;
-}
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
@@ -67,13 +53,13 @@ function StatCard({
   return (
     <div style={{ ...card, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: 'var(--text-faint)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+        <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: 'var(--text-faint)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
           {label}
         </p>
         <span style={{ color, opacity: 0.8 }}>{icon}</span>
       </div>
       <p style={{ margin: 0, fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em' }}>
-        <AnimatedNumber target={value} />
+        <CountUp value={value} />
       </p>
       {sub && <p style={{ margin: 0, fontSize: 10, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{sub}</p>}
     </div>
@@ -186,14 +172,22 @@ export default function ProjectMetricsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 24 }}>
+      <style>{`
+        .metrics-summary-grid{display:grid;gap:12px;grid-template-columns:1fr 1fr}
+        .metrics-charts-grid{display:grid;gap:16px;grid-template-columns:1fr}
+        @media(min-width:1024px){
+          .metrics-summary-grid{grid-template-columns:repeat(4,1fr)}
+          .metrics-charts-grid{grid-template-columns:1fr 1fr}
+        }
+      `}</style>
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
-      <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+      <PageTitle as="h2" style={{ fontSize: 20 }}>
         {t('projects.metrics.title')}
-      </h2>
+      </PageTitle>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="metrics-summary-grid">
         <StatCard
           label={t('projects.metrics.totalTasks')}
           value={total}
@@ -209,7 +203,7 @@ export default function ProjectMetricsPage() {
           label={t('projects.metrics.storyPointsDone')}
           value={doneSP}
           sub={`${totalSP} ${t('projects.metrics.total')}`}
-          color="#22c55e"
+          color="var(--success)"
           icon={
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -220,7 +214,7 @@ export default function ProjectMetricsPage() {
           label={t('projects.metrics.sprints')}
           value={sprints.length}
           sub={t('projects.metrics.completedSprints', { n: completedSprints })}
-          color="#f59e0b"
+          color="var(--ochre)"
           icon={
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -231,7 +225,7 @@ export default function ProjectMetricsPage() {
           label={t('projects.metrics.members')}
           value={members.length}
           sub={activeSprint ? t('projects.metrics.activeSprint', { name: activeSprint.name }) : t('projects.metrics.noActiveSprint')}
-          color="#3b82f6"
+          color="var(--ink-blue)"
           icon={
             <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -274,7 +268,7 @@ export default function ProjectMetricsPage() {
       )}
 
       {/* Task distribution + Backlog vs Sprint */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="metrics-charts-grid">
         {/* Status donut */}
         <div style={{ ...card, padding: '14px 16px' }}>
           <h3 style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
@@ -333,7 +327,7 @@ export default function ProjectMetricsPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[
                 { label: t('projects.metrics.inSprints'), count: sprintedTasks.length, color: 'var(--accent)' },
-                { label: t('projects.metrics.inBacklog'), count: backlogTasks.length, color: '#f59e0b' },
+                { label: t('projects.metrics.inBacklog'), count: backlogTasks.length, color: 'var(--ochre)' },
                 ...(unassigned > 0 ? [{ label: t('projects.metrics.unassigned'), count: unassigned, color: 'var(--border)' }] : []),
               ].map((row) => (
                 <div key={row.label}>
@@ -350,7 +344,7 @@ export default function ProjectMetricsPage() {
               <div style={{ marginTop: 8, paddingTop: 10, borderTop: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
                 {[
                   { value: sprints.length, label: t('projects.metrics.totalSprints'), color: 'var(--text)' },
-                  { value: completedSprints, label: t('projects.metrics.completed'), color: '#16a34a' },
+                  { value: completedSprints, label: t('projects.metrics.completed'), color: 'var(--success)' },
                   { value: sprints.filter((s) => s.status === 'ACTIVE').length, label: t('projects.metrics.active'), color: 'var(--accent)' },
                 ].map((stat) => (
                   <div key={stat.label}>
@@ -377,8 +371,8 @@ export default function ProjectMetricsPage() {
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={priorityData} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 10, fill: '#9ca3af' }} allowDecimals={false} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#6b7280' }} width={60} />
+              <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} allowDecimals={false} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} width={60} />
               <Tooltip
                 formatter={(value, name) => {
                   const v = typeof value === 'number' ? value : 0;
@@ -388,7 +382,7 @@ export default function ProjectMetricsPage() {
                 contentStyle={tooltipStyle}
               />
               <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-              <Bar dataKey="done" name={t('tasks.status.DONE')} radius={[0, 4, 4, 0]} fill="#22c55e" />
+              <Bar dataKey="done" name={t('tasks.status.DONE')} radius={[0, 4, 4, 0]} fill="var(--success)" />
               <Bar dataKey="total" name={t('projects.metrics.total')} radius={[0, 4, 4, 0]} fill="var(--bg-hover)" />
             </BarChart>
           </ResponsiveContainer>
@@ -404,8 +398,8 @@ export default function ProjectMetricsPage() {
           <ResponsiveContainer width="100%" height={180}>
             <BarChart data={velocityData} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af' }} />
-              <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} allowDecimals={false} />
+              <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} />
+              <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} allowDecimals={false} />
               <Tooltip
                 formatter={(value) => {
                   const v = typeof value === 'number' ? value : 0;
@@ -446,12 +440,12 @@ export default function ProjectMetricsPage() {
                   {d.name}
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#22c55e', fontFamily: 'var(--font-mono)' }}>{d.done}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--success)', fontFamily: 'var(--font-mono)' }}>{d.done}</span>
                   <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>/ {d.assigned}</span>
                 </div>
                 <div style={{ width: 80, background: 'var(--bg-hover)', borderRadius: 3, height: 5, overflow: 'hidden', flexShrink: 0 }}>
                   <div style={{
-                    height: 5, borderRadius: 3, background: '#22c55e',
+                    height: 5, borderRadius: 3, background: 'var(--success)',
                     width: `${d.assigned > 0 ? (d.done / d.assigned) * 100 : 0}%`,
                   }} />
                 </div>

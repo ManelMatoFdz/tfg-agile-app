@@ -6,11 +6,12 @@ import { projectsApi } from '../../api/projects';
 import { useApiAction } from '../../hooks/useApiAction';
 import { useUserMap } from '../../hooks/useUserMap';
 import Alert from '../../components/ui/Alert';
+import PageTitle from '../../components/motion/PageTitle';
 import type { Project, ProjectMember, ProjectRole } from '../../types';
 
 const ROLE_STYLE: Record<ProjectRole, { color: string; bg: string }> = {
   ADMIN:  { color: 'var(--accent)',  bg: 'var(--accent-muted)' },
-  MEMBER: { color: '#16a34a',        bg: 'rgba(22,163,74,0.08)' },
+  MEMBER: { color: 'var(--success)',  bg: 'var(--success-bg)' },
   VIEWER: { color: 'var(--text-faint)', bg: 'var(--bg-hover)' },
 };
 
@@ -27,7 +28,7 @@ function MemberRow({ member, displayName, avatarUrl }: { member: ProjectMember; 
         ) : (
           <div style={{
             width: '100%', height: '100%',
-            background: 'var(--accent)', color: '#fff',
+            background: 'var(--accent)', color: 'var(--accent-fg)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 12, fontWeight: 700,
           }}>
@@ -44,7 +45,7 @@ function MemberRow({ member, displayName, avatarUrl }: { member: ProjectMember; 
         </p>
       </div>
       <span style={{
-        fontSize: 10, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase',
+        fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
         color: roleStyle.color, background: roleStyle.bg,
         borderRadius: 'var(--radius-sm)', padding: '2px 7px', flexShrink: 0,
       }}>
@@ -117,9 +118,9 @@ export default function ProjectDetailPage() {
             background: 'var(--bg-elevated)', border: '1px solid var(--border)',
             borderRadius: 'var(--radius-md)', padding: '16px 18px',
           }}>
-            <h1 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            <PageTitle style={{ fontSize: 24 }}>
               {project.name}
-            </h1>
+            </PageTitle>
             {project.description && (
               <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>{project.description}</p>
             )}
@@ -136,8 +137,8 @@ export default function ProjectDetailPage() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
               <h2 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{t('projects.kanban.title')}</h2>
               <span style={{
-                fontSize: 9, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase',
-                color: '#d97706', background: 'rgba(217,119,6,0.1)',
+                fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                color: 'var(--ochre)', background: 'var(--ochre-soft)',
                 borderRadius: 'var(--radius-sm)', padding: '2px 7px',
               }}>
                 {t('common.comingSoon')}
@@ -150,7 +151,7 @@ export default function ProjectDetailPage() {
                   background: 'var(--bg-hover)', border: '1px solid var(--border)',
                   borderRadius: 'var(--radius-sm)', padding: 10,
                 }}>
-                  <p style={{ margin: '0 0 8px', fontSize: 9, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+                  <p style={{ margin: '0 0 8px', fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                     {col}
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

@@ -3,17 +3,17 @@ import { X, Archive } from 'lucide-react';
 import type { SprintTaskSnapshot, TaskPriority, TaskStatus } from '../../types';
 
 const STATUS_COLOR: Record<TaskStatus, string> = {
-  TODO:        '#9ca3af',
-  IN_PROGRESS: '#3b82f6',
-  IN_REVIEW:   '#f59e0b',
-  DONE:        '#22c55e',
+  TODO:        'var(--text-faint)',
+  IN_PROGRESS: 'var(--ink-blue)',
+  IN_REVIEW:   'var(--ochre)',
+  DONE:        'var(--success)',
 };
 
 const PRIORITY_STYLE: Record<TaskPriority, { color: string; bg: string }> = {
-  CRITICAL: { color: '#ef4444', bg: 'rgba(239,68,68,0.08)' },
-  HIGH:     { color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
-  MEDIUM:   { color: '#3b82f6', bg: 'rgba(59,130,246,0.08)' },
-  LOW:      { color: '#9ca3af', bg: 'rgba(156,163,175,0.08)' },
+  CRITICAL: { color: 'var(--danger)', bg: 'var(--danger-bg)' },
+  HIGH:     { color: 'var(--ochre)', bg: 'var(--warning-bg)' },
+  MEDIUM:   { color: 'var(--ink-blue)', bg: 'var(--info-bg)' },
+  LOW:      { color: 'var(--text-faint)', bg: 'var(--bg-hover)' },
 };
 
 const labelStyle: React.CSSProperties = {
@@ -39,6 +39,8 @@ export default function SnapshotModal({ snapshot, onClose }: Props) {
         position: 'fixed', inset: 0, zIndex: 50,
         display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
         backgroundColor: 'var(--bg-overlay)',
+        backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+        animation: 'fade-in 200ms ease both',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
@@ -46,7 +48,7 @@ export default function SnapshotModal({ snapshot, onClose }: Props) {
         width: '100%', maxWidth: 480,
         background: 'var(--bg-elevated)',
         border: '1px solid var(--border-strong)',
-        borderRadius: 'var(--radius-lg)',
+        borderRadius: 'var(--radius-md)',
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 12px', borderBottom: '1px solid var(--border)' }}>
@@ -66,11 +68,11 @@ export default function SnapshotModal({ snapshot, onClose }: Props) {
           {snapshot.returnedToBacklog && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 8,
-              background: 'rgba(217,119,6,0.08)', border: '1px solid rgba(217,119,6,0.25)',
+              background: 'var(--ochre-soft)', border: '1px solid var(--ochre)',
               borderRadius: 'var(--radius-sm)', padding: '7px 10px',
             }}>
-              <Archive size={12} strokeWidth={2} style={{ color: '#d97706', flexShrink: 0 }} />
-              <p style={{ margin: 0, fontSize: 11, color: '#d97706' }}>
+              <Archive size={12} strokeWidth={2} style={{ color: 'var(--ochre)', flexShrink: 0 }} />
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--ochre)' }}>
                 {t('projects.sprints.report.returnedBanner')}
               </p>
             </div>
@@ -134,7 +136,7 @@ export default function SnapshotModal({ snapshot, onClose }: Props) {
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
               padding: '5px 12px', fontSize: 12, fontWeight: 500,
-              background: 'var(--accent)', color: '#fff',
+              background: 'var(--accent)', color: 'var(--accent-fg)',
               border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
             }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}

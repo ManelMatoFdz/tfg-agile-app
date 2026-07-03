@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CheckCircle, BarChart3, Users, Target } from 'lucide-react';
 import type { PokerRound, PokerParticipant } from '../../types';
 
 interface Props {
@@ -53,83 +54,217 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
   };
 
   return (
-    <div className="glass-card-strong p-5">
-      <h3 className="text-sm font-semibold text-gray-700 mb-4">{t('poker.room.results')}</h3>
+    <div style={{
+      background: '#FFFFFF',
+      border: '1px solid #E2E8F0',
+      borderRadius: 12,
+      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+      overflow: 'hidden',
+    }}>
+      <style>{`
+        .vote-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+        @media(min-width:640px){.vote-stats-grid{grid-template-columns:repeat(3,1fr)}}
+      `}</style>
 
-      {/* Vote cards */}
-      <div className="flex flex-wrap gap-3 justify-center mb-5">
-        {round.votes.map((vote) => (
-          <div key={vote.userId} className="flex flex-col items-center gap-1">
-            <div className="w-14 h-20 rounded-xl border-2 border-primary-300 bg-primary-50 flex items-center justify-center text-lg font-bold text-primary-700">
-              {vote.value}
-            </div>
-            <span className="text-xs text-gray-500 max-w-[3.5rem] truncate">
-              {participantMap[vote.userId] ?? '?'}
-            </span>
-          </div>
-        ))}
+      {/* Header */}
+      <div style={{
+        padding: '16px 20px', borderBottom: '1px solid #E2E8F0',
+        display: 'flex', alignItems: 'center', gap: 8,
+      }}>
+        <BarChart3 size={16} style={{ color: '#2563EB' }} />
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#1E293B' }}>
+          {t('poker.room.results')}
+        </h3>
       </div>
 
-      {/* Stats */}
-      {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-          <div className="text-center p-2 rounded-xl bg-gray-50">
-            <p className="text-xs text-gray-400">{t('poker.room.average')}</p>
-            <p className="text-lg font-bold text-gray-900">{stats.avg}</p>
+      <div style={{ padding: 20 }}>
+        {/* Stats cards */}
+        {stats && (
+          <div className="vote-stats-grid" style={{ marginBottom: 24 }}>
+            {([
+              { key: 'average', value: stats.avg, icon: BarChart3, color: '#2563EB', bg: 'rgba(37,99,235,0.06)' },
+              { key: 'mode', value: stats.mode, icon: Target, color: '#8B5CF6', bg: 'rgba(139,92,246,0.06)' },
+              { key: 'min', value: `${stats.min} - ${stats.max}`, icon: Users, color: '#64748B', bg: '#F7F8FA' },
+            ] as const).map(({ key, value, icon: Icon, color, bg }) => (
+              <div key={key} style={{
+                textAlign: 'center',
+                padding: '14px 12px',
+                borderRadius: 10,
+                background: bg,
+                border: '1px solid #E2E8F0',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 6 }}>
+                  <Icon size={16} style={{ color }} />
+                </div>
+                <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                  {t(`poker.room.${key}`)}
+                </p>
+                <p style={{ margin: '4px 0 0', fontSize: 22, fontWeight: 800, color: '#1E293B' }}>
+                  {value}
+                </p>
+              </div>
+            ))}
           </div>
-          <div className="text-center p-2 rounded-xl bg-gray-50">
-            <p className="text-xs text-gray-400">{t('poker.room.mode')}</p>
-            <p className="text-lg font-bold text-gray-900">{stats.mode}</p>
-          </div>
-          <div className="text-center p-2 rounded-xl bg-gray-50">
-            <p className="text-xs text-gray-400">{t('poker.room.min')}</p>
-            <p className="text-lg font-bold text-gray-900">{stats.min}</p>
-          </div>
-          <div className="text-center p-2 rounded-xl bg-gray-50">
-            <p className="text-xs text-gray-400">{t('poker.room.max')}</p>
-            <p className="text-lg font-bold text-gray-900">{stats.max}</p>
-          </div>
-        </div>
-      )}
+        )}
 
-      {stats?.consensus && (
-        <div className="flex items-center gap-2 text-sm text-emerald-600 bg-emerald-50 rounded-xl px-3 py-2 mb-4">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          {t('poker.room.consensus')}
-        </div>
-      )}
+        {/* Consensus banner */}
+        {stats?.consensus && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            fontSize: 14,
+            fontWeight: 600,
+            color: '#16A34A',
+            background: 'rgba(22,163,74,0.06)',
+            border: '1px solid rgba(22,163,74,0.15)',
+            borderRadius: 10,
+            padding: '12px 16px',
+            marginBottom: 20,
+          }}>
+            <CheckCircle size={18} strokeWidth={2} />
+            {t('poker.room.consensus')}
+          </div>
+        )}
 
-      {/* Facilitator actions */}
-      {isFacilitator && (
-        <div className="border-t border-gray-100 pt-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-gray-600 shrink-0">{t('poker.room.finalEstimate')}:</label>
-            <input
-              type="number"
-              value={customEstimate}
-              onChange={(e) => setCustomEstimate(e.target.value)}
-              placeholder={stats ? String(Math.round(stats.avg)) : '—'}
-              className="w-20 px-2 py-1 text-sm rounded-lg border border-gray-200 focus:border-primary-400 outline-none"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleAccept}
-              className="flex-1 px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors cursor-pointer"
-            >
-              {t('poker.room.acceptEstimate')}
-            </button>
-            <button
-              onClick={onRevote}
-              className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
-            >
-              {t('poker.room.revote')}
-            </button>
+        {/* Team votes */}
+        <div style={{ marginBottom: isFacilitator ? 20 : 0 }}>
+          <p style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+            textTransform: 'uppercase', color: '#94A3B8', marginBottom: 12,
+          }}>
+            Team Votes
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, justifyContent: 'center' }}>
+            {round.votes.map((vote) => {
+              const numVal = parseFloat(vote.value);
+              const deviates = stats && !isNaN(numVal) && Math.abs(numVal - stats.avg) > (stats.max - stats.min) * 0.4;
+              return (
+                <div key={vote.userId} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                  <div style={{
+                    width: 62,
+                    height: 88,
+                    borderRadius: 10,
+                    border: `2px solid ${deviates ? '#F59E0B' : '#2563EB'}`,
+                    background: deviates ? 'rgba(245,158,11,0.06)' : 'rgba(37,99,235,0.06)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 22,
+                    fontWeight: 800,
+                    color: deviates ? '#F59E0B' : '#2563EB',
+                    boxShadow: deviates ? '0 2px 8px rgba(245,158,11,0.15)' : '0 1px 3px rgba(37,99,235,0.08)',
+                  }}>
+                    {vote.value}
+                  </div>
+                  <span style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    color: '#64748B',
+                    maxWidth: 62,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    textAlign: 'center',
+                  }}>
+                    {participantMap[vote.userId] ?? '?'}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
-      )}
+
+        {/* Moderator panel */}
+        {isFacilitator && (
+          <div style={{
+            borderTop: '1px solid #E2E8F0',
+            paddingTop: 20,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+          }}>
+            <p style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
+              textTransform: 'uppercase', color: '#64748B', margin: 0,
+            }}>
+              Moderator Panel
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <label style={{ fontSize: 13, fontWeight: 600, color: '#1E293B', flexShrink: 0 }}>
+                {t('poker.room.finalEstimate')}:
+              </label>
+              <input
+                type="number"
+                value={customEstimate}
+                onChange={(e) => setCustomEstimate(e.target.value)}
+                placeholder={stats ? String(Math.round(stats.avg)) : '--'}
+                style={{
+                  width: 80,
+                  padding: '8px 12px',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  fontFamily: 'inherit',
+                  color: '#1E293B',
+                  background: '#F7F8FA',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: 8,
+                  outline: 'none',
+                  textAlign: 'center',
+                  transition: 'border-color 0.15s, box-shadow 0.15s',
+                }}
+                onFocus={e => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }}
+                onBlur={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={handleAccept}
+                style={{
+                  flex: 1,
+                  padding: '10px 16px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  fontFamily: 'inherit',
+                  color: '#FFFFFF',
+                  background: '#2563EB',
+                  border: 'none',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  transition: 'background 0.15s',
+                  boxShadow: '0 1px 3px rgba(37,99,235,0.2)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#1D4ED8'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#2563EB'; }}
+              >
+                {t('poker.room.acceptEstimate')}
+              </button>
+              <button
+                onClick={onRevote}
+                style={{
+                  flex: 1,
+                  padding: '10px 16px',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  fontFamily: 'inherit',
+                  color: '#64748B',
+                  background: '#FFFFFF',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  transition: 'background 0.15s, color 0.15s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#EDF0F4'; e.currentTarget.style.color = '#1E293B'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#64748B'; }}
+              >
+                {t('poker.room.revote')}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

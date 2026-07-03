@@ -82,7 +82,8 @@
       }
     },
     "layout": {
-      "description": "Gestiona tus proyectos con metodologías ágiles. Colabora con tu equipo de forma eficiente y visual."
+      "headline": "Domina tu flujo de trabajo con AgileFlow",
+      "description": "La plataforma todo en uno para planificar, gestionar y entregar proyectos de calidad con rapidez y precisión."
     }
   },
   "workspace": {
@@ -114,7 +115,10 @@
       "settings": "Configuración",
       "profile": "Perfil",
       "notifications": "Notificaciones",
-      "logout": "Cerrar sesión"
+      "logout": "Cerrar sesión",
+      "myTasks": "Mis tareas",
+      "lightMode": "Modo claro",
+      "darkMode": "Modo oscuro"
     },
     "dashboard": {
       "title": "Proyectos",
@@ -460,6 +464,7 @@
       "activate": "Activar",
       "activateConfirm": "¿Activar este sprint?",
       "activateError": "Error al activar el sprint.",
+      "activateEndDateRequired": "Debes establecer una fecha de fin antes de activar el sprint.",
       "complete": "Completar",
       "completeConfirm": "¿Completar? Las tareas no finalizadas volverán al backlog.",
       "completeError": "Error al completar el sprint.",

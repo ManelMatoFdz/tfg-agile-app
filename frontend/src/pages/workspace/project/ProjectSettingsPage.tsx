@@ -1,16 +1,18 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Settings, AlertTriangle } from 'lucide-react';
 import { projectsApi } from '../../../api/projects';
 import { categoriesApi } from '../../../api/categories';
 import { useAuthStore } from '../../../store/authStore';
 import Alert from '../../../components/ui/Alert';
+import PageTitle from '../../../components/motion/PageTitle';
 import type { Category, Project, ProjectMember, ProjectVisibility } from '../../../types';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '6px 10px',
-  fontSize: 12,
+  padding: '10px 14px',
+  fontSize: 13,
   background: 'var(--bg)',
   border: '1px solid var(--border)',
   borderRadius: 'var(--radius-md)',
@@ -18,21 +20,23 @@ const inputStyle: React.CSSProperties = {
   fontFamily: 'inherit',
   outline: 'none',
   boxSizing: 'border-box',
+  transition: 'border-color 150ms, box-shadow 150ms',
 };
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
-  fontSize: 11,
-  fontWeight: 500,
+  fontSize: 12,
+  fontWeight: 600,
   color: 'var(--text-muted)',
-  marginBottom: 4,
+  marginBottom: 6,
 };
 
 const card: React.CSSProperties = {
   background: 'var(--bg-elevated)',
   border: '1px solid var(--border)',
-  borderRadius: 'var(--radius-md)',
-  padding: 20,
+  borderRadius: 'var(--radius-lg)',
+  boxShadow: 'var(--shadow-sm)',
+  overflow: 'hidden',
 };
 
 export default function ProjectSettingsPage() {
@@ -119,9 +123,9 @@ export default function ProjectSettingsPage() {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
         <div style={{
-          width: 24,
-          height: 24,
-          border: '2px solid var(--border)',
+          width: 28,
+          height: 28,
+          border: '3px solid var(--border)',
           borderTopColor: 'var(--accent)',
           borderRadius: '50%',
           animation: 'spin 0.7s linear infinite',
@@ -131,27 +135,29 @@ export default function ProjectSettingsPage() {
   }
 
   return (
-    <div style={{ maxWidth: 560, display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ maxWidth: 600, display: 'flex', flexDirection: 'column', gap: 20 }}>
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
       {success && <Alert type="success" message={success} onClose={() => setSuccess(null)} />}
 
       <div>
-        <h1 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+        <PageTitle style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
           {t('projects.settings.title')}
-        </h1>
-        <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
+        </PageTitle>
+        <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
           {t('projects.settings.subtitle')}
         </p>
       </div>
 
       {isAdmin ? (
         <>
-          {/* General */}
+          {/* General settings */}
           <section style={card}>
-            <h2 style={{ margin: '0 0 14px', fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
-              {t('projects.settings.general')}
-            </h2>
-            <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+              <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+                {t('projects.settings.general')}
+              </h2>
+            </div>
+            <form onSubmit={handleSave} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
                 <label style={labelStyle}>{t('projects.settings.nameLabel')}</label>
                 <input
@@ -160,26 +166,30 @@ export default function ProjectSettingsPage() {
                   onChange={(e) => setName(e.target.value)}
                   required
                   style={inputStyle}
+                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
                 />
               </div>
 
               <div>
                 <label style={labelStyle}>
                   {t('projects.settings.descriptionLabel')}{' '}
-                  <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>({t('common.optional')})</span>
+                  <span style={{ color: 'var(--text-faint)', fontWeight: 400, textTransform: 'none', letterSpacing: '0', fontSize: 12 }}>({t('common.optional')})</span>
                 </label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={3}
                   style={{ ...inputStyle, resize: 'none' }}
+                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
                 />
               </div>
 
               <div>
                 <label style={labelStyle}>
                   {t('projects.settings.categoryLabel')}{' '}
-                  <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>({t('common.optional')})</span>
+                  <span style={{ color: 'var(--text-faint)', fontWeight: 400, textTransform: 'none', letterSpacing: '0', fontSize: 12 }}>({t('common.optional')})</span>
                 </label>
                 <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} style={inputStyle}>
                   <option value="">{t('projects.settings.noCategory')}</option>
@@ -190,27 +200,27 @@ export default function ProjectSettingsPage() {
               </div>
 
               <div>
-                <label style={{ ...labelStyle, marginBottom: 8 }}>{t('projects.settings.visibilityLabel')}</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                <label style={{ ...labelStyle, marginBottom: 10 }}>{t('projects.settings.visibilityLabel')}</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   {(['PRIVATE', 'WORKSPACE'] as ProjectVisibility[]).map((v) => (
                     <button
                       key={v}
                       type="button"
                       onClick={() => setVisibility(v)}
                       style={{
-                        padding: '10px 12px',
+                        padding: '14px 16px',
                         textAlign: 'left',
                         background: visibility === v ? 'var(--accent-muted)' : 'var(--bg)',
-                        border: `1px solid ${visibility === v ? 'var(--accent)' : 'var(--border)'}`,
+                        border: `1.5px solid ${visibility === v ? 'var(--accent)' : 'var(--border)'}`,
                         borderRadius: 'var(--radius-md)',
                         cursor: 'pointer',
-                        transition: `border-color var(--duration), background var(--duration)`,
+                        transition: 'border-color 150ms, background 150ms',
                       }}
                     >
-                      <p style={{ margin: 0, fontSize: 12, fontWeight: 600, color: visibility === v ? 'var(--accent)' : 'var(--text)' }}>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: visibility === v ? 'var(--accent)' : 'var(--text)' }}>
                         {t(`projects.settings.visibility.${v}`)}
                       </p>
-                      <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--text-faint)' }}>
+                      <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
                         {t(`projects.settings.visibility.${v}_desc`)}
                       </p>
                     </button>
@@ -218,21 +228,22 @@ export default function ProjectSettingsPage() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, paddingTop: 4 }}>
                 <button
                   type="submit"
                   disabled={saving || !name.trim()}
                   style={{
-                    padding: '6px 14px',
-                    fontSize: 12,
-                    fontWeight: 500,
+                    padding: '9px 20px',
+                    fontSize: 13,
+                    fontWeight: 600,
                     background: 'var(--accent)',
-                    color: '#fff',
+                    color: '#FFFFFF',
                     border: 'none',
                     borderRadius: 'var(--radius-md)',
                     cursor: saving || !name.trim() ? 'not-allowed' : 'pointer',
                     opacity: saving || !name.trim() ? 0.5 : 1,
-                    transition: `background var(--duration)`,
+                    transition: 'background 150ms',
+                    boxShadow: 'var(--shadow-sm)',
                   }}
                   onMouseEnter={(e) => { if (!saving && name.trim()) e.currentTarget.style.background = 'var(--accent-hover)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent)'; }}
@@ -245,36 +256,44 @@ export default function ProjectSettingsPage() {
 
           {/* Danger zone */}
           <section style={{
-            border: '1px solid var(--danger)',
-            borderRadius: 'var(--radius-md)',
+            border: '1px solid #DC2626',
+            borderRadius: 'var(--radius-lg)',
             overflow: 'hidden',
+            boxShadow: 'var(--shadow-sm)',
           }}>
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '12px 20px',
-              background: 'var(--danger-bg)',
+              padding: '16px 24px',
+              background: 'rgba(220,38,38,0.04)',
             }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: 12, fontWeight: 600, color: 'var(--danger)' }}>
-                  {t('projects.settings.dangerZone')}
-                </h2>
-                <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--danger)', opacity: 0.7 }}>
-                  {t('projects.settings.dangerSubtitle')}
-                </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <AlertTriangle size={18} strokeWidth={2} style={{ color: '#DC2626' }} />
+                <div>
+                  <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#DC2626' }}>
+                    {t('projects.settings.dangerZone')}
+                  </h2>
+                  <p style={{ margin: '2px 0 0', fontSize: 12, color: '#DC2626', opacity: 0.7 }}>
+                    {t('projects.settings.dangerSubtitle')}
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setShowDeleteZone((v) => !v)}
                 style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: 'var(--danger)',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: '#DC2626',
                   background: 'none',
-                  border: 'none',
+                  border: '1px solid #DC2626',
+                  borderRadius: 'var(--radius-md)',
                   cursor: 'pointer',
-                  padding: '4px 8px',
+                  padding: '6px 14px',
+                  transition: 'background 150ms',
                 }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.06)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
                 {showDeleteZone ? t('common.cancel') : t('projects.settings.deleteProject')}
               </button>
@@ -282,15 +301,15 @@ export default function ProjectSettingsPage() {
 
             {showDeleteZone && (
               <div style={{
-                padding: '16px 20px',
+                padding: '20px 24px',
                 background: 'var(--bg-elevated)',
-                borderTop: '1px solid var(--danger)',
+                borderTop: '1px solid #DC2626',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 12,
+                gap: 14,
               }}>
                 <p
-                  style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)' }}
+                  style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}
                   dangerouslySetInnerHTML={{ __html: t('projects.settings.deleteWarning', { name: project?.name ?? '' }) }}
                 />
                 <div>
@@ -302,7 +321,9 @@ export default function ProjectSettingsPage() {
                     value={deleteConfirmName}
                     onChange={(e) => setDeleteConfirmName(e.target.value)}
                     placeholder={project?.name}
-                    style={{ ...inputStyle, borderColor: 'var(--danger)' }}
+                    style={{ ...inputStyle, borderColor: '#DC2626' }}
+                    onFocus={e => { e.currentTarget.style.boxShadow = '0 0 0 3px rgba(220,38,38,0.12)'; }}
+                    onBlur={e => { e.currentTarget.style.boxShadow = 'none'; }}
                   />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -310,11 +331,11 @@ export default function ProjectSettingsPage() {
                     onClick={handleDelete}
                     disabled={deleting || deleteConfirmName !== project?.name}
                     style={{
-                      padding: '6px 14px',
-                      fontSize: 12,
-                      fontWeight: 500,
-                      background: 'var(--danger)',
-                      color: '#fff',
+                      padding: '9px 20px',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      background: '#DC2626',
+                      color: '#FFFFFF',
                       border: 'none',
                       borderRadius: 'var(--radius-md)',
                       cursor: deleting || deleteConfirmName !== project?.name ? 'not-allowed' : 'pointer',
@@ -330,21 +351,23 @@ export default function ProjectSettingsPage() {
         </>
       ) : (
         <section style={card}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
-              <p style={{ ...labelStyle, marginBottom: 2 }}>{t('projects.settings.nameLabel')}</p>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{project?.name}</p>
+              <p style={{ ...labelStyle, marginBottom: 4 }}>{t('projects.settings.nameLabel')}</p>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{project?.name}</p>
             </div>
             {project?.description && (
               <div>
-                <p style={{ ...labelStyle, marginBottom: 2 }}>{t('projects.settings.descriptionLabel')}</p>
-                <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)' }}>{project.description}</p>
+                <p style={{ ...labelStyle, marginBottom: 4 }}>{t('projects.settings.descriptionLabel')}</p>
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>{project.description}</p>
               </div>
             )}
           </div>
-          <p style={{ margin: '12px 0 0', fontSize: 11, color: 'var(--text-faint)' }}>
-            {t('projects.settings.adminOnly')}
-          </p>
+          <div style={{ padding: '12px 24px', borderTop: '1px solid var(--border)', background: 'var(--bg)' }}>
+            <p style={{ margin: 0, fontSize: 12, color: 'var(--text-faint)' }}>
+              {t('projects.settings.adminOnly')}
+            </p>
+          </div>
         </section>
       )}
     </div>

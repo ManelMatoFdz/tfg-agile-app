@@ -3,12 +3,11 @@ import type { Task, TaskPriority } from '../../types';
 import type { UserSummary } from '../../types';
 import { AssigneeAvatar } from './TaskModal';
 
-/* Priority → left-border color (theme-independent) */
-const PRIORITY_COLOR: Record<TaskPriority, string> = {
-  CRITICAL: '#ef4444',
-  HIGH:     '#f59e0b',
-  MEDIUM:   '#3b82f6',
-  LOW:      '#9ca3af',
+const PRIORITY_CONFIG: Record<TaskPriority, { color: string; border: string; icon: string }> = {
+  CRITICAL: { color: '#DC2626', border: '#DC2626', icon: '!!' },
+  HIGH:     { color: '#D97706', border: '#D97706', icon: '!' },
+  MEDIUM:   { color: '#2563EB', border: '#2563EB', icon: '-' },
+  LOW:      { color: '#94A3B8', border: '#CBD5E1', icon: '' },
 };
 
 interface Props {
@@ -28,107 +27,126 @@ export default function TaskCard({ task, assignee, onClick }: Props) {
   const { t } = useTranslation();
   const overdue = isOverdue(task);
   const hasFooter = task.storyPoints != null || assignee || overdue;
+  const config = PRIORITY_CONFIG[task.priority];
 
   return (
     <button
       onClick={onClick}
       style={{
-        width:           '100%',
-        textAlign:       'left',
-        display:         'block',
-        background:      'var(--bg-elevated)',
-        border:          '1px solid var(--border)',
-        borderLeft:      `0.125rem solid ${PRIORITY_COLOR[task.priority]}`,
-        borderRadius:    'var(--radius-sm)',
-        padding:         '0.4375rem 0.625rem',
-        cursor:          'pointer',
-        transition:      `background var(--duration), border-color var(--duration)`,
+        width: '100%',
+        textAlign: 'left',
+        display: 'block',
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--border)',
+        borderLeft: `3px solid ${config.border}`,
+        borderRadius: 'var(--radius-card)',
+        padding: '10px 12px',
+        cursor: 'pointer',
+        transition: 'transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease',
+        boxShadow: 'var(--shadow-sm)',
       }}
       onMouseEnter={e => {
-        const el = e.currentTarget as HTMLElement;
-        el.style.background    = 'var(--bg-hover)';
-        el.style.borderColor   = `var(--border-strong)`;
-        el.style.borderLeftColor = PRIORITY_COLOR[task.priority];
+        const el = e.currentTarget;
+        el.style.transform = 'translateY(-2px)';
+        el.style.boxShadow = 'var(--shadow-md)';
+        el.style.borderColor = 'var(--border-strong)';
+        el.style.borderLeftColor = config.border;
       }}
       onMouseLeave={e => {
-        const el = e.currentTarget as HTMLElement;
-        el.style.background    = 'var(--bg-elevated)';
-        el.style.borderColor   = 'var(--border)';
-        el.style.borderLeftColor = PRIORITY_COLOR[task.priority];
+        const el = e.currentTarget;
+        el.style.transform = 'translateY(0)';
+        el.style.boxShadow = 'var(--shadow-sm)';
+        el.style.borderColor = 'var(--border)';
+        el.style.borderLeftColor = config.border;
       }}
     >
-      {/* Title */}
+      {/* Priority badge */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <span style={{
+          fontSize: 10,
+          fontWeight: 700,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+          color: config.color,
+          background: `${config.color}12`,
+          borderRadius: 'var(--radius-sm)',
+          padding: '1px 6px',
+        }}>
+          {t(`tasks.priority.${task.priority}`)}
+        </span>
+        {task.storyPoints != null && (
+          <span style={{
+            fontFamily: 'var(--font-mono)',
+            fontSize: 10,
+            fontWeight: 700,
+            color: 'var(--accent)',
+            background: 'var(--accent-muted)',
+            borderRadius: 'var(--radius-pill)',
+            width: 24,
+            height: 24,
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontVariantNumeric: 'tabular-nums',
+          }}>
+            {task.storyPoints}
+          </span>
+        )}
+      </div>
+
       <p style={{
-        margin:       0,
-        fontSize:     '0.75rem',
-        fontWeight:   500,
-        color:        'var(--text)',
-        lineHeight:   1.4,
+        margin: 0,
+        fontSize: 13,
+        fontWeight: 500,
+        color: 'var(--text)',
+        lineHeight: 1.4,
         letterSpacing: '-0.01em',
-        overflow:     'hidden',
-        display:      '-webkit-box',
+        overflow: 'hidden',
+        display: '-webkit-box',
         WebkitLineClamp: 2,
         WebkitBoxOrient: 'vertical',
       }}>
         {task.title}
       </p>
 
-      {/* Description — 1 line only */}
       {task.description && (
         <p style={{
-          margin:      '0.125rem 0 0',
-          fontSize:    '0.6875rem',
-          color:       'var(--text-faint)',
-          lineHeight:  1.35,
-          overflow:    'hidden',
-          whiteSpace:  'nowrap',
+          margin: '4px 0 0',
+          fontSize: 12,
+          color: 'var(--text-faint)',
+          lineHeight: 1.35,
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
           textOverflow: 'ellipsis',
         }}>
           {task.description}
         </p>
       )}
 
-      {/* Footer */}
       {hasFooter && (
-        <div style={{ marginTop: '0.3125rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.25rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {overdue && (
               <span style={{
-                fontSize:    '0.5625rem',
-                fontWeight:  700,
-                color:       '#ef4444',
-                background:  'rgba(239,68,68,0.08)',
-                border:      '1px solid rgba(239,68,68,0.25)',
-                borderRadius: 'var(--radius-sm)',
-                padding:     '0 0.25rem',
+                fontSize: 10,
+                fontWeight: 700,
+                color: '#DC2626',
+                background: 'rgba(220,38,38,0.08)',
+                borderRadius: 'var(--radius-pill)',
+                padding: '2px 8px',
                 letterSpacing: '0.03em',
                 textTransform: 'uppercase',
-                whiteSpace:  'nowrap',
+                whiteSpace: 'nowrap',
               }}>
                 {t('tasks.card.overdue')}
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3125rem' }}>
-            {task.storyPoints != null && (
-              <span style={{
-                fontFamily:  'var(--font-mono)',
-                fontSize:    '0.625rem',
-                fontWeight:  600,
-                color:       'var(--text-faint)',
-                background:  'var(--bg-hover)',
-                border:      '1px solid var(--border)',
-                borderRadius: 'var(--radius-sm)',
-                padding:     '0.0625rem 0.3125rem',
-                letterSpacing: 0,
-              }}>
-                {task.storyPoints}
-              </span>
-            )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {assignee && (
               <AssigneeAvatar
                 name={assignee.fullName ?? assignee.username}
-                size={18}
+                size={22}
               />
             )}
           </div>

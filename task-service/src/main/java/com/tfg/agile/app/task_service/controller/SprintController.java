@@ -70,13 +70,6 @@ public class SprintController {
         return sprintService.activateSprint(sprintId, callerId);
     }
 
-    @PostMapping("/sprints/{sprintId}/complete")
-    public SprintResponseDto completeSprint(@PathVariable("sprintId") UUID sprintId,
-                                            @RequestBody(required = false) CompleteSprintRequestDto dto,
-                                            @AuthenticationPrincipal UUID callerId) {
-        return sprintService.completeSprint(sprintId, dto, callerId);
-    }
-
     @DeleteMapping("/sprints/{sprintId}")
     public ResponseEntity<Void> deleteSprint(@PathVariable("sprintId") UUID sprintId,
                                              @AuthenticationPrincipal UUID callerId) {

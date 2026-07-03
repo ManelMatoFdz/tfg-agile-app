@@ -7,14 +7,15 @@ import type { PokerSession, DeckType, SessionStatus, ParticipantRole } from '../
 import CreateSessionModal from '../../../components/poker/CreateSessionModal';
 import JoinSessionModal from '../../../components/poker/JoinSessionModal';
 import Alert from '../../../components/ui/Alert';
+import PageTitle from '../../../components/motion/PageTitle';
 import { useAuthStore } from '../../../store/authStore';
 import { useProjectMember } from '../../../hooks/useProjectMember';
 
 const STATUS_STYLE: Record<SessionStatus, { color: string; bg: string }> = {
-  LOBBY:    { color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
-  VOTING:   { color: '#f59e0b', bg: 'rgba(245,158,11,0.1)' },
-  REVEALED: { color: '#7c3aed', bg: 'rgba(124,58,237,0.1)' },
-  CLOSED:   { color: '#9ca3af', bg: 'rgba(156,163,175,0.1)' },
+  LOBBY:    { color: '#2563EB', bg: 'rgba(37,99,235,0.08)' },
+  VOTING:   { color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
+  REVEALED: { color: '#8B5CF6', bg: 'rgba(139,92,246,0.08)' },
+  CLOSED:   { color: '#94A3B8', bg: '#EDF0F4' },
 };
 
 export default function PokerPage() {
@@ -55,7 +56,6 @@ export default function PokerPage() {
     }
     const myParticipant = session.participants.find((p) => p.userId === user?.id);
     if (myParticipant) {
-      // Already registered — reconnect silently if disconnected, then go to room
       if (!myParticipant.connected) {
         try {
           await pokerApi.joinSession(session.id, {
@@ -67,7 +67,6 @@ export default function PokerPage() {
       goToRoom(session.id);
       return;
     }
-    // No scrum role → auto-join as OBSERVER and navigate
     if (member?.scrumRole == null) {
       const displayName = user?.fullName || user?.username || 'Observer';
       try { await pokerApi.joinSession(session.id, { displayName, role: 'OBSERVER' }); }
@@ -75,7 +74,6 @@ export default function PokerPage() {
       goToRoom(session.id);
       return;
     }
-    // Has scrum role → show join modal
     setPendingSession(session);
   };
 
@@ -88,27 +86,25 @@ export default function PokerPage() {
   const activeSessions = sessions.filter((s) => s.status !== 'CLOSED');
   const closedSessions = sessions.filter((s) => s.status === 'CLOSED');
 
-  const sectionLabel: React.CSSProperties = {
-    fontSize: 10,
-    fontWeight: 700,
-    letterSpacing: '0.06em',
-    textTransform: 'uppercase',
-    color: 'var(--text-faint)',
-    marginBottom: 8,
-  };
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <style>{`
+        .poker-grid{display:grid;gap:16px;grid-template-columns:1fr}
+        @media(min-width:640px){.poker-grid{grid-template-columns:1fr 1fr}}
+        @media(min-width:1024px){.poker-grid{grid-template-columns:1fr 1fr 1fr}}
+        .poker-session-card{transition:border-color 0.15s,box-shadow 0.15s,transform 0.15s}
+        .poker-session-card:hover{border-color:#2563EB;box-shadow:0 4px 12px rgba(37,99,235,0.08);transform:translateY(-1px)}
+      `}</style>
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+          <PageTitle as="h2" style={{ fontSize: 22, fontWeight: 700, color: '#1E293B', letterSpacing: '-0.02em' }}>
             {t('poker.title')}
-          </h2>
+          </PageTitle>
           {sessions.length > 0 && (
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: '#64748B' }}>
               {sessions.length} {sessions.length === 1 ? t('poker.session') : t('poker.sessions')}
             </p>
           )}
@@ -116,16 +112,17 @@ export default function PokerPage() {
         <button
           onClick={() => setShowCreate(true)}
           style={{
-            display: 'flex', alignItems: 'center', gap: 5,
-            padding: '5px 10px', fontSize: 12, fontWeight: 500,
-            background: 'var(--accent)', color: '#fff',
-            border: 'none', borderRadius: 'var(--radius-md)',
-            cursor: 'pointer', transition: `background var(--duration)`,
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '8px 16px', fontSize: 13, fontWeight: 600,
+            background: '#2563EB', color: '#FFFFFF',
+            border: 'none', borderRadius: 8,
+            cursor: 'pointer', transition: 'background 0.15s',
+            boxShadow: '0 1px 3px rgba(37,99,235,0.2)',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-hover)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--accent)')}
+          onMouseEnter={(e) => (e.currentTarget.style.background = '#1D4ED8')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = '#2563EB')}
         >
-          <Plus size={12} strokeWidth={2.5} />
+          <Plus size={14} strokeWidth={2.5} />
           {t('poker.newSession')}
         </button>
       </div>
@@ -133,9 +130,9 @@ export default function PokerPage() {
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
           <div style={{
-            width: 24, height: 24,
-            border: '2px solid var(--border)',
-            borderTopColor: 'var(--accent)',
+            width: 28, height: 28,
+            border: '3px solid #E2E8F0',
+            borderTopColor: '#2563EB',
             borderRadius: '50%',
             animation: 'spin 0.7s linear infinite',
           }} />
@@ -143,66 +140,77 @@ export default function PokerPage() {
       ) : sessions.length === 0 ? (
         <div style={{
           textAlign: 'center',
-          padding: '60px 24px',
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-lg)',
+          padding: '64px 24px',
+          background: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: 12,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
         }}>
           <div style={{
-            width: 44, height: 44,
-            background: 'var(--accent-muted)',
-            borderRadius: 'var(--radius-md)',
+            width: 56, height: 56,
+            background: 'rgba(37,99,235,0.08)',
+            borderRadius: 12,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 12px',
+            margin: '0 auto 16px',
           }}>
-            <Zap size={20} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+            <Zap size={24} strokeWidth={1.5} style={{ color: '#2563EB' }} />
           </div>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>{t('poker.noSessions')}</p>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>{t('poker.noSessionsSubtitle')}</p>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#1E293B' }}>{t('poker.noSessions')}</p>
+          <p style={{ margin: '6px 0 0', fontSize: 13, color: '#94A3B8' }}>{t('poker.noSessionsSubtitle')}</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
           {activeSessions.length > 0 && (
             <div>
-              <p style={sectionLabel}>{t('poker.activeSessions')}</p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <p style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: '#64748B',
+                marginBottom: 12,
+              }}>
+                {t('poker.activeSessions')}
+              </p>
+              <div className="poker-grid">
                 {activeSessions.map((session) => {
                   const statusStyle = STATUS_STYLE[session.status];
                   return (
                     <button
                       key={session.id}
                       onClick={() => handleClick(session)}
+                      className="poker-session-card"
                       style={{
                         width: '100%',
                         textAlign: 'left',
-                        background: 'var(--bg-elevated)',
-                        border: '1px solid var(--border)',
-                        borderRadius: 'var(--radius-md)',
-                        padding: '14px 16px',
+                        background: '#FFFFFF',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: 12,
+                        padding: '18px 20px',
                         cursor: 'pointer',
-                        transition: `border-color var(--duration), background var(--duration)`,
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                        fontFamily: 'inherit',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--bg-hover)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-elevated)'; }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                        <h4 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
+                        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {session.name}
                         </h4>
                         <span style={{
-                          fontSize: 10, fontWeight: 600,
+                          fontSize: 11, fontWeight: 600,
                           color: statusStyle.color, background: statusStyle.bg,
-                          borderRadius: 'var(--radius-sm)', padding: '2px 7px',
-                          flexShrink: 0, letterSpacing: '0.03em',
+                          borderRadius: 999, padding: '3px 10px',
+                          flexShrink: 0,
                         }}>
                           {t(`poker.status.${session.status}`)}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 11, color: 'var(--text-faint)' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                          <Users size={11} strokeWidth={2} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#94A3B8' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Users size={13} strokeWidth={2} />
                           {session.participants.filter((p) => p.connected).length}
                         </span>
+                        <span style={{ width: 1, height: 12, background: '#E2E8F0' }} />
                         <span>{t(`poker.decks.${session.deck}`)}</span>
                       </div>
                     </button>
@@ -214,39 +222,47 @@ export default function PokerPage() {
 
           {closedSessions.length > 0 && (
             <div>
-              <p style={sectionLabel}>{t('poker.closedSessions')}</p>
-              <div className="grid gap-3 sm:grid-cols-2">
+              <p style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                color: '#94A3B8',
+                marginBottom: 12,
+              }}>
+                {t('poker.closedSessions')}
+              </p>
+              <div className="poker-grid">
                 {closedSessions.map((session) => (
                   <button
                     key={session.id}
                     onClick={() => handleClick(session)}
+                    className="poker-session-card"
                     style={{
                       width: '100%',
                       textAlign: 'left',
-                      background: 'var(--bg-elevated)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 'var(--radius-md)',
-                      padding: '14px 16px',
+                      background: '#FFFFFF',
+                      border: '1px solid #E2E8F0',
+                      borderRadius: 12,
+                      padding: '18px 20px',
                       cursor: 'pointer',
                       opacity: 0.7,
-                      transition: `opacity var(--duration)`,
+                      fontFamily: 'inherit',
                     }}
-                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                    onMouseLeave={(e) => (e.currentTarget.style.opacity = '0.7')}
                   >
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-                      <h4 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
+                      <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {session.name}
                       </h4>
                       <span style={{
-                        fontSize: 10, fontWeight: 600, color: '#9ca3af',
-                        background: 'rgba(156,163,175,0.1)',
-                        borderRadius: 'var(--radius-sm)', padding: '2px 7px', flexShrink: 0,
+                        fontSize: 11, fontWeight: 600, color: '#94A3B8',
+                        background: '#EDF0F4',
+                        borderRadius: 999, padding: '3px 10px', flexShrink: 0,
                       }}>
                         {t('poker.status.CLOSED')}
                       </span>
                     </div>
-                    <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)' }}>
+                    <p style={{ margin: 0, fontSize: 12, color: '#94A3B8' }}>
                       {t(`poker.decks.${session.deck}`)} · {session.participants.length} {t('poker.room.participants').toLowerCase()}
                     </p>
                   </button>

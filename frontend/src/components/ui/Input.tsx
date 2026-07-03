@@ -3,60 +3,82 @@ import { useState, type InputHTMLAttributes } from 'react';
 interface Props extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  hint?: string;
   icon?: React.ReactNode;
 }
 
-export default function Input({ label, error, icon, id, className = '', onFocus, onBlur, ...rest }: Props) {
+export default function Input({ label, error, hint, icon, id, onFocus, onBlur, style, ...rest }: Props) {
   const inputId = id ?? (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
   const [focused, setFocused] = useState(false);
 
   return (
-    <div className="space-y-1.5">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
       {label && (
         <label
           htmlFor={inputId}
-          className={`block text-sm font-medium transition-colors duration-200 ${
-            focused ? 'text-primary-600' : 'text-gray-600'
-          }`}
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: 'var(--text)',
+            letterSpacing: '-0.01em',
+          }}
         >
           {label}
         </label>
       )}
-      <div className="relative group">
+      <div style={{ position: 'relative' }}>
         {icon && (
-          <div className={`absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors duration-200 ${
-            focused ? 'text-primary-500' : 'text-gray-400'
-          }`}>
+          <div style={{
+            position: 'absolute',
+            left: 12,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            color: focused ? 'var(--accent)' : 'var(--text-faint)',
+            transition: 'color var(--duration) var(--ease-in-out)',
+            display: 'flex',
+            alignItems: 'center',
+          }}>
             {icon}
           </div>
         )}
         <input
           id={inputId}
-          className={`
-            block w-full rounded-lg border bg-white
-            ${icon ? 'pl-11' : 'px-3.5'} py-2.5
-            text-sm placeholder:text-gray-400
-            transition-all duration-150
-            focus:border-primary-500 focus:ring-2 focus:ring-primary-500/15 focus:outline-none
-            hover:border-gray-300
-            disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400
-            ${error
-              ? 'border-red-300 focus:border-red-400 focus:ring-red-500/15'
-              : 'border-gray-200'
-            }
-            ${className}
-          `}
-          onFocus={(e) => { setFocused(true); onFocus?.(e); }}
-          onBlur={(e) => { setFocused(false); onBlur?.(e); }}
+          style={{
+            display: 'block',
+            width: '100%',
+            padding: icon ? '10px 12px 10px 40px' : '10px 14px',
+            fontSize: 14,
+            fontFamily: 'var(--font-sans)',
+            color: 'var(--text)',
+            background: 'var(--bg-elevated)',
+            border: `1px solid ${error ? 'var(--danger)' : focused ? 'var(--accent)' : 'var(--border)'}`,
+            borderRadius: 'var(--radius-md)',
+            outline: 'none',
+            transition: 'border-color var(--duration) var(--ease-in-out), box-shadow var(--duration) var(--ease-in-out)',
+            boxSizing: 'border-box',
+            boxShadow: focused ? '0 0 0 3px var(--accent-muted)' : 'var(--shadow-sm)',
+            ...style,
+          }}
+          onFocus={e => { setFocused(true); onFocus?.(e); }}
+          onBlur={e => { setFocused(false); onBlur?.(e); }}
           {...rest}
         />
       </div>
       {error && (
-        <p className="text-xs text-red-500 animate-slide-up flex items-center gap-1">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+        <p style={{
+          margin: 0,
+          fontSize: 12,
+          color: 'var(--danger)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 4,
+        }}>
           {error}
+        </p>
+      )}
+      {hint && !error && (
+        <p style={{ margin: 0, fontSize: 12, color: 'var(--text-faint)' }}>
+          {hint}
         </p>
       )}
     </div>

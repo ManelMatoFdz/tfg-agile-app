@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { X, CheckCircle2, AlertCircle, Info } from 'lucide-react';
 
 interface Props {
   type: 'error' | 'success' | 'info';
@@ -6,33 +7,15 @@ interface Props {
   onClose?: () => void;
 }
 
-const config = {
-  error: {
-    bg: 'bg-red-50/80 backdrop-blur-sm',
-    border: 'border-red-200/60',
-    text: 'text-red-700',
-    icon: 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-    iconBg: 'bg-red-100 text-red-600',
-  },
-  success: {
-    bg: 'bg-emerald-50/80 backdrop-blur-sm',
-    border: 'border-emerald-200/60',
-    text: 'text-emerald-700',
-    icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
-    iconBg: 'bg-emerald-100 text-emerald-600',
-  },
-  info: {
-    bg: 'bg-primary-50/80 backdrop-blur-sm',
-    border: 'border-primary-200/60',
-    text: 'text-primary-700',
-    icon: 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
-    iconBg: 'bg-primary-100 text-primary-600',
-  },
+const palette = {
+  error:   { color: 'var(--danger)',  bg: 'var(--danger-bg)',  border: 'var(--danger)',  Icon: AlertCircle },
+  success: { color: 'var(--success)', bg: 'var(--success-bg)', border: 'var(--success)', Icon: CheckCircle2 },
+  info:    { color: 'var(--info)',    bg: 'var(--info-bg)',    border: 'var(--info)',    Icon: Info },
 };
 
 export default function Alert({ type, message, onClose }: Props) {
   const [visible, setVisible] = useState(false);
-  const c = config[type];
+  const c = palette[type];
 
   useEffect(() => {
     requestAnimationFrame(() => setVisible(true));
@@ -40,27 +23,44 @@ export default function Alert({ type, message, onClose }: Props) {
 
   return (
     <div
-      className={`
-        flex items-center gap-3 rounded-xl border px-4 py-3 text-sm
-        transition-all duration-500 ease-out
-        ${c.bg} ${c.border} ${c.text}
-        ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}
-      `}
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: 10,
+        padding: '12px 16px',
+        fontSize: 13,
+        fontWeight: 500,
+        color: c.color,
+        background: c.bg,
+        border: `1px solid ${c.border}`,
+        borderRadius: 'var(--radius-md)',
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'translateY(0)' : 'translateY(-4px)',
+        transition: 'opacity var(--duration-panel) var(--ease-out), transform var(--duration-panel) var(--ease-out)',
+      }}
     >
-      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${c.iconBg}`}>
-        <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={c.icon} />
-        </svg>
-      </div>
-      <span className="flex-1 font-medium">{message}</span>
+      <c.Icon size={16} strokeWidth={2} style={{ flexShrink: 0, marginTop: 1 }} />
+      <span style={{ flex: 1, lineHeight: 1.5 }}>{message}</span>
       {onClose && (
         <button
           onClick={onClose}
-          className="opacity-50 hover:opacity-100 transition-opacity cursor-pointer p-1 rounded-lg hover:bg-black/5"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 2,
+            background: 'transparent',
+            border: 'none',
+            color: c.color,
+            opacity: 0.6,
+            cursor: 'pointer',
+            borderRadius: 'var(--radius-sm)',
+            flexShrink: 0,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.opacity = '1'; }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = '0.6'; }}
         >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+          <X size={14} strokeWidth={2} />
         </button>
       )}
     </div>

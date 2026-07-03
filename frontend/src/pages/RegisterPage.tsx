@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { User, Mail, Lock, ShieldCheck } from 'lucide-react';
+import { User, Mail, Lock, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import AuthLayout from '../components/auth/AuthLayout';
 import Alert from '../components/ui/Alert';
-import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+import PageTitle from '../components/motion/PageTitle';
 import { authApi } from '../api/auth';
 import { useAuthStore } from '../store/authStore';
 import { useApiAction } from '../hooks/useApiAction';
@@ -12,29 +12,34 @@ import type { AuthResponse } from '../types';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '0.5625rem 0.625rem 0.5625rem 2.125rem',
-  fontSize: '0.8125rem',
+  padding: '10px 12px 10px 38px',
+  fontSize: 14,
   background: 'var(--bg)',
   border: '1px solid var(--border)',
   borderRadius: 'var(--radius-md)',
   color: 'var(--text)',
-  fontFamily: 'inherit',
+  fontFamily: 'var(--font-sans)',
   outline: 'none',
   boxSizing: 'border-box',
-  transition: `border-color var(--duration)`,
+  transition: 'border-color 0.15s ease',
+};
+
+const inputStyleWithEye: React.CSSProperties = {
+  ...inputStyle,
+  paddingRight: 40,
 };
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
-  fontSize: '0.75rem',
+  fontSize: 13,
   fontWeight: 500,
-  color: 'var(--text-muted)',
-  marginBottom: '0.3125rem',
+  color: 'var(--text)',
+  marginBottom: 6,
 };
 
 const iconWrap: React.CSSProperties = {
   position: 'absolute',
-  left: '0.625rem',
+  left: 12,
   top: '50%',
   transform: 'translateY(-50%)',
   color: 'var(--text-faint)',
@@ -43,44 +48,7 @@ const iconWrap: React.CSSProperties = {
   alignItems: 'center',
 };
 
-function FieldInput({
-  label,
-  type = 'text',
-  placeholder,
-  value,
-  onChange,
-  required,
-  icon,
-}: {
-  label: string;
-  type?: string;
-  placeholder?: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  required?: boolean;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label style={labelStyle}>{label}</label>
-      <div style={{ position: 'relative' }}>
-        <span style={iconWrap}>{icon}</span>
-        <input
-          type={type}
-          placeholder={placeholder}
-          value={value}
-          onChange={onChange}
-          required={required}
-          onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
-          onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
-          style={inputStyle}
-        />
-      </div>
-    </div>
-  );
-}
-
-const STRENGTH_COLORS = ['#f87171', '#fbbf24', 'var(--accent)', '#34d399'];
+const STRENGTH_COLORS = ['var(--danger)', 'var(--ochre)', 'var(--accent)', 'var(--success)'];
 
 export default function RegisterPage() {
   const { t } = useTranslation();
@@ -92,6 +60,8 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [validationError, setValidationError] = useState('');
 
   const handleSubmit = async (e: FormEvent) => {
@@ -114,14 +84,37 @@ export default function RegisterPage() {
     }
   };
 
+  const eyeButton = (show: boolean, toggle: () => void) => (
+    <button
+      type="button"
+      onClick={toggle}
+      style={{
+        position: 'absolute',
+        right: 10,
+        top: '50%',
+        transform: 'translateY(-50%)',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        color: 'var(--text-faint)',
+        padding: 2,
+        display: 'flex',
+        alignItems: 'center',
+      }}
+    >
+      {show ? <EyeOff size={16} strokeWidth={1.8} /> : <Eye size={16} strokeWidth={1.8} />}
+    </button>
+  );
+
   return (
     <AuthLayout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* Header */}
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+          <PageTitle as="h2" style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
             {t('auth.register.title')}
-          </h2>
-          <p style={{ margin: '0.375rem 0 0', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+          </PageTitle>
+          <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5 }}>
             {t('auth.register.subtitle')}
           </p>
         </div>
@@ -134,46 +127,65 @@ export default function RegisterPage() {
           />
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-          <FieldInput
-            label={t('auth.register.username')}
-            placeholder={t('auth.register.usernamePlaceholder')}
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            icon={<User size={14} strokeWidth={1.8} />}
-          />
-          <FieldInput
-            label={t('auth.register.email')}
-            type="email"
-            placeholder={t('auth.register.emailPlaceholder')}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            icon={<Mail size={14} strokeWidth={1.8} />}
-          />
-          <FieldInput
-            label={t('auth.register.password')}
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            icon={<Lock size={14} strokeWidth={1.8} />}
-          />
-          <FieldInput
-            label={t('auth.register.confirmPassword')}
-            type="password"
-            placeholder="••••••••"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            required
-            icon={<ShieldCheck size={14} strokeWidth={1.8} />}
-          />
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Username */}
+          <div>
+            <label style={labelStyle}>{t('auth.register.username')}</label>
+            <div style={{ position: 'relative' }}>
+              <span style={iconWrap}><User size={16} strokeWidth={1.8} /></span>
+              <input
+                type="text"
+                placeholder={t('auth.register.usernamePlaceholder')}
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          {/* Email */}
+          <div>
+            <label style={labelStyle}>{t('auth.register.email')}</label>
+            <div style={{ position: 'relative' }}>
+              <span style={iconWrap}><Mail size={16} strokeWidth={1.8} /></span>
+              <input
+                type="email"
+                placeholder={t('auth.register.emailPlaceholder')}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          {/* Password */}
+          <div>
+            <label style={labelStyle}>{t('auth.register.password')}</label>
+            <div style={{ position: 'relative' }}>
+              <span style={iconWrap}><Lock size={16} strokeWidth={1.8} /></span>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="--------"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+                style={inputStyleWithEye}
+              />
+              {eyeButton(showPassword, () => setShowPassword(!showPassword))}
+            </div>
+          </div>
 
           {/* Password strength */}
           {password.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: -8 }}>
               <div style={{ display: 'flex', gap: 4 }}>
                 {[1, 2, 3, 4].map((level) => (
                   <div
@@ -200,13 +212,33 @@ export default function RegisterPage() {
             </div>
           )}
 
+          {/* Confirm Password */}
+          <div>
+            <label style={labelStyle}>{t('auth.register.confirmPassword')}</label>
+            <div style={{ position: 'relative' }}>
+              <span style={iconWrap}><ShieldCheck size={16} strokeWidth={1.8} /></span>
+              <input
+                type={showConfirm ? 'text' : 'password'}
+                placeholder="--------"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+                onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--border)')}
+                style={inputStyleWithEye}
+              />
+              {eyeButton(showConfirm, () => setShowConfirm(!showConfirm))}
+            </div>
+          </div>
+
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
             style={{
               width: '100%',
-              padding: '0.6875rem',
-              fontSize: '0.8125rem',
+              padding: 12,
+              fontSize: 14,
               fontWeight: 600,
               background: 'var(--accent)',
               color: '#fff',
@@ -217,16 +249,17 @@ export default function RegisterPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '0.5rem',
-              transition: `background var(--duration)`,
+              gap: 8,
+              transition: 'background 0.15s ease',
+              fontFamily: 'var(--font-sans)',
             }}
             onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = 'var(--accent-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent)'; }}
           >
             {loading && (
               <div style={{
-                width: '0.875rem', height: '0.875rem',
-                border: '0.125rem solid rgba(255,255,255,0.4)',
+                width: 16, height: 16,
+                border: '2px solid rgba(255,255,255,0.4)',
                 borderTopColor: '#fff',
                 borderRadius: '50%',
                 animation: 'spin 0.7s linear infinite',
@@ -236,7 +269,8 @@ export default function RegisterPage() {
           </button>
         </form>
 
-        <p style={{ margin: 0, textAlign: 'center', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+        {/* Login link */}
+        <p style={{ margin: 0, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)' }}>
           {t('auth.register.alreadyHaveAccount')}{' '}
           <Link
             to="/login"
@@ -247,10 +281,6 @@ export default function RegisterPage() {
             {t('auth.register.loginLink')}
           </Link>
         </p>
-
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <LanguageSwitcher compact />
-        </div>
       </div>
     </AuthLayout>
   );

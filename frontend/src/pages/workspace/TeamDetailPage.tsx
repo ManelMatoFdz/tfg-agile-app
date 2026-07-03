@@ -8,6 +8,7 @@ import { useApiAction } from '../../hooks/useApiAction';
 import { useUserMap } from '../../hooks/useUserMap';
 import { useAuthStore } from '../../store/authStore';
 import Alert from '../../components/ui/Alert';
+import PageTitle from '../../components/motion/PageTitle';
 import type { Team, TeamMember, TeamRole, UserSummary } from '../../types';
 
 const inputStyle: React.CSSProperties = {
@@ -37,13 +38,16 @@ const modalBg: React.CSSProperties = {
   position: 'absolute',
   inset: 0,
   backgroundColor: 'var(--bg-overlay)',
+  backdropFilter: 'blur(6px)',
+  WebkitBackdropFilter: 'blur(6px)',
+  animation: 'fade-in 200ms ease both',
 };
 
 const modalCard: React.CSSProperties = {
   position: 'relative',
   background: 'var(--bg-elevated)',
   border: '1px solid var(--border)',
-  borderRadius: 'var(--radius-lg)',
+  borderRadius: 'var(--radius-md)',
   padding: 20,
   width: '100%',
   maxWidth: 360,
@@ -56,7 +60,7 @@ const btnPrimary: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 500,
   background: 'var(--accent)',
-  color: '#fff',
+  color: 'var(--accent-fg)',
   border: 'none',
   borderRadius: 'var(--radius-md)',
   cursor: 'pointer',
@@ -96,7 +100,7 @@ function Avatar({ name, avatarUrl, size = 32 }: { name: string; avatarUrl?: stri
           width: '100%', height: '100%',
           background: 'var(--accent)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontSize: size * 0.38, fontWeight: 700,
+          color: 'var(--accent-fg)', fontSize: size * 0.38, fontWeight: 700,
         }}>
           {name.charAt(0).toUpperCase()}
         </div>
@@ -492,14 +496,14 @@ export default function TeamDetailPage() {
                   background: 'var(--accent)',
                   borderRadius: 'var(--radius-md)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: '#fff', fontSize: 20, fontWeight: 700, flexShrink: 0,
+                  color: 'var(--accent-fg)', fontSize: 20, fontWeight: 700, flexShrink: 0,
                 }}>
                   {team.name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h1 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+                  <PageTitle style={{ fontSize: 24 }}>
                     {team.name}
-                  </h1>
+                  </PageTitle>
                   {team.description && (
                     <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>{team.description}</p>
                   )}
@@ -526,7 +530,7 @@ export default function TeamDetailPage() {
                       cursor: 'pointer',
                       transition: `background var(--duration), color var(--duration)`,
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(234,179,8,0.1)'; e.currentTarget.style.color = '#ca8a04'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--ochre-soft)'; e.currentTarget.style.color = 'var(--ochre)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-faint)'; }}
                   >
                     <LogOut size={14} strokeWidth={2} />
@@ -663,11 +667,11 @@ export default function TeamDetailPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
               <div style={{
                 width: 36, height: 36,
-                background: 'rgba(234,179,8,0.1)',
+                background: 'var(--ochre-soft)',
                 borderRadius: 'var(--radius-md)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
-                <LogOut size={16} strokeWidth={2} style={{ color: '#ca8a04' }} />
+                <LogOut size={16} strokeWidth={2} style={{ color: 'var(--ochre)' }} />
               </div>
               <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
                 {t('teams.detail.confirmLeave.title')}
@@ -695,7 +699,7 @@ export default function TeamDetailPage() {
                 {leaveAction.loading && (
                   <div style={{
                     width: 10, height: 10,
-                    border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff',
+                    border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'var(--accent-fg)',
                     borderRadius: '50%', animation: 'spin 0.7s linear infinite',
                   }} />
                 )}
@@ -752,7 +756,7 @@ export default function TeamDetailPage() {
                 {deleteAction.loading && (
                   <div style={{
                     width: 10, height: 10,
-                    border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff',
+                    border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'var(--accent-fg)',
                     borderRadius: '50%', animation: 'spin 0.7s linear infinite',
                   }} />
                 )}
@@ -846,7 +850,7 @@ export default function TeamDetailPage() {
                 {roleChangeAction.loading && (
                   <div style={{
                     width: 10, height: 10,
-                    border: '2px solid rgba(255,255,255,0.4)', borderTopColor: '#fff',
+                    border: '2px solid rgba(255,255,255,0.4)', borderTopColor: 'var(--accent-fg)',
                     borderRadius: '50%', animation: 'spin 0.7s linear infinite',
                   }} />
                 )}

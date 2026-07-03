@@ -4,22 +4,30 @@ import { useTranslation } from 'react-i18next';
 import { Mail, ArrowLeft, KeyRound } from 'lucide-react';
 import AuthLayout from '../components/auth/AuthLayout';
 import Alert from '../components/ui/Alert';
-import LanguageSwitcher from '../components/ui/LanguageSwitcher';
+import PageTitle from '../components/motion/PageTitle';
 import { authApi } from '../api/auth';
 import { useApiAction } from '../hooks/useApiAction';
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '0.5625rem 0.625rem 0.5625rem 2.125rem',
-  fontSize: '0.8125rem',
+  padding: '10px 12px 10px 38px',
+  fontSize: 14,
   background: 'var(--bg)',
   border: '1px solid var(--border)',
   borderRadius: 'var(--radius-md)',
   color: 'var(--text)',
-  fontFamily: 'inherit',
+  fontFamily: 'var(--font-sans)',
   outline: 'none',
   boxSizing: 'border-box',
-  transition: `border-color var(--duration)`,
+  transition: 'border-color 0.15s ease',
+};
+
+const labelStyle: React.CSSProperties = {
+  display: 'block',
+  fontSize: 13,
+  fontWeight: 500,
+  color: 'var(--text)',
+  marginBottom: 6,
 };
 
 export default function ForgotPasswordPage() {
@@ -33,50 +41,54 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <AuthLayout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+    <AuthLayout variant="centered">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        {/* Icon */}
+        <div style={{
+          width: 48, height: 48,
+          background: 'rgba(37, 99, 235, 0.08)',
+          borderRadius: 'var(--radius-md)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <KeyRound size={24} strokeWidth={1.6} style={{ color: 'var(--accent)' }} />
+        </div>
+
+        {/* Header */}
         <div>
-          {/* Icon */}
-          <div style={{
-            width: '3rem', height: '3rem',
-            background: 'var(--accent-muted)',
-            borderRadius: 'var(--radius-md)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            marginBottom: '1rem',
-          }}>
-            <KeyRound size={22} strokeWidth={1.6} style={{ color: 'var(--accent)' }} />
-          </div>
-          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+          <PageTitle as="h2" style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
             {t('auth.forgotPassword.title')}
-          </h2>
-          <p style={{ margin: '0.375rem 0 0', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+          </PageTitle>
+          <p style={{ margin: '8px 0 0', fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5 }}>
             {t('auth.forgotPassword.subtitle')}
           </p>
         </div>
 
         {error && <Alert type="error" message={error} onClose={reset} />}
+
         {success && (
-          <Alert type="success" message={t('auth.forgotPassword.successMessage')} />
+          <div style={{
+            padding: '14px 16px',
+            background: 'rgba(22, 163, 74, 0.06)',
+            border: '1px solid rgba(22, 163, 74, 0.2)',
+            borderRadius: 'var(--radius-md)',
+            color: 'var(--success)',
+            fontSize: 13,
+            lineHeight: 1.5,
+          }}>
+            {t('auth.forgotPassword.successMessage')}
+          </div>
         )}
 
         {!success && (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div>
-              <label style={{
-                display: 'block',
-                fontSize: '0.75rem',
-                fontWeight: 500,
-                color: 'var(--text-muted)',
-                marginBottom: '0.3125rem',
-              }}>
-                {t('auth.forgotPassword.email')}
-              </label>
+              <label style={labelStyle}>{t('auth.forgotPassword.email')}</label>
               <div style={{ position: 'relative' }}>
                 <span style={{
-                  position: 'absolute', left: '0.625rem', top: '50%', transform: 'translateY(-50%)',
+                  position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)',
                   color: 'var(--text-faint)', pointerEvents: 'none', display: 'flex', alignItems: 'center',
                 }}>
-                  <Mail size={14} strokeWidth={1.8} />
+                  <Mail size={16} strokeWidth={1.8} />
                 </span>
                 <input
                   type="email"
@@ -96,8 +108,8 @@ export default function ForgotPasswordPage() {
               disabled={loading}
               style={{
                 width: '100%',
-                padding: '0.6875rem',
-                fontSize: '0.8125rem',
+                padding: 12,
+                fontSize: 14,
                 fontWeight: 600,
                 background: 'var(--accent)',
                 color: '#fff',
@@ -108,16 +120,17 @@ export default function ForgotPasswordPage() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.5rem',
-                transition: `background var(--duration)`,
+                gap: 8,
+                transition: 'background 0.15s ease',
+                fontFamily: 'var(--font-sans)',
               }}
               onMouseEnter={(e) => { if (!loading) e.currentTarget.style.background = 'var(--accent-hover)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent)'; }}
             >
               {loading && (
                 <div style={{
-                  width: '0.875rem', height: '0.875rem',
-                  border: '0.125rem solid rgba(255,255,255,0.4)',
+                  width: 16, height: 16,
+                  border: '2px solid rgba(255,255,255,0.4)',
                   borderTopColor: '#fff',
                   borderRadius: '50%',
                   animation: 'spin 0.7s linear infinite',
@@ -128,14 +141,15 @@ export default function ForgotPasswordPage() {
           </form>
         )}
 
+        {/* Back to login */}
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <Link
             to="/login"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.3125rem',
-              fontSize: '0.8125rem',
+              gap: 6,
+              fontSize: 13,
               fontWeight: 500,
               color: 'var(--accent)',
               textDecoration: 'none',
@@ -143,13 +157,9 @@ export default function ForgotPasswordPage() {
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
           >
-            <ArrowLeft size={13} strokeWidth={2} />
+            <ArrowLeft size={14} strokeWidth={2} />
             {t('auth.forgotPassword.backToLogin')}
           </Link>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <LanguageSwitcher compact />
         </div>
       </div>
     </AuthLayout>

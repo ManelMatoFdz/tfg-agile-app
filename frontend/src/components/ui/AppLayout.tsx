@@ -1,28 +1,19 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
 import { useEffect, useState } from 'react';
 import { buildAvatarSrc } from '../../utils/avatarUrl';
+import { CheckSquare, User, Bell, LogOut, Zap, Menu, X } from 'lucide-react';
 
-const navItems = [
-  {
-    to: '/my-tasks',
-    label: 'Mis tareas',
-    icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4',
-  },
-  {
-    to: '/profile',
-    label: 'Perfil',
-    icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z',
-  },
-  {
-    to: '/notifications',
-    label: 'Notificaciones',
-    icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
-  },
-];
+const NAV_ITEMS = [
+  { to: '/my-tasks',      i18nKey: 'myTasks',       Icon: CheckSquare },
+  { to: '/profile',       i18nKey: 'profile',        Icon: User        },
+  { to: '/notifications', i18nKey: 'notifications',  Icon: Bell        },
+] as const;
 
 export default function AppLayout() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { user, refreshToken, logout } = useAuthStore();
@@ -47,146 +38,286 @@ export default function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-primary-50/30 relative">
-      {/* Subtle background decorations */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-20%] right-[-10%] w-[37.5rem] h-[37.5rem] bg-primary-100/20 rounded-full blur-[9.375rem]" />
-        <div className="absolute bottom-[-10%] left-[-5%] w-[31.25rem] h-[31.25rem] bg-accent-500/5 rounded-full blur-[7.5rem]" />
-      </div>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
 
-      {/* Navbar */}
-      <nav className="sticky top-0 z-50 glass-card-strong border-b border-white/30 !rounded-none !shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link to="/profile" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-accent-600 rounded-xl flex items-center justify-center shadow-lg shadow-primary-500/25 group-hover:shadow-xl group-hover:shadow-primary-500/35 transition-all duration-300 group-hover:scale-105">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </div>
-              <span className="text-lg font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent hidden sm:block">
-                Agile App
-              </span>
-            </Link>
+      <nav style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        background: 'var(--bg-elevated)',
+        borderBottom: '1px solid var(--border)',
+      }}>
+        <div style={{
+          maxWidth: 1120,
+          margin: '0 auto',
+          padding: '0 24px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          height: 56,
+        }}>
 
-            {/* Desktop nav */}
-            <div className="hidden md:flex items-center gap-1 bg-gray-100/50 backdrop-blur-sm rounded-xl p-1">
-              {navItems.map((item) => {
-                const active = location.pathname === item.to;
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    className={`
-                      flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                      transition-all duration-300
-                      ${active
-                        ? 'bg-white text-primary-700 shadow-sm shadow-primary-500/10'
-                        : 'text-gray-500 hover:text-gray-700'
-                      }
-                    `}
-                  >
-                    <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                    </svg>
-                    {item.label}
-                  </Link>
-                );
-              })}
+          <Link
+            to="/profile"
+            style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}
+          >
+            <div style={{
+              width: 32,
+              height: 32,
+              background: 'var(--accent)',
+              borderRadius: 'var(--radius-md)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <Zap size={15} color="white" strokeWidth={2.5} fill="white" />
+            </div>
+            <span style={{
+              fontSize: 14,
+              fontWeight: 700,
+              color: 'var(--text)',
+              letterSpacing: '-0.02em',
+            }}>
+              Agile App
+            </span>
+          </Link>
+
+          <div className="app-desktop-nav" style={{
+            display: 'none',
+            alignItems: 'center',
+            gap: 2,
+            background: 'var(--bg-sunken)',
+            borderRadius: 'var(--radius-md)',
+            padding: 3,
+          }}>
+            {NAV_ITEMS.map((item) => {
+              const active = location.pathname === item.to;
+              return (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 14px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: 13,
+                    fontWeight: active ? 600 : 500,
+                    color: active ? 'var(--text)' : 'var(--text-muted)',
+                    background: active ? 'var(--bg-elevated)' : 'transparent',
+                    textDecoration: 'none',
+                    transition: `background var(--duration-micro) var(--ease-micro), color var(--duration-micro) var(--ease-micro)`,
+                  }}
+                  onMouseEnter={e => {
+                    if (!active) e.currentTarget.style.color = 'var(--text)';
+                  }}
+                  onMouseLeave={e => {
+                    if (!active) e.currentTarget.style.color = 'var(--text-muted)';
+                  }}
+                >
+                  <item.Icon size={14} strokeWidth={active ? 2.25 : 1.75} />
+                  {t(`workspace.nav.${item.i18nKey}`)}
+                </Link>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+
+            <div className="app-desktop-user" style={{ display: 'none', textAlign: 'right' }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+                {user?.fullName || user?.username}
+              </p>
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)' }}>
+                {user?.email}
+              </p>
             </div>
 
-            {/* User section */}
-            <div className="flex items-center gap-3">
-              <div className="hidden sm:block text-right">
-                <p className="text-sm font-semibold text-gray-900">{user?.fullName || user?.username}</p>
-                <p className="text-xs text-gray-400">{user?.email}</p>
-              </div>
-
-              {/* Avatar with ring */}
-              <div className="relative group">
-                {avatarSrc && !avatarLoadError ? (
-                  <img
-                    src={avatarSrc}
-                    alt=""
-                    className="w-10 h-10 rounded-xl object-cover ring-2 ring-white shadow-md transition-transform duration-300 group-hover:scale-105"
-                    onError={() => setAvatarLoadError(true)}
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-400 to-accent-500 flex items-center justify-center text-white text-sm font-bold ring-2 ring-white shadow-md transition-transform duration-300 group-hover:scale-105">
-                    {user?.username?.charAt(0).toUpperCase() ?? '?'}
-                  </div>
-                )}
-                {/* Online indicator */}
-                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-400 border-2 border-white rounded-full" />
-              </div>
-
-              {/* Logout */}
-              <button
-                onClick={handleLogout}
-                disabled={loggingOut}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm text-gray-400 hover:text-red-500 hover:bg-red-50/80 transition-all duration-300 cursor-pointer group"
-              >
-                <svg className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                <span className="hidden lg:inline">Salir</span>
-              </button>
-
-              {/* Mobile menu button */}
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="md:hidden p-2 rounded-xl text-gray-500 hover:bg-gray-100/80 cursor-pointer transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d={mobileMenuOpen ? 'M6 18L18 6M6 6l12 12' : 'M4 6h16M4 12h16M4 18h16'}
-                  />
-                </svg>
-              </button>
+            <div style={{ position: 'relative' }}>
+              {avatarSrc && !avatarLoadError ? (
+                <img
+                  src={avatarSrc}
+                  alt=""
+                  onError={() => setAvatarLoadError(true)}
+                  style={{
+                    width: 34,
+                    height: 34,
+                    borderRadius: 'var(--radius-md)',
+                    objectFit: 'cover',
+                    border: '1px solid var(--border)',
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--accent)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'white',
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}>
+                  {user?.username?.charAt(0).toUpperCase() ?? '?'}
+                </div>
+              )}
+              <div style={{
+                position: 'absolute',
+                bottom: -1,
+                right: -1,
+                width: 10,
+                height: 10,
+                background: 'var(--success)',
+                border: '2px solid var(--bg-elevated)',
+                borderRadius: 'var(--radius-pill)',
+              }} />
             </div>
+
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="app-desktop-logout"
+              style={{
+                display: 'none',
+                alignItems: 'center',
+                gap: 6,
+                padding: '6px 12px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: 13,
+                fontWeight: 500,
+                color: 'var(--text-faint)',
+                background: 'transparent',
+                border: 'none',
+                cursor: loggingOut ? 'not-allowed' : 'pointer',
+                opacity: loggingOut ? 0.5 : 1,
+                fontFamily: 'var(--font-sans)',
+                transition: `color var(--duration-micro) var(--ease-micro), background var(--duration-micro) var(--ease-micro)`,
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = 'var(--danger)';
+                e.currentTarget.style.background = 'var(--danger-bg)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = 'var(--text-faint)';
+                e.currentTarget.style.background = 'transparent';
+              }}
+            >
+              <LogOut size={14} strokeWidth={1.75} />
+              {t('workspace.nav.logout')}
+            </button>
+
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="app-mobile-menu-btn"
+              style={{
+                display: 'flex',
+                padding: 8,
+                borderRadius: 'var(--radius-md)',
+                color: 'var(--text-muted)',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                transition: `background var(--duration-micro) var(--ease-micro)`,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
           </div>
         </div>
 
-        {/* Mobile menu with animation */}
-        <div className={`md:hidden overflow-hidden transition-all duration-300 ease-out ${
-          mobileMenuOpen ? 'max-h-60 opacity-100' : 'max-h-0 opacity-0'
-        }`}>
-          <div className="border-t border-gray-100/50 bg-white/60 backdrop-blur-xl px-4 py-3 space-y-1">
-            {navItems.map((item) => {
+        <div
+          className="app-mobile-menu"
+          style={{
+            overflow: 'hidden',
+            maxHeight: mobileMenuOpen ? 240 : 0,
+            opacity: mobileMenuOpen ? 1 : 0,
+            transition: `max-height var(--duration-panel) var(--ease-dramatic), opacity var(--duration-panel) var(--ease-micro)`,
+          }}
+        >
+          <div style={{
+            borderTop: '1px solid var(--border)',
+            padding: '12px 16px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+          }}>
+            {NAV_ITEMS.map((item) => {
               const active = location.pathname === item.to;
               return (
                 <Link
                   key={item.to}
                   to={item.to}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`
-                    flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-200
-                    ${active ? 'bg-primary-50/80 text-primary-700' : 'text-gray-600 hover:bg-gray-50'}
-                  `}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '8px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: 13,
+                    fontWeight: active ? 600 : 500,
+                    color: active ? 'var(--accent)' : 'var(--text-muted)',
+                    background: active ? 'var(--accent-muted)' : 'transparent',
+                    textDecoration: 'none',
+                    transition: `background var(--duration-micro) var(--ease-micro)`,
+                  }}
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
-                  </svg>
-                  {item.label}
+                  <item.Icon size={16} strokeWidth={active ? 2.25 : 1.75} />
+                  {t(`workspace.nav.${item.i18nKey}`)}
                 </Link>
               );
             })}
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50/80 transition-all cursor-pointer"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                width: '100%',
+                padding: '8px 14px',
+                borderRadius: 'var(--radius-md)',
+                fontSize: 13,
+                fontWeight: 500,
+                color: 'var(--danger)',
+                background: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontFamily: 'var(--font-sans)',
+                transition: `background var(--duration-micro) var(--ease-micro)`,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--danger-bg)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Cerrar sesión
+              <LogOut size={16} strokeWidth={1.75} />
+              {t('workspace.nav.logout')}
             </button>
           </div>
         </div>
       </nav>
 
-      {/* Content */}
-      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+      <style>{`
+        @media (min-width:768px){
+          .app-desktop-nav{display:flex!important}
+          .app-desktop-user{display:block!important}
+          .app-desktop-logout{display:flex!important}
+          .app-mobile-menu-btn{display:none!important}
+          .app-mobile-menu{display:none!important}
+        }
+      `}</style>
+
+      <main style={{
+        position: 'relative',
+        zIndex: 10,
+        maxWidth: 1120,
+        margin: '0 auto',
+        padding: '32px 24px',
+      }}>
         <Outlet />
       </main>
     </div>

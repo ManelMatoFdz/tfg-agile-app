@@ -82,7 +82,8 @@
       }
     },
     "layout": {
-      "description": "Manage your projects with agile methodologies. Collaborate with your team efficiently and visually."
+      "headline": "Master Your Workflow with AgileFlow",
+      "description": "The all-in-one platform to plan, track, and deliver high-quality projects with speed and precision."
     }
   },
   "workspace": {
@@ -114,7 +115,10 @@
       "settings": "Settings",
       "profile": "Profile",
       "notifications": "Notifications",
-      "logout": "Sign out"
+      "logout": "Sign out",
+      "myTasks": "My Tasks",
+      "lightMode": "Light mode",
+      "darkMode": "Dark mode"
     },
     "dashboard": {
       "title": "Projects",
@@ -460,6 +464,7 @@
       "activate": "Activate",
       "activateConfirm": "Activate this sprint?",
       "activateError": "Error activating the sprint.",
+      "activateEndDateRequired": "You must set an end date before activating the sprint.",
       "complete": "Complete",
       "completeConfirm": "Complete? Unfinished tasks will return to the backlog.",
       "completeError": "Error completing the sprint.",

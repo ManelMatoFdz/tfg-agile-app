@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { CheckCircle2, Bell, ChevronLeft, ChevronRight } from 'lucide-react';
 import Alert from '../components/ui/Alert';
+import PageTitle from '../components/motion/PageTitle';
 import { notificationsApi } from '../api/notifications';
 import { invitationsApi } from '../api/invitations';
 import { useApiAction } from '../hooks/useApiAction';
@@ -36,18 +37,18 @@ function timeAgo(dateStr: string, t: TFunction): string {
 const typeConfig: Record<string, { iconPath: string; color: string; bg: string }> = {
   PROJECT_UPDATE: {
     iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
-    color: '#3b82f6',
-    bg: 'rgba(59,130,246,0.1)',
+    color: 'var(--ink-blue)',
+    bg: 'var(--ink-blue-soft)',
   },
   TASK_REMINDER: {
     iconPath: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
-    color: '#f59e0b',
-    bg: 'rgba(245,158,11,0.1)',
+    color: 'var(--ochre)',
+    bg: 'var(--ochre-soft)',
   },
   WORKSPACE_INVITATION: {
     iconPath: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
-    color: '#22c55e',
-    bg: 'rgba(34,197,94,0.1)',
+    color: 'var(--success)',
+    bg: 'var(--success-bg)',
   },
   DEFAULT: {
     iconPath: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
@@ -135,12 +136,12 @@ export default function NotificationsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      {/* Header */}
+      <style>{`.notif-mark-label{display:none}@media(min-width:640px){.notif-mark-label{display:inline}}`}</style>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ margin: 0, fontSize: '0.875rem', fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+          <PageTitle>
             {t('notifications.title')}
-          </h1>
+          </PageTitle>
           <p style={{ margin: '0.125rem 0 0', fontSize: '0.75rem', color: 'var(--text-faint)' }}>
             {t('notifications.subtitle')}
           </p>
@@ -199,7 +200,7 @@ export default function NotificationsPage() {
             ) : (
               <CheckCircle2 size={12} strokeWidth={2} />
             )}
-            <span className="hidden sm:inline">{t('notifications.markAll')}</span>
+            <span className="notif-mark-label">{t('notifications.markAll')}</span>
           </button>
         </div>
       </div>
@@ -334,7 +335,7 @@ export default function NotificationsPage() {
                             onClick={() => handleInvitationAction(n.id, invitationId!, 'accept')}
                             style={{
                               padding: '0.25rem 0.625rem', fontSize: '0.6875rem', fontWeight: 500,
-                              color: '#fff', background: '#22c55e',
+                              color: 'var(--accent-fg)', background: 'var(--success)',
                               border: 'none', borderRadius: 'var(--radius-sm)',
                               cursor: isActing ? 'not-allowed' : 'pointer',
                               opacity: isActing ? 0.5 : 1,
@@ -419,7 +420,7 @@ export default function NotificationsPage() {
                   borderRadius: 'var(--radius-sm)',
                   border: 'none',
                   background: i === page ? 'var(--accent)' : 'transparent',
-                  color: i === page ? '#fff' : 'var(--text-muted)',
+                  color: i === page ? 'var(--accent-fg)' : 'var(--text-muted)',
                   cursor: 'pointer',
                   transition: `background var(--duration), color var(--duration)`,
                 }}

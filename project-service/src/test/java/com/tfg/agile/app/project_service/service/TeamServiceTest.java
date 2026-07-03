@@ -463,6 +463,7 @@ class TeamServiceTest {
         when(teamRepository.findById(team.getId())).thenReturn(Optional.of(team));
         when(teamMemberRepository.findByTeamIdAndUserId(team.getId(), callerId)).thenReturn(Optional.of(callerMember));
         when(teamMemberRepository.findByTeamIdAndUserId(team.getId(), targetUser)).thenReturn(Optional.of(target));
+        when(teamMemberRepository.findByTeamId(team.getId())).thenReturn(List.of(callerMember, target));
         when(teamMemberRepository.save(target)).thenReturn(target);
 
         var result = service.updateMemberRole(team.getId(), targetUser, new UpdateTeamMemberRoleRequestDto(TeamRole.MEMBER), callerId);

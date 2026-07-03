@@ -7,21 +7,50 @@ export default function LanguageSwitcher({ compact = false }: { compact?: boolea
   const current = i18n.language?.split('-')[0] ?? 'es';
 
   return (
-    <div className="flex items-center gap-1">
-      {LANGS.map((lang) => (
-        <button
-          key={lang}
-          onClick={() => i18n.changeLanguage(lang)}
-          className={`px-2 py-1 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer ${
-            current === lang
-              ? 'bg-primary-100 text-primary-700'
-              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-          }`}
-          title={t(`lang.${lang}`)}
-        >
-          {compact ? lang.toUpperCase() : t(`lang.${lang}`)}
-        </button>
-      ))}
+    <div style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 2,
+      padding: 3,
+      background: 'var(--bg)',
+      borderRadius: 'var(--radius-md)',
+      border: '1px solid var(--border)',
+    }}>
+      {LANGS.map((lang) => {
+        const active = current === lang;
+        return (
+          <button
+            key={lang}
+            onClick={() => i18n.changeLanguage(lang)}
+            title={t(`lang.${lang}`)}
+            style={{
+              padding: '4px 10px',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: 12,
+              fontWeight: active ? 600 : 500,
+              fontFamily: 'var(--font-sans)',
+              border: 'none',
+              cursor: 'pointer',
+              background: active ? 'var(--bg-elevated)' : 'transparent',
+              color: active ? 'var(--accent)' : 'var(--text-faint)',
+              boxShadow: active ? 'var(--shadow-sm)' : 'none',
+              transition: 'background var(--duration) var(--ease-in-out), color var(--duration) var(--ease-in-out)',
+            }}
+            onMouseEnter={e => {
+              if (!active) {
+                e.currentTarget.style.color = 'var(--text)';
+              }
+            }}
+            onMouseLeave={e => {
+              if (!active) {
+                e.currentTarget.style.color = 'var(--text-faint)';
+              }
+            }}
+          >
+            {compact ? lang.toUpperCase() : t(`lang.${lang}`)}
+          </button>
+        );
+      })}
     </div>
   );
 }

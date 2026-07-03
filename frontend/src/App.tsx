@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useLenis } from './hooks/useLenis';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -26,6 +27,8 @@ import WorkspaceLayout from './components/ui/WorkspaceLayout';
 import ProjectLayout from './components/ui/ProjectLayout';
 
 export default function App() {
+  useLenis();
+
   return (
     <BrowserRouter>
       <Routes>
@@ -37,8 +40,9 @@ export default function App() {
 
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
-          {/* Workspace selector (no sidebar) */}
+          {/* Standalone pages (no sidebar) */}
           <Route path="/workspaces" element={<WorkspaceSelectorPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
 
           {/* Workspace routes (with sidebar) */}
           <Route path="/workspaces/:workspaceId" element={<WorkspaceLayout />}>

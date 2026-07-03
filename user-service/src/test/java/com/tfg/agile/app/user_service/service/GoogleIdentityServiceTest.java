@@ -4,7 +4,6 @@ import com.tfg.agile.app.user_service.exception.GoogleLoginNotConfiguredExceptio
 import com.tfg.agile.app.user_service.exception.InvalidGoogleTokenException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.ParameterizedTypeReference;
@@ -25,8 +24,17 @@ class GoogleIdentityServiceTest {
     @Mock
     private RestClient.Builder restClientBuilder;
 
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    @Mock
     private RestClient restClient;
+
+    @Mock
+    private RestClient.RequestHeadersUriSpec requestHeadersUriSpec;
+
+    @Mock
+    private RestClient.RequestHeadersSpec requestHeadersSpec;
+
+    @Mock
+    private RestClient.ResponseSpec responseSpec;
 
     @Test
     void verifyAccessToken_throwsWhenGoogleLoginIsNotConfigured() {
@@ -39,7 +47,8 @@ class GoogleIdentityServiceTest {
     @Test
     void verifyAccessToken_throwsWhenGoogleEndpointFails() {
         configureRestClient();
-        when(restClient.get().uri(anyString()).header(anyString(), anyString()).retrieve().body(any(ParameterizedTypeReference.class)))
+        configureMockChain();
+        when(responseSpec.body(any(ParameterizedTypeReference.class)))
                 .thenThrow(new RestClientException("boom"));
 
         GoogleIdentityService service = new GoogleIdentityService(restClientBuilder, "google-client-id");
@@ -51,7 +60,8 @@ class GoogleIdentityServiceTest {
     @Test
     void verifyAccessToken_throwsWhenEmailIsNotVerified() {
         configureRestClient();
-        when(restClient.get().uri(anyString()).header(anyString(), anyString()).retrieve().body(any(ParameterizedTypeReference.class)))
+        configureMockChain();
+        when(responseSpec.body(any(ParameterizedTypeReference.class)))
                 .thenReturn(Map.of(
                         "email", "john@example.com",
                         "email_verified", "false",
@@ -67,7 +77,8 @@ class GoogleIdentityServiceTest {
     @Test
     void verifyAccessToken_returnsNormalizedIdentityWhenPayloadIsValid() {
         configureRestClient();
-        when(restClient.get().uri(anyString()).header(anyString(), anyString()).retrieve().body(any(ParameterizedTypeReference.class)))
+        configureMockChain();
+        when(responseSpec.body(any(ParameterizedTypeReference.class)))
                 .thenReturn(Map.of(
                         "email", "  JOHN@EXAMPLE.COM ",
                         "email_verified", "true",
@@ -89,7 +100,8 @@ class GoogleIdentityServiceTest {
     @Test
     void verifyAccessToken_normalizesBlankOptionalFieldsToNull() {
         configureRestClient();
-        when(restClient.get().uri(anyString()).header(anyString(), anyString()).retrieve().body(any(ParameterizedTypeReference.class)))
+        configureMockChain();
+        when(responseSpec.body(any(ParameterizedTypeReference.class)))
                 .thenReturn(Map.of(
                         "email", "john@example.com",
                         "email_verified", "true",
@@ -108,5 +120,12 @@ class GoogleIdentityServiceTest {
 
     private void configureRestClient() {
         when(restClientBuilder.build()).thenReturn(restClient);
+    }
+
+    private void configureMockChain() {
+        when(restClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri(anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.header(anyString(), any(String[].class))).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
     }
 }

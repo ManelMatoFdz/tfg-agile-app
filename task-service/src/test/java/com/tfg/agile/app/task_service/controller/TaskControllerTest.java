@@ -33,8 +33,8 @@ class TaskControllerTest {
         UUID projectId = UUID.randomUUID();
         UUID taskId = UUID.randomUUID();
 
-        CreateTaskRequestDto createRequest = new CreateTaskRequestDto("Task", "Desc", "HIGH", null);
-        UpdateTaskRequestDto updateRequest = new UpdateTaskRequestDto("Task 2", "Desc 2", "LOW", null);
+        CreateTaskRequestDto createRequest = new CreateTaskRequestDto("Task", "Desc", "HIGH", null, null);
+        UpdateTaskRequestDto updateRequest = new UpdateTaskRequestDto("Task 2", "Desc 2", "LOW", null, null);
         MoveTaskRequestDto moveRequest = new MoveTaskRequestDto("DONE", 2);
 
         TaskResponseDto response = new TaskResponseDto(

@@ -5,6 +5,7 @@ import { Plus, Users, ChevronRight } from 'lucide-react';
 import { teamsApi } from '../../api/teams';
 import { useApiAction } from '../../hooks/useApiAction';
 import Alert from '../../components/ui/Alert';
+import PageTitle from '../../components/motion/PageTitle';
 import type { Team } from '../../types';
 
 const inputStyle: React.CSSProperties = {
@@ -51,7 +52,7 @@ function TeamCard({ team, to }: { team: Team; to: string }) {
           width: 36, height: 36, flexShrink: 0,
           background: 'var(--accent)', borderRadius: 'var(--radius-md)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontSize: 14, fontWeight: 700,
+          color: 'var(--accent-fg)', fontSize: 14, fontWeight: 700,
         }}>
           {team.name.charAt(0).toUpperCase()}
         </div>
@@ -123,9 +124,9 @@ export default function TeamsPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <h1 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.015em' }}>
+          <PageTitle style={{ fontSize: 24 }}>
             {t('teams.title')}
-          </h1>
+          </PageTitle>
           {!listAction.loading && teams.length > 0 && (
             <span style={{
               fontSize: 11, fontWeight: 500, color: 'var(--text-faint)',
@@ -142,7 +143,7 @@ export default function TeamsPage() {
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
               padding: '5px 10px', fontSize: 12, fontWeight: 500,
-              background: 'var(--accent)', color: '#fff',
+              background: 'var(--accent)', color: 'var(--accent-fg)',
               border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
             }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
@@ -205,7 +206,7 @@ export default function TeamsPage() {
                 disabled={createAction.loading || !name.trim()}
                 style={{
                   flex: 1, padding: '6px 12px', fontSize: 12, fontWeight: 500,
-                  background: 'var(--accent)', color: '#fff',
+                  background: 'var(--accent)', color: 'var(--accent-fg)',
                   border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
                   opacity: createAction.loading || !name.trim() ? 0.5 : 1,
                 }}
@@ -242,7 +243,7 @@ export default function TeamsPage() {
       ) : teams.length === 0 ? (
         <div style={{
           background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-lg)', padding: '48px 24px', textAlign: 'center',
+          borderRadius: 'var(--radius-card)', padding: '48px 24px', textAlign: 'center',
         }}>
           <div style={{
             width: 44, height: 44, background: 'var(--bg-hover)', border: '1px solid var(--border)',
@@ -258,7 +259,7 @@ export default function TeamsPage() {
               onClick={() => setShowCreateForm(true)}
               style={{
                 marginTop: 16, padding: '6px 14px', fontSize: 12, fontWeight: 500,
-                background: 'var(--accent)', color: '#fff',
+                background: 'var(--accent)', color: 'var(--accent-fg)',
                 border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
