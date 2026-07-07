@@ -16,6 +16,7 @@
     "next": "Siguiente",
     "confirm": "Confirmar",
     "close": "Cerrar",
+    "clear": "Limpiar",
     "unknownUser": "Usuario desconocido"
   },
   "auth": {
@@ -122,13 +123,32 @@
     },
     "dashboard": {
       "title": "Proyectos",
+      "subtitle": "Gestiona los proyectos de tu equipo y sigue el progreso.",
       "count_one": "{{count}} proyecto",
       "count_other": "{{count}} proyectos",
       "noProjects": "No hay proyectos todavía",
       "noProjectsSubtitle": "Crea el primero para empezar a trabajar",
       "noProjectsYet": "Aún no hay proyectos",
-      "newProject": "Nuevo proyecto",
+      "newProject": "Crear proyecto",
       "uncategorized": "Sin categoría",
+      "view": "Vista",
+      "updated": "Actualizado {{time}}",
+      "justNow": "ahora mismo",
+      "timeAgo": {
+        "minutes_one": "hace {{count}}m",
+        "minutes_other": "hace {{count}}m",
+        "hours_one": "hace {{count}}h",
+        "hours_other": "hace {{count}}h",
+        "days_one": "hace {{count}}d",
+        "days_other": "hace {{count}}d",
+        "weeks_one": "hace {{count}}sem",
+        "weeks_other": "hace {{count}}sem"
+      },
+      "roles": {
+        "ADMIN": "Admin",
+        "MEMBER": "Miembro",
+        "VIEWER": "Visor"
+      },
       "modal": {
         "title": "Nuevo proyecto",
         "name": "Nombre del proyecto",
@@ -137,6 +157,7 @@
         "descriptionPlaceholder": "Breve descripción del proyecto",
         "category": "Categoría ({{optional}})",
         "noCategory": "Sin categoría",
+        "color": "Color",
         "newCategory": "Nueva categoría",
         "createCategory": "Crear",
         "submit": "Crear proyecto"
@@ -144,13 +165,25 @@
     },
     "members": {
       "title": "Miembros",
+      "subtitle": "Gestiona y organiza los miembros de tu workspace",
       "count_one": "{{count}} miembro",
       "count_other": "{{count}} miembros",
       "admins": "Administradores",
       "membersGroup": "Miembros",
       "addMember": "Invitar miembro",
+      "inviteToWorkspace": "Invitar miembro",
+      "searchPlaceholder": "Buscar por nombre o email...",
+      "allTeams": "Todos los equipos",
+      "filter": "Limpiar",
+      "statusActive": "Activo",
+      "showing": "Mostrando {{from}}-{{to}} de {{total}}",
+      "promoteToAdmin": "Promover a Admin",
+      "demoteToMember": "Degradar a Miembro",
       "invite": {
         "title": "Invitar al workspace",
+        "growTitle": "Haz crecer tu equipo",
+        "growSubtitle": "Invita nuevos miembros para colaborar en los proyectos de tu workspace.",
+        "alreadyInWorkspace": "{{count}} miembros ya en el workspace",
         "emailLabel": "Correo electrónico",
         "emailPlaceholder": "usuario@ejemplo.com",
         "searchUser": "Buscar",
@@ -164,10 +197,18 @@
         "accept": "Aceptar",
         "reject": "Rechazar"
       },
+      "tableHeader": {
+        "name": "Nombre",
+        "team": "Equipo",
+        "role": "Rol",
+        "memberSince": "Miembro desde",
+        "actions": "Acciones"
+      },
       "changeRoleTitle": "Cambiar a {{role}}",
       "removeMember": "Eliminar del workspace",
       "roles": {
         "ADMIN": "Admin",
+        "ADMIN_FULL": "Administrador",
         "MEMBER": "Miembro"
       },
       "errors": {
@@ -242,7 +283,14 @@
           "title": "Eliminar categoría",
           "message": "¿Seguro que quieres eliminar <strong>{{name}}</strong>? Los proyectos asociados quedarán sin categoría.",
           "confirm": "Eliminar"
-        }
+        },
+        "usage": "Uso",
+        "projects_one": "{{count}} Proyecto",
+        "projects_other": "{{count}} Proyectos",
+        "showing": "Mostrando {{from}} a {{to}} de {{total}} categorías",
+        "previous": "Anterior",
+        "next": "Siguiente",
+        "actions": "Acciones"
       }
     }
   },
@@ -254,6 +302,20 @@
     "noTeamsSubtitle": "Crea el primero para organizar a los miembros",
     "noTeamsYet": "Aún no hay equipos",
     "newTeam": "Nuevo equipo",
+    "subtitle": "Gestiona y organiza los equipos de tu workspace",
+    "members": "Miembros",
+    "created": "Creado",
+    "manage": "Gestionar",
+    "ctaTitle": "¿Necesitas un equipo especializado?",
+    "ctaSubtitle": "Crea un nuevo equipo para organizar a los miembros del workspace por función o proyecto.",
+    "ctaButton": "Crear nuevo equipo",
+    "member_one": "{{count}} miembro",
+    "member_other": "{{count}} miembros",
+    "showing": "Mostrando {{from}} a {{to}} de {{total}} equipos",
+    "roles": {
+      "ADMIN": "Admin",
+      "MEMBER": "Miembro"
+    },
     "form": {
       "title": "Nuevo equipo",
       "name": "Nombre",
@@ -264,6 +326,17 @@
     },
     "detail": {
       "breadcrumb": "Equipos",
+      "editTeam": "Editar equipo",
+      "editTitle": "Editar equipo",
+      "editSuccess": "Equipo actualizado correctamente.",
+      "editError": "Error al actualizar el equipo.",
+      "role": "Rol",
+      "joined": "Incorporado",
+      "actions": "Acciones",
+      "statistics": "Estadísticas del equipo",
+      "totalMembers": "Total de miembros",
+      "activeProjects": "Proyectos activos",
+      "avgVelocity": "Velocidad media",
       "members": "Miembros",
       "addMember": "Añadir miembro",
       "noMembers": "Este equipo no tiene miembros todavía.",
@@ -295,7 +368,9 @@
         "messageToMember": "¿Quitar permisos de administrador de equipo a <strong>{{name}}</strong>?",
         "submit": "Confirmar"
       },
-      "leaveTeam": "Salir del equipo",
+      "scrumRole": "Rol Scrum",
+      "scrumRoleNone": "Sin rol",
+"leaveTeam": "Salir del equipo",
       "confirmLeave": {
         "title": "Salir del equipo",
         "message": "¿Seguro que quieres salir de <strong>{{name}}</strong>?",
@@ -312,7 +387,8 @@
       "members": "Miembros",
       "poker": "Poker",
       "metrics": "Métricas",
-      "settings": "Configuración"
+      "settings": "Configuración",
+      "boardSettings": "Tablero"
     },
     "kanban": {
       "title": "Tablero Kanban",
@@ -327,14 +403,33 @@
       "noActiveSprintSub": "Activa un sprint desde la sección",
       "overdueBanner": "Este sprint venció hace {{days}} día(s). {{pending}} tarea(s) pendientes."
     },
+    "boardSettings": {
+      "title": "Configuración del tablero",
+      "subtitle": "Configura las columnas del workflow, visibilidad y límites WIP.",
+      "workflowColumns": "Columnas del workflow",
+      "columnsActive": "{{count}} columnas activas",
+      "columnName": "Nombre de columna",
+      "wipLimit": "Límite WIP",
+      "wipNone": "Ninguno",
+      "addColumn": "Añadir columna",
+      "addColumnDisabled": "Las columnas del tablero son fijas",
+      "ctaTitle": "¿Quieres optimizar tu flujo de trabajo?",
+      "ctaSubtitle": "Añade columnas personalizadas como Peer Review, QA o Staging."
+    },
     "members": {
       "title": "Miembros",
+      "subtitle": "Miembros del equipo asignado a este proyecto",
       "noMembers": "No hay miembros en este proyecto.",
-      "addMember": "Añadir miembro",
-      "roles": {
-        "ADMIN": "Admin",
-        "MEMBER": "Miembro",
-        "VIEWER": "Observador"
+      "manageTeam": "Gestionar equipo",
+      "searchPlaceholder": "Buscar por nombre…",
+      "allRoles": "Todos los roles",
+      "showing": "Mostrando {{from}}–{{to}} de {{total}}",
+      "tableHeader": {
+        "name": "Nombre",
+        "teamRole": "Rol de equipo",
+        "scrumRole": "Rol Scrum",
+        "lastActive": "Última actividad",
+        "memberSince": "Miembro desde"
       },
       "scrumRoles": {
         "PRODUCT_OWNER": "Product Owner",
@@ -342,43 +437,8 @@
         "DEVELOPER": "Developer",
         "none": "Sin rol Scrum"
       },
-      "roleLabel": "Rol técnico",
-      "scrumRoleLabel": "Rol Scrum",
-      "removeMember": "Eliminar del proyecto",
-      "confirmRemove": {
-        "title": "Eliminar miembro",
-        "message": "¿Seguro que quieres eliminar a <strong>{{name}}</strong> del proyecto?",
-        "confirm": "Eliminar",
-        "removing": "Eliminando..."
-      },
-      "add": {
-        "title": "Añadir miembro",
-        "searchPlaceholder": "Buscar por nombre de usuario…",
-        "noResults": "No hay miembros del workspace disponibles para añadir.",
-        "roleLabel": "Rol en el proyecto",
-        "submit": "Añadir",
-        "adding": "Añadiendo...",
-        "error": "Error al añadir el miembro."
-      },
-      "addTeam": {
-        "button": "Añadir equipo",
-        "title": "Añadir desde equipo",
-        "noTeams": "No hay equipos en este workspace.",
-        "selectMembers": "Selecciona los miembros a añadir",
-        "alreadyMember": "Ya en el proyecto",
-        "selectAll": "Seleccionar todos",
-        "deselectAll": "Deseleccionar todos",
-        "noMembersAvailable": "Todos los miembros del equipo ya están en el proyecto.",
-        "back": "Volver",
-        "submit": "Añadir seleccionados",
-        "adding": "Añadiendo...",
-        "error": "Error al añadir miembros del equipo.",
-        "selected": "{{count}} seleccionados"
-      },
       "errors": {
-        "changeRole": "Error al cambiar el rol.",
-        "changeScrumRole": "Error al cambiar el rol Scrum.",
-        "remove": "Error al eliminar el miembro."
+        "changeScrumRole": "Error al cambiar el rol Scrum."
       }
     },
     "settings": {
@@ -388,6 +448,7 @@
       "nameLabel": "Nombre del proyecto",
       "descriptionLabel": "Descripción",
       "categoryLabel": "Categoría",
+      "colorLabel": "Color",
       "noCategory": "Sin categoría",
       "save": "Guardar cambios",
       "saving": "Guardando...",

@@ -31,4 +31,7 @@ export const teamsApi = {
 
   leaveTeam: (teamId: string) =>
     projectClient.post<void>(`/teams/${teamId}/leave`, {}),
+
+  updateScrumRole: (teamId: string, userId: string, scrumRole: string | null) =>
+    projectClient.patch<TeamMember>(`/teams/${teamId}/members/${userId}/scrum-role`, { scrumRole }),
 };

@@ -9,6 +9,7 @@ import com.tfg.agile.app.project_service.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,15 +20,18 @@ public class TeamService {
     private final TeamMemberRepository teamMemberRepository;
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
+    private final ProjectRepository projectRepository;
 
     public TeamService(TeamRepository teamRepository,
                        TeamMemberRepository teamMemberRepository,
                        WorkspaceRepository workspaceRepository,
-                       WorkspaceMemberRepository workspaceMemberRepository) {
+                       WorkspaceMemberRepository workspaceMemberRepository,
+                       ProjectRepository projectRepository) {
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.workspaceRepository = workspaceRepository;
         this.workspaceMemberRepository = workspaceMemberRepository;
+        this.projectRepository = projectRepository;
     }
 
     @Transactional
@@ -83,6 +87,13 @@ public class TeamService {
     public void delete(UUID teamId, UUID callerId) {
         Team team = getTeamOrThrow(teamId);
         requireTeamAdminOrWorkspaceAdmin(teamId, team.getWorkspace().getId(), callerId);
+
+        // Unlink projects before deleting the team
+        for (Project project : projectRepository.findByTeamId(teamId)) {
+            project.setTeam(null);
+            projectRepository.save(project);
+        }
+
         teamMemberRepository.deleteByTeamId(teamId);
         teamRepository.deleteById(teamId);
     }
@@ -152,6 +163,28 @@ public class TeamService {
         }
         member.setRole(dto.role());
         return TeamMemberResponseDto.from(teamMemberRepository.save(member));
+    }
+
+    @Transactional
+    public TeamMemberResponseDto updateScrumRole(UUID teamId, UUID targetUserId, UpdateScrumRoleRequestDto dto, UUID callerId) {
+        Team team = getTeamOrThrow(teamId);
+        requireTeamAdminOrWorkspaceAdmin(teamId, team.getWorkspace().getId(), callerId);
+        TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
+        String rawRole = dto != null ? dto.scrumRole() : null;
+        member.setScrumRole(rawRole == null || rawRole.isBlank()
+                ? null
+                : ScrumRole.valueOf(rawRole.toUpperCase()));
+        return TeamMemberResponseDto.from(teamMemberRepository.save(member));
+    }
+
+    @Transactional
+    public void touchMemberActivity(UUID teamId, UUID userId) {
+        teamMemberRepository.findByTeamIdAndUserId(teamId, userId)
+                .ifPresent(member -> {
+                    member.setLastActiveAt(Instant.now());
+                    teamMemberRepository.save(member);
+                });
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

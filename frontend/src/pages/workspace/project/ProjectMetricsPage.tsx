@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   PieChart, Pie, Cell, ResponsiveContainer,
 } from 'recharts';
-import type { ProjectMember, Sprint, Task, TaskPriority, TaskStatus } from '../../../types';
+import type { TeamMember, Sprint, Task, TaskPriority, TaskStatus } from '../../../types';
 import { tasksApi } from '../../../api/tasks';
 import { sprintsApi } from '../../../api/sprints';
 import { projectsApi } from '../../../api/projects';
@@ -74,7 +74,7 @@ export default function ProjectMetricsPage() {
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sprints, setSprints] = useState<Sprint[]>([]);
-  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
   const [userNames, setUserNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -84,7 +84,7 @@ export default function ProjectMetricsPage() {
     Promise.all([
       tasksApi.getByProject(projectId),
       sprintsApi.listSprints(projectId),
-      projectsApi.getMembers(projectId),
+      projectsApi.getTeamMembers(projectId),
     ])
       .then(([t, s, m]) => {
         setTasks(t);

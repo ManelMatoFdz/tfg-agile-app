@@ -60,20 +60,15 @@ class EntityLifecycleTest {
     @Test
     void memberEntities_prePersistSetJoinedAt() {
         Workspace workspace = Workspace.builder().name("Workspace").ownerId(java.util.UUID.randomUUID()).build();
-        Project project = Project.builder().workspace(workspace).name("Project").build();
         Team team = Team.builder().workspace(workspace).name("Team").build();
 
         WorkspaceMember workspaceMember = WorkspaceMember.builder().workspace(workspace).userId(java.util.UUID.randomUUID()).role(WorkspaceRole.MEMBER).build();
-        ProjectMember projectMember = ProjectMember.builder().project(project).userId(java.util.UUID.randomUUID()).role(ProjectRole.MEMBER).build();
         TeamMember teamMember = TeamMember.builder().team(team).userId(java.util.UUID.randomUUID()).build();
 
         workspaceMember.prePersist();
-        projectMember.prePersist();
         teamMember.prePersist();
 
         assertThat(workspaceMember.getJoinedAt()).isNotNull();
-        assertThat(projectMember.getJoinedAt()).isNotNull();
         assertThat(teamMember.getJoinedAt()).isNotNull();
     }
 }
-

@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutGrid, Users, UserPlus, Settings,
@@ -165,7 +165,9 @@ export default function WorkspaceLayout() {
     </div>
   );
 
-  if (workspaceId) setWorkspace(workspaceId);
+  useEffect(() => {
+    if (workspaceId) setWorkspace(workspaceId);
+  }, [workspaceId, setWorkspace]);
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex' }}>

@@ -7,7 +7,16 @@ import { categoriesApi } from '../../../api/categories';
 import { useAuthStore } from '../../../store/authStore';
 import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
-import type { Category, Project, ProjectMember, ProjectVisibility } from '../../../types';
+import { workspacesApi } from '../../../api/workspaces';
+import type { Category, Project, ProjectVisibility } from '../../../types';
+
+const PRESET_COLORS = [
+  '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+  '#ec4899', '#f43f5e', '#ef4444', '#f97316',
+  '#f59e0b', '#eab308', '#84cc16', '#22c55e',
+  '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
+  '#3b82f6', '#6d28d9', '#475569', '#1e293b',
+];
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -55,6 +64,7 @@ export default function ProjectSettingsPage() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [color, setColor] = useState('#6366f1');
   const [visibility, setVisibility] = useState<ProjectVisibility>('PRIVATE');
   const [saving, setSaving] = useState(false);
 
@@ -66,20 +76,25 @@ export default function ProjectSettingsPage() {
     if (!projectId || !workspaceId) return;
     Promise.all([
       projectsApi.getById(projectId),
-      projectsApi.getMembers(projectId),
+      projectsApi.getTeamMembers(projectId),
       categoriesApi.list(workspaceId),
+      workspacesApi.getMembers(workspaceId),
     ])
-      .then(([projRes, membersRes, catRes]) => {
+      .then(([projRes, teamMembersRes, catRes, wsMembersRes]) => {
         setProject(projRes.data);
         setName(projRes.data.name);
         setDescription(projRes.data.description ?? '');
         setCategoryId(projRes.data.categoryId ?? '');
+        setColor((projRes.data.color ?? '#6366f1').toLowerCase());
         setVisibility(projRes.data.visibility ?? 'PRIVATE');
         setCategories(catRes.data);
-        const admin = membersRes.data.some(
-          (m: ProjectMember) => m.userId === currentUser?.id && m.role === 'ADMIN',
+        const wsAdmin = wsMembersRes.data.some(
+          (m) => m.userId === currentUser?.id && m.role === 'ADMIN',
         );
-        setIsAdmin(admin);
+        const teamAdmin = teamMembersRes.data.some(
+          (m) => m.userId === currentUser?.id && m.role === 'ADMIN',
+        );
+        setIsAdmin(wsAdmin || teamAdmin);
       })
       .catch(() => setError(t('projects.settings.loadError')))
       .finally(() => setLoading(false));
@@ -96,6 +111,7 @@ export default function ProjectSettingsPage() {
         name: name.trim(),
         description: description.trim() || undefined,
         categoryId: categoryId || undefined,
+        color: color || undefined,
         visibility,
       });
       setProject(res.data);
@@ -169,6 +185,42 @@ export default function ProjectSettingsPage() {
                   onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
                   onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
                 />
+              </div>
+
+              {/* Color picker */}
+              <div>
+                <label style={labelStyle}>{t('projects.settings.colorLabel')}</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {PRESET_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setColor(c)}
+                      style={{
+                        width: 24, height: 24,
+                        borderRadius: 'var(--radius-sm)',
+                        background: c,
+                        border: color === c ? '2px solid var(--text)' : '2px solid transparent',
+                        cursor: 'pointer',
+                        padding: 0,
+                        outline: color === c ? '2px solid var(--bg-elevated)' : 'none',
+                        outlineOffset: -4,
+                      }}
+                    />
+                  ))}
+                </div>
+                <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 'var(--radius-md)',
+                    background: color, display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700,
+                  }}>
+                    {name.trim() ? name.charAt(0).toUpperCase() : 'P'}
+                  </div>
+                  <span style={{ fontSize: 12, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+                    {color}
+                  </span>
+                </div>
               </div>
 
               <div>

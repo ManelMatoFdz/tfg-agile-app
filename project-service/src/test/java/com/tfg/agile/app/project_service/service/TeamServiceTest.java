@@ -11,6 +11,7 @@ import com.tfg.agile.app.project_service.entity.WorkspaceRole;
 import com.tfg.agile.app.project_service.exception.ConflictException;
 import com.tfg.agile.app.project_service.exception.ForbiddenException;
 import com.tfg.agile.app.project_service.exception.ResourceNotFoundException;
+import com.tfg.agile.app.project_service.repository.ProjectRepository;
 import com.tfg.agile.app.project_service.repository.TeamMemberRepository;
 import com.tfg.agile.app.project_service.repository.TeamRepository;
 import com.tfg.agile.app.project_service.repository.WorkspaceMemberRepository;
@@ -39,12 +40,14 @@ class TeamServiceTest {
     @Mock private TeamMemberRepository teamMemberRepository;
     @Mock private WorkspaceRepository workspaceRepository;
     @Mock private WorkspaceMemberRepository workspaceMemberRepository;
+    @Mock private ProjectRepository projectRepository;
 
     private TeamService service;
 
     @BeforeEach
     void setUp() {
-        service = new TeamService(teamRepository, teamMemberRepository, workspaceRepository, workspaceMemberRepository);
+        service = new TeamService(teamRepository, teamMemberRepository, workspaceRepository,
+                workspaceMemberRepository, projectRepository);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────

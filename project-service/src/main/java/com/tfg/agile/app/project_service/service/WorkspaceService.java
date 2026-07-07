@@ -20,7 +20,6 @@ public class WorkspaceService {
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final ProjectRepository projectRepository;
-    private final ProjectMemberRepository projectMemberRepository;
     private final CategoryRepository categoryRepository;
     private final WorkspaceInvitationRepository invitationRepository;
 
@@ -29,7 +28,6 @@ public class WorkspaceService {
                             TeamRepository teamRepository,
                             TeamMemberRepository teamMemberRepository,
                             ProjectRepository projectRepository,
-                            ProjectMemberRepository projectMemberRepository,
                             CategoryRepository categoryRepository,
                             WorkspaceInvitationRepository invitationRepository) {
         this.workspaceRepository = workspaceRepository;
@@ -37,7 +35,6 @@ public class WorkspaceService {
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.projectRepository = projectRepository;
-        this.projectMemberRepository = projectMemberRepository;
         this.categoryRepository = categoryRepository;
         this.invitationRepository = invitationRepository;
     }
@@ -94,10 +91,8 @@ public class WorkspaceService {
         teams.forEach(t -> teamMemberRepository.deleteByTeamId(t.getId()));
         teamRepository.deleteAll(teams);
 
-        // Delete project members before projects
-        List<Project> projects = projectRepository.findByWorkspaceId(workspaceId);
-        projects.forEach(p -> projectMemberRepository.deleteByProjectId(p.getId()));
-        projectRepository.deleteAll(projects);
+        // Delete projects
+        projectRepository.deleteAll(projectRepository.findByWorkspaceId(workspaceId));
 
         categoryRepository.deleteByWorkspaceId(workspaceId);
         invitationRepository.deleteByWorkspaceId(workspaceId);

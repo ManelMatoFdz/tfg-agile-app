@@ -2,9 +2,10 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, LogOut } from 'lucide-react';
-import type { Workspace, Category } from '../../types';
+import type { Workspace, Category, Project } from '../../types';
 import { workspacesApi } from '../../api/workspaces';
 import { categoriesApi } from '../../api/categories';
+import { projectsApi } from '../../api/projects';
 import { useAuthStore } from '../../store/authStore';
 import Alert from '../../components/ui/Alert';
 import PageTitle from '../../components/motion/PageTitle';
@@ -131,6 +132,9 @@ export default function WorkspaceSettingsPage() {
   const [showDeleteZone, setShowDeleteZone] = useState(false);
 
   const [categories, setCategories] = useState<Category[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [catPage, setCatPage] = useState(0);
+  const CAT_PAGE_SIZE = 5;
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryName, setCategoryName] = useState('');
@@ -150,8 +154,9 @@ export default function WorkspaceSettingsPage() {
       workspacesApi.getById(workspaceId),
       workspacesApi.getMembers(workspaceId),
       categoriesApi.list(workspaceId),
+      projectsApi.list(workspaceId),
     ])
-      .then(([wsRes, membersRes, catRes]) => {
+      .then(([wsRes, membersRes, catRes, projRes]) => {
         setWorkspace(wsRes.data);
         setName(wsRes.data.name);
         setDescription(wsRes.data.description ?? '');
@@ -161,6 +166,7 @@ export default function WorkspaceSettingsPage() {
         setIsAdmin(admin);
         setAdminCount(membersRes.data.filter((m) => m.role === 'ADMIN').length);
         setCategories(catRes.data);
+        setProjects(projRes.data);
       })
       .catch(() => setError(t('workspace.settings.loadError')))
       .finally(() => setLoading(false));
@@ -404,150 +410,6 @@ export default function WorkspaceSettingsPage() {
             </section>
           </div>
 
-          {/* Categories — full-width table like mockup */}
-          <section style={card}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, gap: 16, flexWrap: 'wrap' }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-                  {t('workspace.settings.categories.title')}
-                </h2>
-                <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-faint)', maxWidth: 480 }}>
-                  {t('workspace.settings.categories.subtitle')}
-                </p>
-              </div>
-              <button
-                onClick={openCreateCategory}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  padding: '9px 18px', fontSize: 13, fontWeight: 600,
-                  background: 'var(--accent)', color: 'var(--accent-fg)',
-                  border: 'none', borderRadius: 'var(--radius-md)',
-                  cursor: 'pointer', transition: 'background 150ms',
-                  flexShrink: 0,
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-hover)')}
-                onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--accent)')}
-              >
-                <Plus size={14} strokeWidth={2.5} />
-                {t('workspace.settings.categories.newCategory')}
-              </button>
-            </div>
-
-            {categories.length === 0 ? (
-              <div style={{
-                padding: '40px 20px', textAlign: 'center',
-                border: '2px dashed var(--border)', borderRadius: 'var(--radius-md)',
-              }}>
-                <p style={{ margin: 0, fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>
-                  {t('workspace.settings.categories.noCategories')}
-                </p>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
-                  {t('workspace.settings.categories.subtitle')}
-                </p>
-              </div>
-            ) : (
-              <div style={{
-                border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-                overflow: 'hidden',
-              }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: 'var(--bg)' }}>
-                      <th style={thStyle}>{t('workspace.settings.categories.modal.nameLabel')}</th>
-                      <th style={{ ...thStyle, width: 100 }}>{t('workspace.settings.categories.modal.colorLabel')}</th>
-                      <th style={{ ...thStyle, width: 160 }}>{t('workspace.settings.createdAt')}</th>
-                      <th style={{ ...thStyle, width: 100, textAlign: 'right' }}>{t('workspace.settings.categories.actions', { defaultValue: 'Actions' })}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {categories.map((cat, idx) => (
-                      <tr
-                        key={cat.id}
-                        style={{ transition: 'background 150ms' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        <td style={{ ...tdStyle, borderBottom: idx < categories.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <span style={{
-                              width: 12, height: 12, borderRadius: '50%', flexShrink: 0,
-                              background: cat.color ?? '#6366f1',
-                            }} />
-                            <span style={{ fontWeight: 500 }}>{cat.name}</span>
-                          </div>
-                        </td>
-                        <td style={{ ...tdStyle, borderBottom: idx < categories.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{
-                              display: 'inline-block', width: 20, height: 20, borderRadius: 'var(--radius-sm)',
-                              background: cat.color ?? '#6366f1', border: '1px solid var(--border)',
-                            }} />
-                            <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
-                              {cat.color ?? '#6366f1'}
-                            </span>
-                          </div>
-                        </td>
-                        <td style={{ ...tdStyle, borderBottom: idx < categories.length - 1 ? '1px solid var(--border)' : 'none', fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                          {cat.createdAt
-                            ? new Date(cat.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-                            : '—'}
-                        </td>
-                        <td style={{ ...tdStyle, borderBottom: idx < categories.length - 1 ? '1px solid var(--border)' : 'none', textAlign: 'right' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
-                            <button
-                              onClick={() => openEditCategory(cat)}
-                              title={t('workspace.settings.categories.modal.titleEdit')}
-                              style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: 30, height: 30, background: 'none', border: 'none',
-                                borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                                color: 'var(--text-faint)', transition: 'color 150ms, background 150ms',
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-muted)'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.background = 'none'; }}
-                            >
-                              <Pencil size={14} strokeWidth={2} />
-                            </button>
-                            <button
-                              onClick={() => setConfirmDeleteCategory(cat)}
-                              disabled={deletingCategoryId === cat.id}
-                              title={t('workspace.settings.categories.deleteConfirm.title')}
-                              style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                width: 30, height: 30, background: 'none', border: 'none',
-                                borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                                color: 'var(--text-faint)',
-                                opacity: deletingCategoryId === cat.id ? 0.4 : 1,
-                                transition: 'color 150ms, background 150ms',
-                              }}
-                              onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.background = 'var(--danger-bg)'; }}
-                              onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.background = 'none'; }}
-                            >
-                              <Trash2 size={14} strokeWidth={2} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {/* Footer */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '10px 16px', background: 'var(--bg)',
-                  borderTop: '1px solid var(--border)',
-                }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
-                    {t('workspace.settings.categories.count', {
-                      count: categories.length,
-                      defaultValue: `${categories.length} ${categories.length === 1 ? 'category' : 'categories'}`,
-                    })}
-                  </span>
-                </div>
-              </div>
-            )}
-          </section>
-
           {/* Danger zone */}
           <section style={{
             border: '1px solid var(--danger)',
@@ -662,6 +524,193 @@ export default function WorkspaceSettingsPage() {
           </p>
         </section>
       )}
+
+      {/* Categories — visible to all, editable only by admins */}
+      <section style={card}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 20, gap: 16, flexWrap: 'wrap' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+              {t('workspace.settings.categories.title')}
+            </h2>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-faint)', maxWidth: 480 }}>
+              {t('workspace.settings.categories.subtitle')}
+            </p>
+          </div>
+          {isAdmin && (
+            <button
+              onClick={openCreateCategory}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                padding: '9px 18px', fontSize: 13, fontWeight: 600,
+                background: 'var(--accent)', color: 'var(--accent-fg)',
+                border: 'none', borderRadius: 'var(--radius-md)',
+                cursor: 'pointer', transition: 'background 150ms',
+                flexShrink: 0,
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-hover)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--accent)')}
+            >
+              <Plus size={14} strokeWidth={2.5} />
+              {t('workspace.settings.categories.newCategory')}
+            </button>
+          )}
+        </div>
+
+        {(() => {
+          const totalPages = Math.max(1, Math.ceil(categories.length / CAT_PAGE_SIZE));
+          const safePage = Math.min(catPage, totalPages - 1);
+          const pageCategories = categories.slice(safePage * CAT_PAGE_SIZE, (safePage + 1) * CAT_PAGE_SIZE);
+          const from = categories.length === 0 ? 0 : safePage * CAT_PAGE_SIZE + 1;
+          const to = Math.min((safePage + 1) * CAT_PAGE_SIZE, categories.length);
+
+          const usageMap: Record<string, number> = {};
+          projects.forEach((p) => { if (p.categoryId) usageMap[p.categoryId] = (usageMap[p.categoryId] ?? 0) + 1; });
+
+          const pageBtnStyle: React.CSSProperties = {
+            padding: '5px 14px', fontSize: 12, fontWeight: 500,
+            background: 'var(--bg-elevated)', color: 'var(--text-muted)',
+            border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+            cursor: 'pointer', transition: 'background 150ms',
+          };
+
+          return categories.length === 0 ? (
+            <div style={{
+              padding: '40px 20px', textAlign: 'center',
+              border: '2px dashed var(--border)', borderRadius: 'var(--radius-md)',
+            }}>
+              <p style={{ margin: 0, fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>
+                {t('workspace.settings.categories.noCategories')}
+              </p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
+                {t('workspace.settings.categories.subtitle')}
+              </p>
+            </div>
+          ) : (
+            <div style={{
+              border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+              overflow: 'hidden',
+            }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg)' }}>
+                    <th style={thStyle}>{t('workspace.settings.categories.modal.nameLabel')}</th>
+                    <th style={{ ...thStyle, width: 180 }}>{t('workspace.settings.categories.usage')}</th>
+                    <th style={{ ...thStyle, width: 200 }}>{t('workspace.settings.createdAt')}</th>
+                    {isAdmin && <th style={{ ...thStyle, width: 140, textAlign: 'right' }}>{t('workspace.settings.categories.actions')}</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {pageCategories.map((cat, idx) => {
+                    const count = usageMap[cat.id] ?? 0;
+                    return (
+                      <tr
+                        key={cat.id}
+                        style={{ transition: 'background 150ms' }}
+                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        <td style={{ ...tdStyle, borderBottom: idx < pageCategories.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <span style={{
+                              width: 12, height: 12, borderRadius: '50%', flexShrink: 0,
+                              background: cat.color ?? '#6366f1',
+                            }} />
+                            <span style={{ fontWeight: 500 }}>{cat.name}</span>
+                          </div>
+                        </td>
+                        <td style={{ ...tdStyle, borderBottom: idx < pageCategories.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                          <span style={{
+                            display: 'inline-block', padding: '2px 10px',
+                            fontSize: 12, fontWeight: 600,
+                            color: 'var(--accent)', background: 'var(--accent-muted)',
+                            borderRadius: 'var(--radius-pill)',
+                          }}>
+                            {t('workspace.settings.categories.projects', { count })}
+                          </span>
+                        </td>
+                        <td style={{ ...tdStyle, borderBottom: idx < pageCategories.length - 1 ? '1px solid var(--border)' : 'none', fontSize: 12, color: 'var(--text-muted)' }}>
+                          {cat.createdAt
+                            ? new Date(cat.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+                            : '—'}
+                        </td>
+                        {isAdmin && (
+                          <td style={{ ...tdStyle, borderBottom: idx < pageCategories.length - 1 ? '1px solid var(--border)' : 'none', textAlign: 'right' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
+                              <button
+                                onClick={() => openEditCategory(cat)}
+                                title={t('workspace.settings.categories.modal.titleEdit')}
+                                style={{
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  width: 30, height: 30, background: 'none', border: 'none',
+                                  borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                                  color: 'var(--text-faint)', transition: 'color 150ms, background 150ms',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-muted)'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.background = 'none'; }}
+                              >
+                                <Pencil size={14} strokeWidth={2} />
+                              </button>
+                              <button
+                                onClick={() => setConfirmDeleteCategory(cat)}
+                                disabled={deletingCategoryId === cat.id}
+                                title={t('workspace.settings.categories.deleteConfirm.title')}
+                                style={{
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  width: 30, height: 30, background: 'none', border: 'none',
+                                  borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                                  color: 'var(--text-faint)',
+                                  opacity: deletingCategoryId === cat.id ? 0.4 : 1,
+                                  transition: 'color 150ms, background 150ms',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.background = 'var(--danger-bg)'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.background = 'none'; }}
+                              >
+                                <Trash2 size={14} strokeWidth={2} />
+                              </button>
+                            </div>
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {/* Footer with pagination */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 16px', background: 'var(--bg)',
+                borderTop: '1px solid var(--border)',
+              }}>
+                <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+                  {t('workspace.settings.categories.showing', { from, to, total: categories.length })}
+                </span>
+                {totalPages > 1 && (
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      onClick={() => setCatPage((p) => Math.max(0, p - 1))}
+                      disabled={safePage === 0}
+                      style={{ ...pageBtnStyle, opacity: safePage === 0 ? 0.4 : 1, cursor: safePage === 0 ? 'not-allowed' : 'pointer' }}
+                      onMouseEnter={e => { if (safePage > 0) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-elevated)'; }}
+                    >
+                      {t('workspace.settings.categories.previous')}
+                    </button>
+                    <button
+                      onClick={() => setCatPage((p) => Math.min(totalPages - 1, p + 1))}
+                      disabled={safePage >= totalPages - 1}
+                      style={{ ...pageBtnStyle, opacity: safePage >= totalPages - 1 ? 0.4 : 1, cursor: safePage >= totalPages - 1 ? 'not-allowed' : 'pointer' }}
+                      onMouseEnter={e => { if (safePage < totalPages - 1) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-elevated)'; }}
+                    >
+                      {t('workspace.settings.categories.next')}
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+      </section>
 
       {/* Leave workspace */}
       {leaveError && <Alert type="error" message={leaveError} onClose={() => setLeaveError(null)} />}

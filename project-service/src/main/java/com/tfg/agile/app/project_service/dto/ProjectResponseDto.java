@@ -10,8 +10,10 @@ public record ProjectResponseDto(
         UUID id,
         UUID workspaceId,
         UUID categoryId,
+        UUID teamId,
         String name,
         String description,
+        String color,
         ProjectVisibility visibility,
         Instant createdAt,
         Instant updatedAt
@@ -19,7 +21,8 @@ public record ProjectResponseDto(
     public static ProjectResponseDto from(Project p) {
         return new ProjectResponseDto(p.getId(), p.getWorkspace().getId(),
                 p.getCategory() != null ? p.getCategory().getId() : null,
-                p.getName(), p.getDescription(), p.getVisibility(),
+                p.getTeam() != null ? p.getTeam().getId() : null,
+                p.getName(), p.getDescription(), p.getColor(), p.getVisibility(),
                 p.getCreatedAt(), p.getUpdatedAt());
     }
 }

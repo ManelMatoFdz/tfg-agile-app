@@ -17,6 +17,7 @@ import BacklogPage from './pages/workspace/project/BacklogPage';
 import SprintsPage from './pages/workspace/project/SprintsPage';
 import ProjectMembersPage from './pages/workspace/project/ProjectMembersPage';
 import ProjectSettingsPage from './pages/workspace/project/ProjectSettingsPage';
+import BoardSettingsPage from './pages/workspace/project/BoardSettingsPage';
 import SprintReportPage from './pages/workspace/project/SprintReportPage';
 import PokerPage from './pages/workspace/project/PokerPage';
 import PokerRoomPage from './pages/workspace/project/PokerRoomPage';
@@ -58,6 +59,7 @@ export default function App() {
               <Route path="members" element={<ProjectMembersPage />} />
               <Route path="poker" element={<PokerPage />} />
               <Route path="metrics" element={<ProjectMetricsPage />} />
+              <Route path="board-settings" element={<BoardSettingsPage />} />
               <Route path="settings" element={<ProjectSettingsPage />} />
               <Route path="poker/:sessionId" element={<PokerRoomPage />} />
             </Route>

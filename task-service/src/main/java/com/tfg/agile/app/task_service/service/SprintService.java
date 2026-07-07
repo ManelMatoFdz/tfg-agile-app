@@ -89,7 +89,10 @@ public class SprintService {
                 .startDate(dto.startDate())
                 .endDate(dto.endDate())
                 .build();
-        return SprintResponseDto.from(sprintRepository.save(sprint));
+        SprintResponseDto result = SprintResponseDto.from(sprintRepository.save(sprint));
+        projectServiceClient.touchProject(projectId);
+        projectServiceClient.touchMemberActivity(projectId, callerId);
+        return result;
     }
 
     @Transactional
@@ -111,7 +114,10 @@ public class SprintService {
         if (dto.reviewNotes() != null) {
             sprint.setReviewNotes(dto.reviewNotes());
         }
-        return SprintResponseDto.from(sprintRepository.save(sprint));
+        SprintResponseDto result = SprintResponseDto.from(sprintRepository.save(sprint));
+        projectServiceClient.touchProject(sprint.getProjectId());
+        projectServiceClient.touchMemberActivity(sprint.getProjectId(), callerId);
+        return result;
     }
 
     @Transactional
@@ -135,7 +141,10 @@ public class SprintService {
 
         sprint.setStatus(SprintStatus.ACTIVE);
         sprint.setStartDate(LocalDate.now());
-        return SprintResponseDto.from(sprintRepository.save(sprint));
+        SprintResponseDto result = SprintResponseDto.from(sprintRepository.save(sprint));
+        projectServiceClient.touchProject(sprint.getProjectId());
+        projectServiceClient.touchMemberActivity(sprint.getProjectId(), callerId);
+        return result;
     }
 
     /**
@@ -185,6 +194,7 @@ public class SprintService {
 
         sprint.setStatus(SprintStatus.COMPLETED);
         sprintRepository.save(sprint);
+        projectServiceClient.touchProject(sprint.getProjectId());
     }
 
     @Transactional
@@ -203,7 +213,10 @@ public class SprintService {
                     taskRepository.save(t);
                 });
 
+        UUID projectId = sprint.getProjectId();
         sprintRepository.delete(sprint);
+        projectServiceClient.touchProject(projectId);
+        projectServiceClient.touchMemberActivity(projectId, callerId);
     }
 
     @Transactional
@@ -219,7 +232,7 @@ public class SprintService {
             throw new ForbiddenException("CAN_ONLY_ADD_TASKS_TO_PLANNING_OR_ACTIVE_SPRINT");
         }
 
-        return dto.taskIds().stream()
+        List<TaskResponseDto> result = dto.taskIds().stream()
                 .map(taskId -> {
                     Task task = taskRepository.findById(taskId)
                             .orElseThrow(() -> new ResourceNotFoundException("TASK_NOT_FOUND"));
@@ -230,6 +243,9 @@ public class SprintService {
                     return TaskResponseDto.from(taskRepository.save(task));
                 })
                 .toList();
+        projectServiceClient.touchProject(sprint.getProjectId());
+        projectServiceClient.touchMemberActivity(sprint.getProjectId(), callerId);
+        return result;
     }
 
     @Transactional
@@ -251,7 +267,10 @@ public class SprintService {
             throw new ResourceNotFoundException("TASK_NOT_IN_SPRINT");
         }
         task.setSprintId(null);
-        return TaskResponseDto.from(taskRepository.save(task));
+        TaskResponseDto result = TaskResponseDto.from(taskRepository.save(task));
+        projectServiceClient.touchProject(sprint.getProjectId());
+        projectServiceClient.touchMemberActivity(sprint.getProjectId(), callerId);
+        return result;
     }
 
     @Transactional(readOnly = true)
@@ -274,23 +293,27 @@ public class SprintService {
         return projectServiceClient.getMemberPermissions(projectId, userId);
     }
 
+    private boolean isAdmin(MemberPermissionsDto p) {
+        return p.workspaceAdmin() || p.teamAdmin();
+    }
+
     private void requireScrumMasterOrAdmin(MemberPermissionsDto p) {
-        if ("ADMIN".equals(p.role())) return;
+        if (isAdmin(p)) return;
         if ("SCRUM_MASTER".equals(p.scrumRole())) return;
         throw new ForbiddenException("SCRUM_MASTER_OR_ADMIN_REQUIRED");
     }
 
     private void requireDeveloperOrAdmin(MemberPermissionsDto p) {
-        if ("ADMIN".equals(p.role())) return;
+        if (isAdmin(p)) return;
         if ("DEVELOPER".equals(p.scrumRole())) return;
-        if (!"VIEWER".equals(p.role()) && p.scrumRole() == null) return; // MEMBER sin rol = Developer
+        if (p.scrumRole() == null) return; // Member without scrum role = Developer
         throw new ForbiddenException("DEVELOPER_OR_ADMIN_REQUIRED");
     }
 
     private void requireDeveloperOrPOOrAdmin(MemberPermissionsDto p) {
-        if ("ADMIN".equals(p.role())) return;
+        if (isAdmin(p)) return;
         if ("PRODUCT_OWNER".equals(p.scrumRole())) return;
-        if (!"VIEWER".equals(p.role()) && !"SCRUM_MASTER".equals(p.scrumRole())) return;
+        if (!"SCRUM_MASTER".equals(p.scrumRole())) return; // Developer or no role = allowed
         throw new ForbiddenException("DEVELOPER_OR_PO_OR_ADMIN_REQUIRED");
     }
 

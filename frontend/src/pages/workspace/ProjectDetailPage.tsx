@@ -7,15 +7,14 @@ import { useApiAction } from '../../hooks/useApiAction';
 import { useUserMap } from '../../hooks/useUserMap';
 import Alert from '../../components/ui/Alert';
 import PageTitle from '../../components/motion/PageTitle';
-import type { Project, ProjectMember, ProjectRole } from '../../types';
+import type { Project, TeamMember, TeamRole } from '../../types';
 
-const ROLE_STYLE: Record<ProjectRole, { color: string; bg: string }> = {
+const ROLE_STYLE: Record<TeamRole, { color: string; bg: string }> = {
   ADMIN:  { color: 'var(--accent)',  bg: 'var(--accent-muted)' },
   MEMBER: { color: 'var(--success)',  bg: 'var(--success-bg)' },
-  VIEWER: { color: 'var(--text-faint)', bg: 'var(--bg-hover)' },
 };
 
-function MemberRow({ member, displayName, avatarUrl }: { member: ProjectMember; displayName: string; avatarUrl?: string }) {
+function MemberRow({ member, displayName, avatarUrl }: { member: TeamMember; displayName: string; avatarUrl?: string }) {
   const { t } = useTranslation();
   const [imgError, setImgError] = useState(false);
   const roleStyle = ROLE_STYLE[member.role];
@@ -49,7 +48,7 @@ function MemberRow({ member, displayName, avatarUrl }: { member: ProjectMember; 
         color: roleStyle.color, background: roleStyle.bg,
         borderRadius: 'var(--radius-sm)', padding: '2px 7px', flexShrink: 0,
       }}>
-        {t(`projects.members.roles.${member.role}`)}
+        {t(`teams.roles.${member.role}`)}
       </span>
     </div>
   );
@@ -60,17 +59,17 @@ export default function ProjectDetailPage() {
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
 
   const [project, setProject] = useState<Project | null>(null);
-  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
 
   const projectAction = useApiAction<Project>();
-  const membersAction = useApiAction<ProjectMember[]>();
+  const membersAction = useApiAction<TeamMember[]>();
 
   useEffect(() => {
     if (!projectId) return;
     projectAction.run(projectsApi.getById(projectId)).then((data) => {
       if (data) setProject(data);
     });
-    membersAction.run(projectsApi.getMembers(projectId)).then((data) => {
+    membersAction.run(projectsApi.getTeamMembers(projectId)).then((data) => {
       if (data) setMembers(data);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps

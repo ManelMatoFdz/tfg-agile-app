@@ -36,7 +36,7 @@ class TeamControllerTest {
         CreateTeamRequestDto createRequest = new CreateTeamRequestDto("Team", "Desc");
         UpdateTeamRequestDto updateRequest = new UpdateTeamRequestDto("Team 2", "Desc 2");
         TeamResponseDto teamResponse = new TeamResponseDto(teamId, workspaceId, "Team", "Desc", Instant.now(), Instant.now());
-        TeamMemberResponseDto memberResponse = new TeamMemberResponseDto(UUID.randomUUID(), userId, TeamRole.MEMBER, Instant.now());
+        TeamMemberResponseDto memberResponse = new TeamMemberResponseDto(UUID.randomUUID(), userId, TeamRole.MEMBER, null, Instant.now(), null);
 
         when(teamService.create(workspaceId, createRequest, callerId)).thenReturn(teamResponse);
         when(teamService.findByWorkspace(workspaceId, callerId)).thenReturn(List.of(teamResponse));

@@ -2,8 +2,7 @@ package com.tfg.agile.app.project_service.support;
 
 import com.tfg.agile.app.project_service.entity.Category;
 import com.tfg.agile.app.project_service.entity.Project;
-import com.tfg.agile.app.project_service.entity.ProjectMember;
-import com.tfg.agile.app.project_service.entity.ProjectRole;
+import com.tfg.agile.app.project_service.entity.ScrumRole;
 import com.tfg.agile.app.project_service.entity.Team;
 import com.tfg.agile.app.project_service.entity.TeamMember;
 import com.tfg.agile.app.project_service.entity.TeamRole;
@@ -77,27 +76,23 @@ public final class TestDataFactory {
                 .build();
     }
 
-    public static ProjectMember projectMember(Project project, UUID userId, ProjectRole role) {
-        return ProjectMember.builder()
-                .id(UUID.randomUUID())
-                .project(project)
-                .userId(userId)
-                .role(role)
-                .joinedAt(Instant.now())
-                .build();
-    }
-
     public static TeamMember teamMember(Team team, UUID userId) {
         return teamMember(team, userId, TeamRole.MEMBER);
     }
 
     public static TeamMember teamMember(Team team, UUID userId, TeamRole role) {
+        return teamMember(team, userId, role, null);
+    }
+
+    public static TeamMember teamMember(Team team, UUID userId, TeamRole role, ScrumRole scrumRole) {
         return TeamMember.builder()
                 .id(UUID.randomUUID())
                 .team(team)
                 .userId(userId)
                 .role(role)
+                .scrumRole(scrumRole)
                 .joinedAt(Instant.now())
+                .lastActiveAt(null)
                 .build();
     }
 }

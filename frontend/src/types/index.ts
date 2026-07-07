@@ -76,7 +76,6 @@ export interface UserSummary {
 // ── Project-service types ─────────────────────────────────────────────────────
 
 export type WorkspaceRole = 'ADMIN' | 'MEMBER';
-export type ProjectRole = 'ADMIN' | 'MEMBER' | 'VIEWER';
 export type ProjectVisibility = 'PRIVATE' | 'WORKSPACE';
 
 export interface Workspace {
@@ -109,23 +108,16 @@ export interface Project {
   id: string;
   workspaceId: string;
   categoryId?: string;
+  teamId?: string;
   name: string;
   description?: string;
+  color?: string;
   visibility: ProjectVisibility;
   createdAt: string;
   updatedAt: string;
 }
 
 export type ScrumRole = 'PRODUCT_OWNER' | 'SCRUM_MASTER' | 'DEVELOPER';
-
-export interface ProjectMember {
-  id: string;
-  projectId: string;
-  userId: string;
-  role: ProjectRole;
-  scrumRole?: ScrumRole | null;
-  joinedAt: string;
-}
 
 // ── Task-service types ────────────────────────────────────────────────────────
 
@@ -197,10 +189,11 @@ export interface Team {
 
 export interface TeamMember {
   id: string;
-  teamId: string;
   userId: string;
   role: TeamRole;
+  scrumRole?: ScrumRole | null;
   joinedAt: string;
+  lastActiveAt?: string | null;
 }
 
 // ── Poker-service types ─────────────────────────────────────────────────────

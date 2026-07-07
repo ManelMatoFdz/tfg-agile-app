@@ -73,7 +73,10 @@ public class TaskService {
                 .position(position)
                 .build();
 
-        return TaskResponseDto.from(taskRepository.save(task));
+        Task saved = taskRepository.save(task);
+        projectServiceClient.touchProject(projectId);
+        projectServiceClient.touchMemberActivity(projectId, callerId);
+        return TaskResponseDto.from(saved);
     }
 
     @Transactional
@@ -101,7 +104,10 @@ public class TaskService {
         task.setAssigneeId(dto.assigneeId());
         task.setDueDate(dto.dueDate());
 
-        return TaskResponseDto.from(taskRepository.save(task));
+        Task saved = taskRepository.save(task);
+        projectServiceClient.touchProject(task.getProjectId());
+        projectServiceClient.touchMemberActivity(task.getProjectId(), callerId);
+        return TaskResponseDto.from(saved);
     }
 
     @Transactional
@@ -125,7 +131,10 @@ public class TaskService {
             task.setCompletedAt(null);
         }
 
-        return TaskResponseDto.from(taskRepository.save(task));
+        Task saved = taskRepository.save(task);
+        projectServiceClient.touchProject(task.getProjectId());
+        projectServiceClient.touchMemberActivity(task.getProjectId(), callerId);
+        return TaskResponseDto.from(saved);
     }
 
     @Transactional
@@ -143,7 +152,10 @@ public class TaskService {
             }
         }
 
+        UUID projectId = task.getProjectId();
         taskRepository.delete(task);
+        projectServiceClient.touchProject(projectId);
+        projectServiceClient.touchMemberActivity(projectId, callerId);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -158,11 +170,7 @@ public class TaskService {
     }
 
     private boolean isAdmin(MemberPermissionsDto p) {
-        return "ADMIN".equals(p.role());
-    }
-
-    private boolean isViewer(MemberPermissionsDto p) {
-        return "VIEWER".equals(p.role());
+        return p.workspaceAdmin() || p.teamAdmin();
     }
 
     private boolean isProductOwner(MemberPermissionsDto p) {
@@ -174,8 +182,7 @@ public class TaskService {
     }
 
     private boolean isDeveloper(MemberPermissionsDto p) {
-        // Any non-ADMIN, non-VIEWER member without a PO or SM scrum role is a Developer
-        return !isAdmin(p) && !isViewer(p) && !isProductOwner(p) && !isScrumMaster(p);
+        return !isAdmin(p) && !isProductOwner(p) && !isScrumMaster(p);
     }
 
     @Transactional

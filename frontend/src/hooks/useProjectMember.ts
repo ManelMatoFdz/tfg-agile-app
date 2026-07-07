@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { projectsApi } from '../api/projects';
-import type { ProjectMember } from '../types';
+import { workspacesApi } from '../api/workspaces';
+import type { TeamMember } from '../types';
 
 export interface ProjectMemberPermissions {
-  member: ProjectMember | null;
+  member: TeamMember | null;
   loading: boolean;
   isAdmin: boolean;
   isScrumMaster: boolean;
   isProductOwner: boolean;
   isDeveloper: boolean;
-  isViewer: boolean;
   /** PO or ADMIN — tasks always start in the backlog, owned by the PO */
   canCreateTask: boolean;
   /** PO or ADMIN — Product Backlog is owned by the PO */
@@ -33,7 +34,10 @@ export interface ProjectMemberPermissions {
 
 export function useProjectMember(projectId: string | undefined): ProjectMemberPermissions {
   const currentUser = useAuthStore((s) => s.user);
-  const [member, setMember] = useState<ProjectMember | null>(null);
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const [member, setMember] = useState<TeamMember | null>(null);
+  const [wsAdmin, setWsAdmin] = useState(false);
+  const [teamAdmin, setTeamAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,22 +46,38 @@ export function useProjectMember(projectId: string | undefined): ProjectMemberPe
       return;
     }
     setLoading(true);
-    projectsApi
-      .getMembers(projectId)
-      .then((response) => {
-        const members = response.data;
-        setMember(members.find((m) => m.userId === currentUser.id) ?? null);
-      })
-      .catch(() => setMember(null))
-      .finally(() => setLoading(false));
-  }, [projectId, currentUser?.id]);
 
-  const isAdmin = member?.role === 'ADMIN';
+    const fetchPermissions = async () => {
+      try {
+        // Fetch team members for this project
+        const teamMembersRes = await projectsApi.getTeamMembers(projectId);
+        const me = teamMembersRes.data.find((m) => m.userId === currentUser.id) ?? null;
+        setMember(me);
+        setTeamAdmin(me?.role === 'ADMIN');
+
+        // Check workspace admin status
+        if (workspaceId) {
+          const wsMembers = await workspacesApi.getMembers(workspaceId);
+          const wsMember = wsMembers.data.find((m) => m.userId === currentUser.id);
+          setWsAdmin(wsMember?.role === 'ADMIN');
+        }
+      } catch {
+        setMember(null);
+        setWsAdmin(false);
+        setTeamAdmin(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPermissions();
+  }, [projectId, currentUser?.id, workspaceId]);
+
+  const isAdmin = wsAdmin || teamAdmin;
   const isScrumMaster = member?.scrumRole === 'SCRUM_MASTER';
   const isProductOwner = member?.scrumRole === 'PRODUCT_OWNER';
-  const isViewer = member?.role === 'VIEWER';
-  // Developer: any project member who is not ADMIN, VIEWER, PO, or SM
-  const isDeveloper = member !== null && !isAdmin && !isViewer && !isProductOwner && !isScrumMaster;
+  // Developer: any team member who is not admin, PO, or SM
+  const isDeveloper = (member !== null || wsAdmin) && !isAdmin && !isProductOwner && !isScrumMaster;
 
   const canCreateTask = isAdmin || isProductOwner;
   const canEditBacklogTask = isAdmin || isProductOwner;
@@ -76,7 +96,6 @@ export function useProjectMember(projectId: string | undefined): ProjectMemberPe
     isScrumMaster,
     isProductOwner,
     isDeveloper,
-    isViewer,
     canCreateTask,
     canEditBacklogTask,
     canEditSprintTask,

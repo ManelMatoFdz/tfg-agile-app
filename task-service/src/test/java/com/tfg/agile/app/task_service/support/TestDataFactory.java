@@ -17,23 +17,23 @@ public final class TestDataFactory {
     }
 
     public static MemberPermissionsDto adminPermissions() {
-        return new MemberPermissionsDto("ADMIN", null);
+        return new MemberPermissionsDto(true, false, null);
+    }
+
+    public static MemberPermissionsDto teamAdminPermissions() {
+        return new MemberPermissionsDto(false, true, null);
     }
 
     public static MemberPermissionsDto memberPermissions() {
-        return new MemberPermissionsDto("MEMBER", null);
-    }
-
-    public static MemberPermissionsDto viewerPermissions() {
-        return new MemberPermissionsDto("VIEWER", null);
+        return new MemberPermissionsDto(false, false, null);
     }
 
     public static MemberPermissionsDto scrumMasterPermissions() {
-        return new MemberPermissionsDto("MEMBER", "SCRUM_MASTER");
+        return new MemberPermissionsDto(false, false, "SCRUM_MASTER");
     }
 
     public static MemberPermissionsDto productOwnerPermissions() {
-        return new MemberPermissionsDto("MEMBER", "PRODUCT_OWNER");
+        return new MemberPermissionsDto(false, false, "PRODUCT_OWNER");
     }
 
     public static Task task(UUID projectId, UUID reporterId) {
@@ -67,4 +67,3 @@ public final class TestDataFactory {
                 .build();
     }
 }
-

@@ -15,8 +15,10 @@ public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
     @Query("SELECT p FROM Project p WHERE p.workspace.id = :workspaceId " +
            "AND (p.visibility = :visibility " +
-           "OR EXISTS (SELECT pm FROM ProjectMember pm WHERE pm.project.id = p.id AND pm.userId = :userId))")
+           "OR EXISTS (SELECT tm FROM TeamMember tm WHERE tm.team.id = p.team.id AND tm.userId = :userId))")
     List<Project> findVisibleByWorkspaceIdAndUserId(@Param("workspaceId") UUID workspaceId,
                                                     @Param("userId") UUID userId,
                                                     @Param("visibility") ProjectVisibility visibility);
+
+    List<Project> findByTeamId(UUID teamId);
 }

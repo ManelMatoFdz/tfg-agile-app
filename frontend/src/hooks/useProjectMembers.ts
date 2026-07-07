@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react';
 import { projectsApi } from '../api/projects';
 import { usersApi } from '../api/users';
-import type { ProjectMember, UserSummary } from '../types';
+import type { TeamMember, UserSummary } from '../types';
 
 export interface ProjectMembersResult {
-  members: ProjectMember[];
+  members: TeamMember[];
   userMap: Record<string, UserSummary>;
   loading: boolean;
 }
 
 export function useProjectMembers(projectId: string | undefined): ProjectMembersResult {
-  const [members, setMembers] = useState<ProjectMember[]>([]);
+  const [members, setMembers] = useState<TeamMember[]>([]);
   const [userMap, setUserMap] = useState<Record<string, UserSummary>>({});
   const [loading, setLoading] = useState(true);
 
@@ -21,7 +21,7 @@ export function useProjectMembers(projectId: string | undefined): ProjectMembers
     }
     setLoading(true);
     projectsApi
-      .getMembers(projectId)
+      .getTeamMembers(projectId)
       .then(async (response) => {
         const ms = response.data;
         setMembers(ms);

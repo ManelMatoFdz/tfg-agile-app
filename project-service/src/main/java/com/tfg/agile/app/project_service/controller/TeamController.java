@@ -95,4 +95,13 @@ public class TeamController {
             @AuthenticationPrincipal UUID callerId) {
         return teamService.updateMemberRole(teamId, userId, dto, callerId);
     }
+
+    @PatchMapping("/teams/{teamId}/members/{userId}/scrum-role")
+    public TeamMemberResponseDto updateScrumRole(
+            @PathVariable("teamId") UUID teamId,
+            @PathVariable("userId") UUID userId,
+            @RequestBody(required = false) UpdateScrumRoleRequestDto dto,
+            @AuthenticationPrincipal UUID callerId) {
+        return teamService.updateScrumRole(teamId, userId, dto, callerId);
+    }
 }

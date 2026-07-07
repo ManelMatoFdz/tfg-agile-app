@@ -369,22 +369,6 @@ class SprintServiceTest {
     }
 
     @Test
-    void assignTasksToSprint_throwsForViewer() {
-        UUID callerId = UUID.randomUUID();
-        UUID projectId = UUID.randomUUID();
-        Sprint sprint = TestDataFactory.sprint(projectId);
-
-        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.viewerPermissions());
-
-        assertThatThrownBy(() -> service.assignTasksToSprint(sprint.getId(),
-                new AssignTaskToSprintRequestDto(List.of(UUID.randomUUID())),
-                callerId))
-                .isInstanceOf(ForbiddenException.class)
-                .hasMessage("DEVELOPER_OR_PO_OR_ADMIN_REQUIRED");
-    }
-
-    @Test
     void assignTasksToSprint_throwsWhenSprintIsCompleted() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();

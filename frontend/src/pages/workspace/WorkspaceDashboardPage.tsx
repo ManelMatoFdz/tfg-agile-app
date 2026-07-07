@@ -1,14 +1,18 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, ChevronDown, ChevronRight, LayoutGrid, X, Filter } from 'lucide-react';
+import { Plus, ChevronDown, ChevronRight, LayoutGrid, X, Filter, Lock, MoreHorizontal } from 'lucide-react';
 import { projectsApi } from '../../api/projects';
 import { categoriesApi } from '../../api/categories';
+import { teamsApi } from '../../api/teams';
 import { useApiAction } from '../../hooks/useApiAction';
+import { useAuthStore } from '../../store/authStore';
+import { useUserMap } from '../../hooks/useUserMap';
+import { buildAvatarSrc } from '../../utils/avatarUrl';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
 import PageTitle from '../../components/motion/PageTitle';
-import type { Project, Category, ProjectVisibility } from '../../types';
+import type { Project, Category, ProjectVisibility, TeamMember, Team } from '../../types';
 
 interface ProjectGroup {
   category: Category | null;
@@ -16,8 +20,9 @@ interface ProjectGroup {
 }
 
 function groupByCategory(projects: Project[], categories: Category[]): ProjectGroup[] {
+  const sorted = [...projects].sort((a, b) => a.name.localeCompare(b.name));
   const groups = new Map<string | null, Project[]>();
-  for (const p of projects) {
+  for (const p of sorted) {
     const key = p.categoryId ?? null;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(p);
@@ -32,12 +37,83 @@ function groupByCategory(projects: Project[], categories: Category[]): ProjectGr
   return result;
 }
 
-const ICON_COLORS = ['#2563EB', '#7C3AED', '#059669', '#DC2626', '#D97706', '#0891B2', '#6366F1'];
+const ICON_COLORS = ['#2563eb', '#7c3aed', '#059669', '#dc2626', '#d97706', '#0891b2', '#6366f1'];
 
-function ProjectCard({ project, categoryColor, to, colorIdx }: { project: Project; categoryColor?: string; to: string; colorIdx: number }) {
+const PRESET_COLORS = [
+  '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
+  '#ec4899', '#f43f5e', '#ef4444', '#f97316',
+  '#f59e0b', '#eab308', '#84cc16', '#22c55e',
+  '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9',
+  '#3b82f6', '#6d28d9', '#475569', '#1e293b',
+];
+
+const ROLE_STYLES: Record<string, { bg: string; color: string; border: string }> = {
+  ADMIN: { bg: '#dcfce7', color: '#16a34a', border: '#bbf7d0' },
+  MEMBER: { bg: '#dbeafe', color: '#2563eb', border: '#bfdbfe' },
+};
+
+function timeAgo(dateStr: string, t: (key: string, opts?: Record<string, unknown>) => string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return t('workspace.dashboard.justNow');
+  if (mins < 60) return t('workspace.dashboard.timeAgo.minutes', { count: mins });
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return t('workspace.dashboard.timeAgo.hours', { count: hours });
+  const days = Math.floor(hours / 24);
+  if (days < 7) return t('workspace.dashboard.timeAgo.days', { count: days });
+  const weeks = Math.floor(days / 7);
+  return t('workspace.dashboard.timeAgo.weeks', { count: weeks });
+}
+
+function MemberAvatars({ members, userMap }: { members: TeamMember[]; userMap: Map<string, { fullName?: string; username?: string; avatarUrl?: string }> }) {
+  const maxShow = 2;
+  const shown = members.slice(0, maxShow);
+  const extra = members.length - maxShow;
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center' }}>
+      {shown.map((m, i) => {
+        const u = userMap.get(m.userId);
+        const name = u?.fullName || u?.username || '?';
+        const src = buildAvatarSrc(u?.avatarUrl);
+        return (
+          <div key={m.id} style={{
+            width: 26, height: 26, borderRadius: '50%', overflow: 'hidden',
+            border: '2px solid var(--bg-elevated)',
+            marginLeft: i > 0 ? -8 : 0, flexShrink: 0,
+          }}>
+            {src ? (
+              <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
+            ) : (
+              <div style={{
+                width: '100%', height: '100%', background: 'var(--accent)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--accent-fg)', fontSize: 10, fontWeight: 700,
+              }}>
+                {name.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      {extra > 0 && (
+        <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 600, color: 'var(--text-faint)' }}>
+          +{extra}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function ProjectCard({ project, to, colorIdx, myRole, members, userMap }: {
+  project: Project; to: string; colorIdx: number;
+  myRole?: string; members: TeamMember[];
+  userMap: Map<string, { fullName?: string; username?: string; avatarUrl?: string }>;
+}) {
   const { t } = useTranslation();
-  const bgColor = categoryColor || ICON_COLORS[colorIdx % ICON_COLORS.length];
-  const timeSince = new Date(project.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  const bgColor = project.color || ICON_COLORS[colorIdx % ICON_COLORS.length];
+  const roleStyle = myRole ? ROLE_STYLES[myRole] || ROLE_STYLES.MEMBER : null;
+  const isPrivate = project.visibility === 'PRIVATE';
 
   return (
     <Link
@@ -50,20 +126,36 @@ function ProjectCard({ project, categoryColor, to, colorIdx }: { project: Projec
         padding: '20px',
         textDecoration: 'none',
         transition: 'border-color 150ms, box-shadow 150ms',
-        minHeight: 160,
+        minHeight: 170,
       }}
       onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
       onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
     >
-      {/* Top row: icon + badge */}
+      {/* Top row: icon + role badge + visibility */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
         <div style={{
           width: 40, height: 40, flexShrink: 0,
-          background: `${bgColor}15`, borderRadius: 'var(--radius-md)',
+          background: bgColor, borderRadius: 'var(--radius-md)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: bgColor, fontSize: 17, fontWeight: 700,
+          color: '#fff', fontSize: 17, fontWeight: 700,
         }}>
           {project.name.charAt(0).toUpperCase()}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {roleStyle && myRole && (
+            <span style={{
+              display: 'inline-block', padding: '2px 10px',
+              fontSize: 11, fontWeight: 600,
+              color: roleStyle.color, background: roleStyle.bg,
+              border: `1px solid ${roleStyle.border}`,
+              borderRadius: 'var(--radius-pill)',
+            }}>
+              {t(`workspace.dashboard.roles.${myRole}`)}
+            </span>
+          )}
+          {isPrivate && (
+            <Lock size={14} strokeWidth={2} style={{ color: 'var(--text-faint)' }} />
+          )}
         </div>
       </div>
 
@@ -87,10 +179,13 @@ function ProjectCard({ project, categoryColor, to, colorIdx }: { project: Projec
         )}
       </div>
 
-      {/* Bottom: date */}
-      <p style={{ margin: '14px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
-        {t('common.createdAt', { date: timeSince })}
-      </p>
+      {/* Bottom: avatars + updated ago */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
+        <MemberAvatars members={members} userMap={userMap} />
+        <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+          {t('workspace.dashboard.updated', { time: timeAgo(project.updatedAt, t) })}
+        </span>
+      </div>
     </Link>
   );
 }
@@ -118,14 +213,19 @@ const labelStyle: React.CSSProperties = {
 export default function WorkspaceDashboardPage() {
   const { t } = useTranslation();
   const { workspaceId } = useParams<{ workspaceId: string }>();
+  const currentUser = useAuthStore((s) => s.user);
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [projectMembers, setProjectMembers] = useState<Record<string, TeamMember[]>>({});
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [projectDescription, setProjectDescription] = useState('');
   const [projectCategoryId, setProjectCategoryId] = useState('');
+  const [projectColor, setProjectColor] = useState('#6366f1');
+  const [projectTeamId, setProjectTeamId] = useState('');
   const [projectVisibility, setProjectVisibility] = useState<ProjectVisibility>('PRIVATE');
+  const [teams, setTeams] = useState<Team[]>([]);
 
   const [showInlineCatForm, setShowInlineCatForm] = useState(false);
   const [newCatName, setNewCatName] = useState('');
@@ -142,21 +242,43 @@ export default function WorkspaceDashboardPage() {
 
   const loadData = () => {
     if (!workspaceId) return;
-    projectsAction.run(projectsApi.list(workspaceId)).then((data) => { if (data) setProjects(data); });
+    projectsAction.run(projectsApi.list(workspaceId)).then((data) => {
+      if (data) {
+        setProjects(data);
+        // Fetch members for each project
+        Promise.all(data.map(async (p) => {
+          try {
+            const res = await projectsApi.getTeamMembers(p.id);
+            return { projectId: p.id, members: res.data };
+          } catch { return { projectId: p.id, members: [] }; }
+        })).then((results) => {
+          const map: Record<string, TeamMember[]> = {};
+          results.forEach((r) => { map[r.projectId] = r.members; });
+          setProjectMembers(map);
+        });
+      }
+    });
     categoriesAction.run(categoriesApi.list(workspaceId)).then((data) => { if (data) setCategories(data); });
+    teamsApi.list(workspaceId).then((res) => setTeams(res.data)).catch(() => {});
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { loadData(); }, [workspaceId]);
 
+  // Collect all user IDs from project members for avatar resolution
+  const allMemberUserIds = Object.values(projectMembers).flat().map((m) => m.userId);
+  const userMap = useUserMap(allMemberUserIds);
+
   const handleCreateProject = async (e: FormEvent) => {
     e.preventDefault();
-    if (!workspaceId) return;
+    if (!workspaceId || !projectTeamId) return;
     const data = await createAction.run(
       projectsApi.create(workspaceId, {
         name: projectName,
         description: projectDescription || undefined,
         categoryId: projectCategoryId || undefined,
+        teamId: projectTeamId,
+        color: projectColor,
         visibility: projectVisibility,
       }),
     );
@@ -175,6 +297,8 @@ export default function WorkspaceDashboardPage() {
     setProjectName('');
     setProjectDescription('');
     setProjectCategoryId('');
+    setProjectColor('#6366f1');
+    setProjectTeamId('');
     setProjectVisibility('PRIVATE');
     setShowInlineCatForm(false);
     setNewCatName('');
@@ -234,27 +358,27 @@ export default function WorkspaceDashboardPage() {
           <PageTitle>
             {t('workspace.dashboard.title')}
           </PageTitle>
-          <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--text-muted)' }}>
-            {projects.length === 0
-              ? t('workspace.dashboard.noProjectsYet')
-              : t('workspace.dashboard.count', { count: projects.length })}
+          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-faint)' }}>
+            {t('workspace.dashboard.subtitle')}
           </p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            padding: '9px 16px', fontSize: 13, fontWeight: 600,
-            background: 'var(--accent)', color: 'var(--accent-fg)',
-            border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-            transition: 'background 150ms',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
-        >
-          <Plus size={15} strokeWidth={2.5} />
-          {t('workspace.dashboard.newProject')}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '9px 18px', fontSize: 13, fontWeight: 600,
+              background: 'var(--accent)', color: 'var(--accent-fg)',
+              border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+              transition: 'background 150ms',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
+          >
+            <Plus size={15} strokeWidth={2.5} />
+            {t('workspace.dashboard.newProject')}
+          </button>
+        </div>
       </div>
 
       {(projectsAction.error || categoriesAction.error) && (
@@ -263,7 +387,10 @@ export default function WorkspaceDashboardPage() {
 
       {/* Category filter tabs */}
       {!loading && allGroups.length > 0 && filterTabs.length > 2 && (
-        <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 4 }}>
+            {t('workspace.dashboard.view')}:
+          </span>
           {filterTabs.map((tab) => {
             const isActive = activeFilter === tab.id;
             return (
@@ -349,14 +476,8 @@ export default function WorkspaceDashboardPage() {
                   }
                   {group.category?.color && (
                     <span style={{
-                      width: 8, height: 8, borderRadius: '50%',
+                      width: 10, height: 10, borderRadius: '50%',
                       background: group.category.color, flexShrink: 0,
-                    }} />
-                  )}
-                  {!group.category?.color && (
-                    <span style={{
-                      width: 8, height: 8, borderRadius: '50%',
-                      background: 'var(--border-strong)', flexShrink: 0,
                     }} />
                   )}
                   <h2 style={{
@@ -369,10 +490,11 @@ export default function WorkspaceDashboardPage() {
                     fontSize: 12, fontWeight: 600, color: 'var(--text-faint)',
                     background: 'var(--bg-hover)', border: '1px solid var(--border)',
                     borderRadius: 'var(--radius-sm)', padding: '1px 8px',
-                    fontFamily: 'var(--font-mono)',
+                    fontFamily: 'var(--font-mono)', flexShrink: 0,
                   }}>
                     {group.projects.length}
                   </span>
+                  <div style={{ flex: 1, height: 1, background: 'var(--border)', marginLeft: 4 }} />
                 </button>
 
                 {/* Projects grid */}
@@ -382,15 +504,21 @@ export default function WorkspaceDashboardPage() {
                     gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                     gap: 14,
                   }}>
-                    {group.projects.map((p, pIdx) => (
-                      <ProjectCard
-                        key={p.id}
-                        project={p}
-                        categoryColor={group.category?.color}
-                        to={`/workspaces/${workspaceId}/projects/${p.id}`}
-                        colorIdx={pIdx}
-                      />
-                    ))}
+                    {group.projects.map((p, pIdx) => {
+                      const pMembers = projectMembers[p.id] || [];
+                      const myMembership = pMembers.find((m) => m.userId === currentUser?.id);
+                      return (
+                        <ProjectCard
+                          key={p.id}
+                          project={p}
+                          to={`/workspaces/${workspaceId}/projects/${p.id}`}
+                          colorIdx={pIdx}
+                          myRole={myMembership?.role}
+                          members={pMembers}
+                          userMap={userMap}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -462,6 +590,42 @@ export default function WorkspaceDashboardPage() {
                   />
                 </div>
 
+                {/* Color picker */}
+                <div>
+                  <label style={labelStyle}>{t('workspace.dashboard.modal.color')}</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {PRESET_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setProjectColor(c)}
+                        style={{
+                          width: 24, height: 24,
+                          borderRadius: 'var(--radius-sm)',
+                          background: c,
+                          border: projectColor === c ? '2px solid var(--text)' : '2px solid transparent',
+                          cursor: 'pointer',
+                          padding: 0,
+                          outline: projectColor === c ? '2px solid var(--bg-elevated)' : 'none',
+                          outlineOffset: -4,
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 'var(--radius-md)',
+                      background: projectColor, display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700,
+                    }}>
+                      {projectName.trim() ? projectName.charAt(0).toUpperCase() : 'P'}
+                    </div>
+                    <span style={{ fontSize: 12, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+                      {projectColor}
+                    </span>
+                  </div>
+                </div>
+
                 <div>
                   <label style={labelStyle}>
                     {t('workspace.dashboard.modal.description')}{' '}
@@ -476,6 +640,20 @@ export default function WorkspaceDashboardPage() {
                     onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
                     onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
                   />
+                </div>
+
+                {/* Team (required) */}
+                <div>
+                  <label style={labelStyle}>{t('workspace.dashboard.modal.team', { defaultValue: 'Team' })}</label>
+                  <select
+                    value={projectTeamId}
+                    onChange={(e) => setProjectTeamId(e.target.value)}
+                    required
+                    style={inputStyle}
+                  >
+                    <option value="">{t('workspace.dashboard.modal.selectTeam', { defaultValue: 'Select a team…' })}</option>
+                    {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+                  </select>
                 </div>
 
                 {/* Category */}

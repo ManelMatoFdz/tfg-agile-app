@@ -1,7 +1,6 @@
 package com.tfg.agile.app.project_service.controller;
 
 import com.tfg.agile.app.project_service.dto.MemberPermissionsDto;
-import com.tfg.agile.app.project_service.entity.ProjectRole;
 import com.tfg.agile.app.project_service.entity.ScrumRole;
 import com.tfg.agile.app.project_service.service.ProjectService;
 import org.junit.jupiter.api.Test;
@@ -25,7 +24,7 @@ class InternalProjectControllerTest {
         InternalProjectController controller = new InternalProjectController(projectService);
         UUID projectId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
-        MemberPermissionsDto dto = new MemberPermissionsDto(ProjectRole.ADMIN, ScrumRole.SCRUM_MASTER);
+        MemberPermissionsDto dto = new MemberPermissionsDto(true, false, ScrumRole.SCRUM_MASTER);
 
         when(projectService.getMemberPermissions(projectId, userId)).thenReturn(dto);
 
@@ -34,4 +33,3 @@ class InternalProjectControllerTest {
         assertThat(response).isEqualTo(dto);
     }
 }
-

@@ -11,7 +11,6 @@ import com.tfg.agile.app.project_service.exception.ConflictException;
 import com.tfg.agile.app.project_service.exception.ForbiddenException;
 import com.tfg.agile.app.project_service.exception.ResourceNotFoundException;
 import com.tfg.agile.app.project_service.repository.CategoryRepository;
-import com.tfg.agile.app.project_service.repository.ProjectMemberRepository;
 import com.tfg.agile.app.project_service.repository.ProjectRepository;
 import com.tfg.agile.app.project_service.repository.TeamMemberRepository;
 import com.tfg.agile.app.project_service.repository.TeamRepository;
@@ -49,8 +48,6 @@ class WorkspaceServiceTest {
     @Mock
     private ProjectRepository projectRepository;
     @Mock
-    private ProjectMemberRepository projectMemberRepository;
-    @Mock
     private CategoryRepository categoryRepository;
     @Mock
     private WorkspaceInvitationRepository invitationRepository;
@@ -65,7 +62,6 @@ class WorkspaceServiceTest {
                 teamRepository,
                 teamMemberRepository,
                 projectRepository,
-                projectMemberRepository,
                 categoryRepository,
                 invitationRepository
         );

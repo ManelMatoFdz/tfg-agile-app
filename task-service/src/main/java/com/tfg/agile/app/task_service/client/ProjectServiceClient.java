@@ -37,4 +37,26 @@ public class ProjectServiceClient {
             throw ex;
         }
     }
+
+    public void touchProject(UUID projectId) {
+        try {
+            restClient.post()
+                    .uri("/internal/projects/{projectId}/touch", projectId)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception ignored) {
+            // Non-critical: if project-service is down, task operations should still succeed
+        }
+    }
+
+    public void touchMemberActivity(UUID projectId, UUID userId) {
+        try {
+            restClient.post()
+                    .uri("/internal/projects/{projectId}/members/{userId}/touch", projectId, userId)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception ignored) {
+            // Non-critical
+        }
+    }
 }

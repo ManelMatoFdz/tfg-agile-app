@@ -55,56 +55,9 @@ public class ProjectController {
         return ResponseEntity.noContent().build();
     }
 
-    // ── members ──────────────────────────────────────────────────────────────
-
-    @GetMapping("/projects/{projectId}/members")
-    public List<ProjectMemberResponseDto> getMembers(@PathVariable("projectId") UUID projectId,
-                                                     @AuthenticationPrincipal UUID callerId) {
-        return projectService.getMembers(projectId, callerId);
-    }
-
-    @PostMapping("/projects/{projectId}/members")
-    public ResponseEntity<ProjectMemberResponseDto> addMember(
-            @PathVariable("projectId") UUID projectId,
-            @Valid @RequestBody AddMemberRequestDto dto,
-            @AuthenticationPrincipal UUID callerId) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(projectService.addMember(projectId, dto, callerId));
-    }
-
-    @PutMapping("/projects/{projectId}/members/{userId}")
-    public ProjectMemberResponseDto updateMemberRole(
-            @PathVariable("projectId") UUID projectId,
-            @PathVariable("userId") UUID userId,
-            @Valid @RequestBody UpdateMemberRoleRequestDto dto,
-            @AuthenticationPrincipal UUID callerId) {
-        return projectService.updateMemberRole(projectId, userId, dto, callerId);
-    }
-
-    @PatchMapping("/projects/{projectId}/members/{userId}/scrum-role")
-    public ProjectMemberResponseDto updateScrumRole(
-            @PathVariable("projectId") UUID projectId,
-            @PathVariable("userId") UUID userId,
-            @RequestBody(required = false) UpdateScrumRoleRequestDto dto,
-            @AuthenticationPrincipal UUID callerId) {
-        return projectService.updateScrumRole(projectId, userId, dto, callerId);
-    }
-
-    @DeleteMapping("/projects/{projectId}/members/{userId}")
-    public ResponseEntity<Void> removeMember(@PathVariable("projectId") UUID projectId,
-                                             @PathVariable("userId") UUID userId,
-                                             @AuthenticationPrincipal UUID callerId) {
-        projectService.removeMember(projectId, userId, callerId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PostMapping("/projects/{projectId}/members/from-team/{teamId}")
-    public ResponseEntity<List<ProjectMemberResponseDto>> addMembersFromTeam(
-            @PathVariable("projectId") UUID projectId,
-            @PathVariable("teamId") UUID teamId,
-            @RequestBody(required = false) AddTeamMembersRequestDto dto,
-            @AuthenticationPrincipal UUID callerId) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(projectService.addMembersFromTeam(projectId, teamId, dto, callerId));
+    @GetMapping("/projects/{projectId}/team-members")
+    public List<TeamMemberResponseDto> getTeamMembers(@PathVariable("projectId") UUID projectId,
+                                                       @AuthenticationPrincipal UUID callerId) {
+        return projectService.getTeamMembers(projectId, callerId);
     }
 }

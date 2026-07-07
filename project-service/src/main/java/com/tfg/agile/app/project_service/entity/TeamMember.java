@@ -38,8 +38,14 @@ public class TeamMember {
     @Column(nullable = false)
     private TeamRole role;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private ScrumRole scrumRole;
+
     @Column(nullable = false, updatable = false)
     private Instant joinedAt;
+
+    private Instant lastActiveAt;
 
     @PrePersist
     void prePersist() {
