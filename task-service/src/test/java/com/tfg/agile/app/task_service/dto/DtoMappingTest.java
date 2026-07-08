@@ -4,7 +4,6 @@ import com.tfg.agile.app.task_service.entity.Sprint;
 import com.tfg.agile.app.task_service.entity.SprintStatus;
 import com.tfg.agile.app.task_service.entity.Task;
 import com.tfg.agile.app.task_service.entity.TaskPriority;
-import com.tfg.agile.app.task_service.entity.TaskStatus;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -24,7 +23,7 @@ class DtoMappingTest {
                 .sprintId(UUID.randomUUID())
                 .title("Task")
                 .description("Desc")
-                .status(TaskStatus.IN_PROGRESS)
+                .status("IN_PROGRESS")
                 .priority(TaskPriority.HIGH)
                 .reporterId(UUID.randomUUID())
                 .assigneeId(UUID.randomUUID())
@@ -38,7 +37,7 @@ class DtoMappingTest {
 
         assertThat(dto.id()).isEqualTo(task.getId());
         assertThat(dto.projectId()).isEqualTo(task.getProjectId());
-        assertThat(dto.status()).isEqualTo(TaskStatus.IN_PROGRESS);
+        assertThat(dto.status()).isEqualTo("IN_PROGRESS");
         assertThat(dto.priority()).isEqualTo(TaskPriority.HIGH);
         assertThat(dto.storyPoints()).isEqualTo(8);
     }

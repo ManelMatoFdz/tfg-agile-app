@@ -2,10 +2,8 @@ package com.tfg.agile.app.task_service.dto;
 
 import com.tfg.agile.app.task_service.entity.SprintTaskSnapshot;
 import com.tfg.agile.app.task_service.entity.TaskPriority;
-import com.tfg.agile.app.task_service.entity.TaskStatus;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.UUID;
 
 public record SprintTaskSnapshotDto(
@@ -14,9 +12,8 @@ public record SprintTaskSnapshotDto(
         UUID taskId,
         String title,
         String description,
-        TaskStatus statusAtEnd,
+        String statusAtEnd,
         TaskPriority priority,
-        LocalDate dueDate,
         Instant completedAt,
         Integer storyPoints,
         boolean completed,
@@ -31,7 +28,6 @@ public record SprintTaskSnapshotDto(
                 s.getDescription(),
                 s.getStatusAtEnd(),
                 s.getPriority(),
-                s.getDueDate(),
                 s.getCompletedAt(),
                 s.getStoryPoints(),
                 s.isCompleted(),

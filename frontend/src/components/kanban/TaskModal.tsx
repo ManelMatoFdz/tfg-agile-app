@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X } from 'lucide-react';
-import type { Task, TaskStatus, TaskPriority } from '../../types';
+import { X, ChevronDown, UserCircle } from 'lucide-react';
+import type { Task, TaskPriority, BoardColumn, Label } from '../../types';
 import type { CreateTaskDto, UpdateTaskDto } from '../../api/tasks';
+import { labelsApi } from '../../api/labels';
 import { useProjectMembers } from '../../hooks/useProjectMembers';
 
-const STATUSES: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
 const PRIORITIES: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 
 const PRIORITY_COLOR: Record<TaskPriority, string> = {
@@ -48,29 +48,38 @@ const readOnlyFieldStyle: React.CSSProperties = {
 interface Props {
   task?: Task | null;
   projectId?: string;
-  defaultStatus?: TaskStatus;
+  columns?: BoardColumn[];
+  defaultStatus?: string;
   readOnly?: boolean;
   onClose: () => void;
   onSave?: (dto: CreateTaskDto | UpdateTaskDto) => Promise<void>;
-  onMove?: (status: TaskStatus) => Promise<void>;
+  onMove?: (status: string) => Promise<void>;
   onDelete?: () => Promise<void>;
 }
 
-export default function TaskModal({ task, projectId, defaultStatus = 'TODO', readOnly = false, onClose, onSave, onMove, onDelete }: Props) {
+export default function TaskModal({ task, projectId, columns = [], defaultStatus = 'TODO', readOnly = false, onClose, onSave, onMove, onDelete }: Props) {
   const { t } = useTranslation();
   const isEdit = !!task;
 
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? 'MEDIUM');
-  const [status, setStatus] = useState<TaskStatus>(task?.status ?? defaultStatus);
+  const [status, setStatus] = useState<string>(task?.status ?? defaultStatus);
   const [assigneeId, setAssigneeId] = useState<string>(task?.assigneeId ?? '');
-  const [dueDate, setDueDate] = useState<string>(task?.dueDate ?? '');
+  const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>(
+    task?.labels?.map((l) => l.id) ?? [],
+  );
+  const [projectLabels, setProjectLabels] = useState<Label[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { members, userMap } = useProjectMembers(projectId);
+
+  useEffect(() => {
+    if (!projectId) return;
+    labelsApi.getByProject(projectId).then(setProjectLabels).catch(() => {});
+  }, [projectId]);
 
   const handleSave = async () => {
     if (!title.trim()) return;
@@ -82,7 +91,7 @@ export default function TaskModal({ task, projectId, defaultStatus = 'TODO', rea
         description: description.trim() || undefined,
         priority,
         assigneeId: assigneeId || null,
-        dueDate: dueDate || null,
+        labelIds: selectedLabelIds.length > 0 ? selectedLabelIds : undefined,
       };
       await onSave?.(dto);
       if (isEdit && onMove && status !== task?.status) {
@@ -132,7 +141,8 @@ export default function TaskModal({ task, projectId, defaultStatus = 'TODO', rea
     >
       <div style={{
         width: '100%',
-        maxWidth: 560,
+        maxWidth: 720,
+        minHeight: 480,
         background: 'var(--bg-elevated)',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius-lg)',
@@ -140,7 +150,6 @@ export default function TaskModal({ task, projectId, defaultStatus = 'TODO', rea
         display: 'flex',
         flexDirection: 'column',
         animation: 'scale-in var(--duration-panel) var(--ease-out) both',
-        overflow: 'hidden',
       }}>
         {/* Header */}
         <div style={{
@@ -244,18 +253,18 @@ export default function TaskModal({ task, projectId, defaultStatus = 'TODO', rea
               )}
             </div>
 
-            {isEdit && onMove && (
+            {isEdit && onMove && columns.length > 0 && (
               <div>
                 <label style={labelStyle}>{t('tasks.modal.status')}</label>
                 <select
                   value={status}
-                  onChange={(e) => setStatus(e.target.value as TaskStatus)}
+                  onChange={(e) => setStatus(e.target.value)}
                   style={fieldStyle}
                   onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
                   onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
                 >
-                  {STATUSES.map((s) => (
-                    <option key={s} value={s}>{t(`tasks.status.${s}`)}</option>
+                  {columns.map((col) => (
+                    <option key={col.name} value={col.name}>{col.name.replace(/_/g, ' ')}</option>
                   ))}
                 </select>
               </div>
@@ -268,7 +277,7 @@ export default function TaskModal({ task, projectId, defaultStatus = 'TODO', rea
                   <div style={{ ...readOnlyFieldStyle, display: 'flex', alignItems: 'center', gap: 8 }}>
                     {assigneeId && userMap[assigneeId] ? (
                       <>
-                        <AssigneeAvatar name={userMap[assigneeId].fullName ?? userMap[assigneeId].username} size={22} />
+                        <AssigneeAvatar name={userMap[assigneeId].fullName ?? userMap[assigneeId].username} avatarUrl={userMap[assigneeId].avatarUrl} size={22} />
                         <span style={{ color: 'var(--text)' }}>{userMap[assigneeId].fullName ?? userMap[assigneeId].username}</span>
                       </>
                     ) : (
@@ -276,43 +285,16 @@ export default function TaskModal({ task, projectId, defaultStatus = 'TODO', rea
                     )}
                   </div>
                 ) : (
-                  <select
+                  <AssigneeDropdown
                     value={assigneeId}
-                    onChange={(e) => setAssigneeId(e.target.value)}
-                    style={fieldStyle}
-                    onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
-                    onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
-                  >
-                    <option value="">{t('tasks.modal.unassigned')}</option>
-                    {members.map((m) => {
-                      const u = userMap[m.userId];
-                      const label = u ? (u.fullName ?? u.username) : m.userId;
-                      return <option key={m.userId} value={m.userId}>{label}</option>;
-                    })}
-                  </select>
+                    onChange={setAssigneeId}
+                    members={members}
+                    userMap={userMap}
+                    placeholder={t('tasks.modal.unassigned')}
+                  />
                 )}
               </div>
             )}
-
-            <div>
-              <label style={labelStyle}>{t('tasks.modal.dueDate')}</label>
-              {readOnly ? (
-                <div style={readOnlyFieldStyle}>
-                  {dueDate
-                    ? new Date(dueDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-                    : <span style={{ color: 'var(--text-faint)', fontStyle: 'italic' }}>--</span>}
-                </div>
-              ) : (
-                <input
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) => setDueDate(e.target.value)}
-                  style={fieldStyle}
-                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
-                />
-              )}
-            </div>
 
             {isEdit && (
               <div style={members.length > 0 ? { gridColumn: '1 / -1' } : undefined}>
@@ -352,6 +334,32 @@ export default function TaskModal({ task, projectId, defaultStatus = 'TODO', rea
               </div>
             )}
           </div>
+
+          {/* Labels */}
+          {projectLabels.length > 0 && (
+            <div>
+              <label style={labelStyle}>{t('tasks.modal.labels')}</label>
+              {readOnly ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {selectedLabelIds.length === 0 ? (
+                    <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>—</span>
+                  ) : (
+                    selectedLabelIds.map((id) => {
+                      const lbl = projectLabels.find((l) => l.id === id);
+                      if (!lbl) return null;
+                      return <LabelChip key={id} label={lbl} />;
+                    })
+                  )}
+                </div>
+              ) : (
+                <LabelMultiSelect
+                  labels={projectLabels}
+                  selected={selectedLabelIds}
+                  onChange={setSelectedLabelIds}
+                />
+              )}
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -477,7 +485,299 @@ function nameToColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-export function AssigneeAvatar({ name, size = 22 }: { name: string; size?: number }) {
+function AssigneeDropdown({
+  value,
+  onChange,
+  members,
+  userMap,
+  placeholder,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+  members: { userId: string }[];
+  userMap: Record<string, { username: string; fullName?: string; avatarUrl?: string }>;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const selected = value ? userMap[value] : null;
+  const selectedName = selected ? (selected.fullName ?? selected.username) : null;
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          ...fieldStyle,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          cursor: 'pointer',
+          width: '100%',
+          textAlign: 'left',
+          background: 'var(--bg)',
+        }}
+      >
+        {selected ? (
+          <>
+            <AssigneeAvatar name={selectedName!} avatarUrl={selected.avatarUrl} size={22} />
+            <span style={{ flex: 1, color: 'var(--text)', fontSize: 13 }}>{selectedName}</span>
+          </>
+        ) : (
+          <>
+            <UserCircle size={22} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
+            <span style={{ flex: 1, color: 'var(--text-faint)', fontSize: 13 }}>{placeholder}</span>
+          </>
+        )}
+        <ChevronDown size={14} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 4px)',
+          left: 0,
+          right: 0,
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: 'var(--shadow-lg)',
+          zIndex: 50,
+          maxHeight: 220,
+          overflowY: 'auto',
+          padding: '4px 0',
+        }}>
+          {/* Unassigned option */}
+          <button
+            type="button"
+            onClick={() => { onChange(''); setOpen(false); }}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '8px 12px',
+              border: 'none',
+              background: !value ? 'var(--accent-muted)' : 'transparent',
+              cursor: 'pointer',
+              textAlign: 'left',
+              transition: 'background 100ms',
+            }}
+            onMouseEnter={e => { if (value) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+            onMouseLeave={e => { if (value) e.currentTarget.style.background = 'transparent'; }}
+          >
+            <UserCircle size={26} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
+            <span style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic' }}>{placeholder}</span>
+          </button>
+
+          {members.map((m) => {
+            const u = userMap[m.userId];
+            const name = u ? (u.fullName ?? u.username) : m.userId;
+            const isSelected = m.userId === value;
+            return (
+              <button
+                key={m.userId}
+                type="button"
+                onClick={() => { onChange(m.userId); setOpen(false); }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '8px 12px',
+                  border: 'none',
+                  background: isSelected ? 'var(--accent-muted)' : 'transparent',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 100ms',
+                }}
+                onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
+              >
+                <AssigneeAvatar name={name} avatarUrl={u?.avatarUrl} size={26} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {u?.fullName ?? u?.username ?? m.userId}
+                  </div>
+                  {u?.fullName && (
+                    <div style={{ fontSize: 11, color: 'var(--text-faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      @{u.username}
+                    </div>
+                  )}
+                </div>
+                {isSelected && (
+                  <span style={{ fontSize: 14, color: 'var(--accent)', flexShrink: 0 }}>✓</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function LabelChip({ label, size = 'sm' }: { label: Label; size?: 'sm' | 'md' }) {
+  const isSm = size === 'sm';
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 4,
+      padding: isSm ? '1px 8px' : '2px 10px',
+      fontSize: isSm ? 10 : 11,
+      fontWeight: 600,
+      color: label.color,
+      background: `${label.color}14`,
+      borderRadius: 'var(--radius-pill)',
+      whiteSpace: 'nowrap',
+      letterSpacing: '0.02em',
+    }}>
+      <span style={{ width: isSm ? 6 : 7, height: isSm ? 6 : 7, borderRadius: '50%', background: label.color, flexShrink: 0 }} />
+      {label.name}
+    </span>
+  );
+}
+
+function LabelMultiSelect({
+  labels,
+  selected,
+  onChange,
+}: {
+  labels: Label[];
+  selected: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const toggle = (id: string) => {
+    onChange(
+      selected.includes(id)
+        ? selected.filter((s) => s !== id)
+        : [...selected, id],
+    );
+  };
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          ...fieldStyle,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          flexWrap: 'wrap',
+          cursor: 'pointer',
+          width: '100%',
+          textAlign: 'left',
+          background: 'var(--bg)',
+          minHeight: 40,
+        }}
+      >
+        {selected.length === 0 ? (
+          <span style={{ color: 'var(--text-faint)', fontSize: 13 }}>—</span>
+        ) : (
+          selected.map((id) => {
+            const lbl = labels.find((l) => l.id === id);
+            if (!lbl) return null;
+            return <LabelChip key={id} label={lbl} />;
+          })
+        )}
+        <ChevronDown size={14} strokeWidth={2} style={{ color: 'var(--text-faint)', marginLeft: 'auto', flexShrink: 0 }} />
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute',
+          top: 'calc(100% + 4px)',
+          left: 0,
+          right: 0,
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-md)',
+          boxShadow: 'var(--shadow-lg)',
+          zIndex: 50,
+          maxHeight: 200,
+          overflowY: 'auto',
+          padding: '4px 0',
+        }}>
+          {labels.map((label) => {
+            const isSelected = selected.includes(label.id);
+            return (
+              <button
+                key={label.id}
+                type="button"
+                onClick={() => toggle(label.id)}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '7px 12px',
+                  border: 'none',
+                  background: isSelected ? 'var(--accent-muted)' : 'transparent',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 100ms',
+                }}
+                onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = isSelected ? 'var(--accent-muted)' : 'transparent'; }}
+              >
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: label.color, flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
+                  {label.name}
+                </span>
+                {isSelected && (
+                  <span style={{ fontSize: 14, color: 'var(--accent)', flexShrink: 0 }}>✓</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function AssigneeAvatar({ name, avatarUrl, size = 22 }: { name: string; avatarUrl?: string | null; size?: number }) {
+  if (avatarUrl) {
+    return (
+      <img
+        src={avatarUrl}
+        alt={name}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: 'var(--radius-pill)',
+          objectFit: 'cover',
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
   const initials = name
     .split(' ')
     .filter(Boolean)

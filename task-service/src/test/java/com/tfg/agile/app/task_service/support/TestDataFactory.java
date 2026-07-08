@@ -5,8 +5,6 @@ import com.tfg.agile.app.task_service.entity.Sprint;
 import com.tfg.agile.app.task_service.entity.SprintStatus;
 import com.tfg.agile.app.task_service.entity.Task;
 import com.tfg.agile.app.task_service.entity.TaskPriority;
-import com.tfg.agile.app.task_service.entity.TaskStatus;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -43,7 +41,7 @@ public final class TestDataFactory {
                 .projectId(projectId)
                 .title("Task title")
                 .description("Task description")
-                .status(TaskStatus.TODO)
+                .status("TODO")
                 .priority(TaskPriority.MEDIUM)
                 .reporterId(reporterId)
                 .position(0)

@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronRight, LayoutDashboard, ListChecks, RefreshCw,
-  Users, Layers, BarChart2, Columns, Settings,
+  Users, Layers, BarChart2, Settings,
 } from 'lucide-react';
 import { projectsApi } from '../../api/projects';
 import type { Project } from '../../types';
@@ -15,7 +15,6 @@ const TABS = [
   { key: 'members',  path: 'members',  Icon: Users           },
   { key: 'poker',    path: 'poker',    Icon: Layers          },
   { key: 'metrics',        path: 'metrics',        Icon: BarChart2 },
-  { key: 'boardSettings',  path: 'board-settings', Icon: Columns  },
   { key: 'settings',       path: 'settings',       Icon: Settings },
 ] as const;
 

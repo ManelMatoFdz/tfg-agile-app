@@ -7,7 +7,6 @@ import com.tfg.agile.app.task_service.dto.TaskResponseDto;
 import com.tfg.agile.app.task_service.dto.UpdateSprintRequestDto;
 import com.tfg.agile.app.task_service.entity.SprintStatus;
 import com.tfg.agile.app.task_service.entity.TaskPriority;
-import com.tfg.agile.app.task_service.entity.TaskStatus;
 import com.tfg.agile.app.task_service.service.SprintService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,8 +47,8 @@ class SprintControllerTest {
         );
 
         TaskResponseDto taskResponse = new TaskResponseDto(
-                taskId, projectId, sprintId, "Task", "Desc", TaskStatus.TODO, TaskPriority.MEDIUM,
-                callerId, null, null, null, 3, 0, Instant.now(), Instant.now()
+                taskId, projectId, sprintId, "Task", "Desc", "TODO", TaskPriority.MEDIUM,
+                callerId, null, null, 3, 0, List.of(), Instant.now(), Instant.now()
         );
 
         when(sprintService.getBacklog(projectId, callerId)).thenReturn(List.of(taskResponse));

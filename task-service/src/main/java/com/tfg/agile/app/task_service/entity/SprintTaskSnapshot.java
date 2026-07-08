@@ -34,9 +34,8 @@ public class SprintTaskSnapshot {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private TaskStatus statusAtEnd;
+    @Column(nullable = false, length = 50)
+    private String statusAtEnd;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)

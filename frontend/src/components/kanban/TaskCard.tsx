@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { Task, TaskPriority } from '../../types';
 import type { UserSummary } from '../../types';
-import { AssigneeAvatar } from './TaskModal';
+import { AssigneeAvatar, LabelChip } from './TaskModal';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; border: string; icon: string }> = {
   CRITICAL: { color: '#DC2626', border: '#DC2626', icon: '!!' },
@@ -16,18 +16,12 @@ interface Props {
   onClick: () => void;
 }
 
-function isOverdue(task: Task): boolean {
-  if (!task.dueDate || task.status === 'DONE') return false;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  return new Date(task.dueDate) < today;
-}
-
 export default function TaskCard({ task, assignee, onClick }: Props) {
   const { t } = useTranslation();
-  const overdue = isOverdue(task);
-  const hasFooter = task.storyPoints != null || assignee || overdue;
+  const taskLabels = task.labels ?? [];
+  const hasFooter = !!assignee || taskLabels.length > 0;
   const config = PRIORITY_CONFIG[task.priority];
+  const MAX_VISIBLE_LABELS = 3;
 
   return (
     <button
@@ -125,27 +119,25 @@ export default function TaskCard({ task, assignee, onClick }: Props) {
 
       {hasFooter && (
         <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {overdue && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', minWidth: 0 }}>
+            {taskLabels.slice(0, MAX_VISIBLE_LABELS).map((lbl) => (
+              <LabelChip key={lbl.id} label={lbl} />
+            ))}
+            {taskLabels.length > MAX_VISIBLE_LABELS && (
               <span style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: '#DC2626',
-                background: 'rgba(220,38,38,0.08)',
+                fontSize: 10, fontWeight: 600, color: 'var(--text-faint)',
+                padding: '1px 6px', background: 'var(--bg-hover)',
                 borderRadius: 'var(--radius-pill)',
-                padding: '2px 8px',
-                letterSpacing: '0.03em',
-                textTransform: 'uppercase',
-                whiteSpace: 'nowrap',
               }}>
-                {t('tasks.card.overdue')}
+                +{taskLabels.length - MAX_VISIBLE_LABELS}
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
             {assignee && (
               <AssigneeAvatar
                 name={assignee.fullName ?? assignee.username}
+                avatarUrl={assignee.avatarUrl}
                 size={22}
               />
             )}

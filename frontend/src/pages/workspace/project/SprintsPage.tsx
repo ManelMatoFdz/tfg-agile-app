@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, ChevronRight, LayoutDashboard, BarChart2, X, Zap } from 'lucide-react';
-import type { Sprint, SprintTaskSnapshot, Task, TaskPriority, TaskStatus } from '../../../types';
+import type { Sprint, SprintTaskSnapshot, Task, TaskPriority } from '../../../types';
 import { sprintsApi, type CreateSprintDto } from '../../../api/sprints';
 import { tasksApi, type UpdateTaskDto, type CreateTaskDto } from '../../../api/tasks';
 import TaskModal from '../../../components/kanban/TaskModal';
@@ -20,12 +20,13 @@ const PRIORITY_COLOR: Record<TaskPriority, string> = {
   LOW:      'var(--text-faint)',
 };
 
-const STATUS_COLOR: Record<TaskStatus, string> = {
+const STATUS_COLOR: Record<string, string> = {
   TODO:        'var(--text-faint)',
   IN_PROGRESS: 'var(--ink-blue)',
   IN_REVIEW:   'var(--ochre)',
   DONE:        'var(--success)',
 };
+const DEFAULT_STATUS_COLOR = 'var(--text-faint)';
 
 const SPRINT_LEFT_COLOR: Record<Sprint['status'], string> = {
   PLANNING:  'var(--border)',
@@ -634,7 +635,7 @@ export default function SprintsPage() {
     }
   };
 
-  const handleMoveTask = async (status: TaskStatus) => {
+  const handleMoveTask = async (status: string) => {
     if (!editTask) return;
     const updated = await tasksApi.move(editTask.id, { status, position: 0 });
     if (editTaskSprintId) {
@@ -958,10 +959,10 @@ export default function SprintsPage() {
 
                               <span style={{
                                 flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
-                                textTransform: 'uppercase', color: STATUS_COLOR[snap.statusAtEnd],
+                                textTransform: 'uppercase', color: STATUS_COLOR[snap.statusAtEnd] ?? DEFAULT_STATUS_COLOR,
                                 fontFamily: 'var(--font-mono)',
                               }}>
-                                {t(`tasks.status.${snap.statusAtEnd}`)}
+                                {t(`tasks.status.${snap.statusAtEnd}`, { defaultValue: snap.statusAtEnd.replace(/_/g, ' ') })}
                               </span>
 
                               {snap.storyPoints != null ? (
@@ -1017,10 +1018,10 @@ export default function SprintsPage() {
                             {/* Status */}
                             <span style={{
                               flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
-                              textTransform: 'uppercase', color: STATUS_COLOR[task.status],
+                              textTransform: 'uppercase', color: STATUS_COLOR[task.status] ?? DEFAULT_STATUS_COLOR,
                               fontFamily: 'var(--font-mono)',
                             }}>
-                              {t(`tasks.status.${task.status}`)}
+                              {t(`tasks.status.${task.status}`, { defaultValue: task.status.replace(/_/g, ' ') })}
                             </span>
 
                             {/* Story points */}

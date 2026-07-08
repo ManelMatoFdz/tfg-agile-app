@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, ClipboardList, Search } from 'lucide-react';
-import type { Task, TaskPriority, TaskStatus } from '../../../types';
+import type { Task, TaskPriority } from '../../../types';
 import { sprintsApi } from '../../../api/sprints';
 import { tasksApi } from '../../../api/tasks';
 import type { CreateTaskDto, UpdateTaskDto } from '../../../api/tasks';
@@ -20,7 +20,8 @@ const PRIORITY_CONFIG: Record<TaskPriority, { color: string; bg: string; border:
   LOW:      { color: '#94A3B8', bg: 'var(--bg-hover)',       border: '#CBD5E1' },
 };
 
-const STATUS_CONFIG: Record<TaskStatus, { color: string; dot: string }> = {
+const DEFAULT_STATUS_COLOR = '#94A3B8';
+const STATUS_CONFIG: Record<string, { color: string; dot: string }> = {
   TODO:        { color: '#94A3B8', dot: '#94A3B8' },
   IN_PROGRESS: { color: '#2563EB', dot: '#2563EB' },
   IN_REVIEW:   { color: '#7C3AED', dot: '#7C3AED' },
@@ -338,16 +339,16 @@ export default function BacklogPage() {
                         width: 7,
                         height: 7,
                         borderRadius: '50%',
-                        background: STATUS_CONFIG[task.status].dot,
+                        background: (STATUS_CONFIG[task.status] ?? { dot: DEFAULT_STATUS_COLOR }).dot,
                         flexShrink: 0,
                       }} />
                       <span style={{
                         fontSize: 11,
                         fontWeight: 600,
-                        color: STATUS_CONFIG[task.status].color,
+                        color: (STATUS_CONFIG[task.status] ?? { color: DEFAULT_STATUS_COLOR }).color,
                         fontFamily: 'var(--font-mono)',
                       }}>
-                        {t(`tasks.status.${task.status}`)}
+                        {t(`tasks.status.${task.status}`, { defaultValue: task.status.replace(/_/g, ' ') })}
                       </span>
                     </div>
                   </button>
@@ -381,6 +382,7 @@ export default function BacklogPage() {
       {modalTask !== undefined && (
         <TaskModal
           task={modalTask}
+          projectId={projectId}
           defaultStatus="TODO"
           onClose={() => setModalTask(undefined)}
           onSave={handleSave}

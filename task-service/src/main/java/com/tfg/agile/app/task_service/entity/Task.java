@@ -6,6 +6,8 @@ import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -31,10 +33,9 @@ public class Task {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 50)
     @Builder.Default
-    private TaskStatus status = TaskStatus.TODO;
+    private String status = "TODO";
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -62,6 +63,15 @@ public class Task {
     @Column(nullable = false)
     @Builder.Default
     private int position = 0;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "task_labels",
+            joinColumns = @JoinColumn(name = "task_id"),
+            inverseJoinColumns = @JoinColumn(name = "label_id")
+    )
+    @Builder.Default
+    private Set<Label> labels = new HashSet<>();
 
     @Column(nullable = false, updatable = false)
     private Instant createdAt;

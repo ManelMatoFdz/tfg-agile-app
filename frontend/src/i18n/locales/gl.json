@@ -401,7 +401,8 @@
       "loadError": "Erro ao cargar as tarefas.",
       "noActiveSprint": "Non hai ningún sprint activo",
       "noActiveSprintSub": "Activa un sprint desde a sección",
-      "overdueBanner": "Este sprint venceu hai {{days}} día(s). {{pending}} tarefa(s) pendentes."
+      "overdueBanner": "Este sprint venceu hai {{days}} día(s). {{pending}} tarefa(s) pendentes.",
+      "uncategorized": "Sen categoría"
     },
     "boardSettings": {
       "title": "Configuración do taboleiro",
@@ -412,9 +413,16 @@
       "wipLimit": "Límite WIP",
       "wipNone": "Ningún",
       "addColumn": "Engadir columna",
-      "addColumnDisabled": "As columnas do taboleiro son fixas",
-      "ctaTitle": "Queres optimizar o teu fluxo de traballo?",
-      "ctaSubtitle": "Engade columnas personalizadas como Peer Review, QA ou Staging."
+      "color": "Cor",
+      "save": "Gardar",
+      "saved": "Gardado",
+      "noColumns": "Non hai columnas configuradas. Engade unha para comezar.",
+      "loadError": "Erro ao cargar as columnas.",
+      "saveError": "Erro ao gardar as columnas.",
+      "errorEmptyName": "Todas as columnas deben ter un nome.",
+      "errorNoDone": "Polo menos unha columna debe estar marcada como equivalente a DONE.",
+      "errorDuplicateName": "Os nomes de columna non se poden repetir.",
+      "errorWipExceeded": "A columna \"{{column}}\" ten {{current}} tarefa(s) pero o límite WIP é {{limit}}."
     },
     "members": {
       "title": "Membros",
@@ -471,7 +479,13 @@
       "deleteConfirmBtn": "Eliminar este proxecto",
       "deleting": "Eliminando...",
       "deleteError": "Erro ao eliminar o proxecto.",
-      "deleteSuccess": "Proxecto eliminado."
+      "deleteSuccess": "Proxecto eliminado.",
+      "labels": {
+        "title": "Etiquetas",
+        "namePlaceholder": "Nome da etiqueta",
+        "add": "Engadir",
+        "empty": "Non hai etiquetas definidas para este proxecto."
+      }
     },
     "metrics": {
       "title": "Métricas do proxecto",
@@ -651,6 +665,7 @@
       "unassigned": "Sen asignar",
       "dueDate": "Data límite",
       "completedAt": "Completada o",
+      "labels": "Etiquetas",
       "loadError": "Erro ao gardar a tarefa."
     },
     "card": {

@@ -6,19 +6,20 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, Legend,
 } from 'recharts';
-import type { Sprint, SprintTaskSnapshot, Task, TaskPriority, TaskStatus } from '../../../types';
+import type { Sprint, SprintTaskSnapshot, Task, TaskPriority } from '../../../types';
 import { sprintsApi } from '../../../api/sprints';
 import Alert from '../../../components/ui/Alert';
 import SnapshotModal from '../../../components/sprints/SnapshotModal';
 import PageTitle from '../../../components/motion/PageTitle';
 import CountUp from '../../../components/motion/CountUp';
 
-const STATUS_COLORS: Record<TaskStatus, string> = {
+const STATUS_COLORS: Record<string, string> = {
   DONE:        'var(--success)',
   IN_PROGRESS: 'var(--ink-blue)',
   IN_REVIEW:   'var(--ochre)',
   TODO:        'var(--text-faint)',
 };
+const DEFAULT_STATUS_COLOR = 'var(--text-faint)';
 
 const PRIORITY_COLOR: Record<TaskPriority, string> = {
   CRITICAL: 'var(--danger)',
@@ -140,7 +141,7 @@ export default function SprintReportPage() {
   const [snapshots, setSnapshots] = useState<SprintTaskSnapshot[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedStatus, setExpandedStatus] = useState<TaskStatus | null>('DONE');
+  const [expandedStatus, setExpandedStatus] = useState<string | null>('DONE');
   const [selectedSnapshot, setSelectedSnapshot] = useState<SprintTaskSnapshot | null>(null);
 
   useEffect(() => {
@@ -251,14 +252,14 @@ export default function SprintReportPage() {
 
   // For completed sprints with snapshots, show all tasks grouped by statusAtEnd
   const statusGroups = hasSnapshots
-    ? (['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'DONE'] as TaskStatus[])
+    ? (['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'DONE'] as string[])
         .map((status) => ({
           status,
           snapshots: snapshots.filter((s) => s.statusAtEnd === status),
           tasks: [] as Task[],
         }))
         .filter((g) => g.snapshots.length > 0)
-    : (['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'DONE'] as TaskStatus[])
+    : (['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'DONE'] as string[])
         .map((status) => ({
           status,
           snapshots: [] as SprintTaskSnapshot[],
@@ -570,9 +571,9 @@ export default function SprintReportPage() {
                     onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                   >
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: STATUS_COLORS[status], flexShrink: 0 }} />
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: STATUS_COLORS[status] ?? DEFAULT_STATUS_COLOR, flexShrink: 0 }} />
                     <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', flex: 1 }}>
-                      {t(`tasks.status.${status}`)}
+                      {t(`tasks.status.${status}`, { defaultValue: status.replace(/_/g, ' ') })}
                     </span>
                     <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '0 4px' }}>
                       {itemCount}

@@ -401,7 +401,8 @@
       "loadError": "Error al cargar las tareas.",
       "noActiveSprint": "No hay ningún sprint activo",
       "noActiveSprintSub": "Activa un sprint desde la sección",
-      "overdueBanner": "Este sprint venció hace {{days}} día(s). {{pending}} tarea(s) pendientes."
+      "overdueBanner": "Este sprint venció hace {{days}} día(s). {{pending}} tarea(s) pendientes.",
+      "uncategorized": "Sin categoría"
     },
     "boardSettings": {
       "title": "Configuración del tablero",
@@ -412,9 +413,16 @@
       "wipLimit": "Límite WIP",
       "wipNone": "Ninguno",
       "addColumn": "Añadir columna",
-      "addColumnDisabled": "Las columnas del tablero son fijas",
-      "ctaTitle": "¿Quieres optimizar tu flujo de trabajo?",
-      "ctaSubtitle": "Añade columnas personalizadas como Peer Review, QA o Staging."
+      "color": "Color",
+      "save": "Guardar",
+      "saved": "Guardado",
+      "noColumns": "No hay columnas configuradas. Añade una para empezar.",
+      "loadError": "Error al cargar las columnas.",
+      "saveError": "Error al guardar las columnas.",
+      "errorEmptyName": "Todas las columnas deben tener un nombre.",
+      "errorNoDone": "Al menos una columna debe estar marcada como equivalente a DONE.",
+      "errorDuplicateName": "Los nombres de columna no pueden repetirse.",
+      "errorWipExceeded": "La columna \"{{column}}\" tiene {{current}} tarea(s) pero el límite WIP es {{limit}}."
     },
     "members": {
       "title": "Miembros",
@@ -471,7 +479,13 @@
       "deleteConfirmBtn": "Eliminar este proyecto",
       "deleting": "Eliminando...",
       "deleteError": "Error al eliminar el proyecto.",
-      "deleteSuccess": "Proyecto eliminado."
+      "deleteSuccess": "Proyecto eliminado.",
+      "labels": {
+        "title": "Etiquetas",
+        "namePlaceholder": "Nombre de la etiqueta",
+        "add": "Añadir",
+        "empty": "No hay etiquetas definidas para este proyecto."
+      }
     },
     "metrics": {
       "title": "Métricas del proyecto",
@@ -647,6 +661,7 @@
       "unassigned": "Sin asignar",
       "dueDate": "Fecha límite",
       "completedAt": "Completada el",
+      "labels": "Etiquetas",
       "create": "Crear tarea",
       "save": "Guardar cambios",
       "deleteTask": "Eliminar tarea",

@@ -121,9 +121,23 @@ export type ScrumRole = 'PRODUCT_OWNER' | 'SCRUM_MASTER' | 'DEVELOPER';
 
 // ── Task-service types ────────────────────────────────────────────────────────
 
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type SprintStatus = 'PLANNING' | 'ACTIVE' | 'COMPLETED';
+
+export interface BoardColumn {
+  id: string;
+  name: string;
+  position: number;
+  color: string;
+  wipLimit: number | null;
+  doneEquivalent: boolean;
+}
+
+export interface Label {
+  id: string;
+  name: string;
+  color: string;
+}
 
 export interface Task {
   id: string;
@@ -131,14 +145,14 @@ export interface Task {
   sprintId?: string | null;
   title: string;
   description?: string | null;
-  status: TaskStatus;
+  status: string;
   priority: TaskPriority;
   reporterId: string;
   assigneeId?: string | null;
-  dueDate?: string | null;
   completedAt?: string | null;
   storyPoints?: number | null;
   position: number;
+  labels?: Label[];
   createdAt: string;
   updatedAt: string;
 }
@@ -168,9 +182,8 @@ export interface SprintTaskSnapshot {
   taskId: string | null;
   title: string;
   description?: string | null;
-  statusAtEnd: TaskStatus;
+  statusAtEnd: string;
   priority: TaskPriority;
-  dueDate?: string | null;
   completedAt?: string | null;
   storyPoints?: number | null;
   completed: boolean;

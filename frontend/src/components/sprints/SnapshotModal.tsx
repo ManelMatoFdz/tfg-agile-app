@@ -1,13 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import { X, Archive } from 'lucide-react';
-import type { SprintTaskSnapshot, TaskPriority, TaskStatus } from '../../types';
+import type { SprintTaskSnapshot, TaskPriority } from '../../types';
 
-const STATUS_COLOR: Record<TaskStatus, string> = {
+const STATUS_COLOR: Record<string, string> = {
   TODO:        'var(--text-faint)',
   IN_PROGRESS: 'var(--ink-blue)',
   IN_REVIEW:   'var(--ochre)',
   DONE:        'var(--success)',
 };
+const DEFAULT_STATUS_COLOR = 'var(--text-faint)';
 
 const PRIORITY_STYLE: Record<TaskPriority, { color: string; bg: string }> = {
   CRITICAL: { color: 'var(--danger)', bg: 'var(--danger-bg)' },
@@ -113,12 +114,12 @@ export default function SnapshotModal({ snapshot, onClose }: Props) {
               <label style={labelStyle}>{t('tasks.modal.status')}</label>
               <span style={{
                 display: 'inline-block', fontSize: 11, fontWeight: 600,
-                color: STATUS_COLOR[snapshot.statusAtEnd],
-                background: `${STATUS_COLOR[snapshot.statusAtEnd]}15`,
-                border: `1px solid ${STATUS_COLOR[snapshot.statusAtEnd]}33`,
+                color: STATUS_COLOR[snapshot.statusAtEnd] ?? DEFAULT_STATUS_COLOR,
+                background: `${STATUS_COLOR[snapshot.statusAtEnd] ?? DEFAULT_STATUS_COLOR}15`,
+                border: `1px solid ${STATUS_COLOR[snapshot.statusAtEnd] ?? DEFAULT_STATUS_COLOR}33`,
                 borderRadius: 'var(--radius-sm)', padding: '2px 8px',
               }}>
-                {t(`tasks.status.${snapshot.statusAtEnd}`)}
+                {t(`tasks.status.${snapshot.statusAtEnd}`, { defaultValue: snapshot.statusAtEnd.replace(/_/g, ' ') })}
               </span>
             </div>
             <div>

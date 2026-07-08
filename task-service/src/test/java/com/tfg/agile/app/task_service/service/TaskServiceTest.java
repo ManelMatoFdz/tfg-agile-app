@@ -6,9 +6,9 @@ import com.tfg.agile.app.task_service.dto.MoveTaskRequestDto;
 import com.tfg.agile.app.task_service.dto.UpdateTaskRequestDto;
 import com.tfg.agile.app.task_service.entity.Task;
 import com.tfg.agile.app.task_service.entity.TaskPriority;
-import com.tfg.agile.app.task_service.entity.TaskStatus;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
+import com.tfg.agile.app.task_service.repository.LabelRepository;
 import com.tfg.agile.app.task_service.repository.TaskRepository;
 import com.tfg.agile.app.task_service.support.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,13 +34,17 @@ class TaskServiceTest {
     @Mock
     private TaskRepository taskRepository;
     @Mock
+    private LabelRepository labelRepository;
+    @Mock
     private ProjectServiceClient projectServiceClient;
+    @Mock
+    private BoardColumnService boardColumnService;
 
     private TaskService service;
 
     @BeforeEach
     void setUp() {
-        service = new TaskService(taskRepository, projectServiceClient);
+        service = new TaskService(taskRepository, labelRepository, projectServiceClient, boardColumnService);
     }
 
     @Test
@@ -133,7 +137,8 @@ class TaskServiceTest {
         UUID callerId = UUID.randomUUID();
 
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
-        when(taskRepository.findByProjectIdAndStatusOrderByPositionAsc(projectId, TaskStatus.TODO)).thenReturn(List.of(new Task(), new Task()));
+        when(boardColumnService.getFirstColumnName(projectId)).thenReturn("TODO");
+        when(taskRepository.findByProjectIdAndStatusOrderByPositionAsc(projectId, "TODO")).thenReturn(List.of(new Task(), new Task()));
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = service.create(projectId,
@@ -287,7 +292,7 @@ class TaskServiceTest {
 
         var response = service.move(task.getId(), new MoveTaskRequestDto("in_review", 4), callerId);
 
-        assertThat(response.status()).isEqualTo(TaskStatus.IN_REVIEW);
+        assertThat(response.status()).isEqualTo("in_review");
         assertThat(response.position()).isEqualTo(4);
     }
 

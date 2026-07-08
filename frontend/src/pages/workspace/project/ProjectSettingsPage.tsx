@@ -1,14 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Settings, AlertTriangle } from 'lucide-react';
+import { Settings, AlertTriangle, Plus, Trash2, Tag } from 'lucide-react';
 import { projectsApi } from '../../../api/projects';
 import { categoriesApi } from '../../../api/categories';
+import { labelsApi } from '../../../api/labels';
 import { useAuthStore } from '../../../store/authStore';
 import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
 import { workspacesApi } from '../../../api/workspaces';
-import type { Category, Project, ProjectVisibility } from '../../../types';
+import type { Category, Label, Project, ProjectVisibility } from '../../../types';
 
 const PRESET_COLORS = [
   '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
@@ -68,6 +69,13 @@ export default function ProjectSettingsPage() {
   const [visibility, setVisibility] = useState<ProjectVisibility>('PRIVATE');
   const [saving, setSaving] = useState(false);
 
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [newLabelName, setNewLabelName] = useState('');
+  const [newLabelColor, setNewLabelColor] = useState('#6366f1');
+  const [editingLabelId, setEditingLabelId] = useState<string | null>(null);
+  const [editLabelName, setEditLabelName] = useState('');
+  const [editLabelColor, setEditLabelColor] = useState('');
+
   const [showDeleteZone, setShowDeleteZone] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [deleting, setDeleting] = useState(false);
@@ -79,8 +87,9 @@ export default function ProjectSettingsPage() {
       projectsApi.getTeamMembers(projectId),
       categoriesApi.list(workspaceId),
       workspacesApi.getMembers(workspaceId),
+      labelsApi.getByProject(projectId),
     ])
-      .then(([projRes, teamMembersRes, catRes, wsMembersRes]) => {
+      .then(([projRes, teamMembersRes, catRes, wsMembersRes, labelsRes]) => {
         setProject(projRes.data);
         setName(projRes.data.name);
         setDescription(projRes.data.description ?? '');
@@ -88,6 +97,7 @@ export default function ProjectSettingsPage() {
         setColor((projRes.data.color ?? '#6366f1').toLowerCase());
         setVisibility(projRes.data.visibility ?? 'PRIVATE');
         setCategories(catRes.data);
+        setLabels(labelsRes);
         const wsAdmin = wsMembersRes.data.some(
           (m) => m.userId === currentUser?.id && m.role === 'ADMIN',
         );
@@ -304,6 +314,187 @@ export default function ProjectSettingsPage() {
                 </button>
               </div>
             </form>
+          </section>
+
+          {/* Labels */}
+          <section style={card}>
+            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Tag size={16} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+              <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+                {t('projects.settings.labels.title')}
+              </h2>
+            </div>
+            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Add label */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <input
+                  type="color"
+                  value={newLabelColor}
+                  onChange={(e) => setNewLabelColor(e.target.value)}
+                  style={{ width: 32, height: 32, padding: 0, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', background: 'none' }}
+                />
+                <input
+                  type="text"
+                  value={newLabelName}
+                  onChange={(e) => setNewLabelName(e.target.value)}
+                  placeholder={t('projects.settings.labels.namePlaceholder')}
+                  style={{ ...inputStyle, flex: 1 }}
+                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
+                  onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+                  onKeyDown={async (e) => {
+                    if (e.key === 'Enter' && newLabelName.trim() && projectId) {
+                      e.preventDefault();
+                      const created = await labelsApi.create(projectId, { name: newLabelName.trim(), color: newLabelColor });
+                      setLabels((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+                      setNewLabelName('');
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={!newLabelName.trim()}
+                  onClick={async () => {
+                    if (!newLabelName.trim() || !projectId) return;
+                    const created = await labelsApi.create(projectId, { name: newLabelName.trim(), color: newLabelColor });
+                    setLabels((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+                    setNewLabelName('');
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 4,
+                    padding: '8px 14px', fontSize: 13, fontWeight: 600,
+                    background: 'var(--accent)', color: '#FFFFFF',
+                    border: 'none', borderRadius: 'var(--radius-md)',
+                    cursor: !newLabelName.trim() ? 'not-allowed' : 'pointer',
+                    opacity: !newLabelName.trim() ? 0.5 : 1,
+                    transition: 'background 150ms', boxShadow: 'var(--shadow-sm)',
+                    whiteSpace: 'nowrap',
+                  }}
+                  onMouseEnter={(e) => { if (newLabelName.trim()) e.currentTarget.style.background = 'var(--accent-hover)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent)'; }}
+                >
+                  <Plus size={14} strokeWidth={2.5} />
+                  {t('projects.settings.labels.add')}
+                </button>
+              </div>
+
+              {/* Labels list */}
+              {labels.length === 0 ? (
+                <p style={{ margin: 0, fontSize: 13, color: 'var(--text-faint)', textAlign: 'center', padding: '16px 0' }}>
+                  {t('projects.settings.labels.empty')}
+                </p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {labels.map((label) => (
+                    <div
+                      key={label.id}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '8px 12px',
+                        background: 'var(--bg)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-md)',
+                      }}
+                    >
+                      {editingLabelId === label.id ? (
+                        <>
+                          <input
+                            type="color"
+                            value={editLabelColor}
+                            onChange={(e) => setEditLabelColor(e.target.value)}
+                            style={{ width: 28, height: 28, padding: 0, border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', background: 'none' }}
+                          />
+                          <input
+                            type="text"
+                            value={editLabelName}
+                            onChange={(e) => setEditLabelName(e.target.value)}
+                            style={{ ...inputStyle, flex: 1, padding: '6px 10px' }}
+                            autoFocus
+                            onKeyDown={async (e) => {
+                              if (e.key === 'Enter' && editLabelName.trim()) {
+                                const updated = await labelsApi.update(label.id, { name: editLabelName.trim(), color: editLabelColor });
+                                setLabels((prev) => prev.map((l) => l.id === label.id ? updated : l).sort((a, b) => a.name.localeCompare(b.name)));
+                                setEditingLabelId(null);
+                              } else if (e.key === 'Escape') {
+                                setEditingLabelId(null);
+                              }
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!editLabelName.trim()) return;
+                              const updated = await labelsApi.update(label.id, { name: editLabelName.trim(), color: editLabelColor });
+                              setLabels((prev) => prev.map((l) => l.id === label.id ? updated : l).sort((a, b) => a.name.localeCompare(b.name)));
+                              setEditingLabelId(null);
+                            }}
+                            style={{
+                              padding: '5px 12px', fontSize: 12, fontWeight: 600,
+                              background: 'var(--accent)', color: '#FFFFFF',
+                              border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                            }}
+                          >
+                            {t('projects.settings.save')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingLabelId(null)}
+                            style={{
+                              padding: '5px 12px', fontSize: 12, fontWeight: 600,
+                              background: 'transparent', color: 'var(--text-muted)',
+                              border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                            }}
+                          >
+                            {t('common.cancel')}
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{
+                            display: 'inline-block', width: 12, height: 12, borderRadius: '50%',
+                            background: label.color, flexShrink: 0,
+                          }} />
+                          <span
+                            style={{
+                              flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text)', cursor: 'pointer',
+                            }}
+                            onClick={() => {
+                              setEditingLabelId(label.id);
+                              setEditLabelName(label.name);
+                              setEditLabelColor(label.color);
+                            }}
+                          >
+                            {label.name}
+                          </span>
+                          <span style={{
+                            fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)',
+                          }}>
+                            {label.color}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              await labelsApi.delete(label.id);
+                              setLabels((prev) => prev.filter((l) => l.id !== label.id));
+                            }}
+                            style={{
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              width: 28, height: 28, padding: 0,
+                              background: 'transparent', border: 'none', borderRadius: 'var(--radius-sm)',
+                              cursor: 'pointer', color: 'var(--text-faint)',
+                              transition: 'color 150ms, background 150ms',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = '#DC2626'; e.currentTarget.style.background = 'rgba(220,38,38,0.08)'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.background = 'transparent'; }}
+                          >
+                            <Trash2 size={14} strokeWidth={2} />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
 
           {/* Danger zone */}

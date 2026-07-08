@@ -8,7 +8,6 @@ import com.tfg.agile.app.task_service.dto.UpdateSprintRequestDto;
 import com.tfg.agile.app.task_service.entity.Sprint;
 import com.tfg.agile.app.task_service.entity.SprintStatus;
 import com.tfg.agile.app.task_service.entity.Task;
-import com.tfg.agile.app.task_service.entity.TaskStatus;
 import com.tfg.agile.app.task_service.exception.ConflictException;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
@@ -25,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,12 +44,14 @@ class SprintServiceTest {
     private SprintTaskSnapshotRepository snapshotRepository;
     @Mock
     private ProjectServiceClient projectServiceClient;
+    @Mock
+    private BoardColumnService boardColumnService;
 
     private SprintService service;
 
     @BeforeEach
     void setUp() {
-        service = new SprintService(sprintRepository, taskRepository, snapshotRepository, projectServiceClient);
+        service = new SprintService(sprintRepository, taskRepository, snapshotRepository, projectServiceClient, boardColumnService);
     }
 
     @Test
@@ -242,12 +244,14 @@ class SprintServiceTest {
 
         Task openTask = TestDataFactory.task(projectId, UUID.randomUUID());
         openTask.setSprintId(sprint.getId());
-        openTask.setStatus(TaskStatus.IN_PROGRESS);
+        openTask.setStatus("IN_PROGRESS");
 
         Task doneTask = TestDataFactory.task(projectId, UUID.randomUUID());
         doneTask.setSprintId(sprint.getId());
-        doneTask.setStatus(TaskStatus.DONE);
+        doneTask.setStatus("DONE");
 
+        when(boardColumnService.getDoneEquivalentStatuses(projectId)).thenReturn(Set.of("DONE"));
+        when(boardColumnService.getFirstColumnName(projectId)).thenReturn("TODO");
         when(taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprint.getId())).thenReturn(List.of(openTask, doneTask));
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(sprintRepository.save(sprint)).thenReturn(sprint);
@@ -256,7 +260,7 @@ class SprintServiceTest {
 
         assertThat(sprint.getStatus()).isEqualTo(SprintStatus.COMPLETED);
         assertThat(openTask.getSprintId()).isNull();
-        assertThat(openTask.getStatus()).isEqualTo(TaskStatus.TODO);
+        assertThat(openTask.getStatus()).isEqualTo("TODO");
         assertThat(doneTask.getSprintId()).isEqualTo(sprint.getId());
     }
 

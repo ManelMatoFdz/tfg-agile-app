@@ -1,28 +1,34 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Columns, Clock, AlertTriangle } from 'lucide-react';
+import { Columns, Clock, AlertTriangle, Settings } from 'lucide-react';
 import { sprintsApi } from '../../../api/sprints';
-import type { Sprint, Task } from '@/types';
+import { boardColumnsApi } from '../../../api/boardColumns';
+import type { Sprint, Task, BoardColumn } from '@/types';
 import KanbanBoard from '../../../components/kanban/KanbanBoard';
 import Alert from '../../../components/ui/Alert';
 import { useProjectMember } from '../../../hooks/useProjectMember';
 
 export default function KanbanPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
 
-  const { canMoveTask, canDeleteSprintTask } = useProjectMember(projectId);
+  const { canMoveTask, canDeleteSprintTask, isAdmin, isScrumMaster } = useProjectMember(projectId);
 
   const [activeSprint, setActiveSprint] = useState<Sprint | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [columns, setColumns] = useState<BoardColumn[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!projectId) return;
     setLoading(true);
-    sprintsApi
+
+    const fetchColumns = boardColumnsApi.getColumns(projectId).then(setColumns).catch(() => {});
+
+    const fetchSprint = sprintsApi
       .listSprints(projectId)
       .then((sprints) => {
         const active = sprints.find((s) => s.status === 'ACTIVE') ?? null;
@@ -31,8 +37,9 @@ export default function KanbanPage() {
         return [];
       })
       .then(setTasks)
-      .catch(() => setError(t('projects.kanban.loadError')))
-      .finally(() => setLoading(false));
+      .catch(() => setError(t('projects.kanban.loadError')));
+
+    Promise.all([fetchColumns, fetchSprint]).finally(() => setLoading(false));
   }, [projectId, t]);
 
   const refreshTasks = async () => {
@@ -68,7 +75,7 @@ export default function KanbanPage() {
     return Math.ceil((end.getTime() - today.getTime()) / 86_400_000);
   })();
 
-  const pendingTasks = tasks.filter((t) => t.status !== 'DONE').length;
+  const canConfigureBoard = isAdmin || isScrumMaster;
 
   return (
     <div>
@@ -193,6 +200,39 @@ export default function KanbanPage() {
                   {daysRemaining}d left
                 </span>
               )}
+
+              {canConfigureBoard && (
+                <button
+                  onClick={() => navigate(`/workspaces/${workspaceId}/projects/${projectId}/board-settings`)}
+                  title={t('projects.boardSettings.title')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 32,
+                    height: 32,
+                    borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-elevated)',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    transition: 'background 150ms, color 150ms, border-color 150ms',
+                    padding: 0,
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'var(--bg-hover)';
+                    e.currentTarget.style.color = 'var(--text)';
+                    e.currentTarget.style.borderColor = 'var(--border-strong)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'var(--bg-elevated)';
+                    e.currentTarget.style.color = 'var(--text-muted)';
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                  }}
+                >
+                  <Settings size={15} strokeWidth={1.75} />
+                </button>
+              )}
             </div>
           </div>
 
@@ -206,7 +246,7 @@ export default function KanbanPage() {
             }}>
               <AlertTriangle size={16} strokeWidth={2} style={{ color: 'var(--warning)', flexShrink: 0 }} />
               <p style={{ margin: 0, fontSize: 13, color: 'var(--warning)', fontWeight: 500 }}>
-                {t('projects.kanban.overdueBanner', { days: sprintOverdueDays, pending: pendingTasks })}
+                {t('projects.kanban.overdueBanner', { days: sprintOverdueDays, pending: tasks.filter((tt) => !columns.some((c) => c.doneEquivalent && c.name === tt.status)).length })}
               </p>
             </div>
           )}
@@ -214,6 +254,7 @@ export default function KanbanPage() {
           <KanbanBoard
             projectId={projectId!}
             tasks={tasks}
+            columns={columns}
             onTasksChange={setTasks}
             onRefresh={refreshTasks}
             disableCreate={true}

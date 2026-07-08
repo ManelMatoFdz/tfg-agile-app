@@ -7,7 +7,6 @@ import com.tfg.agile.app.task_service.entity.Sprint;
 import com.tfg.agile.app.task_service.entity.SprintStatus;
 import com.tfg.agile.app.task_service.entity.SprintTaskSnapshot;
 import com.tfg.agile.app.task_service.entity.Task;
-import com.tfg.agile.app.task_service.entity.TaskStatus;
 import com.tfg.agile.app.task_service.exception.ConflictException;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
@@ -19,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -28,15 +28,18 @@ public class SprintService {
     private final TaskRepository taskRepository;
     private final SprintTaskSnapshotRepository snapshotRepository;
     private final ProjectServiceClient projectServiceClient;
+    private final BoardColumnService boardColumnService;
 
     public SprintService(SprintRepository sprintRepository,
                          TaskRepository taskRepository,
                          SprintTaskSnapshotRepository snapshotRepository,
-                         ProjectServiceClient projectServiceClient) {
+                         ProjectServiceClient projectServiceClient,
+                         BoardColumnService boardColumnService) {
         this.sprintRepository = sprintRepository;
         this.taskRepository = taskRepository;
         this.snapshotRepository = snapshotRepository;
         this.projectServiceClient = projectServiceClient;
+        this.boardColumnService = boardColumnService;
     }
 
     // ── Backlog ───────────────────────────────────────────────────────────────
@@ -154,12 +157,16 @@ public class SprintService {
     @Transactional
     public void completeSprintInternal(Sprint sprint) {
         UUID sprintId = sprint.getId();
+        UUID projectId = sprint.getProjectId();
         List<Task> allSprintTasks = taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprintId);
 
+        Set<String> doneStatuses = boardColumnService.getDoneEquivalentStatuses(projectId);
+        String firstColumn = boardColumnService.getFirstColumnName(projectId);
+
         int closedTotal = allSprintTasks.size();
-        int closedDone = (int) allSprintTasks.stream().filter(t -> t.getStatus() == TaskStatus.DONE).count();
+        int closedDone = (int) allSprintTasks.stream().filter(t -> doneStatuses.contains(t.getStatus())).count();
         int closedTotalSP = allSprintTasks.stream().mapToInt(t -> t.getStoryPoints() != null ? t.getStoryPoints() : 0).sum();
-        int closedDoneSP = allSprintTasks.stream().filter(t -> t.getStatus() == TaskStatus.DONE).mapToInt(t -> t.getStoryPoints() != null ? t.getStoryPoints() : 0).sum();
+        int closedDoneSP = allSprintTasks.stream().filter(t -> doneStatuses.contains(t.getStatus())).mapToInt(t -> t.getStoryPoints() != null ? t.getStoryPoints() : 0).sum();
 
         sprint.setClosedTotalTasks(closedTotal);
         sprint.setClosedDoneTasks(closedDone);
@@ -168,33 +175,35 @@ public class SprintService {
         sprint.setClosedDoneStoryPoints(closedDoneSP);
 
         List<SprintTaskSnapshot> snapshots = allSprintTasks.stream()
-                .map(t -> SprintTaskSnapshot.builder()
+                .map(t -> {
+                    boolean isDone = doneStatuses.contains(t.getStatus());
+                    return SprintTaskSnapshot.builder()
                         .sprintId(sprintId)
                         .taskId(t.getId())
                         .title(t.getTitle())
                         .description(t.getDescription())
                         .statusAtEnd(t.getStatus())
                         .priority(t.getPriority())
-                        .dueDate(t.getDueDate())
                         .completedAt(t.getCompletedAt())
                         .storyPoints(t.getStoryPoints())
-                        .completed(t.getStatus() == TaskStatus.DONE)
-                        .returnedToBacklog(t.getStatus() != TaskStatus.DONE)
-                        .build())
+                        .completed(isDone)
+                        .returnedToBacklog(!isDone)
+                        .build();
+                })
                 .toList();
         snapshotRepository.saveAll(snapshots);
 
         allSprintTasks.stream()
-                .filter(t -> t.getStatus() != TaskStatus.DONE)
+                .filter(t -> !doneStatuses.contains(t.getStatus()))
                 .forEach(t -> {
                     t.setSprintId(null);
-                    t.setStatus(TaskStatus.TODO);
+                    t.setStatus(firstColumn);
                     taskRepository.save(t);
                 });
 
         sprint.setStatus(SprintStatus.COMPLETED);
         sprintRepository.save(sprint);
-        projectServiceClient.touchProject(sprint.getProjectId());
+        projectServiceClient.touchProject(projectId);
     }
 
     @Transactional

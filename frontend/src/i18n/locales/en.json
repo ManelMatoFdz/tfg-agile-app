@@ -401,7 +401,8 @@
       "loadError": "Error loading tasks.",
       "noActiveSprint": "No active sprint",
       "noActiveSprintSub": "Activate a sprint from the",
-      "overdueBanner": "This sprint is {{days}} day(s) overdue. {{pending}} task(s) still pending."
+      "overdueBanner": "This sprint is {{days}} day(s) overdue. {{pending}} task(s) still pending.",
+      "uncategorized": "Uncategorized"
     },
     "boardSettings": {
       "title": "Board Settings",
@@ -412,9 +413,16 @@
       "wipLimit": "WIP Limit",
       "wipNone": "None",
       "addColumn": "Add Column",
-      "addColumnDisabled": "Board columns are fixed",
-      "ctaTitle": "Want to streamline your workflow?",
-      "ctaSubtitle": "Add custom columns for Peer Review, QA, or Staging."
+      "color": "Color",
+      "save": "Save",
+      "saved": "Saved",
+      "noColumns": "No columns configured. Add one to get started.",
+      "loadError": "Error loading columns.",
+      "saveError": "Error saving columns.",
+      "errorEmptyName": "All columns must have a name.",
+      "errorNoDone": "At least one column must be marked as DONE equivalent.",
+      "errorDuplicateName": "Column names must be unique.",
+      "errorWipExceeded": "Column \"{{column}}\" has {{current}} task(s) but the WIP limit is {{limit}}."
     },
     "members": {
       "title": "Members",
@@ -471,7 +479,13 @@
       "deleteConfirmBtn": "Delete this project",
       "deleting": "Deleting...",
       "deleteError": "Error deleting the project.",
-      "deleteSuccess": "Project deleted."
+      "deleteSuccess": "Project deleted.",
+      "labels": {
+        "title": "Labels",
+        "namePlaceholder": "Label name",
+        "add": "Add",
+        "empty": "No labels defined for this project."
+      }
     },
     "metrics": {
       "title": "Project metrics",
@@ -647,6 +661,7 @@
       "unassigned": "Unassigned",
       "dueDate": "Due date",
       "completedAt": "Completed at",
+      "labels": "Labels",
       "create": "Create task",
       "save": "Save changes",
       "deleteTask": "Delete task",

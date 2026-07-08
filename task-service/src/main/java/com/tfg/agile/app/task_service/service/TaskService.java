@@ -3,16 +3,18 @@ package com.tfg.agile.app.task_service.service;
 import com.tfg.agile.app.task_service.client.MemberPermissionsDto;
 import com.tfg.agile.app.task_service.client.ProjectServiceClient;
 import com.tfg.agile.app.task_service.dto.*;
+import com.tfg.agile.app.task_service.entity.Label;
 import com.tfg.agile.app.task_service.entity.Task;
 import com.tfg.agile.app.task_service.entity.TaskPriority;
-import com.tfg.agile.app.task_service.entity.TaskStatus;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
+import com.tfg.agile.app.task_service.repository.LabelRepository;
 import com.tfg.agile.app.task_service.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,11 +22,18 @@ import java.util.UUID;
 public class TaskService {
 
     private final TaskRepository taskRepository;
+    private final LabelRepository labelRepository;
     private final ProjectServiceClient projectServiceClient;
+    private final BoardColumnService boardColumnService;
 
-    public TaskService(TaskRepository taskRepository, ProjectServiceClient projectServiceClient) {
+    public TaskService(TaskRepository taskRepository,
+                       LabelRepository labelRepository,
+                       ProjectServiceClient projectServiceClient,
+                       BoardColumnService boardColumnService) {
         this.taskRepository = taskRepository;
+        this.labelRepository = labelRepository;
         this.projectServiceClient = projectServiceClient;
+        this.boardColumnService = boardColumnService;
     }
 
     @Transactional(readOnly = true)
@@ -60,18 +69,23 @@ public class TaskService {
                 ? TaskPriority.valueOf(dto.priority().toUpperCase())
                 : TaskPriority.MEDIUM;
 
-        int position = taskRepository.findByProjectIdAndStatusOrderByPositionAsc(projectId, TaskStatus.TODO).size();
+        String firstColumn = boardColumnService.getFirstColumnName(projectId);
+        int position = taskRepository.findByProjectIdAndStatusOrderByPositionAsc(projectId, firstColumn).size();
 
         Task task = Task.builder()
                 .projectId(projectId)
                 .title(dto.title())
                 .description(dto.description())
+                .status(firstColumn)
                 .priority(priority)
                 .reporterId(callerId)
                 .assigneeId(dto.assigneeId())
-                .dueDate(dto.dueDate())
                 .position(position)
                 .build();
+
+        if (dto.labelIds() != null && !dto.labelIds().isEmpty()) {
+            task.setLabels(new HashSet<>(labelRepository.findAllById(dto.labelIds())));
+        }
 
         Task saved = taskRepository.save(task);
         projectServiceClient.touchProject(projectId);
@@ -102,7 +116,10 @@ public class TaskService {
             task.setPriority(TaskPriority.valueOf(dto.priority().toUpperCase()));
         }
         task.setAssigneeId(dto.assigneeId());
-        task.setDueDate(dto.dueDate());
+
+        if (dto.labelIds() != null) {
+            task.setLabels(new HashSet<>(labelRepository.findAllById(dto.labelIds())));
+        }
 
         Task saved = taskRepository.save(task);
         projectServiceClient.touchProject(task.getProjectId());
@@ -120,14 +137,15 @@ public class TaskService {
             throw new ForbiddenException("ONLY_DEVELOPERS_CAN_MOVE_TASKS");
         }
 
-        TaskStatus newStatus = TaskStatus.valueOf(dto.status().toUpperCase());
+        String newStatus = dto.status();
         task.setStatus(newStatus);
         task.setPosition(dto.position());
 
-        // Manage completedAt automatically
-        if (newStatus == TaskStatus.DONE && task.getCompletedAt() == null) {
+        // Manage completedAt automatically based on doneEquivalent columns
+        boolean isDone = boardColumnService.isDoneEquivalent(task.getProjectId(), newStatus);
+        if (isDone && task.getCompletedAt() == null) {
             task.setCompletedAt(Instant.now());
-        } else if (newStatus != TaskStatus.DONE) {
+        } else if (!isDone) {
             task.setCompletedAt(null);
         }
 

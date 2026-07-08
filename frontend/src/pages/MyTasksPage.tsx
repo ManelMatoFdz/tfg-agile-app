@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CheckSquare } from 'lucide-react';
-import type { Task, TaskPriority, TaskStatus } from '../types';
+import type { Task, TaskPriority } from '../types';
 import { tasksApi } from '../api/tasks';
 import Alert from '../components/ui/Alert';
 import PageTitle from '../components/motion/PageTitle';
 
-const STATUS_ORDER: TaskStatus[] = ['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'DONE'];
+const STATUS_ORDER: string[] = ['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'DONE'];
 
 const PRIORITY_COLOR: Record<TaskPriority, string> = {
   CRITICAL: 'var(--danger)',
@@ -22,12 +22,13 @@ const PRIORITY_BG: Record<TaskPriority, string> = {
   LOW:      'var(--bg-hover)',
 };
 
-const STATUS_COLOR: Record<TaskStatus, string> = {
+const STATUS_COLOR: Record<string, string> = {
   TODO:        'var(--text-faint)',
   IN_PROGRESS: 'var(--ink-blue)',
   IN_REVIEW:   'var(--ochre)',
   DONE:        'var(--success)',
 };
+const DEFAULT_STATUS_COLOR = 'var(--text-faint)';
 
 export default function MyTasksPage() {
   const { t } = useTranslation();
@@ -43,7 +44,7 @@ export default function MyTasksPage() {
       .finally(() => setLoading(false));
   }, [t]);
 
-  const tasksByStatus = (status: TaskStatus) =>
+  const tasksByStatus = (status: string) =>
     tasks
       .filter((task) => task.status === status)
       .sort((a, b) => {
@@ -129,7 +130,7 @@ export default function MyTasksPage() {
                 style={{
                   background: 'var(--bg-elevated)',
                   border: '0.0625rem solid var(--border)',
-                  borderLeft: `0.125rem solid ${STATUS_COLOR[status]}`,
+                  borderLeft: `0.125rem solid ${STATUS_COLOR[status] ?? DEFAULT_STATUS_COLOR}`,
                   borderRadius: 'var(--radius-md)',
                   overflow: 'hidden',
                 }}
@@ -140,7 +141,7 @@ export default function MyTasksPage() {
                   alignItems: 'center',
                   gap: '0.375rem',
                   padding: '0.375rem 0.75rem',
-                  background: `${STATUS_COLOR[status]}10`,
+                  background: `${STATUS_COLOR[status] ?? DEFAULT_STATUS_COLOR}10`,
                   borderBottom: '0.0625rem solid var(--border)',
                 }}>
                   <span style={{
@@ -148,9 +149,9 @@ export default function MyTasksPage() {
                     fontWeight: 700,
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
-                    color: STATUS_COLOR[status],
+                    color: STATUS_COLOR[status] ?? DEFAULT_STATUS_COLOR,
                   }}>
-                    {t(`tasks.status.${status}`)}
+                    {t(`tasks.status.${status}`, { defaultValue: status.replace(/_/g, ' ') })}
                   </span>
                   <span style={{ fontSize: '0.625rem', color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
                     {group.length}

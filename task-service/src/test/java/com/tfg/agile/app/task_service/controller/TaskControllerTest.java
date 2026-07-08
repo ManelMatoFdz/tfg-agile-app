@@ -5,7 +5,6 @@ import com.tfg.agile.app.task_service.dto.MoveTaskRequestDto;
 import com.tfg.agile.app.task_service.dto.TaskResponseDto;
 import com.tfg.agile.app.task_service.dto.UpdateTaskRequestDto;
 import com.tfg.agile.app.task_service.entity.TaskPriority;
-import com.tfg.agile.app.task_service.entity.TaskStatus;
 import com.tfg.agile.app.task_service.service.TaskService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,8 +37,8 @@ class TaskControllerTest {
         MoveTaskRequestDto moveRequest = new MoveTaskRequestDto("DONE", 2);
 
         TaskResponseDto response = new TaskResponseDto(
-                taskId, projectId, null, "Task", "Desc", TaskStatus.TODO, TaskPriority.MEDIUM,
-                callerId, null, null, null, 5, 0, Instant.now(), Instant.now()
+                taskId, projectId, null, "Task", "Desc", "TODO", TaskPriority.MEDIUM,
+                callerId, null, null, 5, 0, List.of(), Instant.now(), Instant.now()
         );
 
         when(taskService.findMyTasks(callerId)).thenReturn(List.of(response));

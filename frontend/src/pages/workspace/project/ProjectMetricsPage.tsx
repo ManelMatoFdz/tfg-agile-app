@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   PieChart, Pie, Cell, ResponsiveContainer,
 } from 'recharts';
-import type { TeamMember, Sprint, Task, TaskPriority, TaskStatus } from '../../../types';
+import type { TeamMember, Sprint, Task, TaskPriority } from '../../../types';
 import { tasksApi } from '../../../api/tasks';
 import { sprintsApi } from '../../../api/sprints';
 import { projectsApi } from '../../../api/projects';
@@ -16,12 +16,13 @@ import CountUp from '../../../components/motion/CountUp';
 
 // ── Colours ───────────────────────────────────────────────────────────────────
 
-const STATUS_COLORS: Record<TaskStatus, string> = {
+const STATUS_COLORS: Record<string, string> = {
   DONE: 'var(--success)',
   IN_PROGRESS: 'var(--ink-blue)',
   IN_REVIEW: 'var(--ochre)',
   TODO: 'var(--text-faint)',
 };
+const DEFAULT_STATUS_COLOR = 'var(--text-faint)';
 
 const PRIORITY_COLORS: Record<TaskPriority, string> = {
   CRITICAL: 'var(--danger)',
@@ -131,12 +132,12 @@ export default function ProjectMetricsPage() {
 
   // ── Chart data ────────────────────────────────────────────────────────────
 
-  const statuses: TaskStatus[] = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
+  const statuses = [...new Set(tasks.map((t) => t.status))];
   const statusPieData = statuses
     .map((s) => ({
-      name: t(`tasks.status.${s}`),
+      name: t(`tasks.status.${s}`, { defaultValue: s.replace(/_/g, ' ') }),
       value: tasks.filter((t) => t.status === s).length,
-      color: STATUS_COLORS[s],
+      color: STATUS_COLORS[s] ?? DEFAULT_STATUS_COLOR,
     }))
     .filter((d) => d.value > 0);
 
@@ -257,8 +258,8 @@ export default function ProjectMetricsPage() {
               if (count === 0) return null;
               return (
                 <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: STATUS_COLORS[s], flexShrink: 0 }} />
-                  <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t(`tasks.status.${s}`)}</span>
+                  <span style={{ width: 8, height: 8, borderRadius: '50%', background: STATUS_COLORS[s] ?? DEFAULT_STATUS_COLOR, flexShrink: 0 }} />
+                  <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t(`tasks.status.${s}`, { defaultValue: s.replace(/_/g, ' ') })}</span>
                   <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{count}</span>
                 </div>
               );
