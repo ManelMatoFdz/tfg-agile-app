@@ -1,10 +1,12 @@
 import taskClient from './taskClient';
-import type { Task } from '../types';
+import type { Task, TaskComment, TaskActivity } from '../types';
 
 export interface CreateTaskDto {
   title: string;
   description?: string;
   priority?: string;
+  type?: string;
+  parentId?: string;
   assigneeId?: string;
   labelIds?: string[];
 }
@@ -43,4 +45,24 @@ export const tasksApi = {
 
   delete: (taskId: string) =>
     taskClient.delete(`/tasks/${taskId}`),
+
+  getSubtasks: (taskId: string) =>
+    taskClient.get<Task[]>(`/tasks/${taskId}/subtasks`).then((r) => r.data),
+
+  // Comments
+  getComments: (taskId: string) =>
+    taskClient.get<TaskComment[]>(`/tasks/${taskId}/comments`).then((r) => r.data),
+
+  createComment: (taskId: string, content: string) =>
+    taskClient.post<TaskComment>(`/tasks/${taskId}/comments`, { content }).then((r) => r.data),
+
+  updateComment: (commentId: string, content: string) =>
+    taskClient.put<TaskComment>(`/comments/${commentId}`, { content }).then((r) => r.data),
+
+  deleteComment: (commentId: string) =>
+    taskClient.delete(`/comments/${commentId}`),
+
+  // Activity
+  getActivity: (taskId: string) =>
+    taskClient.get<TaskActivity[]>(`/tasks/${taskId}/activity`).then((r) => r.data),
 };

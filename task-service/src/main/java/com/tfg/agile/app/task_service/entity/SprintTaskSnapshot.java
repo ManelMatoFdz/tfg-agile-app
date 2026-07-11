@@ -50,6 +50,13 @@ public class SprintTaskSnapshot {
     @Column
     private Integer storyPoints;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 10)
+    private TaskType type;
+
+    @Column
+    private UUID parentTaskId;
+
     @Column(nullable = false)
     private boolean completed;
 

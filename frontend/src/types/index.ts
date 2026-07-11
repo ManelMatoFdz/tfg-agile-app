@@ -122,6 +122,7 @@ export type ScrumRole = 'PRODUCT_OWNER' | 'SCRUM_MASTER' | 'DEVELOPER';
 // ── Task-service types ────────────────────────────────────────────────────────
 
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type TaskType = 'STORY' | 'TASK' | 'BUG';
 export type SprintStatus = 'PLANNING' | 'ACTIVE' | 'COMPLETED';
 
 export interface BoardColumn {
@@ -147,12 +148,17 @@ export interface Task {
   description?: string | null;
   status: string;
   priority: TaskPriority;
+  type: TaskType;
+  parentId?: string | null;
   reporterId: string;
   assigneeId?: string | null;
   completedAt?: string | null;
   storyPoints?: number | null;
   position: number;
   labels?: Label[];
+  subtaskCount: number;
+  completedSubtaskCount: number;
+  parentTitle?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -184,10 +190,46 @@ export interface SprintTaskSnapshot {
   description?: string | null;
   statusAtEnd: string;
   priority: TaskPriority;
+  type?: TaskType;
+  parentTaskId?: string | null;
   completedAt?: string | null;
   storyPoints?: number | null;
   completed: boolean;
   returnedToBacklog: boolean;
+}
+
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  authorId: string;
+  content: string;
+  createdAt: string;
+  editedAt?: string | null;
+}
+
+export type TaskActivityType =
+  | 'CREATED'
+  | 'STATUS_CHANGED'
+  | 'PRIORITY_CHANGED'
+  | 'ASSIGNEE_CHANGED'
+  | 'SPRINT_ADDED'
+  | 'RETURNED_TO_BACKLOG'
+  | 'LABEL_ADDED'
+  | 'LABEL_REMOVED'
+  | 'SUBTASK_ADDED'
+  | 'SUBTASK_REMOVED'
+  | 'TITLE_CHANGED'
+  | 'DESCRIPTION_CHANGED'
+  | 'STORY_POINTS_CHANGED';
+
+export interface TaskActivity {
+  id: string;
+  taskId: string;
+  actorId?: string | null;
+  type: TaskActivityType;
+  oldValue?: string | null;
+  newValue?: string | null;
+  createdAt: string;
 }
 
 export type TeamRole = 'ADMIN' | 'MEMBER';

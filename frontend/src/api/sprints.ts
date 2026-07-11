@@ -1,5 +1,6 @@
 import taskClient from './taskClient';
 import type { Sprint, SprintTaskSnapshot, Task } from '../types';
+import type { TaskFilters } from '../components/kanban/TaskFilterBar';
 
 export interface CreateSprintDto {
   name: string;
@@ -16,9 +17,20 @@ export interface UpdateSprintDto {
   reviewNotes?: string;
 }
 
+function buildFilterParams(filters?: TaskFilters): Record<string, string | string[]> {
+  if (!filters) return {};
+  const params: Record<string, string | string[]> = {};
+  if (filters.priorities.length > 0) params.priority = filters.priorities;
+  if (filters.assigneeIds.length > 0) params.assigneeId = filters.assigneeIds;
+  if (filters.labelIds.length > 0) params.labelId = filters.labelIds;
+  if (filters.statuses.length > 0) params.status = filters.statuses;
+  if (filters.search) params.search = filters.search;
+  return params;
+}
+
 export const sprintsApi = {
-  getBacklog: (projectId: string) =>
-    taskClient.get<Task[]>(`/projects/${projectId}/backlog`).then((r) => r.data),
+  getBacklog: (projectId: string, filters?: TaskFilters) =>
+    taskClient.get<Task[]>(`/projects/${projectId}/backlog`, { params: buildFilterParams(filters) }).then((r) => r.data),
 
   listSprints: (projectId: string) =>
     taskClient.get<Sprint[]>(`/projects/${projectId}/sprints`).then((r) => r.data),
@@ -38,14 +50,17 @@ export const sprintsApi = {
   deleteSprint: (sprintId: string) =>
     taskClient.delete(`/sprints/${sprintId}`),
 
-  getSprintTasks: (sprintId: string) =>
-    taskClient.get<Task[]>(`/sprints/${sprintId}/tasks`).then((r) => r.data),
+  getSprintTasks: (sprintId: string, filters?: TaskFilters) =>
+    taskClient.get<Task[]>(`/sprints/${sprintId}/tasks`, { params: buildFilterParams(filters) }).then((r) => r.data),
 
   assignTasksToSprint: (sprintId: string, taskIds: string[]) =>
     taskClient.post<Task[]>(`/sprints/${sprintId}/tasks`, { taskIds }).then((r) => r.data),
 
   removeTaskFromSprint: (sprintId: string, taskId: string) =>
     taskClient.delete<Task>(`/sprints/${sprintId}/tasks/${taskId}`).then((r) => r.data),
+
+  getSprintStories: (sprintId: string) =>
+    taskClient.get<Task[]>(`/sprints/${sprintId}/stories`).then((r) => r.data),
 
   getSprintSnapshots: (sprintId: string) =>
     taskClient.get<SprintTaskSnapshot[]>(`/sprints/${sprintId}/snapshots`).then((r) => r.data),

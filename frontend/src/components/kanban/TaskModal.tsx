@@ -1,12 +1,23 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, ChevronDown, UserCircle } from 'lucide-react';
-import type { Task, TaskPriority, BoardColumn, Label } from '../../types';
+import { X, ChevronDown, UserCircle, BookOpen, CheckSquare, Bug, Plus } from 'lucide-react';
+import type { Task, TaskPriority, TaskType, BoardColumn, Label } from '../../types';
 import type { CreateTaskDto, UpdateTaskDto } from '../../api/tasks';
+import { tasksApi } from '../../api/tasks';
 import { labelsApi } from '../../api/labels';
 import { useProjectMembers } from '../../hooks/useProjectMembers';
+import { useProjectMember } from '../../hooks/useProjectMember';
+import TaskComments from './TaskComments';
+import TaskActivityFeed from './TaskActivityFeed';
 
 const PRIORITIES: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+const TASK_TYPES: TaskType[] = ['STORY', 'TASK', 'BUG'];
+
+const TYPE_CONFIG: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
+  STORY: { icon: BookOpen, color: '#7C3AED' },
+  TASK:  { icon: CheckSquare, color: '#2563EB' },
+  BUG:   { icon: Bug, color: '#DC2626' },
+};
 
 const PRIORITY_COLOR: Record<TaskPriority, string> = {
   LOW: '#94A3B8',
@@ -50,6 +61,8 @@ interface Props {
   projectId?: string;
   columns?: BoardColumn[];
   defaultStatus?: string;
+  defaultType?: TaskType;
+  parentId?: string;
   readOnly?: boolean;
   onClose: () => void;
   onSave?: (dto: CreateTaskDto | UpdateTaskDto) => Promise<void>;
@@ -57,13 +70,16 @@ interface Props {
   onDelete?: () => Promise<void>;
 }
 
-export default function TaskModal({ task, projectId, columns = [], defaultStatus = 'TODO', readOnly = false, onClose, onSave, onMove, onDelete }: Props) {
+export default function TaskModal({ task, projectId, columns = [], defaultStatus = 'TODO', defaultType = 'TASK', parentId, readOnly = false, onClose, onSave, onMove, onDelete }: Props) {
   const { t } = useTranslation();
   const isEdit = !!task;
+  const isSubtask = !!(task?.parentId ?? parentId);
+  const isStoryWithChildren = task?.type === 'STORY' && (task?.subtaskCount ?? 0) > 0;
 
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? 'MEDIUM');
+  const [taskType, setTaskType] = useState<TaskType>(task?.type ?? (parentId ? 'TASK' : defaultType));
   const [status, setStatus] = useState<string>(task?.status ?? defaultStatus);
   const [assigneeId, setAssigneeId] = useState<string>(task?.assigneeId ?? '');
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>(
@@ -73,26 +89,45 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [subtasks, setSubtasks] = useState<Task[]>([]);
+  const [showSubtaskForm, setShowSubtaskForm] = useState(false);
+  const [subtaskTitle, setSubtaskTitle] = useState('');
 
   const { members, userMap } = useProjectMembers(projectId);
+  const { isAdmin } = useProjectMember(projectId);
 
   useEffect(() => {
     if (!projectId) return;
     labelsApi.getByProject(projectId).then(setProjectLabels).catch(() => {});
   }, [projectId]);
 
+  useEffect(() => {
+    if (!task || task.type !== 'STORY' || task.subtaskCount === 0) return;
+    tasksApi.getSubtasks(task.id).then(setSubtasks).catch(() => {});
+  }, [task]);
+
   const handleSave = async () => {
     if (!title.trim()) return;
     setLoading(true);
     setError(null);
     try {
-      const dto = {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        priority,
-        assigneeId: assigneeId || null,
-        labelIds: selectedLabelIds.length > 0 ? selectedLabelIds : undefined,
-      };
+      const dto: CreateTaskDto | UpdateTaskDto = isEdit
+        ? {
+            title: title.trim(),
+            description: description.trim() || undefined,
+            priority,
+            assigneeId: assigneeId || null,
+            labelIds: selectedLabelIds.length > 0 ? selectedLabelIds : undefined,
+          }
+        : {
+            title: title.trim(),
+            description: description.trim() || undefined,
+            priority,
+            type: parentId ? 'TASK' : taskType,
+            parentId: parentId || undefined,
+            assigneeId: assigneeId || undefined,
+            labelIds: selectedLabelIds.length > 0 ? selectedLabelIds : undefined,
+          };
       await onSave?.(dto);
       if (isEdit && onMove && status !== task?.status) {
         await onMove(status);
@@ -115,6 +150,22 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
       setError(t('tasks.modal.loadError'));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddSubtask = async () => {
+    if (!subtaskTitle.trim() || !projectId || !task) return;
+    try {
+      const created = await tasksApi.create(projectId, {
+        title: subtaskTitle.trim(),
+        type: 'TASK',
+        parentId: task.id,
+      });
+      setSubtasks((prev) => [...prev, created]);
+      setSubtaskTitle('');
+      setShowSubtaskForm(false);
+    } catch {
+      setError(t('tasks.modal.loadError'));
     }
   };
 
@@ -185,7 +236,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
         </div>
 
         {/* Body */}
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18, overflowY: 'auto', maxHeight: 'calc(100vh - 220px)' }}>
           {error && (
             <div style={{
               fontSize: 13,
@@ -229,8 +280,96 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
             />
           </div>
 
+          {/* Parent badge for subtasks */}
+          {task?.parentTitle && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 12px',
+              background: 'var(--bg-hover)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--border)',
+            }}>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{'↳'} {t('tasks.modal.partOf')}:</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{task.parentTitle}</span>
+            </div>
+          )}
+
+          {/* Story auto-status info */}
+          {isStoryWithChildren && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '8px 12px',
+              background: 'rgba(124,58,237,0.06)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid rgba(124,58,237,0.15)',
+            }}>
+              <BookOpen size={14} strokeWidth={2} style={{ color: '#7C3AED', flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: '#7C3AED' }}>{t('tasks.modal.storyStatusDerived')}</span>
+            </div>
+          )}
+
           <div className="task-modal-grid">
             <style>{`.task-modal-grid{display:grid;gap:14px;grid-template-columns:1fr 1fr}`}</style>
+
+            {/* Type selector — only on create, not for subtasks */}
+            {!isEdit && !parentId && (
+              <div>
+                <label style={labelStyle}>{t('tasks.modal.type')}</label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {TASK_TYPES.map((tt) => {
+                    const cfg = TYPE_CONFIG[tt];
+                    const Icon = cfg.icon;
+                    const selected = taskType === tt;
+                    return (
+                      <button
+                        key={tt}
+                        type="button"
+                        onClick={() => setTaskType(tt)}
+                        style={{
+                          flex: 1,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: 5,
+                          padding: '8px 10px',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          fontFamily: 'var(--font-sans)',
+                          border: `1.5px solid ${selected ? cfg.color : 'var(--border)'}`,
+                          borderRadius: 'var(--radius-md)',
+                          background: selected ? `${cfg.color}0D` : 'var(--bg)',
+                          color: selected ? cfg.color : 'var(--text-muted)',
+                          cursor: 'pointer',
+                          transition: 'all 150ms ease',
+                        }}
+                      >
+                        <Icon size={14} strokeWidth={2} />
+                        {t(`tasks.type.${tt}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Type badge — readonly for existing tasks */}
+            {isEdit && (
+              <div>
+                <label style={labelStyle}>{t('tasks.modal.type')}</label>
+                <div style={{ ...readOnlyFieldStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {(() => { const cfg = TYPE_CONFIG[task?.type ?? 'TASK']; const Icon = cfg.icon; return (
+                    <>
+                      <Icon size={14} strokeWidth={2} style={{ color: cfg.color }} />
+                      <span style={{ fontWeight: 600, color: cfg.color }}>{t(`tasks.type.${task?.type ?? 'TASK'}`)}</span>
+                    </>
+                  ); })()}
+                </div>
+              </div>
+            )}
 
             <div>
               <label style={labelStyle}>{t('tasks.modal.priority')}</label>
@@ -296,7 +435,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
               </div>
             )}
 
-            {isEdit && (
+            {isEdit && !isSubtask && (
               <div style={members.length > 0 ? { gridColumn: '1 / -1' } : undefined}>
                 <label style={labelStyle}>{t('tasks.modal.storyPoints')}</label>
                 <div style={{ ...readOnlyFieldStyle, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -358,6 +497,198 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                   onChange={setSelectedLabelIds}
                 />
               )}
+            </div>
+          )}
+
+          {/* Subtasks section — only for STORY */}
+          {isEdit && task?.type === 'STORY' && (
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <label style={{ ...labelStyle, margin: 0 }}>
+                  {t('tasks.modal.subtasks')}
+                  {task.subtaskCount > 0 && (
+                    <span style={{ marginLeft: 8, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+                      {t('tasks.modal.subtaskProgress', { done: task.completedSubtaskCount, total: task.subtaskCount })}
+                    </span>
+                  )}
+                </label>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={() => setShowSubtaskForm(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '4px 10px',
+                      fontSize: 11,
+                      fontWeight: 600,
+                      fontFamily: 'var(--font-sans)',
+                      background: 'var(--accent)',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: 'var(--radius-md)',
+                      cursor: 'pointer',
+                      transition: 'background 150ms',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
+                  >
+                    <Plus size={12} strokeWidth={2.5} />
+                    {t('tasks.modal.addSubtask')}
+                  </button>
+                )}
+              </div>
+
+              {/* Progress bar */}
+              {task.subtaskCount > 0 && (
+                <div style={{
+                  height: 4,
+                  background: 'var(--border)',
+                  borderRadius: 'var(--radius-pill)',
+                  overflow: 'hidden',
+                  marginBottom: 10,
+                }}>
+                  <div style={{
+                    height: '100%',
+                    width: `${(task.completedSubtaskCount / task.subtaskCount) * 100}%`,
+                    background: task.completedSubtaskCount === task.subtaskCount ? '#16A34A' : 'var(--accent)',
+                    borderRadius: 'var(--radius-pill)',
+                    transition: 'width 300ms ease',
+                  }} />
+                </div>
+              )}
+
+              {/* Subtask list */}
+              {subtasks.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {subtasks.map((st) => {
+                    const isDone = st.status === 'DONE';
+                    const stAssignee = st.assigneeId ? userMap[st.assigneeId] : null;
+                    return (
+                      <div key={st.id} style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '6px 10px',
+                        background: isDone ? 'rgba(22,163,74,0.04)' : 'var(--bg)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-md)',
+                      }}>
+                        <span style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          background: isDone ? '#16A34A' : '#94A3B8',
+                          flexShrink: 0,
+                        }} />
+                        <span style={{
+                          flex: 1,
+                          fontSize: 12,
+                          fontWeight: 500,
+                          color: isDone ? 'var(--text-muted)' : 'var(--text)',
+                          textDecoration: isDone ? 'line-through' : 'none',
+                          overflow: 'hidden',
+                          whiteSpace: 'nowrap',
+                          textOverflow: 'ellipsis',
+                        }}>
+                          {st.title}
+                        </span>
+                        {stAssignee && (
+                          <AssigneeAvatar
+                            name={stAssignee.fullName ?? stAssignee.username}
+                            avatarUrl={stAssignee.avatarUrl}
+                            size={18}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {task.subtaskCount === 0 && !showSubtaskForm && (
+                <p style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic', margin: 0 }}>
+                  {t('tasks.modal.noSubtasks')}
+                </p>
+              )}
+
+              {/* Inline subtask creation form */}
+              {showSubtaskForm && (
+                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                  <input
+                    type="text"
+                    value={subtaskTitle}
+                    onChange={(e) => setSubtaskTitle(e.target.value)}
+                    placeholder={t('tasks.modal.titlePlaceholder')}
+                    autoFocus
+                    style={{ ...fieldStyle, flex: 1, padding: '6px 10px', fontSize: 12 }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddSubtask(); if (e.key === 'Escape') { setShowSubtaskForm(false); setSubtaskTitle(''); } }}
+                    onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddSubtask}
+                    disabled={!subtaskTitle.trim()}
+                    style={{
+                      padding: '6px 14px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      fontFamily: 'var(--font-sans)',
+                      background: 'var(--accent)',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: 'var(--radius-md)',
+                      cursor: subtaskTitle.trim() ? 'pointer' : 'not-allowed',
+                      opacity: subtaskTitle.trim() ? 1 : 0.5,
+                    }}
+                  >
+                    {t('common.add')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setShowSubtaskForm(false); setSubtaskTitle(''); }}
+                    style={{
+                      padding: '6px 14px',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      fontFamily: 'var(--font-sans)',
+                      background: 'var(--bg-elevated)',
+                      color: 'var(--text-muted)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-md)',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Comments — only for existing tasks */}
+          {isEdit && projectId && task && (
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+              <TaskComments
+                taskId={task.id}
+                projectId={projectId}
+                members={members}
+                userMap={userMap}
+                isAdmin={isAdmin}
+              />
+            </div>
+          )}
+
+          {/* Activity log — only for existing tasks */}
+          {isEdit && task && (
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+              <TaskActivityFeed
+                taskId={task.id}
+                comments={[]}
+                userMap={userMap}
+              />
             </div>
           )}
         </div>

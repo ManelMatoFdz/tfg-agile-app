@@ -9,6 +9,8 @@ public record CreateTaskRequestDto(
         @NotBlank String title,
         String description,
         String priority,
+        String type,
+        UUID parentId,
         UUID assigneeId,
         List<UUID> labelIds
 ) {}

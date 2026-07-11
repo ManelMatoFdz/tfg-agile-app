@@ -1,6 +1,7 @@
 package com.tfg.agile.app.task_service.controller;
 
 import com.tfg.agile.app.task_service.dto.*;
+import com.tfg.agile.app.task_service.service.ActivityService;
 import com.tfg.agile.app.task_service.service.TaskService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -15,9 +16,11 @@ import java.util.UUID;
 public class TaskController {
 
     private final TaskService taskService;
+    private final ActivityService activityService;
 
-    public TaskController(TaskService taskService) {
+    public TaskController(TaskService taskService, ActivityService activityService) {
         this.taskService = taskService;
+        this.activityService = activityService;
     }
 
     @GetMapping("/tasks/my-tasks")
@@ -59,10 +62,23 @@ public class TaskController {
         return taskService.move(taskId, dto, callerId);
     }
 
+    @GetMapping("/tasks/{taskId}/subtasks")
+    public List<TaskResponseDto> getSubtasks(@PathVariable("taskId") UUID taskId,
+                                             @AuthenticationPrincipal UUID callerId) {
+        return taskService.getSubtasks(taskId, callerId);
+    }
+
     @DeleteMapping("/tasks/{taskId}")
     public ResponseEntity<Void> delete(@PathVariable("taskId") UUID taskId,
                                        @AuthenticationPrincipal UUID callerId) {
         taskService.delete(taskId, callerId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/tasks/{taskId}/activity")
+    public List<TaskActivityDto> getActivity(@PathVariable("taskId") UUID taskId,
+                                             @AuthenticationPrincipal UUID callerId) {
+        taskService.findById(taskId, callerId); // permission check
+        return activityService.findByTask(taskId);
     }
 }

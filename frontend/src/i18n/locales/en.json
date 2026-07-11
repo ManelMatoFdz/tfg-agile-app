@@ -518,6 +518,8 @@
       "noTasks": "Backlog is empty",
       "noTasksSubtitle": "Create tasks to start planning",
       "newTask": "New task",
+      "newStory": "New story",
+      "newBug": "New bug",
       "loadError": "Error loading the backlog.",
       "task": "task",
       "tasks": "tasks"
@@ -632,6 +634,11 @@
     }
   },
   "tasks": {
+    "type": {
+      "STORY": "Story",
+      "TASK": "Task",
+      "BUG": "Bug"
+    },
     "priority": {
       "LOW": "Low",
       "MEDIUM": "Medium",
@@ -662,6 +669,13 @@
       "dueDate": "Due date",
       "completedAt": "Completed at",
       "labels": "Labels",
+      "type": "Type",
+      "subtasks": "Subtasks",
+      "addSubtask": "Add subtask",
+      "subtaskProgress": "{{done}} of {{total}} completed",
+      "noSubtasks": "No subtasks",
+      "storyStatusDerived": "Story status is automatically derived from its subtasks.",
+      "partOf": "Part of",
       "create": "Create task",
       "save": "Save changes",
       "deleteTask": "Delete task",
@@ -670,6 +684,70 @@
     },
     "card": {
       "overdue": "Overdue"
+    },
+    "activity": {
+      "title": "Activity",
+      "CREATED": "created this task",
+      "CREATED_impersonal": "Task created",
+      "STATUS_CHANGED": "changed status from {{oldValue}} to {{newValue}}",
+      "STATUS_CHANGED_impersonal": "Status changed from {{oldValue}} to {{newValue}}",
+      "PRIORITY_CHANGED": "changed priority from {{oldValue}} to {{newValue}}",
+      "PRIORITY_CHANGED_impersonal": "Priority changed from {{oldValue}} to {{newValue}}",
+      "ASSIGNEE_CHANGED": "changed the assignee",
+      "ASSIGNEE_CHANGED_impersonal": "Assignee changed",
+      "SPRINT_ADDED": "added to sprint {{newValue}}",
+      "SPRINT_ADDED_impersonal": "Added to sprint {{newValue}}",
+      "RETURNED_TO_BACKLOG": "returned to backlog from {{oldValue}}",
+      "RETURNED_TO_BACKLOG_impersonal": "Returned to backlog from {{oldValue}}",
+      "LABEL_ADDED": "added label {{newValue}}",
+      "LABEL_ADDED_impersonal": "Label {{newValue}} added",
+      "LABEL_REMOVED": "removed a label",
+      "LABEL_REMOVED_impersonal": "Label removed",
+      "SUBTASK_ADDED": "added subtask {{newValue}}",
+      "SUBTASK_ADDED_impersonal": "Subtask {{newValue}} added",
+      "SUBTASK_REMOVED": "removed subtask {{oldValue}}",
+      "SUBTASK_REMOVED_impersonal": "Subtask {{oldValue}} removed",
+      "TITLE_CHANGED": "changed the title",
+      "TITLE_CHANGED_impersonal": "Title changed",
+      "DESCRIPTION_CHANGED": "updated the description",
+      "DESCRIPTION_CHANGED_impersonal": "Description updated",
+      "STORY_POINTS_CHANGED": "estimated at {{newValue}} points",
+      "STORY_POINTS_CHANGED_impersonal": "Estimated at {{newValue}} points"
+    },
+    "comments": {
+      "title": "Comments",
+      "placeholder": "Write a comment... Use @ to mention and # to reference tasks",
+      "send": "Send",
+      "edit": "Edit",
+      "delete": "Delete",
+      "edited": "edited",
+      "deleteConfirm": "Delete this comment?",
+      "empty": "No comments yet",
+      "emptySub": "Be the first to comment on this task",
+      "error": "Error saving the comment.",
+      "justNow": "just now",
+      "minutesAgo_one": "{{count}} min ago",
+      "minutesAgo_other": "{{count}} min ago",
+      "hoursAgo_one": "{{count}}h ago",
+      "hoursAgo_other": "{{count}}h ago",
+      "daysAgo_one": "{{count}}d ago",
+      "daysAgo_other": "{{count}}d ago",
+      "yesterday": "yesterday"
+    },
+    "filters": {
+      "title": "Filters",
+      "search": "Search by title...",
+      "priority": "Priority",
+      "assignee": "Assigned to",
+      "label": "Label",
+      "status": "Status",
+      "clearAll": "Clear filters",
+      "noResults": "No tasks match the applied filters.",
+      "noResultsSub": "Try adjusting the filters or clear them to see all tasks.",
+      "activeCount_one": "{{count}} active filter",
+      "activeCount_other": "{{count}} active filters",
+      "unassigned": "Unassigned",
+      "all": "All"
     }
   },
   "notifications": {
@@ -903,6 +981,13 @@
     "NOT_AUTHENTICATED": "Not authenticated.",
     "INVITATION_ALREADY_PENDING": "A pending invitation already exists for that user.",
     "INVITATION_NOT_FOUND": "Invitation not found.",
-    "INVITATION_NOT_PENDING": "This invitation has already been processed."
+    "COMMENT_NOT_FOUND": "Comment not found.",
+    "ONLY_AUTHOR_OR_ADMIN_CAN_MODIFY_COMMENT": "Only the author or an admin can modify this comment.",
+    "INVITATION_NOT_PENDING": "This invitation has already been processed.",
+    "PARENT_MUST_BE_STORY": "Subtasks can only be created under user stories.",
+    "MAX_ONE_LEVEL_NESTING": "Subtasks of subtasks are not allowed.",
+    "STORY_STATUS_IS_DERIVED": "Story status is automatically derived.",
+    "SUBTASKS_FOLLOW_PARENT": "Subtasks are automatically assigned with their parent story.",
+    "SUBTASK_NOT_ESTIMABLE": "Subtasks cannot have story points."
   }
 }

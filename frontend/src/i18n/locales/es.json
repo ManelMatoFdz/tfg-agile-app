@@ -518,6 +518,8 @@
       "noTasks": "El backlog está vacío",
       "noTasksSubtitle": "Crea tareas para empezar a planificar",
       "newTask": "Nueva tarea",
+      "newStory": "Nueva historia",
+      "newBug": "Nuevo bug",
       "loadError": "Error al cargar el backlog.",
       "task": "tarea",
       "tasks": "tareas"
@@ -632,6 +634,11 @@
     }
   },
   "tasks": {
+    "type": {
+      "STORY": "Historia",
+      "TASK": "Tarea",
+      "BUG": "Bug"
+    },
     "priority": {
       "LOW": "Baja",
       "MEDIUM": "Media",
@@ -662,6 +669,13 @@
       "dueDate": "Fecha límite",
       "completedAt": "Completada el",
       "labels": "Etiquetas",
+      "type": "Tipo",
+      "subtasks": "Subtareas",
+      "addSubtask": "Añadir subtarea",
+      "subtaskProgress": "{{done}} de {{total}} completadas",
+      "noSubtasks": "Sin subtareas",
+      "storyStatusDerived": "El estado de las historias se calcula automáticamente a partir de sus subtareas.",
+      "partOf": "Parte de",
       "create": "Crear tarea",
       "save": "Guardar cambios",
       "deleteTask": "Eliminar tarea",
@@ -670,6 +684,70 @@
     },
     "card": {
       "overdue": "Vencida"
+    },
+    "activity": {
+      "title": "Actividad",
+      "CREATED": "creó esta tarea",
+      "CREATED_impersonal": "Tarea creada",
+      "STATUS_CHANGED": "cambió el estado de {{oldValue}} a {{newValue}}",
+      "STATUS_CHANGED_impersonal": "El estado cambió de {{oldValue}} a {{newValue}}",
+      "PRIORITY_CHANGED": "cambió la prioridad de {{oldValue}} a {{newValue}}",
+      "PRIORITY_CHANGED_impersonal": "La prioridad cambió de {{oldValue}} a {{newValue}}",
+      "ASSIGNEE_CHANGED": "cambió la asignación",
+      "ASSIGNEE_CHANGED_impersonal": "La asignación cambió",
+      "SPRINT_ADDED": "añadió al sprint {{newValue}}",
+      "SPRINT_ADDED_impersonal": "Añadida al sprint {{newValue}}",
+      "RETURNED_TO_BACKLOG": "devuelta al backlog desde {{oldValue}}",
+      "RETURNED_TO_BACKLOG_impersonal": "Devuelta al backlog desde {{oldValue}}",
+      "LABEL_ADDED": "añadió la etiqueta {{newValue}}",
+      "LABEL_ADDED_impersonal": "Etiqueta {{newValue}} añadida",
+      "LABEL_REMOVED": "eliminó una etiqueta",
+      "LABEL_REMOVED_impersonal": "Etiqueta eliminada",
+      "SUBTASK_ADDED": "añadió la subtarea {{newValue}}",
+      "SUBTASK_ADDED_impersonal": "Subtarea {{newValue}} añadida",
+      "SUBTASK_REMOVED": "eliminó la subtarea {{oldValue}}",
+      "SUBTASK_REMOVED_impersonal": "Subtarea {{oldValue}} eliminada",
+      "TITLE_CHANGED": "cambió el título",
+      "TITLE_CHANGED_impersonal": "El título cambió",
+      "DESCRIPTION_CHANGED": "actualizó la descripción",
+      "DESCRIPTION_CHANGED_impersonal": "La descripción fue actualizada",
+      "STORY_POINTS_CHANGED": "estimó en {{newValue}} puntos",
+      "STORY_POINTS_CHANGED_impersonal": "Estimada en {{newValue}} puntos"
+    },
+    "comments": {
+      "title": "Comentarios",
+      "placeholder": "Escribe un comentario... Usa @ para mencionar y # para referenciar tareas",
+      "send": "Enviar",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "edited": "editado",
+      "deleteConfirm": "¿Eliminar este comentario?",
+      "empty": "No hay comentarios todavía",
+      "emptySub": "Sé el primero en comentar en esta tarea",
+      "error": "Error al guardar el comentario.",
+      "justNow": "ahora mismo",
+      "minutesAgo_one": "hace {{count}} min",
+      "minutesAgo_other": "hace {{count}} min",
+      "hoursAgo_one": "hace {{count}}h",
+      "hoursAgo_other": "hace {{count}}h",
+      "daysAgo_one": "hace {{count}}d",
+      "daysAgo_other": "hace {{count}}d",
+      "yesterday": "ayer"
+    },
+    "filters": {
+      "title": "Filtros",
+      "search": "Buscar por título...",
+      "priority": "Prioridad",
+      "assignee": "Asignado a",
+      "label": "Etiqueta",
+      "status": "Estado",
+      "clearAll": "Limpiar filtros",
+      "noResults": "No hay tareas que coincidan con los filtros aplicados.",
+      "noResultsSub": "Prueba a ajustar los filtros o limpiarlos para ver todas las tareas.",
+      "activeCount_one": "{{count}} filtro activo",
+      "activeCount_other": "{{count}} filtros activos",
+      "unassigned": "Sin asignar",
+      "all": "Todos"
     }
   },
   "notifications": {
@@ -903,6 +981,13 @@
     "NOT_AUTHENTICATED": "No autenticado.",
     "INVITATION_ALREADY_PENDING": "Ya existe una invitación pendiente para ese usuario.",
     "INVITATION_NOT_FOUND": "Invitación no encontrada.",
-    "INVITATION_NOT_PENDING": "Esta invitación ya fue procesada."
+    "COMMENT_NOT_FOUND": "Comentario no encontrado.",
+    "ONLY_AUTHOR_OR_ADMIN_CAN_MODIFY_COMMENT": "Solo el autor o un administrador puede modificar este comentario.",
+    "INVITATION_NOT_PENDING": "Esta invitación ya fue procesada.",
+    "PARENT_MUST_BE_STORY": "Solo se pueden crear subtareas bajo historias de usuario.",
+    "MAX_ONE_LEVEL_NESTING": "No se permiten subtareas de subtareas.",
+    "STORY_STATUS_IS_DERIVED": "El estado de las historias se calcula automáticamente.",
+    "SUBTASKS_FOLLOW_PARENT": "Las subtareas se asignan automáticamente con su historia padre.",
+    "SUBTASK_NOT_ESTIMABLE": "Las subtareas no pueden tener story points."
   }
 }

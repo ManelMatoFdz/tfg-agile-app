@@ -42,6 +42,14 @@ public class Task {
     @Builder.Default
     private TaskPriority priority = TaskPriority.MEDIUM;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private TaskType type = TaskType.TASK;
+
+    @Column
+    private UUID parentId;
+
     @Column(nullable = false, updatable = false)
     private UUID reporterId;
 

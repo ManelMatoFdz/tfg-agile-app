@@ -1,7 +1,14 @@
 import { useTranslation } from 'react-i18next';
-import type { Task, TaskPriority } from '../../types';
+import { BookOpen, CheckSquare, Bug } from 'lucide-react';
+import type { Task, TaskPriority, TaskType } from '../../types';
 import type { UserSummary } from '../../types';
 import { AssigneeAvatar, LabelChip } from './TaskModal';
+
+const TYPE_ICON: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
+  STORY: { icon: BookOpen, color: '#7C3AED' },
+  TASK:  { icon: CheckSquare, color: '#2563EB' },
+  BUG:   { icon: Bug, color: '#DC2626' },
+};
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; border: string; icon: string }> = {
   CRITICAL: { color: '#DC2626', border: '#DC2626', icon: '!!' },
@@ -21,6 +28,8 @@ export default function TaskCard({ task, assignee, onClick }: Props) {
   const taskLabels = task.labels ?? [];
   const hasFooter = !!assignee || taskLabels.length > 0;
   const config = PRIORITY_CONFIG[task.priority];
+  const typeConfig = TYPE_ICON[task.type ?? 'TASK'];
+  const TypeIcon = typeConfig.icon;
   const MAX_VISIBLE_LABELS = 3;
 
   return (
@@ -54,20 +63,23 @@ export default function TaskCard({ task, assignee, onClick }: Props) {
         el.style.borderLeftColor = config.border;
       }}
     >
-      {/* Priority badge */}
+      {/* Type + Priority badge */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-          color: config.color,
-          background: `${config.color}12`,
-          borderRadius: 'var(--radius-sm)',
-          padding: '1px 6px',
-        }}>
-          {t(`tasks.priority.${task.priority}`)}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <TypeIcon size={13} strokeWidth={2} style={{ color: typeConfig.color, flexShrink: 0 }} />
+          <span style={{
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            color: config.color,
+            background: `${config.color}12`,
+            borderRadius: 'var(--radius-sm)',
+            padding: '1px 6px',
+          }}>
+            {t(`tasks.priority.${task.priority}`)}
+          </span>
+        </div>
         {task.storyPoints != null && (
           <span style={{
             fontFamily: 'var(--font-mono)',
@@ -87,6 +99,20 @@ export default function TaskCard({ task, assignee, onClick }: Props) {
           </span>
         )}
       </div>
+
+      {task.parentTitle && (
+        <p style={{
+          margin: '0 0 2px',
+          fontSize: 10,
+          fontWeight: 600,
+          color: 'var(--text-faint)',
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis',
+        }}>
+          {'↳ '}{task.parentTitle}
+        </p>
+      )}
 
       <p style={{
         margin: 0,

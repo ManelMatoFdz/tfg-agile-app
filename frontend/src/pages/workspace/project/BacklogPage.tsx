@@ -1,15 +1,25 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, ClipboardList, Search } from 'lucide-react';
-import type { Task, TaskPriority } from '../../../types';
+import { Plus, ClipboardList, Search, Filter as FilterIcon, BookOpen, CheckSquare, Bug, ChevronRight, ChevronDown } from 'lucide-react';
+import type { Task, TaskPriority, TaskType, UserSummary } from '../../../types';
 import { sprintsApi } from '../../../api/sprints';
 import { tasksApi } from '../../../api/tasks';
 import type { CreateTaskDto, UpdateTaskDto } from '../../../api/tasks';
+
+const TYPE_ICON: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
+  STORY: { icon: BookOpen, color: '#7C3AED' },
+  TASK:  { icon: CheckSquare, color: '#2563EB' },
+  BUG:   { icon: Bug, color: '#DC2626' },
+};
+import { labelsApi } from '../../../api/labels';
 import TaskModal from '../../../components/kanban/TaskModal';
+import TaskFilterBar, { type TaskFilters, EMPTY_FILTERS, hasActiveFilters } from '../../../components/kanban/TaskFilterBar';
 import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
 import { useProjectMember } from '../../../hooks/useProjectMember';
+import { useProjectMembers } from '../../../hooks/useProjectMembers';
+import type { Label } from '../../../types';
 
 const PRIORITY_ORDER: TaskPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
@@ -28,26 +38,99 @@ const STATUS_CONFIG: Record<string, { color: string; dot: string }> = {
   DONE:        { color: '#16A34A', dot: '#16A34A' },
 };
 
+const FILTER_STORAGE_KEY = (pid: string) => `filters_${pid}_backlog`;
+
+function loadFilters(projectId: string): TaskFilters {
+  try {
+    const raw = localStorage.getItem(FILTER_STORAGE_KEY(projectId));
+    if (raw) return { ...EMPTY_FILTERS, ...JSON.parse(raw) };
+  } catch { /* ignore */ }
+  return { ...EMPTY_FILTERS };
+}
+
 export default function BacklogPage() {
   const { t } = useTranslation();
   const { projectId } = useParams<{ projectId: string }>();
 
   const { canCreateTask, canEditBacklogTask, canDeleteBacklogTask } = useProjectMember(projectId);
+  const { members, userMap } = useProjectMembers(projectId);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [modalTask, setModalTask] = useState<Task | null | undefined>(undefined);
 
+  const [labels, setLabels] = useState<Label[]>([]);
+  const [filters, setFilters] = useState<TaskFilters>(() => projectId ? loadFilters(projectId) : { ...EMPTY_FILTERS });
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const [expandedStories, setExpandedStories] = useState<Set<string>>(new Set());
+  const [storySubtasks, setStorySubtasks] = useState<Record<string, Task[]>>({});
+  const [createType, setCreateType] = useState<TaskType>('TASK');
+
+  const toggleStory = async (taskId: string) => {
+    const next = new Set(expandedStories);
+    if (next.has(taskId)) {
+      next.delete(taskId);
+    } else {
+      next.add(taskId);
+      if (!storySubtasks[taskId]) {
+        try {
+          const subs = await tasksApi.getSubtasks(taskId);
+          setStorySubtasks((prev) => ({ ...prev, [taskId]: subs }));
+        } catch { /* ignore */ }
+      }
+    }
+    setExpandedStories(next);
+  };
+
+  // Load labels
   useEffect(() => {
     if (!projectId) return;
-    setLoading(true);
-    sprintsApi
-      .getBacklog(projectId)
-      .then(setTasks)
-      .catch(() => setError(t('projects.backlog.loadError')))
-      .finally(() => setLoading(false));
-  }, [projectId, t]);
+    labelsApi.getByProject(projectId).then(setLabels).catch(() => {});
+  }, [projectId]);
+
+  // Fetch tasks with filters
+  const fetchTasks = useCallback(
+    (f: TaskFilters) => {
+      if (!projectId) return;
+      setLoading(true);
+      sprintsApi
+        .getBacklog(projectId, f)
+        .then(setTasks)
+        .catch(() => setError(t('projects.backlog.loadError')))
+        .finally(() => setLoading(false));
+    },
+    [projectId, t],
+  );
+
+  useEffect(() => {
+    fetchTasks(filters);
+  }, [fetchTasks]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleFilterChange = useCallback(
+    (next: TaskFilters) => {
+      setFilters(next);
+      if (projectId) localStorage.setItem(FILTER_STORAGE_KEY(projectId), JSON.stringify(next));
+
+      // Debounce search input, instant for dropdowns
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      if (next.search !== filters.search && next.search.length > 0) {
+        debounceRef.current = setTimeout(() => fetchTasks(next), 300);
+      } else {
+        fetchTasks(next);
+      }
+    },
+    [projectId, filters.search, fetchTasks],
+  );
+
+  const memberSummaries: UserSummary[] = members.map((m) => userMap[m.userId]).filter(Boolean) as UserSummary[];
+
+  const STATUS_OPTIONS = [
+    { key: 'TODO', label: t('tasks.status.TODO') },
+    { key: 'IN_PROGRESS', label: t('tasks.status.IN_PROGRESS') },
+    { key: 'IN_REVIEW', label: t('tasks.status.IN_REVIEW') },
+    { key: 'DONE', label: t('tasks.status.DONE') },
+  ];
 
   const totalPoints = tasks.reduce((sum, task) => sum + (task.storyPoints ?? 0), 0);
 
@@ -58,19 +141,18 @@ export default function BacklogPage() {
 
   const handleSave = async (dto: CreateTaskDto | UpdateTaskDto) => {
     if (modalTask) {
-      const updated = await tasksApi.update(modalTask.id, dto as UpdateTaskDto);
-      setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+      await tasksApi.update(modalTask.id, dto as UpdateTaskDto);
     } else {
-      const created = await tasksApi.create(projectId!, dto as CreateTaskDto);
-      setTasks((prev) => [...prev, created]);
+      await tasksApi.create(projectId!, dto as CreateTaskDto);
     }
+    fetchTasks(filters);
   };
 
 
   const handleDelete = async () => {
     if (!modalTask) return;
     await tasksApi.delete(modalTask.id);
-    setTasks((prev) => prev.filter((t) => t.id !== modalTask.id));
+    fetchTasks(filters);
   };
 
   return (
@@ -117,31 +199,53 @@ export default function BacklogPage() {
         </div>
 
         {canCreateTask && (
-          <button
-            onClick={() => setModalTask(null)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              padding: '8px 16px',
-              fontSize: 13,
-              fontWeight: 600,
-              background: 'var(--accent)',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              cursor: 'pointer',
-              transition: 'background 150ms',
-              boxShadow: 'var(--shadow-sm)',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
-          >
-            <Plus size={15} strokeWidth={2.5} />
-            {t('projects.backlog.newTask')}
-          </button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {([
+              { type: 'STORY' as TaskType, label: t('projects.backlog.newStory'), icon: BookOpen, color: '#7C3AED' },
+              { type: 'TASK' as TaskType, label: t('projects.backlog.newTask'), icon: CheckSquare, color: '#2563EB' },
+              { type: 'BUG' as TaskType, label: t('projects.backlog.newBug'), icon: Bug, color: '#DC2626' },
+            ]).map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.type}
+                  onClick={() => { setCreateType(item.type); setModalTask(null); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: '7px 14px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    background: 'var(--bg-elevated)',
+                    color: item.color,
+                    border: `1.5px solid ${item.color}30`,
+                    borderRadius: 'var(--radius-md)',
+                    cursor: 'pointer',
+                    transition: 'all 150ms',
+                    boxShadow: 'var(--shadow-sm)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = `${item.color}0D`; e.currentTarget.style.borderColor = item.color; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.borderColor = `${item.color}30`; }}
+                >
+                  <Icon size={14} strokeWidth={2} />
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
         )}
       </div>
+
+      {/* Filter bar */}
+      <TaskFilterBar
+        filters={filters}
+        onChange={handleFilterChange}
+        members={memberSummaries}
+        labels={labels}
+        showStatus
+        statuses={STATUS_OPTIONS}
+      />
 
       {/* Content */}
       {loading ? (
@@ -174,13 +278,16 @@ export default function BacklogPage() {
             justifyContent: 'center',
             margin: '0 auto 16px',
           }}>
-            <ClipboardList size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+            {hasActiveFilters(filters)
+              ? <FilterIcon size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+              : <ClipboardList size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+            }
           </div>
           <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
-            {t('projects.backlog.noTasks')}
+            {hasActiveFilters(filters) ? t('tasks.filters.noResults') : t('projects.backlog.noTasks')}
           </p>
           <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
-            {t('projects.backlog.noTasksSubtitle')}
+            {hasActiveFilters(filters) ? t('tasks.filters.noResultsSub') : t('projects.backlog.noTasksSubtitle')}
           </p>
         </div>
       ) : (
@@ -250,109 +357,203 @@ export default function BacklogPage() {
                 </div>
 
                 {/* Task rows */}
-                {group.map((task, idx) => (
-                  <button
-                    key={task.id}
-                    onClick={() => canEditBacklogTask && setModalTask(task)}
-                    style={{
-                      width: '100%',
-                      textAlign: 'left',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: '10px 16px',
-                      background: 'transparent',
-                      border: 'none',
-                      borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
-                      cursor: canEditBacklogTask ? 'pointer' : 'default',
-                      transition: 'background 150ms',
-                    }}
-                    onMouseEnter={e => canEditBacklogTask && (e.currentTarget.style.background = 'var(--bg-hover)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                  >
-                    {/* Title + description */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{
-                        margin: 0,
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: 'var(--text)',
-                        overflow: 'hidden',
-                        whiteSpace: 'nowrap',
-                        textOverflow: 'ellipsis',
-                      }}>
-                        {task.title}
-                      </p>
-                      {task.description && (
-                        <p style={{
-                          margin: '2px 0 0',
-                          fontSize: 12,
-                          color: 'var(--text-faint)',
-                          overflow: 'hidden',
-                          whiteSpace: 'nowrap',
-                          textOverflow: 'ellipsis',
-                        }}>
-                          {task.description}
-                        </p>
-                      )}
-                    </div>
+                {group.map((task, idx) => {
+                  const typeConf = TYPE_ICON[task.type ?? 'TASK'];
+                  const TypeIcon = typeConf.icon;
+                  const isStory = task.type === 'STORY' && task.subtaskCount > 0;
+                  const isExpanded = expandedStories.has(task.id);
+                  return (
+                    <div key={task.id}>
+                      <button
+                        onClick={() => canEditBacklogTask && setModalTask(task)}
+                        style={{
+                          width: '100%',
+                          textAlign: 'left',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '10px 16px',
+                          background: 'transparent',
+                          border: 'none',
+                          borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
+                          cursor: canEditBacklogTask ? 'pointer' : 'default',
+                          transition: 'background 150ms',
+                        }}
+                        onMouseEnter={e => canEditBacklogTask && (e.currentTarget.style.background = 'var(--bg-hover)')}
+                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                      >
+                        {/* Expand toggle for STORYs */}
+                        {isStory ? (
+                          <span
+                            onClick={(e) => { e.stopPropagation(); toggleStory(task.id); }}
+                            style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0, color: 'var(--text-muted)' }}
+                          >
+                            {isExpanded
+                              ? <ChevronDown size={14} strokeWidth={2} />
+                              : <ChevronRight size={14} strokeWidth={2} />
+                            }
+                          </span>
+                        ) : (
+                          <span style={{ width: 14, flexShrink: 0 }} />
+                        )}
 
-                    {/* Priority badge */}
-                    <span style={{
-                      width: 90,
-                      textAlign: 'center',
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: '0.06em',
-                      textTransform: 'uppercase',
-                      color: pConfig.color,
-                      background: `${pConfig.color}12`,
-                      borderRadius: 'var(--radius-pill)',
-                      padding: '3px 8px',
-                      flexShrink: 0,
-                    }}>
-                      {t(`tasks.priority.${task.priority}`)}
-                    </span>
+                        {/* Type icon */}
+                        <TypeIcon size={14} strokeWidth={2} style={{ color: typeConf.color, flexShrink: 0 }} />
 
-                    {/* Story points */}
-                    <div style={{ width: 60, textAlign: 'center', flexShrink: 0 }}>
-                      {task.storyPoints != null ? (
+                        {/* Title + description + subtask progress */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <p style={{
+                              margin: 0,
+                              fontSize: 13,
+                              fontWeight: 500,
+                              color: 'var(--text)',
+                              overflow: 'hidden',
+                              whiteSpace: 'nowrap',
+                              textOverflow: 'ellipsis',
+                            }}>
+                              {task.title}
+                            </p>
+                            {task.type === 'STORY' && task.subtaskCount > 0 && (
+                              <span style={{
+                                fontSize: 10,
+                                fontWeight: 600,
+                                color: task.completedSubtaskCount === task.subtaskCount ? '#16A34A' : 'var(--text-muted)',
+                                fontFamily: 'var(--font-mono)',
+                                flexShrink: 0,
+                              }}>
+                                {task.completedSubtaskCount}/{task.subtaskCount}
+                              </span>
+                            )}
+                          </div>
+                          {task.description && (
+                            <p style={{
+                              margin: '2px 0 0',
+                              fontSize: 12,
+                              color: 'var(--text-faint)',
+                              overflow: 'hidden',
+                              whiteSpace: 'nowrap',
+                              textOverflow: 'ellipsis',
+                            }}>
+                              {task.description}
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Priority badge */}
                         <span style={{
-                          fontSize: 12,
+                          width: 90,
+                          textAlign: 'center',
+                          fontSize: 10,
                           fontWeight: 700,
-                          color: 'var(--accent)',
-                          background: 'var(--accent-muted)',
+                          letterSpacing: '0.06em',
+                          textTransform: 'uppercase',
+                          color: pConfig.color,
+                          background: `${pConfig.color}12`,
                           borderRadius: 'var(--radius-pill)',
-                          padding: '2px 8px',
-                          fontFamily: 'var(--font-mono)',
+                          padding: '3px 8px',
+                          flexShrink: 0,
                         }}>
-                          {task.storyPoints}
+                          {t(`tasks.priority.${task.priority}`)}
                         </span>
-                      ) : (
-                        <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>--</span>
-                      )}
-                    </div>
 
-                    {/* Status */}
-                    <div style={{ width: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, flexShrink: 0 }}>
-                      <span style={{
-                        width: 7,
-                        height: 7,
-                        borderRadius: '50%',
-                        background: (STATUS_CONFIG[task.status] ?? { dot: DEFAULT_STATUS_COLOR }).dot,
-                        flexShrink: 0,
-                      }} />
-                      <span style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: (STATUS_CONFIG[task.status] ?? { color: DEFAULT_STATUS_COLOR }).color,
-                        fontFamily: 'var(--font-mono)',
-                      }}>
-                        {t(`tasks.status.${task.status}`, { defaultValue: task.status.replace(/_/g, ' ') })}
-                      </span>
+                        {/* Story points */}
+                        <div style={{ width: 60, textAlign: 'center', flexShrink: 0 }}>
+                          {task.storyPoints != null ? (
+                            <span style={{
+                              fontSize: 12,
+                              fontWeight: 700,
+                              color: 'var(--accent)',
+                              background: 'var(--accent-muted)',
+                              borderRadius: 'var(--radius-pill)',
+                              padding: '2px 8px',
+                              fontFamily: 'var(--font-mono)',
+                            }}>
+                              {task.storyPoints}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>--</span>
+                          )}
+                        </div>
+
+                        {/* Status */}
+                        <div style={{ width: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, flexShrink: 0 }}>
+                          <span style={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: '50%',
+                            background: (STATUS_CONFIG[task.status] ?? { dot: DEFAULT_STATUS_COLOR }).dot,
+                            flexShrink: 0,
+                          }} />
+                          <span style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: (STATUS_CONFIG[task.status] ?? { color: DEFAULT_STATUS_COLOR }).color,
+                            fontFamily: 'var(--font-mono)',
+                          }}>
+                            {t(`tasks.status.${task.status}`, { defaultValue: task.status.replace(/_/g, ' ') })}
+                          </span>
+                        </div>
+                      </button>
+
+                      {/* Expanded subtasks */}
+                      {isStory && isExpanded && (storySubtasks[task.id] ?? []).map((sub) => {
+                        const subStatus = STATUS_CONFIG[sub.status] ?? { color: DEFAULT_STATUS_COLOR, dot: DEFAULT_STATUS_COLOR };
+                        return (
+                          <button
+                            key={sub.id}
+                            onClick={() => canEditBacklogTask && setModalTask(sub)}
+                            style={{
+                              width: '100%',
+                              textAlign: 'left',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 12,
+                              padding: '8px 16px 8px 56px',
+                              background: 'var(--bg)',
+                              border: 'none',
+                              borderTop: '1px solid var(--border)',
+                              cursor: canEditBacklogTask ? 'pointer' : 'default',
+                              transition: 'background 150ms',
+                            }}
+                            onMouseEnter={e => canEditBacklogTask && (e.currentTarget.style.background = 'var(--bg-hover)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg)')}
+                          >
+                            <CheckSquare size={12} strokeWidth={2} style={{ color: '#2563EB', flexShrink: 0 }} />
+                            <p style={{
+                              flex: 1,
+                              margin: 0,
+                              fontSize: 12,
+                              fontWeight: 500,
+                              color: sub.status === 'DONE' ? 'var(--text-muted)' : 'var(--text)',
+                              textDecoration: sub.status === 'DONE' ? 'line-through' : 'none',
+                              overflow: 'hidden',
+                              whiteSpace: 'nowrap',
+                              textOverflow: 'ellipsis',
+                            }}>
+                              {sub.title}
+                            </p>
+                            {/* Assignee */}
+                            <div style={{ width: 90, textAlign: 'center', flexShrink: 0 }}>
+                              {sub.assigneeId && userMap[sub.assigneeId] && (
+                                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                                  {userMap[sub.assigneeId].fullName ?? userMap[sub.assigneeId].username}
+                                </span>
+                              )}
+                            </div>
+                            {/* Status */}
+                            <div style={{ width: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, flexShrink: 0 }}>
+                              <span style={{ width: 6, height: 6, borderRadius: '50%', background: subStatus.dot, flexShrink: 0 }} />
+                              <span style={{ fontSize: 10, fontWeight: 600, color: subStatus.color, fontFamily: 'var(--font-mono)' }}>
+                                {t(`tasks.status.${sub.status}`, { defaultValue: sub.status.replace(/_/g, ' ') })}
+                              </span>
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
-                  </button>
-                ))}
+                  );
+                })}
               </div>
             );
           })}
@@ -384,6 +585,7 @@ export default function BacklogPage() {
           task={modalTask}
           projectId={projectId}
           defaultStatus="TODO"
+          defaultType={createType}
           onClose={() => setModalTask(undefined)}
           onSave={handleSave}
           onMove={undefined}

@@ -5,6 +5,7 @@ import com.tfg.agile.app.task_service.entity.Sprint;
 import com.tfg.agile.app.task_service.entity.SprintStatus;
 import com.tfg.agile.app.task_service.entity.Task;
 import com.tfg.agile.app.task_service.entity.TaskPriority;
+import com.tfg.agile.app.task_service.entity.TaskType;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -43,6 +44,59 @@ public final class TestDataFactory {
                 .description("Task description")
                 .status("TODO")
                 .priority(TaskPriority.MEDIUM)
+                .type(TaskType.TASK)
+                .reporterId(reporterId)
+                .position(0)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+    }
+
+    public static Task story(UUID projectId, UUID reporterId) {
+        Instant now = Instant.now();
+        return Task.builder()
+                .id(UUID.randomUUID())
+                .projectId(projectId)
+                .title("User Story title")
+                .description("As a user I want...")
+                .status("TODO")
+                .priority(TaskPriority.MEDIUM)
+                .type(TaskType.STORY)
+                .reporterId(reporterId)
+                .position(0)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+    }
+
+    public static Task subtask(UUID projectId, UUID reporterId, UUID parentId) {
+        Instant now = Instant.now();
+        return Task.builder()
+                .id(UUID.randomUUID())
+                .projectId(projectId)
+                .title("Subtask title")
+                .description("Subtask description")
+                .status("TODO")
+                .priority(TaskPriority.MEDIUM)
+                .type(TaskType.TASK)
+                .parentId(parentId)
+                .reporterId(reporterId)
+                .position(0)
+                .createdAt(now)
+                .updatedAt(now)
+                .build();
+    }
+
+    public static Task bug(UUID projectId, UUID reporterId) {
+        Instant now = Instant.now();
+        return Task.builder()
+                .id(UUID.randomUUID())
+                .projectId(projectId)
+                .title("Bug title")
+                .description("Bug description")
+                .status("TODO")
+                .priority(TaskPriority.HIGH)
+                .type(TaskType.BUG)
                 .reporterId(reporterId)
                 .position(0)
                 .createdAt(now)

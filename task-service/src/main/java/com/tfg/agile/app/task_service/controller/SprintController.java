@@ -24,8 +24,13 @@ public class SprintController {
 
     @GetMapping("/projects/{projectId}/backlog")
     public List<TaskResponseDto> getBacklog(@PathVariable("projectId") UUID projectId,
+                                            @RequestParam(required = false) List<String> priority,
+                                            @RequestParam(required = false) List<UUID> assigneeId,
+                                            @RequestParam(required = false) List<UUID> labelId,
+                                            @RequestParam(required = false) List<String> status,
+                                            @RequestParam(required = false) String search,
                                             @AuthenticationPrincipal UUID callerId) {
-        return sprintService.getBacklog(projectId, callerId);
+        return sprintService.getBacklog(projectId, priority, assigneeId, labelId, status, search, callerId);
     }
 
     // ── Sprints ───────────────────────────────────────────────────────────────
@@ -44,8 +49,19 @@ public class SprintController {
 
     @GetMapping("/sprints/{sprintId}/tasks")
     public List<TaskResponseDto> getSprintTasks(@PathVariable("sprintId") UUID sprintId,
+                                                @RequestParam(required = false) List<String> priority,
+                                                @RequestParam(required = false) List<UUID> assigneeId,
+                                                @RequestParam(required = false) List<UUID> labelId,
+                                                @RequestParam(required = false) String search,
                                                 @AuthenticationPrincipal UUID callerId) {
-        return sprintService.getSprintTasks(sprintId, callerId);
+        return sprintService.getSprintTasks(sprintId, priority, assigneeId, labelId, search, callerId);
+    }
+
+    /** Returns root PBIs in the sprint (STORYs, BUGs, root TASKs) — for SprintsPage list view */
+    @GetMapping("/sprints/{sprintId}/stories")
+    public List<TaskResponseDto> getSprintStories(@PathVariable("sprintId") UUID sprintId,
+                                                   @AuthenticationPrincipal UUID callerId) {
+        return sprintService.getSprintAllTasks(sprintId, callerId);
     }
 
     @PostMapping("/projects/{projectId}/sprints")

@@ -3,16 +3,16 @@ package com.tfg.agile.app.task_service.service;
 import com.tfg.agile.app.task_service.client.MemberPermissionsDto;
 import com.tfg.agile.app.task_service.client.ProjectServiceClient;
 import com.tfg.agile.app.task_service.dto.*;
-import com.tfg.agile.app.task_service.entity.Sprint;
-import com.tfg.agile.app.task_service.entity.SprintStatus;
-import com.tfg.agile.app.task_service.entity.SprintTaskSnapshot;
-import com.tfg.agile.app.task_service.entity.Task;
+import com.tfg.agile.app.task_service.entity.*;
 import com.tfg.agile.app.task_service.exception.ConflictException;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
 import com.tfg.agile.app.task_service.repository.SprintRepository;
 import com.tfg.agile.app.task_service.repository.SprintTaskSnapshotRepository;
 import com.tfg.agile.app.task_service.repository.TaskRepository;
+import com.tfg.agile.app.task_service.repository.TaskSpecifications;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,26 +29,45 @@ public class SprintService {
     private final SprintTaskSnapshotRepository snapshotRepository;
     private final ProjectServiceClient projectServiceClient;
     private final BoardColumnService boardColumnService;
+    private final TaskService taskService;
+    private final ActivityService activityService;
 
     public SprintService(SprintRepository sprintRepository,
                          TaskRepository taskRepository,
                          SprintTaskSnapshotRepository snapshotRepository,
                          ProjectServiceClient projectServiceClient,
-                         BoardColumnService boardColumnService) {
+                         BoardColumnService boardColumnService,
+                         TaskService taskService,
+                         ActivityService activityService) {
         this.sprintRepository = sprintRepository;
         this.taskRepository = taskRepository;
         this.snapshotRepository = snapshotRepository;
         this.projectServiceClient = projectServiceClient;
         this.boardColumnService = boardColumnService;
+        this.taskService = taskService;
+        this.activityService = activityService;
     }
 
     // ── Backlog ───────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public List<TaskResponseDto> getBacklog(UUID projectId, UUID callerId) {
+    public List<TaskResponseDto> getBacklog(UUID projectId,
+                                            List<String> priorities,
+                                            List<UUID> assigneeIds,
+                                            List<UUID> labelIds,
+                                            List<String> statuses,
+                                            String search,
+                                            UUID callerId) {
         requireMember(projectId, callerId);
-        return taskRepository.findByProjectIdAndSprintIdIsNullOrderByPriorityDescPositionAsc(projectId).stream()
-                .map(TaskResponseDto::from)
+
+        Specification<Task> spec = Specification.where(TaskSpecifications.hasProjectId(projectId))
+                .and(TaskSpecifications.inBacklog())
+                .and(TaskSpecifications.isRootTask());
+        spec = applyFilters(spec, priorities, assigneeIds, labelIds, statuses, search);
+
+        return taskRepository.findAll(spec, Sort.by(Sort.Order.desc("priority"), Sort.Order.asc("position")))
+                .stream()
+                .map(taskService::toDto)
                 .toList();
     }
 
@@ -70,11 +89,36 @@ public class SprintService {
     }
 
     @Transactional(readOnly = true)
-    public List<TaskResponseDto> getSprintTasks(UUID sprintId, UUID callerId) {
+    public List<TaskResponseDto> getSprintTasks(UUID sprintId,
+                                                List<String> priorities,
+                                                List<UUID> assigneeIds,
+                                                List<UUID> labelIds,
+                                                String search,
+                                                UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         requireMember(sprint.getProjectId(), callerId);
-        return taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprintId).stream()
-                .map(TaskResponseDto::from)
+
+        Specification<Task> spec = Specification.where(TaskSpecifications.hasSprintId(sprintId))
+                .and(TaskSpecifications.isNotStoryType());
+        spec = applyFilters(spec, priorities, assigneeIds, labelIds, null, search);
+
+        return taskRepository.findAll(spec, Sort.by(Sort.Order.asc("status"), Sort.Order.asc("position")))
+                .stream()
+                .map(taskService::toDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<TaskResponseDto> getSprintAllTasks(UUID sprintId, UUID callerId) {
+        Sprint sprint = getSprintOrThrow(sprintId);
+        requireMember(sprint.getProjectId(), callerId);
+
+        Specification<Task> spec = Specification.where(TaskSpecifications.hasSprintId(sprintId))
+                .and(TaskSpecifications.isRootTask());
+
+        return taskRepository.findAll(spec, Sort.by(Sort.Order.desc("priority"), Sort.Order.asc("position")))
+                .stream()
+                .map(taskService::toDto)
                 .toList();
     }
 
@@ -184,6 +228,8 @@ public class SprintService {
                         .description(t.getDescription())
                         .statusAtEnd(t.getStatus())
                         .priority(t.getPriority())
+                        .type(t.getType())
+                        .parentTaskId(t.getParentId())
                         .completedAt(t.getCompletedAt())
                         .storyPoints(t.getStoryPoints())
                         .completed(isDone)
@@ -196,9 +242,16 @@ public class SprintService {
         allSprintTasks.stream()
                 .filter(t -> !doneStatuses.contains(t.getStatus()))
                 .forEach(t -> {
+                    String oldStatus = t.getStatus();
                     t.setSprintId(null);
                     t.setStatus(firstColumn);
                     taskRepository.save(t);
+                    activityService.record(t.getId(), null, TaskActivityType.RETURNED_TO_BACKLOG,
+                            sprint.getName(), null);
+                    if (!oldStatus.equals(firstColumn)) {
+                        activityService.record(t.getId(), null, TaskActivityType.STATUS_CHANGED,
+                                oldStatus, firstColumn);
+                    }
                 });
 
         sprint.setStatus(SprintStatus.COMPLETED);
@@ -241,6 +294,8 @@ public class SprintService {
             throw new ForbiddenException("CAN_ONLY_ADD_TASKS_TO_PLANNING_OR_ACTIVE_SPRINT");
         }
 
+        Set<String> doneStatuses = boardColumnService.getDoneEquivalentStatuses(sprint.getProjectId());
+
         List<TaskResponseDto> result = dto.taskIds().stream()
                 .map(taskId -> {
                     Task task = taskRepository.findById(taskId)
@@ -248,8 +303,30 @@ public class SprintService {
                     if (!task.getProjectId().equals(sprint.getProjectId())) {
                         throw new ForbiddenException("TASK_WRONG_PROJECT");
                     }
+                    // Subtasks cannot be assigned to sprint directly
+                    if (task.getParentId() != null) {
+                        throw new ConflictException("SUBTASKS_FOLLOW_PARENT");
+                    }
+
                     task.setSprintId(sprintId);
-                    return TaskResponseDto.from(taskRepository.save(task));
+                    taskRepository.save(task);
+
+                    activityService.record(task.getId(), callerId, TaskActivityType.SPRINT_ADDED,
+                            null, sprint.getName());
+
+                    // If STORY, propagate to non-DONE children
+                    if (task.getType() == TaskType.STORY) {
+                        taskRepository.findByParentId(taskId).stream()
+                                .filter(child -> !doneStatuses.contains(child.getStatus()))
+                                .forEach(child -> {
+                                    child.setSprintId(sprintId);
+                                    taskRepository.save(child);
+                                    activityService.record(child.getId(), callerId, TaskActivityType.SPRINT_ADDED,
+                                            null, sprint.getName());
+                                });
+                    }
+
+                    return taskService.toDto(task);
                 })
                 .toList();
         projectServiceClient.touchProject(sprint.getProjectId());
@@ -275,8 +352,24 @@ public class SprintService {
         if (!sprintId.equals(task.getSprintId())) {
             throw new ResourceNotFoundException("TASK_NOT_IN_SPRINT");
         }
+        // Subtasks cannot be removed from sprint directly
+        if (task.getParentId() != null) {
+            throw new ConflictException("SUBTASKS_FOLLOW_PARENT");
+        }
+
         task.setSprintId(null);
-        TaskResponseDto result = TaskResponseDto.from(taskRepository.save(task));
+        taskRepository.save(task);
+
+        // If STORY, also remove children from this sprint
+        if (task.getType() == TaskType.STORY) {
+            taskRepository.findByParentIdAndSprintId(taskId, sprintId)
+                    .forEach(child -> {
+                        child.setSprintId(null);
+                        taskRepository.save(child);
+                    });
+        }
+
+        TaskResponseDto result = taskService.toDto(task);
         projectServiceClient.touchProject(sprint.getProjectId());
         projectServiceClient.touchMemberActivity(sprint.getProjectId(), callerId);
         return result;
@@ -289,6 +382,35 @@ public class SprintService {
         return snapshotRepository.findBySprintId(sprintId).stream()
                 .map(SprintTaskSnapshotDto::from)
                 .toList();
+    }
+
+    // ── filter helpers ─────────────────────────────────────────────────────
+
+    private Specification<Task> applyFilters(Specification<Task> spec,
+                                             List<String> priorities,
+                                             List<UUID> assigneeIds,
+                                             List<UUID> labelIds,
+                                             List<String> statuses,
+                                             String search) {
+        if (priorities != null && !priorities.isEmpty()) {
+            List<TaskPriority> parsed = priorities.stream()
+                    .map(p -> TaskPriority.valueOf(p.toUpperCase()))
+                    .toList();
+            spec = spec.and(TaskSpecifications.hasPriorityIn(parsed));
+        }
+        if (assigneeIds != null && !assigneeIds.isEmpty()) {
+            spec = spec.and(TaskSpecifications.hasAssigneeIn(assigneeIds));
+        }
+        if (labelIds != null && !labelIds.isEmpty()) {
+            spec = spec.and(TaskSpecifications.hasLabelIn(labelIds));
+        }
+        if (statuses != null && !statuses.isEmpty()) {
+            spec = spec.and(TaskSpecifications.hasStatusIn(statuses));
+        }
+        if (search != null && !search.isBlank()) {
+            spec = spec.and(TaskSpecifications.titleContains(search.trim()));
+        }
+        return spec;
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

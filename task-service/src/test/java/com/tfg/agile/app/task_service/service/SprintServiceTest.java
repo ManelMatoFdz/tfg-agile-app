@@ -2,15 +2,16 @@ package com.tfg.agile.app.task_service.service;
 
 import com.tfg.agile.app.task_service.client.ProjectServiceClient;
 import com.tfg.agile.app.task_service.dto.AssignTaskToSprintRequestDto;
-import com.tfg.agile.app.task_service.dto.CompleteSprintRequestDto;
 import com.tfg.agile.app.task_service.dto.CreateSprintRequestDto;
 import com.tfg.agile.app.task_service.dto.UpdateSprintRequestDto;
 import com.tfg.agile.app.task_service.entity.Sprint;
 import com.tfg.agile.app.task_service.entity.SprintStatus;
 import com.tfg.agile.app.task_service.entity.Task;
+import com.tfg.agile.app.task_service.entity.TaskType;
 import com.tfg.agile.app.task_service.exception.ConflictException;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
+import com.tfg.agile.app.task_service.repository.LabelRepository;
 import com.tfg.agile.app.task_service.repository.SprintRepository;
 import com.tfg.agile.app.task_service.repository.SprintTaskSnapshotRepository;
 import com.tfg.agile.app.task_service.repository.TaskRepository;
@@ -20,6 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -46,14 +50,21 @@ class SprintServiceTest {
     private ProjectServiceClient projectServiceClient;
     @Mock
     private BoardColumnService boardColumnService;
+    @Mock
+    private LabelRepository labelRepository;
+    @Mock
+    private ActivityService activityService;
 
+    private TaskService taskService;
     private SprintService service;
 
     @BeforeEach
     void setUp() {
-        service = new SprintService(sprintRepository, taskRepository, snapshotRepository, projectServiceClient, boardColumnService);
+        taskService = new TaskService(taskRepository, labelRepository, projectServiceClient, boardColumnService, activityService);
+        service = new SprintService(sprintRepository, taskRepository, snapshotRepository, projectServiceClient, boardColumnService, taskService, activityService);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void getBacklog_requiresMembershipAndReturnsTasks() {
         UUID projectId = UUID.randomUUID();
@@ -61,9 +72,9 @@ class SprintServiceTest {
         Task task = TestDataFactory.task(projectId, UUID.randomUUID());
 
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
-        when(taskRepository.findByProjectIdAndSprintIdIsNullOrderByPriorityDescPositionAsc(projectId)).thenReturn(List.of(task));
+        when(taskRepository.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of(task));
 
-        var response = service.getBacklog(projectId, callerId);
+        var response = service.getBacklog(projectId, null, null, null, null, null, callerId);
 
         assertThat(response).hasSize(1);
         assertThat(response.get(0).id()).isEqualTo(task.getId());
@@ -95,6 +106,7 @@ class SprintServiceTest {
                 .hasMessage("SPRINT_NOT_FOUND");
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void getSprintTasks_returnsTasksWhenCallerIsMember() {
         UUID callerId = UUID.randomUUID();
@@ -105,9 +117,9 @@ class SprintServiceTest {
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
-        when(taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprint.getId())).thenReturn(List.of(task));
+        when(taskRepository.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of(task));
 
-        var response = service.getSprintTasks(sprint.getId(), callerId);
+        var response = service.getSprintTasks(sprint.getId(), null, null, null, null, callerId);
 
         assertThat(response).hasSize(1);
         assertThat(response.get(0).sprintId()).isEqualTo(sprint.getId());

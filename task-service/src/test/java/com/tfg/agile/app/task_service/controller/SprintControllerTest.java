@@ -7,6 +7,7 @@ import com.tfg.agile.app.task_service.dto.TaskResponseDto;
 import com.tfg.agile.app.task_service.dto.UpdateSprintRequestDto;
 import com.tfg.agile.app.task_service.entity.SprintStatus;
 import com.tfg.agile.app.task_service.entity.TaskPriority;
+import com.tfg.agile.app.task_service.entity.TaskType;
 import com.tfg.agile.app.task_service.service.SprintService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,25 +47,29 @@ class SprintControllerTest {
                 Instant.now(), Instant.now()
         );
 
+        Instant now = Instant.now();
         TaskResponseDto taskResponse = new TaskResponseDto(
                 taskId, projectId, sprintId, "Task", "Desc", "TODO", TaskPriority.MEDIUM,
-                callerId, null, null, 3, 0, List.of(), Instant.now(), Instant.now()
+                TaskType.TASK, null,
+                callerId, null, null, 3, 0, List.of(),
+                0, 0, null,
+                now, now
         );
 
-        when(sprintService.getBacklog(projectId, callerId)).thenReturn(List.of(taskResponse));
+        when(sprintService.getBacklog(projectId, null, null, null, null, null, callerId)).thenReturn(List.of(taskResponse));
         when(sprintService.listSprints(projectId, callerId)).thenReturn(List.of(sprintResponse));
         when(sprintService.getSprint(sprintId, callerId)).thenReturn(sprintResponse);
-        when(sprintService.getSprintTasks(sprintId, callerId)).thenReturn(List.of(taskResponse));
+        when(sprintService.getSprintTasks(sprintId, null, null, null, null, callerId)).thenReturn(List.of(taskResponse));
         when(sprintService.createSprint(projectId, createRequest, callerId)).thenReturn(sprintResponse);
         when(sprintService.updateSprint(sprintId, updateRequest, callerId)).thenReturn(sprintResponse);
         when(sprintService.activateSprint(sprintId, callerId)).thenReturn(sprintResponse);
         when(sprintService.assignTasksToSprint(sprintId, assignRequest, callerId)).thenReturn(List.of(taskResponse));
         when(sprintService.removeTaskFromSprint(sprintId, taskId, callerId)).thenReturn(taskResponse);
 
-        assertThat(controller.getBacklog(projectId, callerId)).hasSize(1);
+        assertThat(controller.getBacklog(projectId, null, null, null, null, null, callerId)).hasSize(1);
         assertThat(controller.listSprints(projectId, callerId)).hasSize(1);
         assertThat(controller.getSprint(sprintId, callerId)).isEqualTo(sprintResponse);
-        assertThat(controller.getSprintTasks(sprintId, callerId)).hasSize(1);
+        assertThat(controller.getSprintTasks(sprintId, null, null, null, null, callerId)).hasSize(1);
         assertThat(controller.createSprint(projectId, createRequest, callerId).getStatusCode().value()).isEqualTo(201);
         assertThat(controller.updateSprint(sprintId, updateRequest, callerId)).isEqualTo(sprintResponse);
         assertThat(controller.activateSprint(sprintId, callerId)).isEqualTo(sprintResponse);

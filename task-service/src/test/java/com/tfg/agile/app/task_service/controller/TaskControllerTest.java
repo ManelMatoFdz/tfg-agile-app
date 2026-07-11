@@ -5,6 +5,8 @@ import com.tfg.agile.app.task_service.dto.MoveTaskRequestDto;
 import com.tfg.agile.app.task_service.dto.TaskResponseDto;
 import com.tfg.agile.app.task_service.dto.UpdateTaskRequestDto;
 import com.tfg.agile.app.task_service.entity.TaskPriority;
+import com.tfg.agile.app.task_service.entity.TaskType;
+import com.tfg.agile.app.task_service.service.ActivityService;
 import com.tfg.agile.app.task_service.service.TaskService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,21 +26,27 @@ class TaskControllerTest {
 
     @Mock
     private TaskService taskService;
+    @Mock
+    private ActivityService activityService;
 
     @Test
     void endpoints_delegateToTaskService() {
-        TaskController controller = new TaskController(taskService);
+        TaskController controller = new TaskController(taskService, activityService);
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         UUID taskId = UUID.randomUUID();
 
-        CreateTaskRequestDto createRequest = new CreateTaskRequestDto("Task", "Desc", "HIGH", null, null);
+        CreateTaskRequestDto createRequest = new CreateTaskRequestDto("Task", "Desc", "HIGH", null, null, null, null);
         UpdateTaskRequestDto updateRequest = new UpdateTaskRequestDto("Task 2", "Desc 2", "LOW", null, null);
         MoveTaskRequestDto moveRequest = new MoveTaskRequestDto("DONE", 2);
 
+        Instant now = Instant.now();
         TaskResponseDto response = new TaskResponseDto(
                 taskId, projectId, null, "Task", "Desc", "TODO", TaskPriority.MEDIUM,
-                callerId, null, null, 5, 0, List.of(), Instant.now(), Instant.now()
+                TaskType.TASK, null,
+                callerId, null, null, 5, 0, List.of(),
+                0, 0, null,
+                now, now
         );
 
         when(taskService.findMyTasks(callerId)).thenReturn(List.of(response));
@@ -59,4 +67,3 @@ class TaskControllerTest {
         verify(taskService).delete(taskId, callerId);
     }
 }
-

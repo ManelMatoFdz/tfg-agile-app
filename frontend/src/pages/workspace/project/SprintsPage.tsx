@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, ChevronRight, LayoutDashboard, BarChart2, X, Zap } from 'lucide-react';
-import type { Sprint, SprintTaskSnapshot, Task, TaskPriority } from '../../../types';
+import { Plus, ChevronRight, LayoutDashboard, BarChart2, X, Zap, BookOpen, CheckSquare, Bug } from 'lucide-react';
+import type { Sprint, SprintTaskSnapshot, Task, TaskPriority, TaskType } from '../../../types';
+
+const TYPE_ICON_MAP: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
+  STORY: { icon: BookOpen, color: '#7C3AED' },
+  TASK:  { icon: CheckSquare, color: '#2563EB' },
+  BUG:   { icon: Bug, color: '#DC2626' },
+};
 import { sprintsApi, type CreateSprintDto } from '../../../api/sprints';
 import { tasksApi, type UpdateTaskDto, type CreateTaskDto } from '../../../api/tasks';
 import TaskModal from '../../../components/kanban/TaskModal';
@@ -997,7 +1003,8 @@ export default function SprintsPage() {
                             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
-                            {/* Priority dot */}
+                            {/* Type icon + Priority dot */}
+                            {(() => { const tc = TYPE_ICON_MAP[task.type ?? 'TASK']; const TIcon = tc.icon; return <TIcon size={12} strokeWidth={2} style={{ color: tc.color, flexShrink: 0 }} />; })()}
                             <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: PRIORITY_COLOR[task.priority] }} />
 
                             {/* Title */}
@@ -1005,6 +1012,11 @@ export default function SprintsPage() {
                               onClick={() => { setEditTask(task); setEditTaskSprintId(sprint.id); }}
                               style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                             >
+                              {task.parentTitle && (
+                                <p style={{ margin: '0 0 1px', fontSize: 10, fontWeight: 600, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                  {'↳ '}{task.parentTitle}
+                                </p>
+                              )}
                               <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                                 {task.title}
                               </p>

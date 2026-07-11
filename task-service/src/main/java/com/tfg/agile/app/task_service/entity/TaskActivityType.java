@@ -1,0 +1,17 @@
+package com.tfg.agile.app.task_service.entity;
+
+public enum TaskActivityType {
+    CREATED,
+    STATUS_CHANGED,
+    PRIORITY_CHANGED,
+    ASSIGNEE_CHANGED,
+    SPRINT_ADDED,
+    RETURNED_TO_BACKLOG,
+    LABEL_ADDED,
+    LABEL_REMOVED,
+    SUBTASK_ADDED,
+    SUBTASK_REMOVED,
+    TITLE_CHANGED,
+    DESCRIPTION_CHANGED,
+    STORY_POINTS_CHANGED
+}

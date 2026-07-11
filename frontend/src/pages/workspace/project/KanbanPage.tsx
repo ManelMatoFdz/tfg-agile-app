@@ -1,13 +1,26 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Columns, Clock, AlertTriangle, Settings } from 'lucide-react';
+import { Columns, Clock, AlertTriangle, Settings, Filter as FilterIcon } from 'lucide-react';
 import { sprintsApi } from '../../../api/sprints';
 import { boardColumnsApi } from '../../../api/boardColumns';
-import type { Sprint, Task, BoardColumn } from '@/types';
+import { labelsApi } from '../../../api/labels';
+import type { Sprint, Task, BoardColumn, Label, UserSummary } from '@/types';
 import KanbanBoard from '../../../components/kanban/KanbanBoard';
+import TaskFilterBar, { type TaskFilters, EMPTY_FILTERS, hasActiveFilters } from '../../../components/kanban/TaskFilterBar';
 import Alert from '../../../components/ui/Alert';
 import { useProjectMember } from '../../../hooks/useProjectMember';
+import { useProjectMembers } from '../../../hooks/useProjectMembers';
+
+const FILTER_STORAGE_KEY = (pid: string) => `filters_${pid}_board`;
+
+function loadBoardFilters(projectId: string): TaskFilters {
+  try {
+    const raw = localStorage.getItem(FILTER_STORAGE_KEY(projectId));
+    if (raw) return { ...EMPTY_FILTERS, ...JSON.parse(raw) };
+  } catch { /* ignore */ }
+  return { ...EMPTY_FILTERS };
+}
 
 export default function KanbanPage() {
   const { t } = useTranslation();
@@ -15,12 +28,43 @@ export default function KanbanPage() {
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
 
   const { canMoveTask, canDeleteSprintTask, isAdmin, isScrumMaster } = useProjectMember(projectId);
+  const { members, userMap } = useProjectMembers(projectId);
 
   const [activeSprint, setActiveSprint] = useState<Sprint | null>(null);
+  const [allTasks, setAllTasks] = useState<Task[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [columns, setColumns] = useState<BoardColumn[]>([]);
+  const [labels, setLabels] = useState<Label[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [filters, setFilters] = useState<TaskFilters>(() => projectId ? loadBoardFilters(projectId) : { ...EMPTY_FILTERS });
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const activeSprintRef = useRef<Sprint | null>(null);
+
+  // Load labels
+  useEffect(() => {
+    if (!projectId) return;
+    labelsApi.getByProject(projectId).then(setLabels).catch(() => {});
+  }, [projectId]);
+
+  const fetchSprintTasks = useCallback(
+    async (sprint: Sprint | null, f: TaskFilters) => {
+      if (!sprint) {
+        setAllTasks([]);
+        setTasks([]);
+        return;
+      }
+      try {
+        const fetched = await sprintsApi.getSprintTasks(sprint.id, hasActiveFilters(f) ? f : undefined);
+        setAllTasks(fetched);
+        setTasks(fetched);
+      } catch {
+        setError(t('projects.kanban.loadError'));
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (!projectId) return;
@@ -30,30 +74,49 @@ export default function KanbanPage() {
 
     const fetchSprint = sprintsApi
       .listSprints(projectId)
-      .then((sprints) => {
+      .then(async (sprints) => {
         const active = sprints.find((s) => s.status === 'ACTIVE') ?? null;
         setActiveSprint(active);
-        if (active) return sprintsApi.getSprintTasks(active.id);
-        return [];
+        activeSprintRef.current = active;
+        await fetchSprintTasks(active, filters);
       })
-      .then(setTasks)
       .catch(() => setError(t('projects.kanban.loadError')));
 
     Promise.all([fetchColumns, fetchSprint]).finally(() => setLoading(false));
-  }, [projectId, t]);
+  }, [projectId, t]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const refreshTasks = async () => {
-    if (!activeSprint) return;
+    const sprint = activeSprintRef.current;
+    if (!sprint) return;
     try {
-      const fresh = await sprintsApi.getSprintTasks(activeSprint.id);
+      const fresh = await sprintsApi.getSprintTasks(sprint.id, hasActiveFilters(filters) ? filters : undefined);
+      setAllTasks(fresh);
       setTasks((prev) => {
         if (JSON.stringify(fresh) === JSON.stringify(prev)) return prev;
         return fresh;
       });
     } catch {
-      // silent — no error shown for background refresh
+      // silent
     }
   };
+
+  const handleFilterChange = useCallback(
+    (next: TaskFilters) => {
+      setFilters(next);
+      if (projectId) localStorage.setItem(FILTER_STORAGE_KEY(projectId), JSON.stringify(next));
+
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      const sprint = activeSprintRef.current;
+      if (next.search !== filters.search && next.search.length > 0) {
+        debounceRef.current = setTimeout(() => fetchSprintTasks(sprint, next), 300);
+      } else {
+        fetchSprintTasks(sprint, next);
+      }
+    },
+    [projectId, filters.search, fetchSprintTasks],
+  );
+
+  const memberSummaries: UserSummary[] = members.map((m) => userMap[m.userId]).filter(Boolean) as UserSummary[];
 
   const formatDate = (date: string | null | undefined) =>
     date ? new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : null;
@@ -251,17 +314,55 @@ export default function KanbanPage() {
             </div>
           )}
 
-          <KanbanBoard
-            projectId={projectId!}
-            tasks={tasks}
-            columns={columns}
-            onTasksChange={setTasks}
-            onRefresh={refreshTasks}
-            disableCreate={true}
-            canMove={canMoveTask}
-            canDelete={canDeleteSprintTask}
-            readOnly={!canMoveTask}
-          />
+          {/* Filter bar */}
+          <div style={{ marginBottom: 12 }}>
+            <TaskFilterBar
+              filters={filters}
+              onChange={handleFilterChange}
+              members={memberSummaries}
+              labels={labels}
+            />
+          </div>
+
+          {/* Empty state for filters */}
+          {!loading && tasks.length === 0 && hasActiveFilters(filters) ? (
+            <div style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '64px 32px',
+              textAlign: 'center',
+              boxShadow: 'var(--shadow-sm)',
+            }}>
+              <div style={{
+                width: 56, height: 56,
+                background: 'var(--accent-muted)',
+                borderRadius: 'var(--radius-lg)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 16px',
+              }}>
+                <FilterIcon size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+              </div>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
+                {t('tasks.filters.noResults')}
+              </p>
+              <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
+                {t('tasks.filters.noResultsSub')}
+              </p>
+            </div>
+          ) : (
+            <KanbanBoard
+              projectId={projectId!}
+              tasks={tasks}
+              columns={columns}
+              onTasksChange={setTasks}
+              onRefresh={refreshTasks}
+              disableCreate={true}
+              canMove={canMoveTask}
+              canDelete={canDeleteSprintTask}
+              readOnly={!canMoveTask}
+            />
+          )}
         </>
       )}
     </div>
