@@ -37,14 +37,14 @@ class TaskControllerTest {
         UUID taskId = UUID.randomUUID();
 
         CreateTaskRequestDto createRequest = new CreateTaskRequestDto("Task", "Desc", "HIGH", null, null, null, null);
-        UpdateTaskRequestDto updateRequest = new UpdateTaskRequestDto("Task 2", "Desc 2", "LOW", null, null);
+        UpdateTaskRequestDto updateRequest = new UpdateTaskRequestDto("Task 2", "Desc 2", "LOW", null, null, null);
         MoveTaskRequestDto moveRequest = new MoveTaskRequestDto("DONE", 2);
 
         Instant now = Instant.now();
         TaskResponseDto response = new TaskResponseDto(
                 taskId, projectId, null, "Task", "Desc", "TODO", TaskPriority.MEDIUM,
                 TaskType.TASK, null,
-                callerId, null, null, 5, 0, List.of(),
+                callerId, null, null, 5, false, 0, List.of(),
                 0, 0, null,
                 now, now
         );

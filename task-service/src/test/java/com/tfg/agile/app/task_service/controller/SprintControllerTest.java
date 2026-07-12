@@ -51,7 +51,7 @@ class SprintControllerTest {
         TaskResponseDto taskResponse = new TaskResponseDto(
                 taskId, projectId, sprintId, "Task", "Desc", "TODO", TaskPriority.MEDIUM,
                 TaskType.TASK, null,
-                callerId, null, null, 3, 0, List.of(),
+                callerId, null, null, 3, false, 0, List.of(),
                 0, 0, null,
                 now, now
         );

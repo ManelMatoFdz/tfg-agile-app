@@ -17,6 +17,7 @@ export interface UpdateTaskDto {
   priority?: string;
   assigneeId?: string | null;
   labelIds?: string[];
+  ready?: boolean;
 }
 
 export interface MoveTaskDto {

@@ -225,9 +225,6 @@ export default function TaskActivityFeed({ taskId, comments, userMap }: Props) {
       <div style={{
         display: 'flex',
         flexDirection: 'column',
-        maxHeight: 200,
-        overflowY: 'auto',
-        paddingRight: 4,
       }}>
         {activityItems.map((activity) => (
           <ActivityRow

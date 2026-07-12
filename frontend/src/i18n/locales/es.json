@@ -402,7 +402,8 @@
       "noActiveSprint": "No hay ningún sprint activo",
       "noActiveSprintSub": "Activa un sprint desde la sección",
       "overdueBanner": "Este sprint venció hace {{days}} día(s). {{pending}} tarea(s) pendientes.",
-      "uncategorized": "Sin categoría"
+      "uncategorized": "Sin categoría",
+      "endsIn": "Finaliza en {{days}} día(s)"
     },
     "boardSettings": {
       "title": "Configuración del tablero",
@@ -514,7 +515,8 @@
       "noTasks": "No hay datos suficientes para mostrar métricas."
     },
     "backlog": {
-      "title": "Backlog",
+      "title": "Product Backlog",
+      "subtitle": "Refina y prioriza los elementos de trabajo para los próximos sprints.",
       "noTasks": "El backlog está vacío",
       "noTasksSubtitle": "Crea tareas para empezar a planificar",
       "newTask": "Nueva tarea",
@@ -522,7 +524,17 @@
       "newBug": "Nuevo bug",
       "loadError": "Error al cargar el backlog.",
       "task": "tarea",
-      "tasks": "tareas"
+      "tasks": "tareas",
+      "colType": "Tipo",
+      "colSummary": "Resumen",
+      "colPriority": "Prioridad",
+      "colEstimate": "Estimación",
+      "colStatus": "Estado",
+      "colAssignee": "Asignado",
+      "totalItems": "Total elementos",
+      "totalPoints": "Total puntos",
+      "readyForSprint": "Listos para sprint",
+      "page": "Página {{current}} de {{total}}"
     },
     "sprints": {
       "title": "Sprints",
@@ -663,16 +675,22 @@
       "status": "Estado",
       "storyPoints": "Story points",
       "storyPointsPoker": "— asignado vía Planning Poker",
+      "startPoker": "Iniciar Planning Poker",
       "storyPointsUnestimated": "Sin estimar — usa Planning Poker para estimar esta tarea",
+      "ready": "Listo para sprint",
+      "readyLabel": "Listo",
+      "notReadyLabel": "No listo",
       "assignee": "Asignado a",
       "unassigned": "Sin asignar",
       "dueDate": "Fecha límite",
       "completedAt": "Completada el",
+      "createdAt": "Creada el",
       "labels": "Etiquetas",
       "type": "Tipo",
       "subtasks": "Subtareas",
       "addSubtask": "Añadir subtarea",
       "subtaskProgress": "{{done}} de {{total}} completadas",
+      "subtaskCompleted": "completadas",
       "noSubtasks": "Sin subtareas",
       "storyStatusDerived": "El estado de las historias se calcula automáticamente a partir de sus subtareas.",
       "partOf": "Parte de",
@@ -712,7 +730,9 @@
       "DESCRIPTION_CHANGED": "actualizó la descripción",
       "DESCRIPTION_CHANGED_impersonal": "La descripción fue actualizada",
       "STORY_POINTS_CHANGED": "estimó en {{newValue}} puntos",
-      "STORY_POINTS_CHANGED_impersonal": "Estimada en {{newValue}} puntos"
+      "STORY_POINTS_CHANGED_impersonal": "Estimada en {{newValue}} puntos",
+      "READY_CHANGED": "marcó como {{newValue}}",
+      "READY_CHANGED_impersonal": "Marcada como {{newValue}}"
     },
     "comments": {
       "title": "Comentarios",

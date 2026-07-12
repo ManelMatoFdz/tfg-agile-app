@@ -10,5 +10,6 @@ public record UpdateTaskRequestDto(
         String description,
         String priority,
         UUID assigneeId,
-        List<UUID> labelIds
+        List<UUID> labelIds,
+        Boolean ready
 ) {}

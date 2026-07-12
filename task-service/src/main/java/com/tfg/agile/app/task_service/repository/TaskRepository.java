@@ -29,5 +29,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID>, JpaSpecificat
 
     int countByParentIdAndStatusIn(UUID parentId, Collection<String> statuses);
 
+    long countByProjectIdAndStatus(UUID projectId, String status);
+
     List<Task> findByParentIdAndSprintId(UUID parentId, UUID sprintId);
 }

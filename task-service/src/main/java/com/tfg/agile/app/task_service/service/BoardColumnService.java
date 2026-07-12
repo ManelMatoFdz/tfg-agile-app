@@ -110,4 +110,19 @@ public class BoardColumnService {
         if (columns.isEmpty()) return "TODO";
         return columns.get(0).getName();
     }
+
+    @Transactional(readOnly = true)
+    public void checkWipLimit(UUID projectId, String targetStatus) {
+        List<BoardColumn> columns = boardColumnRepository.findByProjectIdOrderByPositionAsc(projectId);
+        for (BoardColumn col : columns) {
+            if (col.getName().equals(targetStatus) && col.getWipLimit() != null && col.getWipLimit() > 0) {
+                long currentCount = taskRepository.countByProjectIdAndStatus(projectId, targetStatus);
+                if (currentCount >= col.getWipLimit()) {
+                    throw new IllegalArgumentException(
+                            "WIP_LIMIT_EXCEEDED:" + col.getName() + ":" + currentCount + ":" + col.getWipLimit());
+                }
+                break;
+            }
+        }
+    }
 }

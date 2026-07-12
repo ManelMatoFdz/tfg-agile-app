@@ -22,6 +22,7 @@ public record TaskResponseDto(
         UUID assigneeId,
         Instant completedAt,
         Integer storyPoints,
+        boolean ready,
         int position,
         List<LabelDto> labels,
         int subtaskCount,
@@ -44,7 +45,7 @@ public record TaskResponseDto(
                 t.getId(), t.getProjectId(), t.getSprintId(), t.getTitle(), t.getDescription(),
                 t.getStatus(), t.getPriority(), type, t.getParentId(),
                 t.getReporterId(), t.getAssigneeId(),
-                t.getCompletedAt(), t.getStoryPoints(), t.getPosition(), labelDtos,
+                t.getCompletedAt(), t.getStoryPoints(), t.isReady(), t.getPosition(), labelDtos,
                 info.subtaskCount(), info.completedSubtaskCount(), info.parentTitle(),
                 t.getCreatedAt(), t.getUpdatedAt()
         );

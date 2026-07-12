@@ -402,7 +402,8 @@
       "noActiveSprint": "No active sprint",
       "noActiveSprintSub": "Activate a sprint from the",
       "overdueBanner": "This sprint is {{days}} day(s) overdue. {{pending}} task(s) still pending.",
-      "uncategorized": "Uncategorized"
+      "uncategorized": "Uncategorized",
+      "endsIn": "Ends in {{days}} day(s)"
     },
     "boardSettings": {
       "title": "Board Settings",
@@ -514,7 +515,8 @@
       "noTasks": "Not enough data to show metrics."
     },
     "backlog": {
-      "title": "Backlog",
+      "title": "Product Backlog",
+      "subtitle": "Refine and prioritize the work items for the upcoming sprints.",
       "noTasks": "Backlog is empty",
       "noTasksSubtitle": "Create tasks to start planning",
       "newTask": "New task",
@@ -522,7 +524,17 @@
       "newBug": "New bug",
       "loadError": "Error loading the backlog.",
       "task": "task",
-      "tasks": "tasks"
+      "tasks": "tasks",
+      "colType": "Type",
+      "colSummary": "Summary",
+      "colPriority": "Priority",
+      "colEstimate": "Estimate",
+      "colStatus": "Status",
+      "colAssignee": "Assignee",
+      "totalItems": "Total items",
+      "totalPoints": "Total points",
+      "readyForSprint": "Ready for sprint",
+      "page": "Page {{current}} of {{total}}"
     },
     "sprints": {
       "title": "Sprints",
@@ -663,16 +675,22 @@
       "status": "Status",
       "storyPoints": "Story points",
       "storyPointsPoker": "— assigned via Planning Poker",
+      "startPoker": "Start Planning Poker",
       "storyPointsUnestimated": "Unestimated — use Planning Poker to estimate this task",
+      "ready": "Ready for sprint",
+      "readyLabel": "Ready",
+      "notReadyLabel": "Not Ready",
       "assignee": "Assigned to",
       "unassigned": "Unassigned",
       "dueDate": "Due date",
       "completedAt": "Completed at",
+      "createdAt": "Created on",
       "labels": "Labels",
       "type": "Type",
       "subtasks": "Subtasks",
       "addSubtask": "Add subtask",
       "subtaskProgress": "{{done}} of {{total}} completed",
+      "subtaskCompleted": "completed",
       "noSubtasks": "No subtasks",
       "storyStatusDerived": "Story status is automatically derived from its subtasks.",
       "partOf": "Part of",
@@ -712,7 +730,9 @@
       "DESCRIPTION_CHANGED": "updated the description",
       "DESCRIPTION_CHANGED_impersonal": "Description updated",
       "STORY_POINTS_CHANGED": "estimated at {{newValue}} points",
-      "STORY_POINTS_CHANGED_impersonal": "Estimated at {{newValue}} points"
+      "STORY_POINTS_CHANGED_impersonal": "Estimated at {{newValue}} points",
+      "READY_CHANGED": "marked as {{newValue}}",
+      "READY_CHANGED_impersonal": "Marked as {{newValue}}"
     },
     "comments": {
       "title": "Comments",

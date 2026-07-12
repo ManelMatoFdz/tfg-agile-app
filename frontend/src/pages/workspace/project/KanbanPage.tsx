@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Columns, Clock, AlertTriangle, Settings, Filter as FilterIcon } from 'lucide-react';
+import { Columns, AlertTriangle, Settings, Filter as FilterIcon } from 'lucide-react';
 import { sprintsApi } from '../../../api/sprints';
 import { boardColumnsApi } from '../../../api/boardColumns';
 import { labelsApi } from '../../../api/labels';
@@ -117,9 +117,6 @@ export default function KanbanPage() {
   );
 
   const memberSummaries: UserSummary[] = members.map((m) => userMap[m.userId]).filter(Boolean) as UserSummary[];
-
-  const formatDate = (date: string | null | undefined) =>
-    date ? new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : null;
 
   const sprintOverdueDays = (() => {
     if (!activeSprint?.endDate) return 0;
@@ -243,24 +240,13 @@ export default function KanbanPage() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {(activeSprint.startDate || activeSprint.endDate) && (
-                <span style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)',
-                }}>
-                  <Clock size={13} strokeWidth={1.75} />
-                  {formatDate(activeSprint.startDate) ?? '--'} - {formatDate(activeSprint.endDate) ?? '--'}
-                </span>
-              )}
-
               {daysRemaining != null && (
                 <span style={{
                   fontSize: 12,
-                  fontWeight: 600,
+                  fontWeight: 500,
                   color: daysRemaining <= 3 ? 'var(--warning)' : 'var(--text-muted)',
-                  fontFamily: 'var(--font-mono)',
                 }}>
-                  {daysRemaining}d left
+                  {t('projects.kanban.endsIn', { days: daysRemaining })}
                 </span>
               )}
 
@@ -357,6 +343,7 @@ export default function KanbanPage() {
               columns={columns}
               onTasksChange={setTasks}
               onRefresh={refreshTasks}
+              onError={setError}
               disableCreate={true}
               canMove={canMoveTask}
               canDelete={canDeleteSprintTask}

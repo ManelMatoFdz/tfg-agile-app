@@ -169,6 +169,7 @@ public class TaskService {
         String oldDescription = task.getDescription();
         TaskPriority oldPriority = task.getPriority();
         UUID oldAssigneeId = task.getAssigneeId();
+        boolean oldReady = task.isReady();
         Set<UUID> oldLabelIds = task.getLabels().stream().map(Label::getId).collect(Collectors.toSet());
 
         task.setTitle(dto.title());
@@ -184,6 +185,10 @@ public class TaskService {
 
         if (dto.labelIds() != null) {
             task.setLabels(new HashSet<>(labelRepository.findAllById(dto.labelIds())));
+        }
+
+        if (dto.ready() != null) {
+            task.setReady(dto.ready());
         }
 
         Task saved = taskRepository.save(task);
@@ -222,6 +227,10 @@ public class TaskService {
                 }
             }
         }
+        if (oldReady != saved.isReady()) {
+            activityService.record(saved.getId(), callerId, TaskActivityType.READY_CHANGED,
+                    String.valueOf(oldReady), String.valueOf(saved.isReady()));
+        }
 
         projectServiceClient.touchProject(task.getProjectId());
         projectServiceClient.touchMemberActivity(task.getProjectId(), callerId);
@@ -245,6 +254,12 @@ public class TaskService {
 
         String oldStatus = task.getStatus();
         String newStatus = dto.status();
+
+        // Enforce WIP limit on the target column
+        if (!oldStatus.equals(newStatus)) {
+            boardColumnService.checkWipLimit(task.getProjectId(), newStatus);
+        }
+
         task.setStatus(newStatus);
         task.setPosition(dto.position());
 

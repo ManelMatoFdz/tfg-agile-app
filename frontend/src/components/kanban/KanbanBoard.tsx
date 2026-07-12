@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus } from 'lucide-react';
+import type { AxiosError } from 'axios';
 import {
   DndContext,
   DragOverlay,
@@ -22,11 +23,13 @@ import TaskModal from './TaskModal';
 function DraggableCard({
   task,
   assignee,
+  columnColor,
   canDrag,
   onClick,
 }: {
   task: Task;
   assignee?: UserSummary;
+  columnColor?: string;
   canDrag: boolean;
   onClick: () => void;
 }) {
@@ -49,7 +52,7 @@ function DraggableCard({
         touchAction: 'none',
       }}
     >
-      <TaskCard task={task} assignee={assignee} onClick={onClick} />
+      <TaskCard task={task} assignee={assignee} columnColor={columnColor} onClick={onClick} />
     </div>
   );
 }
@@ -95,6 +98,7 @@ interface Props {
   columns: BoardColumn[];
   onTasksChange: (tasks: Task[]) => void;
   onRefresh?: () => Promise<void>;
+  onError?: (msg: string) => void;
   disableCreate?: boolean;
   canMove?: boolean;
   canDelete?: boolean;
@@ -107,6 +111,7 @@ export default function KanbanBoard({
   columns,
   onTasksChange,
   onRefresh,
+  onError,
   disableCreate = false,
   canMove = true,
   canDelete = true,
@@ -213,8 +218,18 @@ export default function KanbanBoard({
       const updated = await tasksApi.move(taskId, { status: newStatus, position: newPosition });
       onTasksChange(optimistic.map((t) => (t.id === updated.id ? updated : t)));
       onRefresh?.();
-    } catch {
+    } catch (err) {
       onTasksChange(tasks);
+      const axiosErr = err as AxiosError<{ message?: string }>;
+      const msg = axiosErr.response?.data?.message ?? '';
+      if (msg.startsWith('WIP_LIMIT_EXCEEDED:') && onError) {
+        const parts = msg.split(':');
+        onError(t('projects.boardSettings.errorWipExceeded', {
+          column: (parts[1] ?? '').replace(/_/g, ' '),
+          current: parts[2] ?? '?',
+          limit: parts[3] ?? '?',
+        }));
+      }
     }
   };
 
@@ -229,8 +244,8 @@ export default function KanbanBoard({
       <div
         key={colName}
         style={{
-          flexShrink: 0,
-          width: 272,
+          flex: '1 1 0',
+          minWidth: 240,
           background: 'var(--bg-elevated)',
           border: `1px solid ${isOver ? 'var(--accent)' : 'var(--border)'}`,
           borderRadius: 'var(--radius-lg)',
@@ -327,6 +342,7 @@ export default function KanbanBoard({
                 key={task.id}
                 task={task}
                 assignee={task.assigneeId ? userMap[task.assigneeId] : undefined}
+                columnColor={color}
                 canDrag={canMove}
                 onClick={() => openTaskModal(task)}
               />
@@ -375,6 +391,7 @@ export default function KanbanBoard({
               <TaskCard
                 task={activeTask}
                 assignee={activeTask.assigneeId ? userMap[activeTask.assigneeId] : undefined}
+                columnColor={columns.find((c) => c.name === activeTask.status)?.color}
                 onClick={() => {}}
               />
             </div>

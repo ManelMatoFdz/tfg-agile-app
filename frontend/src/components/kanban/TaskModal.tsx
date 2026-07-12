@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X, ChevronDown, UserCircle, BookOpen, CheckSquare, Bug, Plus } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { X, ChevronDown, UserCircle, BookOpen, CheckSquare, Bug, Plus, PlayCircle } from 'lucide-react';
 import type { Task, TaskPriority, TaskType, BoardColumn, Label } from '../../types';
 import type { CreateTaskDto, UpdateTaskDto } from '../../api/tasks';
 import { tasksApi } from '../../api/tasks';
@@ -26,7 +27,7 @@ const PRIORITY_COLOR: Record<TaskPriority, string> = {
   CRITICAL: '#DC2626',
 };
 
-const labelStyle: React.CSSProperties = {
+const sidebarLabel: React.CSSProperties = {
   display: 'block',
   fontSize: 11,
   fontWeight: 600,
@@ -38,7 +39,7 @@ const labelStyle: React.CSSProperties = {
 
 const fieldStyle: React.CSSProperties = {
   width: '100%',
-  padding: '10px 12px',
+  padding: '8px 10px',
   fontSize: 13,
   fontFamily: 'var(--font-sans)',
   color: 'var(--text)',
@@ -54,6 +55,15 @@ const readOnlyFieldStyle: React.CSSProperties = {
   ...fieldStyle,
   background: 'var(--bg-hover)',
   cursor: 'default',
+};
+
+const focusHandler = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  e.currentTarget.style.borderColor = 'var(--accent)';
+  e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)';
+};
+const blurHandler = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  e.currentTarget.style.borderColor = 'var(--border)';
+  e.currentTarget.style.boxShadow = 'none';
 };
 
 interface Props {
@@ -72,6 +82,8 @@ interface Props {
 
 export default function TaskModal({ task, projectId, columns = [], defaultStatus = 'TODO', defaultType = 'TASK', parentId, readOnly = false, onClose, onSave, onMove, onDelete }: Props) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
   const isEdit = !!task;
   const isSubtask = !!(task?.parentId ?? parentId);
   const isStoryWithChildren = task?.type === 'STORY' && (task?.subtaskCount ?? 0) > 0;
@@ -82,6 +94,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
   const [taskType, setTaskType] = useState<TaskType>(task?.type ?? (parentId ? 'TASK' : defaultType));
   const [status, setStatus] = useState<string>(task?.status ?? defaultStatus);
   const [assigneeId, setAssigneeId] = useState<string>(task?.assigneeId ?? '');
+  const [ready, setReady] = useState<boolean>(task?.ready ?? false);
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>(
     task?.labels?.map((l) => l.id) ?? [],
   );
@@ -118,6 +131,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
             priority,
             assigneeId: assigneeId || null,
             labelIds: selectedLabelIds.length > 0 ? selectedLabelIds : undefined,
+            ready,
           }
         : {
             title: title.trim(),
@@ -173,6 +187,13 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
     ? new Date(task.completedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
     : null;
 
+  const createdAtFormatted = task?.createdAt
+    ? new Date(task.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
+    : null;
+
+  // For create mode, use single-column layout
+  const isTwoColumn = isEdit;
+
   return (
     <div
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
@@ -192,8 +213,10 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
     >
       <div style={{
         width: '100%',
-        maxWidth: 720,
-        minHeight: 480,
+        width: isTwoColumn ? '85vw' : '100%',
+        maxWidth: isTwoColumn ? 1060 : 600,
+        height: isTwoColumn ? '85vh' : undefined,
+        maxHeight: '85vh',
         background: 'var(--bg-elevated)',
         border: '1px solid var(--border)',
         borderRadius: 'var(--radius-lg)',
@@ -207,12 +230,20 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '18px 24px',
+          padding: '16px 24px',
           borderBottom: '1px solid var(--border)',
+          flexShrink: 0,
         }}>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-            {readOnly ? t('tasks.modal.titleView') : isEdit ? t('tasks.modal.titleEdit') : t('tasks.modal.titleCreate')}
-          </h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {isEdit && task && (() => {
+              const cfg = TYPE_CONFIG[task.type ?? 'TASK'];
+              const Icon = cfg.icon;
+              return <Icon size={16} strokeWidth={2} style={{ color: cfg.color }} />;
+            })()}
+            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+              {readOnly ? t('tasks.modal.titleView') : isEdit ? t('tasks.modal.titleEdit') : t('tasks.modal.titleCreate')}
+            </h2>
+          </div>
           <button
             onClick={onClose}
             style={{
@@ -236,89 +267,111 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
         </div>
 
         {/* Body */}
-        <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 18, overflowY: 'auto', maxHeight: 'calc(100vh - 220px)' }}>
-          {error && (
-            <div style={{
-              fontSize: 13,
-              fontWeight: 500,
-              color: '#DC2626',
-              background: 'rgba(220,38,38,0.06)',
-              borderLeft: '3px solid #DC2626',
-              borderRadius: 'var(--radius-md)',
-              padding: '10px 14px',
-            }}>
-              {error}
+        <div style={{
+          flex: 1,
+          overflowY: 'auto',
+          display: isTwoColumn ? 'flex' : 'block',
+        }}>
+          {/* Main content (left) */}
+          <div style={{
+            flex: isTwoColumn ? 1 : undefined,
+            padding: '20px 24px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 18,
+            minWidth: 0,
+            ...(isTwoColumn ? { borderRight: '1px solid var(--border)' } : {}),
+          }}>
+            {error && (
+              <div style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: '#DC2626',
+                background: 'rgba(220,38,38,0.06)',
+                borderLeft: '3px solid #DC2626',
+                borderRadius: 'var(--radius-md)',
+                padding: '10px 14px',
+              }}>
+                {error}
+              </div>
+            )}
+
+            {/* Parent badge for subtasks */}
+            {task?.parentTitle && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 10px',
+                background: 'var(--bg-hover)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--border)',
+              }}>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{'↳'} {t('tasks.modal.partOf')}:</span>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{task.parentTitle}</span>
+              </div>
+            )}
+
+            {/* Story auto-status info */}
+            {isStoryWithChildren && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '6px 10px',
+                background: 'rgba(124,58,237,0.06)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid rgba(124,58,237,0.15)',
+              }}>
+                <BookOpen size={14} strokeWidth={2} style={{ color: '#7C3AED', flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: '#7C3AED' }}>{t('tasks.modal.storyStatusDerived')}</span>
+              </div>
+            )}
+
+            {/* Title */}
+            <div>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={t('tasks.modal.titlePlaceholder')}
+                readOnly={readOnly}
+                autoFocus={!readOnly}
+                style={{
+                  ...(readOnly ? readOnlyFieldStyle : fieldStyle),
+                  fontSize: 16,
+                  fontWeight: 600,
+                  padding: '10px 12px',
+                  border: readOnly ? '1px solid var(--border)' : '1px solid var(--border)',
+                }}
+                onFocus={e => { if (!readOnly) focusHandler(e); }}
+                onBlur={blurHandler}
+              />
             </div>
-          )}
 
-          <div>
-            <label style={labelStyle}>{t('tasks.modal.titleField')}</label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={t('tasks.modal.titlePlaceholder')}
-              readOnly={readOnly}
-              autoFocus={!readOnly}
-              style={readOnly ? readOnlyFieldStyle : fieldStyle}
-              onFocus={e => { if (!readOnly) { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; } }}
-              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>{t('tasks.modal.description')}</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={readOnly ? '--' : t('tasks.modal.descriptionPlaceholder')}
-              rows={3}
-              readOnly={readOnly}
-              style={{ ...(readOnly ? readOnlyFieldStyle : fieldStyle), resize: 'none' }}
-              onFocus={e => { if (!readOnly) { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; } }}
-              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
-            />
-          </div>
-
-          {/* Parent badge for subtasks */}
-          {task?.parentTitle && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '8px 12px',
-              background: 'var(--bg-hover)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid var(--border)',
-            }}>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{'↳'} {t('tasks.modal.partOf')}:</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{task.parentTitle}</span>
+            {/* Description */}
+            <div>
+              <label style={sidebarLabel}>{t('tasks.modal.description')}</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder={readOnly ? '--' : t('tasks.modal.descriptionPlaceholder')}
+                rows={4}
+                readOnly={readOnly}
+                style={{
+                  ...(readOnly ? readOnlyFieldStyle : fieldStyle),
+                  resize: 'vertical',
+                  minHeight: 80,
+                }}
+                onFocus={e => { if (!readOnly) focusHandler(e); }}
+                onBlur={blurHandler}
+              />
             </div>
-          )}
-
-          {/* Story auto-status info */}
-          {isStoryWithChildren && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '8px 12px',
-              background: 'rgba(124,58,237,0.06)',
-              borderRadius: 'var(--radius-md)',
-              border: '1px solid rgba(124,58,237,0.15)',
-            }}>
-              <BookOpen size={14} strokeWidth={2} style={{ color: '#7C3AED', flexShrink: 0 }} />
-              <span style={{ fontSize: 12, color: '#7C3AED' }}>{t('tasks.modal.storyStatusDerived')}</span>
-            </div>
-          )}
-
-          <div className="task-modal-grid">
-            <style>{`.task-modal-grid{display:grid;gap:14px;grid-template-columns:1fr 1fr}`}</style>
 
             {/* Type selector — only on create, not for subtasks */}
             {!isEdit && !parentId && (
               <div>
-                <label style={labelStyle}>{t('tasks.modal.type')}</label>
+                <label style={sidebarLabel}>{t('tasks.modal.type')}</label>
                 <div style={{ display: 'flex', gap: 6 }}>
                   {TASK_TYPES.map((tt) => {
                     const cfg = TYPE_CONFIG[tt];
@@ -356,339 +409,515 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
               </div>
             )}
 
-            {/* Type badge — readonly for existing tasks */}
-            {isEdit && (
-              <div>
-                <label style={labelStyle}>{t('tasks.modal.type')}</label>
-                <div style={{ ...readOnlyFieldStyle, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {(() => { const cfg = TYPE_CONFIG[task?.type ?? 'TASK']; const Icon = cfg.icon; return (
-                    <>
-                      <Icon size={14} strokeWidth={2} style={{ color: cfg.color }} />
-                      <span style={{ fontWeight: 600, color: cfg.color }}>{t(`tasks.type.${task?.type ?? 'TASK'}`)}</span>
-                    </>
-                  ); })()}
+            {/* Create mode: priority + assignee inline */}
+            {!isEdit && (
+              <div style={{ display: 'grid', gap: 14, gridTemplateColumns: '1fr 1fr' }}>
+                <div>
+                  <label style={sidebarLabel}>{t('tasks.modal.priority')}</label>
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                    style={fieldStyle}
+                    onFocus={focusHandler}
+                    onBlur={blurHandler}
+                  >
+                    {PRIORITIES.map((p) => (
+                      <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
+                    ))}
+                  </select>
                 </div>
-              </div>
-            )}
-
-            <div>
-              <label style={labelStyle}>{t('tasks.modal.priority')}</label>
-              {readOnly ? (
-                <div style={readOnlyFieldStyle}>
-                  <span style={{ fontWeight: 600, color: PRIORITY_COLOR[priority] }}>{t(`tasks.priority.${priority}`)}</span>
-                </div>
-              ) : (
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                  style={fieldStyle}
-                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
-                >
-                  {PRIORITIES.map((p) => (
-                    <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-
-            {isEdit && onMove && columns.length > 0 && (
-              <div>
-                <label style={labelStyle}>{t('tasks.modal.status')}</label>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  style={fieldStyle}
-                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
-                >
-                  {columns.map((col) => (
-                    <option key={col.name} value={col.name}>{col.name.replace(/_/g, ' ')}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {members.length > 0 && (
-              <div>
-                <label style={labelStyle}>{t('tasks.modal.assignee')}</label>
-                {readOnly ? (
-                  <div style={{ ...readOnlyFieldStyle, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {assigneeId && userMap[assigneeId] ? (
-                      <>
-                        <AssigneeAvatar name={userMap[assigneeId].fullName ?? userMap[assigneeId].username} avatarUrl={userMap[assigneeId].avatarUrl} size={22} />
-                        <span style={{ color: 'var(--text)' }}>{userMap[assigneeId].fullName ?? userMap[assigneeId].username}</span>
-                      </>
-                    ) : (
-                      <span style={{ color: 'var(--text-faint)', fontStyle: 'italic' }}>{t('tasks.modal.unassigned')}</span>
-                    )}
+                {members.length > 0 && (
+                  <div>
+                    <label style={sidebarLabel}>{t('tasks.modal.assignee')}</label>
+                    <AssigneeDropdown
+                      value={assigneeId}
+                      onChange={setAssigneeId}
+                      members={members}
+                      userMap={userMap}
+                      placeholder={t('tasks.modal.unassigned')}
+                    />
                   </div>
-                ) : (
-                  <AssigneeDropdown
-                    value={assigneeId}
-                    onChange={setAssigneeId}
-                    members={members}
-                    userMap={userMap}
-                    placeholder={t('tasks.modal.unassigned')}
-                  />
                 )}
               </div>
             )}
 
-            {isEdit && !isSubtask && (
-              <div style={members.length > 0 ? { gridColumn: '1 / -1' } : undefined}>
-                <label style={labelStyle}>{t('tasks.modal.storyPoints')}</label>
-                <div style={{ ...readOnlyFieldStyle, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {task?.storyPoints != null
-                    ? <>
-                        <span style={{
-                          fontWeight: 700,
-                          color: 'var(--accent)',
-                          background: 'var(--accent-muted)',
-                          borderRadius: 'var(--radius-pill)',
-                          width: 28,
-                          height: 28,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: 13,
-                          fontFamily: 'var(--font-mono)',
-                        }}>
-                          {task.storyPoints}
-                        </span>
-                        <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{t('tasks.modal.storyPointsPoker')}</span>
-                      </>
-                    : <span style={{ fontStyle: 'italic', color: 'var(--text-faint)' }}>{t('tasks.modal.storyPointsUnestimated')}</span>
-                  }
-                </div>
-              </div>
-            )}
-
-            {isEdit && completedAtFormatted && (
+            {/* Create mode: labels */}
+            {!isEdit && projectLabels.length > 0 && (
               <div>
-                <label style={labelStyle}>{t('tasks.modal.completedAt')}</label>
-                <div style={readOnlyFieldStyle}>
-                  {completedAtFormatted}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Labels */}
-          {projectLabels.length > 0 && (
-            <div>
-              <label style={labelStyle}>{t('tasks.modal.labels')}</label>
-              {readOnly ? (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {selectedLabelIds.length === 0 ? (
-                    <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>—</span>
-                  ) : (
-                    selectedLabelIds.map((id) => {
-                      const lbl = projectLabels.find((l) => l.id === id);
-                      if (!lbl) return null;
-                      return <LabelChip key={id} label={lbl} />;
-                    })
-                  )}
-                </div>
-              ) : (
+                <label style={sidebarLabel}>{t('tasks.modal.labels')}</label>
                 <LabelMultiSelect
                   labels={projectLabels}
                   selected={selectedLabelIds}
                   onChange={setSelectedLabelIds}
                 />
-              )}
-            </div>
-          )}
+              </div>
+            )}
 
-          {/* Subtasks section — only for STORY */}
-          {isEdit && task?.type === 'STORY' && (
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <label style={{ ...labelStyle, margin: 0 }}>
-                  {t('tasks.modal.subtasks')}
+            {/* Subtasks section — only for STORY */}
+            {isEdit && task?.type === 'STORY' && (() => {
+              const pct = task.subtaskCount > 0 ? Math.round((task.completedSubtaskCount / task.subtaskCount) * 100) : 0;
+              const allDone = task.subtaskCount > 0 && task.completedSubtaskCount === task.subtaskCount;
+              const barColor = allDone ? '#16A34A' : '#3B82F6';
+              return (
+                <div style={{
+                  borderTop: '1px solid var(--border)',
+                  paddingTop: 16,
+                }}>
+                  <div style={{
+                    background: '#F8F9FA',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '14px 16px',
+                  }}>
+                  {/* Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <label style={{ ...sidebarLabel, margin: 0 }}>
+                      {t('tasks.modal.subtasks')}
+                    </label>
+                    {task.subtaskCount > 0 && (
+                      <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)' }}>
+                        {task.completedSubtaskCount}/{task.subtaskCount} {t('tasks.modal.subtaskCompleted')}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Progress bar */}
                   {task.subtaskCount > 0 && (
-                    <span style={{ marginLeft: 8, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>
-                      {t('tasks.modal.subtaskProgress', { done: task.completedSubtaskCount, total: task.subtaskCount })}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                      <div style={{
+                        flex: 1,
+                        height: 6,
+                        background: '#E5E7EB',
+                        borderRadius: 3,
+                        overflow: 'hidden',
+                      }}>
+                        <div style={{
+                          height: '100%',
+                          width: `${pct}%`,
+                          background: barColor,
+                          borderRadius: 3,
+                          transition: 'width 300ms ease',
+                        }} />
+                      </div>
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: barColor,
+                        fontFamily: 'var(--font-mono)',
+                        minWidth: 32,
+                        textAlign: 'right',
+                      }}>
+                        {pct}%
+                      </span>
+                    </div>
                   )}
-                </label>
-                {!readOnly && (
-                  <button
-                    type="button"
-                    onClick={() => setShowSubtaskForm(true)}
-                    style={{
+
+                  {/* Subtask list */}
+                  {subtasks.length > 0 && (
+                    <div style={{
                       display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '4px 10px',
-                      fontSize: 11,
-                      fontWeight: 600,
-                      fontFamily: 'var(--font-sans)',
-                      background: 'var(--accent)',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      borderRadius: 'var(--radius-md)',
-                      cursor: 'pointer',
-                      transition: 'background 150ms',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
-                    onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
+                      flexDirection: 'column',
+                      maxHeight: 240,
+                      overflowY: 'auto',
+                    }}>
+                      {subtasks.map((st) => {
+                        const isDone = st.status === 'DONE';
+                        return (
+                          <div key={st.id} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '8px 14px',
+                          }}>
+                            {/* Visual-only checkbox */}
+                            <span style={{
+                              width: 18,
+                              height: 18,
+                              borderRadius: 4,
+                              border: isDone ? 'none' : '2px solid #CBD5E1',
+                              background: isDone ? '#3B82F6' : '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}>
+                              {isDone && (
+                                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                  <path d="M2 5.5L4.5 8L9 3" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              )}
+                            </span>
+                            <span style={{
+                              flex: 1,
+                              fontSize: 13,
+                              fontWeight: 400,
+                              color: isDone ? '#94A3B8' : '#1F2937',
+                              textDecoration: isDone ? 'line-through' : 'none',
+                              overflow: 'hidden',
+                              whiteSpace: 'nowrap',
+                              textOverflow: 'ellipsis',
+                            }}>
+                              {st.title}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {task.subtaskCount === 0 && !showSubtaskForm && (
+                    <p style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic', margin: 0 }}>
+                      {t('tasks.modal.noSubtasks')}
+                    </p>
+                  )}
+
+                  {/* Add subtask link / inline form */}
+                  {!readOnly && !showSubtaskForm && (
+                    <button
+                      type="button"
+                      onClick={() => setShowSubtaskForm(true)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        marginTop: 10,
+                        padding: 0,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        fontFamily: 'var(--font-sans)',
+                        background: 'none',
+                        color: 'var(--accent)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        transition: 'opacity 150ms',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+                      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                    >
+                      <Plus size={13} strokeWidth={2.5} />
+                      {t('tasks.modal.addSubtask')}
+                    </button>
+                  )}
+
+                  {showSubtaskForm && (
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                      <input
+                        type="text"
+                        value={subtaskTitle}
+                        onChange={(e) => setSubtaskTitle(e.target.value)}
+                        placeholder={t('tasks.modal.titlePlaceholder')}
+                        autoFocus
+                        style={{ ...fieldStyle, flex: 1, padding: '6px 10px', fontSize: 12 }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleAddSubtask(); if (e.key === 'Escape') { setShowSubtaskForm(false); setSubtaskTitle(''); } }}
+                        onFocus={focusHandler}
+                        onBlur={blurHandler}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddSubtask}
+                        disabled={!subtaskTitle.trim()}
+                        style={{
+                          padding: '6px 14px',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          fontFamily: 'var(--font-sans)',
+                          background: 'var(--accent)',
+                          color: '#FFFFFF',
+                          border: 'none',
+                          borderRadius: 'var(--radius-md)',
+                          cursor: subtaskTitle.trim() ? 'pointer' : 'not-allowed',
+                          opacity: subtaskTitle.trim() ? 1 : 0.5,
+                        }}
+                      >
+                        {t('common.add')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowSubtaskForm(false); setSubtaskTitle(''); }}
+                        style={{
+                          padding: '6px 14px',
+                          fontSize: 12,
+                          fontWeight: 600,
+                          fontFamily: 'var(--font-sans)',
+                          background: 'var(--bg-elevated)',
+                          color: 'var(--text-muted)',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-md)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {t('common.cancel')}
+                      </button>
+                    </div>
+                  )}
+                  </div>{/* end gray bg */}
+                </div>
+              );
+            })()}
+
+            {/* Comments — only for existing tasks */}
+            {isEdit && projectId && task && (
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                <TaskComments
+                  taskId={task.id}
+                  projectId={projectId}
+                  members={members}
+                  userMap={userMap}
+                  isAdmin={isAdmin}
+                />
+              </div>
+            )}
+
+            {/* Activity log — only for existing tasks */}
+            {isEdit && task && (
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                <TaskActivityFeed
+                  taskId={task.id}
+                  comments={[]}
+                  userMap={userMap}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Sidebar (right) — only for edit mode */}
+          {isTwoColumn && (
+            <div style={{
+              width: 280,
+              flexShrink: 0,
+              padding: '20px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 22,
+              overflowY: 'auto',
+            }}>
+              {/* Start Planning Poker — only for non-subtask tasks */}
+              {!isSubtask && workspaceId && projectId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    navigate(`/workspaces/${workspaceId}/projects/${projectId}/poker`);
+                  }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    width: '100%',
+                    padding: '10px 16px',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    fontFamily: 'var(--font-sans)',
+                    background: 'var(--accent)',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    borderRadius: 'var(--radius-md)',
+                    cursor: 'pointer',
+                    transition: 'background 150ms',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
+                >
+                  <PlayCircle size={16} strokeWidth={2} />
+                  {t('tasks.modal.startPoker')}
+                </button>
+              )}
+
+              {/* Status */}
+              {onMove && columns.length > 0 && (
+                <div>
+                  <label style={sidebarLabel}>{t('tasks.modal.status')}</label>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                    style={{ ...fieldStyle, fontSize: 12, padding: '7px 10px' }}
+                    onFocus={focusHandler}
+                    onBlur={blurHandler}
                   >
-                    <Plus size={12} strokeWidth={2.5} />
-                    {t('tasks.modal.addSubtask')}
-                  </button>
+                    {columns.map((col) => (
+                      <option key={col.name} value={col.name}>{col.name.replace(/_/g, ' ')}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Priority */}
+              <div>
+                <label style={sidebarLabel}>{t('tasks.modal.priority')}</label>
+                {readOnly ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: PRIORITY_COLOR[priority],
+                      flexShrink: 0,
+                    }} />
+                    <span style={{ fontSize: 13, fontWeight: 600, color: PRIORITY_COLOR[priority] }}>
+                      {t(`tasks.priority.${priority}`)}
+                    </span>
+                  </div>
+                ) : (
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                    style={{ ...fieldStyle, fontSize: 12, padding: '7px 10px' }}
+                    onFocus={focusHandler}
+                    onBlur={blurHandler}
+                  >
+                    {PRIORITIES.map((p) => (
+                      <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
+                    ))}
+                  </select>
                 )}
               </div>
 
-              {/* Progress bar */}
-              {task.subtaskCount > 0 && (
-                <div style={{
-                  height: 4,
-                  background: 'var(--border)',
-                  borderRadius: 'var(--radius-pill)',
-                  overflow: 'hidden',
-                  marginBottom: 10,
-                }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${(task.completedSubtaskCount / task.subtaskCount) * 100}%`,
-                    background: task.completedSubtaskCount === task.subtaskCount ? '#16A34A' : 'var(--accent)',
-                    borderRadius: 'var(--radius-pill)',
-                    transition: 'width 300ms ease',
-                  }} />
-                </div>
-              )}
-
-              {/* Subtask list */}
-              {subtasks.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {subtasks.map((st) => {
-                    const isDone = st.status === 'DONE';
-                    const stAssignee = st.assigneeId ? userMap[st.assigneeId] : null;
+              {/* Type (read-only badge) */}
+              <div>
+                <label style={sidebarLabel}>{t('tasks.modal.type')}</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {(() => {
+                    const cfg = TYPE_CONFIG[task?.type ?? 'TASK'];
+                    const Icon = cfg.icon;
                     return (
-                      <div key={st.id} style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '6px 10px',
-                        background: isDone ? 'rgba(22,163,74,0.04)' : 'var(--bg)',
-                        border: '1px solid var(--border)',
-                        borderRadius: 'var(--radius-md)',
-                      }}>
-                        <span style={{
-                          width: 8,
-                          height: 8,
-                          borderRadius: '50%',
-                          background: isDone ? '#16A34A' : '#94A3B8',
-                          flexShrink: 0,
-                        }} />
-                        <span style={{
-                          flex: 1,
-                          fontSize: 12,
-                          fontWeight: 500,
-                          color: isDone ? 'var(--text-muted)' : 'var(--text)',
-                          textDecoration: isDone ? 'line-through' : 'none',
-                          overflow: 'hidden',
-                          whiteSpace: 'nowrap',
-                          textOverflow: 'ellipsis',
-                        }}>
-                          {st.title}
-                        </span>
-                        {stAssignee && (
-                          <AssigneeAvatar
-                            name={stAssignee.fullName ?? stAssignee.username}
-                            avatarUrl={stAssignee.avatarUrl}
-                            size={18}
-                          />
-                        )}
-                      </div>
+                      <>
+                        <Icon size={14} strokeWidth={2} style={{ color: cfg.color }} />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: cfg.color }}>{t(`tasks.type.${task?.type ?? 'TASK'}`)}</span>
+                      </>
                     );
-                  })}
+                  })()}
+                </div>
+              </div>
+
+              {/* Assignee */}
+              {members.length > 0 && (
+                <div>
+                  <label style={sidebarLabel}>{t('tasks.modal.assignee')}</label>
+                  {readOnly ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {assigneeId && userMap[assigneeId] ? (
+                        <>
+                          <AssigneeAvatar name={userMap[assigneeId].fullName ?? userMap[assigneeId].username} avatarUrl={userMap[assigneeId].avatarUrl} size={24} />
+                          <span style={{ fontSize: 13, color: 'var(--text)' }}>{userMap[assigneeId].fullName ?? userMap[assigneeId].username}</span>
+                        </>
+                      ) : (
+                        <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>{t('tasks.modal.unassigned')}</span>
+                      )}
+                    </div>
+                  ) : (
+                    <AssigneeDropdown
+                      value={assigneeId}
+                      onChange={setAssigneeId}
+                      members={members}
+                      userMap={userMap}
+                      placeholder={t('tasks.modal.unassigned')}
+                      compact
+                    />
+                  )}
                 </div>
               )}
 
-              {task.subtaskCount === 0 && !showSubtaskForm && (
-                <p style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic', margin: 0 }}>
-                  {t('tasks.modal.noSubtasks')}
-                </p>
+              {/* Labels */}
+              {projectLabels.length > 0 && (
+                <div>
+                  <label style={sidebarLabel}>{t('tasks.modal.labels')}</label>
+                  {readOnly ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {selectedLabelIds.length === 0 ? (
+                        <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>—</span>
+                      ) : (
+                        selectedLabelIds.map((id) => {
+                          const lbl = projectLabels.find((l) => l.id === id);
+                          if (!lbl) return null;
+                          return <LabelChip key={id} label={lbl} />;
+                        })
+                      )}
+                    </div>
+                  ) : (
+                    <LabelMultiSelect
+                      labels={projectLabels}
+                      selected={selectedLabelIds}
+                      onChange={setSelectedLabelIds}
+                      compact
+                    />
+                  )}
+                </div>
               )}
 
-              {/* Inline subtask creation form */}
-              {showSubtaskForm && (
-                <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                  <input
-                    type="text"
-                    value={subtaskTitle}
-                    onChange={(e) => setSubtaskTitle(e.target.value)}
-                    placeholder={t('tasks.modal.titlePlaceholder')}
-                    autoFocus
-                    style={{ ...fieldStyle, flex: 1, padding: '6px 10px', fontSize: 12 }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') handleAddSubtask(); if (e.key === 'Escape') { setShowSubtaskForm(false); setSubtaskTitle(''); } }}
-                    onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
-                    onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
-                  />
+              {/* Story Points */}
+              {!isSubtask && (
+                <div>
+                  <label style={sidebarLabel}>{t('tasks.modal.storyPoints')}</label>
+                  {task?.storyPoints != null ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{
+                        fontWeight: 700,
+                        color: 'var(--accent)',
+                        background: 'var(--accent-muted)',
+                        borderRadius: 'var(--radius-pill)',
+                        width: 28,
+                        height: 28,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 13,
+                        fontFamily: 'var(--font-mono)',
+                      }}>
+                        {task.storyPoints}
+                      </span>
+                      <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t('tasks.modal.storyPointsPoker')}</span>
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 12, fontStyle: 'italic', color: 'var(--text-faint)' }}>{t('tasks.modal.storyPointsUnestimated')}</span>
+                  )}
+                </div>
+              )}
+
+              {/* Ready for sprint */}
+              {!isSubtask && task && (
+                <div>
+                  <label style={sidebarLabel}>{t('tasks.modal.ready')}</label>
                   <button
-                    type="button"
-                    onClick={handleAddSubtask}
-                    disabled={!subtaskTitle.trim()}
+                    onClick={() => setReady(r => !r)}
                     style={{
-                      padding: '6px 14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      padding: '5px 12px',
                       fontSize: 12,
                       fontWeight: 600,
-                      fontFamily: 'var(--font-sans)',
-                      background: 'var(--accent)',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      borderRadius: 'var(--radius-md)',
-                      cursor: subtaskTitle.trim() ? 'pointer' : 'not-allowed',
-                      opacity: subtaskTitle.trim() ? 1 : 0.5,
-                    }}
-                  >
-                    {t('common.add')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { setShowSubtaskForm(false); setSubtaskTitle(''); }}
-                    style={{
-                      padding: '6px 14px',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      fontFamily: 'var(--font-sans)',
-                      background: 'var(--bg-elevated)',
-                      color: 'var(--text-muted)',
-                      border: '1px solid var(--border)',
+                      background: ready ? '#16A34A14' : '#D9770614',
+                      color: ready ? '#16A34A' : '#D97706',
+                      border: `1px solid ${ready ? '#16A34A40' : '#D9770640'}`,
                       borderRadius: 'var(--radius-md)',
                       cursor: 'pointer',
+                      transition: 'all 150ms',
                     }}
                   >
-                    {t('common.cancel')}
+                    <span style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: ready ? '#16A34A' : '#D97706',
+                    }} />
+                    {ready ? t('tasks.modal.readyLabel') : t('tasks.modal.notReadyLabel')}
                   </button>
                 </div>
               )}
-            </div>
-          )}
 
-          {/* Comments — only for existing tasks */}
-          {isEdit && projectId && task && (
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-              <TaskComments
-                taskId={task.id}
-                projectId={projectId}
-                members={members}
-                userMap={userMap}
-                isAdmin={isAdmin}
-              />
-            </div>
-          )}
+              {/* Completed at */}
+              {completedAtFormatted && (
+                <div>
+                  <label style={sidebarLabel}>{t('tasks.modal.completedAt')}</label>
+                  <span style={{ fontSize: 13, color: 'var(--text)' }}>{completedAtFormatted}</span>
+                </div>
+              )}
 
-          {/* Activity log — only for existing tasks */}
-          {isEdit && task && (
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-              <TaskActivityFeed
-                taskId={task.id}
-                comments={[]}
-                userMap={userMap}
-              />
+              {/* Created at */}
+              {createdAtFormatted && (
+                <div>
+                  <label style={sidebarLabel}>{t('tasks.modal.createdAt')}</label>
+                  <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{createdAtFormatted}</span>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -698,9 +927,11 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '16px 24px',
+          padding: '14px 24px',
           borderTop: '1px solid var(--border)',
           background: 'var(--bg)',
+          flexShrink: 0,
+          borderRadius: '0 0 var(--radius-lg) var(--radius-lg)',
         }}>
           <div>
             {!readOnly && isEdit && onDelete && (
@@ -753,7 +984,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
             <button
               onClick={onClose}
               style={{
-                padding: '9px 20px',
+                padding: '8px 18px',
                 fontSize: 13,
                 fontWeight: 600,
                 borderRadius: 'var(--radius-md)',
@@ -780,7 +1011,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                 onClick={handleSave}
                 disabled={loading || !title.trim()}
                 style={{
-                  padding: '9px 20px',
+                  padding: '8px 18px',
                   fontSize: 13,
                   fontWeight: 600,
                   background: 'var(--accent)',
@@ -822,12 +1053,14 @@ function AssigneeDropdown({
   members,
   userMap,
   placeholder,
+  compact = false,
 }: {
   value: string;
   onChange: (id: string) => void;
   members: { userId: string }[];
   userMap: Record<string, { username: string; fullName?: string; avatarUrl?: string }>;
   placeholder: string;
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -843,6 +1076,9 @@ function AssigneeDropdown({
 
   const selected = value ? userMap[value] : null;
   const selectedName = selected ? (selected.fullName ?? selected.username) : null;
+  const btnStyle = compact
+    ? { ...fieldStyle, fontSize: 12, padding: '6px 10px' }
+    : fieldStyle;
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
@@ -850,7 +1086,7 @@ function AssigneeDropdown({
         type="button"
         onClick={() => setOpen((o) => !o)}
         style={{
-          ...fieldStyle,
+          ...btnStyle,
           display: 'flex',
           alignItems: 'center',
           gap: 8,
@@ -862,13 +1098,13 @@ function AssigneeDropdown({
       >
         {selected ? (
           <>
-            <AssigneeAvatar name={selectedName!} avatarUrl={selected.avatarUrl} size={22} />
-            <span style={{ flex: 1, color: 'var(--text)', fontSize: 13 }}>{selectedName}</span>
+            <AssigneeAvatar name={selectedName!} avatarUrl={selected.avatarUrl} size={compact ? 20 : 22} />
+            <span style={{ flex: 1, color: 'var(--text)', fontSize: compact ? 12 : 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedName}</span>
           </>
         ) : (
           <>
-            <UserCircle size={22} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
-            <span style={{ flex: 1, color: 'var(--text-faint)', fontSize: 13 }}>{placeholder}</span>
+            <UserCircle size={compact ? 20 : 22} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
+            <span style={{ flex: 1, color: 'var(--text-faint)', fontSize: compact ? 12 : 13 }}>{placeholder}</span>
           </>
         )}
         <ChevronDown size={14} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
@@ -963,19 +1199,19 @@ export function LabelChip({ label, size = 'sm' }: { label: Label; size?: 'sm' | 
   const isSm = size === 'sm';
   return (
     <span style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: 4,
-      padding: isSm ? '1px 8px' : '2px 10px',
+      display: 'inline-block',
       fontSize: isSm ? 10 : 11,
-      fontWeight: 600,
+      fontWeight: 700,
+      letterSpacing: '0.04em',
+      textTransform: 'uppercase',
       color: label.color,
       background: `${label.color}14`,
-      borderRadius: 'var(--radius-pill)',
+      border: `1px solid ${label.color}40`,
+      borderRadius: 'var(--radius-sm)',
+      padding: isSm ? '1px 8px' : '2px 10px',
       whiteSpace: 'nowrap',
-      letterSpacing: '0.02em',
+      lineHeight: '16px',
     }}>
-      <span style={{ width: isSm ? 6 : 7, height: isSm ? 6 : 7, borderRadius: '50%', background: label.color, flexShrink: 0 }} />
       {label.name}
     </span>
   );
@@ -985,10 +1221,12 @@ function LabelMultiSelect({
   labels,
   selected,
   onChange,
+  compact = false,
 }: {
   labels: Label[];
   selected: string[];
   onChange: (ids: string[]) => void;
+  compact?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -1010,13 +1248,17 @@ function LabelMultiSelect({
     );
   };
 
+  const btnStyle = compact
+    ? { ...fieldStyle, fontSize: 12, padding: '6px 10px', minHeight: 34 }
+    : { ...fieldStyle, minHeight: 40 };
+
   return (
     <div ref={ref} style={{ position: 'relative' }}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         style={{
-          ...fieldStyle,
+          ...btnStyle,
           display: 'flex',
           alignItems: 'center',
           gap: 6,
@@ -1025,11 +1267,10 @@ function LabelMultiSelect({
           width: '100%',
           textAlign: 'left',
           background: 'var(--bg)',
-          minHeight: 40,
         }}
       >
         {selected.length === 0 ? (
-          <span style={{ color: 'var(--text-faint)', fontSize: 13 }}>—</span>
+          <span style={{ color: 'var(--text-faint)', fontSize: compact ? 12 : 13 }}>—</span>
         ) : (
           selected.map((id) => {
             const lbl = labels.find((l) => l.id === id);

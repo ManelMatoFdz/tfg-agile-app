@@ -68,6 +68,10 @@ public class Task {
     @Column
     private Integer storyPoints;
 
+    @Column(nullable = false, columnDefinition = "boolean not null default false")
+    @Builder.Default
+    private boolean ready = false;
+
     @Column(nullable = false)
     @Builder.Default
     private int position = 0;

@@ -685,9 +685,6 @@ export default function TaskComments({
           display: 'flex',
           flexDirection: 'column',
           gap: 14,
-          maxHeight: 260,
-          overflowY: 'auto',
-          paddingRight: 4,
         }}>
           {comments.map((comment) => (
             <CommentRow

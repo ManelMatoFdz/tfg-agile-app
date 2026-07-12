@@ -349,7 +349,7 @@ class TaskServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
 
         assertThatThrownBy(() -> service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null),
+                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("ONLY_PO_OR_ADMIN_CAN_EDIT_BACKLOG_TASKS");
@@ -365,7 +365,7 @@ class TaskServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
 
         assertThatThrownBy(() -> service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null),
+                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("ONLY_PO_OR_ADMIN_CAN_EDIT_BACKLOG_TASKS");
@@ -382,7 +382,7 @@ class TaskServiceTest {
         when(taskRepository.save(task)).thenReturn(task);
 
         var response = service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated by PO", "Desc", "CRITICAL", null, null),
+                new UpdateTaskRequestDto("Updated by PO", "Desc", "CRITICAL", null, null, null),
                 callerId);
 
         assertThat(response.title()).isEqualTo("Updated by PO");
@@ -401,7 +401,7 @@ class TaskServiceTest {
         when(taskRepository.save(task)).thenReturn(task);
 
         var response = service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated by Developer", "Desc", "HIGH", null, null),
+                new UpdateTaskRequestDto("Updated by Developer", "Desc", "HIGH", null, null, null),
                 callerId);
 
         assertThat(response.title()).isEqualTo("Updated by Developer");
@@ -418,7 +418,7 @@ class TaskServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
 
         assertThatThrownBy(() -> service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null),
+                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("ONLY_DEVELOPERS_CAN_EDIT_SPRINT_TASKS");
@@ -435,7 +435,7 @@ class TaskServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
 
         assertThatThrownBy(() -> service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null),
+                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("ONLY_DEVELOPERS_CAN_EDIT_SPRINT_TASKS");

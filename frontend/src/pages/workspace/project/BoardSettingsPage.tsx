@@ -407,7 +407,11 @@ export default function BoardSettingsPage() {
                         value={col.wipLimit ?? ''}
                         placeholder={t('projects.boardSettings.wipNone')}
                         readOnly={!canEdit}
-                        onChange={(e) => updateColumn(i, { wipLimit: e.target.value ? parseInt(e.target.value) : null })}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const num = val === '' ? null : Math.max(1, parseInt(val));
+                          updateColumn(i, { wipLimit: num });
+                        }}
                         style={{
                           width: 72,
                           padding: '5px 10px',

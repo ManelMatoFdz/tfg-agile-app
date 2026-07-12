@@ -154,6 +154,7 @@ export interface Task {
   assigneeId?: string | null;
   completedAt?: string | null;
   storyPoints?: number | null;
+  ready: boolean;
   position: number;
   labels?: Label[];
   subtaskCount: number;
