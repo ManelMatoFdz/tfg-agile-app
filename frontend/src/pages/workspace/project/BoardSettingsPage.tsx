@@ -94,7 +94,7 @@ export default function BoardSettingsPage() {
       return;
     }
 
-    const names = columns.map((c) => c.name.trim().toUpperCase());
+    const names = columns.map((c) => c.name.trim().toLowerCase());
     if (new Set(names).size !== names.length) {
       setError(t('projects.boardSettings.errorDuplicateName'));
       return;
@@ -330,8 +330,8 @@ export default function BoardSettingsPage() {
                   <input
                     type="text"
                     value={col.name}
-                    onChange={(e) => updateColumn(i, { name: e.target.value.toUpperCase().replace(/\s+/g, '_') })}
-                    placeholder="COLUMN_NAME"
+                    onChange={(e) => updateColumn(i, { name: e.target.value })}
+                    placeholder={t('projects.boardSettings.columnNamePlaceholder') || 'Column name'}
                     style={{
                       width: '100%',
                       padding: '6px 10px',
@@ -350,7 +350,7 @@ export default function BoardSettingsPage() {
                   />
                 ) : (
                   <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
-                    {col.name.replace(/_/g, ' ')}
+                    {col.name}
                   </span>
                 )}
               </div>

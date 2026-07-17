@@ -19,6 +19,8 @@ import ProjectMembersPage from './pages/workspace/project/ProjectMembersPage';
 import ProjectSettingsPage from './pages/workspace/project/ProjectSettingsPage';
 import BoardSettingsPage from './pages/workspace/project/BoardSettingsPage';
 import SprintReportPage from './pages/workspace/project/SprintReportPage';
+import SprintPlanningPage from './pages/workspace/project/SprintPlanningPage';
+import SprintBacklogPage from './pages/workspace/project/SprintBacklogPage';
 import PokerPage from './pages/workspace/project/PokerPage';
 import PokerRoomPage from './pages/workspace/project/PokerRoomPage';
 import ProjectMetricsPage from './pages/workspace/project/ProjectMetricsPage';
@@ -55,6 +57,8 @@ export default function App() {
               <Route path="board" element={<KanbanPage />} />
               <Route path="backlog" element={<BacklogPage />} />
               <Route path="sprints" element={<SprintsPage />} />
+              <Route path="sprints/:sprintId/planning" element={<SprintPlanningPage />} />
+              <Route path="sprints/:sprintId/backlog" element={<SprintBacklogPage />} />
               <Route path="sprints/:sprintId/report" element={<SprintReportPage />} />
               <Route path="members" element={<ProjectMembersPage />} />
               <Route path="poker" element={<PokerPage />} />

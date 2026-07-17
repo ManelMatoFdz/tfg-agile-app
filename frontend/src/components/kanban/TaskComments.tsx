@@ -41,6 +41,55 @@ function parseMentions(content: string): MentionPart[] {
   return parts;
 }
 
+// ── ContentEditable helpers ──────────────────────────────────────────────
+
+const MENTION_SPAN_STYLES: Record<'@' | '#', string> = {
+  '@': 'display:inline;padding:1px 6px;font-size:12px;font-weight:600;color:var(--accent);background:var(--accent-muted);border-radius:999px;cursor:default;user-select:all;',
+  '#': 'display:inline;padding:1px 6px;font-size:12px;font-weight:600;color:#7C3AED;background:rgba(124,58,237,0.08);border-radius:999px;cursor:default;user-select:all;',
+};
+
+function createMentionNode(type: '@' | '#', id: string, label: string): HTMLSpanElement {
+  const span = document.createElement('span');
+  span.contentEditable = 'false';
+  span.dataset.mentionType = type;
+  span.dataset.mentionId = id;
+  span.dataset.mentionLabel = label;
+  span.textContent = `${type === '@' ? '@' : '#'}${label}`;
+  span.style.cssText = MENTION_SPAN_STYLES[type];
+  return span;
+}
+
+function serializeContentEditable(el: HTMLElement): string {
+  let result = '';
+  el.childNodes.forEach((node) => {
+    if (node.nodeType === Node.TEXT_NODE) {
+      result += node.textContent ?? '';
+    } else if (node instanceof HTMLElement && node.dataset.mentionType) {
+      const type = node.dataset.mentionType as '@' | '#';
+      result += insertMentionToken(type, node.dataset.mentionId!, node.dataset.mentionLabel!);
+    } else if (node instanceof HTMLBRElement) {
+      result += '\n';
+    } else if (node instanceof HTMLElement) {
+      result += serializeContentEditable(node);
+    }
+  });
+  return result;
+}
+
+function deserializeToNodes(content: string, container: HTMLElement): void {
+  container.innerHTML = '';
+  const parts = parseMentions(content);
+  parts.forEach((part) => {
+    if (part.type === 'text') {
+      container.appendChild(document.createTextNode(part.value));
+    } else if (part.type === 'user') {
+      container.appendChild(createMentionNode('@', part.id!, part.value));
+    } else {
+      container.appendChild(createMentionNode('#', part.id!, part.value));
+    }
+  });
+}
+
 // ── Relative time ────────────────────────────────────────────────────────
 
 function useRelativeTime(t: (key: string, opts?: Record<string, unknown>) => string) {
@@ -167,36 +216,73 @@ function CommentInput({
   onCancel?: () => void;
 }) {
   const { t } = useTranslation();
-  const [value, setValue] = useState(initialValue);
   const [sending, setSending] = useState(false);
+  const [isEmpty, setIsEmpty] = useState(!initialValue);
   const [autocomplete, setAutocomplete] = useState<{
     type: '@' | '#';
     query: string;
-    startIdx: number;
   } | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const initializedRef = useRef(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newVal = e.target.value;
-    setValue(newVal);
+  // Initialize content for edit mode
+  useEffect(() => {
+    if (editorRef.current && initialValue && !initializedRef.current) {
+      initializedRef.current = true;
+      deserializeToNodes(initialValue, editorRef.current);
+      setIsEmpty(false);
+    }
+  }, [initialValue]);
 
-    const cursorPos = e.target.selectionStart;
-    const textBefore = newVal.slice(0, cursorPos);
+  useEffect(() => {
+    if (autoFocus && editorRef.current) {
+      editorRef.current.focus();
+      const sel = window.getSelection();
+      if (sel) {
+        sel.selectAllChildren(editorRef.current);
+        sel.collapseToEnd();
+      }
+    }
+  }, [autoFocus]);
 
-    // Check for @ or # trigger
-    const atMatch = textBefore.match(/@([^\s@#{}]*)$/);
-    const hashMatch = textBefore.match(/#([^\s@#{}]*)$/);
+  const getContent = (): string => {
+    if (!editorRef.current) return '';
+    return serializeContentEditable(editorRef.current).trim();
+  };
+
+  const handleInput = () => {
+    if (!editorRef.current) return;
+
+    const content = editorRef.current.textContent?.trim();
+    setIsEmpty(!content);
+
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) {
+      setAutocomplete(null);
+      return;
+    }
+
+    const range = sel.getRangeAt(0);
+    if (range.startContainer.nodeType !== Node.TEXT_NODE) {
+      setAutocomplete(null);
+      return;
+    }
+
+    const textBefore = (range.startContainer.textContent ?? '').slice(0, range.startOffset);
+
+    const atMatch = textBefore.match(/@([^\s@#]*)$/);
+    const hashMatch = textBefore.match(/#([^\s@#]*)$/);
 
     if (atMatch) {
-      setAutocomplete({ type: '@', query: atMatch[1], startIdx: cursorPos - atMatch[0].length });
+      setAutocomplete({ type: '@', query: atMatch[1] });
     } else if (hashMatch) {
-      setAutocomplete({ type: '#', query: hashMatch[1], startIdx: cursorPos - hashMatch[0].length });
+      setAutocomplete({ type: '#', query: hashMatch[1] });
     } else {
       setAutocomplete(null);
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape' && autocomplete) {
       e.preventDefault();
       setAutocomplete(null);
@@ -205,37 +291,118 @@ function CommentInput({
     if (e.key === 'Enter' && !e.shiftKey && !autocomplete) {
       e.preventDefault();
       handleSubmit();
+      return;
+    }
+
+    // Allow deleting mention spans with Backspace / Delete
+    if ((e.key === 'Backspace' || e.key === 'Delete') && editorRef.current) {
+      const sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      const range = sel.getRangeAt(0);
+      if (!range.collapsed) return; // let default handle selection deletion
+
+      const container = range.startContainer;
+      const offset = range.startOffset;
+
+      let mentionToRemove: Element | null = null;
+
+      if (e.key === 'Backspace') {
+        if (container.nodeType === Node.TEXT_NODE && offset === 0) {
+          // Cursor at start of text node — check previous sibling
+          const prev = container.previousSibling;
+          if (prev instanceof HTMLElement && prev.dataset.mentionType) {
+            mentionToRemove = prev;
+          }
+        } else if (container === editorRef.current) {
+          // Cursor is directly in the editor div between child nodes
+          const child = editorRef.current.childNodes[offset - 1];
+          if (child instanceof HTMLElement && child.dataset.mentionType) {
+            mentionToRemove = child;
+          }
+        }
+      } else {
+        // Delete key
+        if (container.nodeType === Node.TEXT_NODE && offset === (container.textContent?.length ?? 0)) {
+          const next = container.nextSibling;
+          if (next instanceof HTMLElement && next.dataset.mentionType) {
+            mentionToRemove = next;
+          }
+        } else if (container === editorRef.current) {
+          const child = editorRef.current.childNodes[offset];
+          if (child instanceof HTMLElement && child.dataset.mentionType) {
+            mentionToRemove = child;
+          }
+        }
+      }
+
+      if (mentionToRemove) {
+        e.preventDefault();
+        mentionToRemove.remove();
+        setIsEmpty(!editorRef.current.textContent?.trim());
+      }
     }
   };
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData('text/plain');
+    document.execCommand('insertText', false, text);
+  };
+
   const handleSelectAutocomplete = (item: AutocompleteItem) => {
-    if (!autocomplete || !textareaRef.current) return;
+    if (!autocomplete || !editorRef.current) return;
 
-    const before = value.slice(0, autocomplete.startIdx);
-    const after = value.slice(textareaRef.current.selectionStart);
-    const token = insertMentionToken(autocomplete.type, item.id, item.label);
-    const newVal = before + token + ' ' + after;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return;
 
-    setValue(newVal);
+    const range = sel.getRangeAt(0);
+    if (range.startContainer.nodeType !== Node.TEXT_NODE) return;
+
+    const textNode = range.startContainer as Text;
+    const offset = range.startOffset;
+    const text = textNode.textContent ?? '';
+    const textBefore = text.slice(0, offset);
+
+    const triggerRegex = autocomplete.type === '@' ? /@([^\s@#]*)$/ : /#([^\s@#]*)$/;
+    const match = textBefore.match(triggerRegex);
+    if (!match) return;
+
+    const triggerStart = offset - match[0].length;
+    const textAfterCursor = text.slice(offset);
+    const textBeforeTrigger = text.slice(0, triggerStart);
+
+    const parent = textNode.parentNode!;
+    const beforeNode = document.createTextNode(textBeforeTrigger);
+    const mentionSpan = createMentionNode(autocomplete.type, item.id, item.label);
+    const spaceAfter = document.createTextNode('\u00A0' + textAfterCursor);
+
+    parent.insertBefore(beforeNode, textNode);
+    parent.insertBefore(mentionSpan, textNode);
+    parent.insertBefore(spaceAfter, textNode);
+    parent.removeChild(textNode);
+
+    // Position cursor after the space
+    const newRange = document.createRange();
+    newRange.setStart(spaceAfter, 1);
+    newRange.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(newRange);
+
     setAutocomplete(null);
-
-    // Restore focus
-    setTimeout(() => {
-      if (textareaRef.current) {
-        const pos = before.length + token.length + 1;
-        textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(pos, pos);
-      }
-    }, 0);
+    setIsEmpty(false);
+    editorRef.current.focus();
   };
 
   const handleSubmit = async () => {
-    const trimmed = value.trim();
-    if (!trimmed || sending) return;
+    const content = getContent();
+    if (!content || sending) return;
     setSending(true);
     try {
-      await onSubmit(trimmed);
-      setValue('');
+      await onSubmit(content);
+      if (editorRef.current) {
+        editorRef.current.innerHTML = '';
+        setIsEmpty(true);
+      }
       setAutocomplete(null);
     } finally {
       setSending(false);
@@ -272,6 +439,7 @@ function CommentInput({
   }
 
   const isEditing = !!onCancel;
+  const hasContent = !isEmpty;
 
   return (
     <div style={{ position: 'relative' }}>
@@ -282,35 +450,54 @@ function CommentInput({
           alignItems: isEditing ? 'flex-start' : 'flex-end',
         }}
       >
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={handleChange}
-          onKeyDown={handleKeyDown}
-          placeholder={t('tasks.comments.placeholder')}
-          rows={isEditing ? 3 : 2}
-          autoFocus={autoFocus}
-          style={{
-            flex: 1,
-            padding: '8px 12px',
-            fontSize: 13,
-            fontFamily: 'var(--font-sans)',
-            color: 'var(--text)',
-            background: 'var(--bg)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-md)',
-            outline: 'none',
-            resize: 'none',
-            boxSizing: 'border-box' as const,
-            transition: 'border-color 150ms',
-          }}
-          onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
-          onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; }}
-        />
+        <div style={{ flex: 1, position: 'relative' }}>
+          {isEmpty && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 8,
+                left: 12,
+                fontSize: 13,
+                color: 'var(--text-faint)',
+                pointerEvents: 'none',
+                userSelect: 'none',
+              }}
+            >
+              {t('tasks.comments.placeholder')}
+            </div>
+          )}
+          <div
+            ref={editorRef}
+            contentEditable
+            suppressContentEditableWarning
+            onInput={handleInput}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            style={{
+              padding: '8px 12px',
+              fontSize: 13,
+              fontFamily: 'var(--font-sans)',
+              color: 'var(--text)',
+              background: 'var(--bg)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)',
+              outline: 'none',
+              minHeight: isEditing ? 60 : 40,
+              maxHeight: 120,
+              overflowY: 'auto',
+              lineHeight: 1.6,
+              wordBreak: 'break-word',
+              whiteSpace: 'pre-wrap',
+              transition: 'border-color 150ms',
+            }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; }}
+          />
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           <button
             onClick={handleSubmit}
-            disabled={!value.trim() || sending}
+            disabled={!hasContent || sending}
             title={isEditing ? t('common.save') : t('tasks.comments.send')}
             style={{
               display: 'flex',
@@ -320,9 +507,9 @@ function CommentInput({
               height: 32,
               borderRadius: 'var(--radius-md)',
               border: 'none',
-              background: value.trim() ? 'var(--accent)' : 'var(--bg-hover)',
-              color: value.trim() ? '#fff' : 'var(--text-faint)',
-              cursor: value.trim() && !sending ? 'pointer' : 'not-allowed',
+              background: hasContent ? 'var(--accent)' : 'var(--bg-hover)',
+              color: hasContent ? '#fff' : 'var(--text-faint)',
+              cursor: hasContent && !sending ? 'pointer' : 'not-allowed',
               transition: 'all 150ms',
             }}
           >
@@ -565,6 +752,7 @@ interface TaskCommentsProps {
   members: { userId: string }[];
   userMap: Record<string, UserSummary>;
   isAdmin: boolean;
+  readOnly?: boolean;
   onTaskClick?: (taskId: string) => void;
 }
 
@@ -574,6 +762,7 @@ export default function TaskComments({
   members,
   userMap,
   isAdmin,
+  readOnly = false,
   onTaskClick,
 }: TaskCommentsProps) {
   const { t } = useTranslation();
@@ -692,7 +881,7 @@ export default function TaskComments({
               comment={comment}
               userMap={userMap}
               canModify={
-                currentUser?.id === comment.authorId || isAdmin
+                !readOnly && (currentUser?.id === comment.authorId || isAdmin)
               }
               onUpdate={handleUpdate}
               onDelete={handleDelete}
@@ -704,12 +893,14 @@ export default function TaskComments({
         </div>
       )}
 
-      {/* Input */}
-      <CommentInput
-        onSubmit={handleCreate}
-        members={memberSummaries}
-        tasks={projectTasks}
-      />
+      {/* Input — hidden in readOnly mode */}
+      {!readOnly && (
+        <CommentInput
+          onSubmit={handleCreate}
+          members={memberSummaries}
+          tasks={projectTasks}
+        />
+      )}
     </div>
   );
 }

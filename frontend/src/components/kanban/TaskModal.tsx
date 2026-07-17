@@ -10,6 +10,7 @@ import { useProjectMembers } from '../../hooks/useProjectMembers';
 import { useProjectMember } from '../../hooks/useProjectMember';
 import TaskComments from './TaskComments';
 import TaskActivityFeed from './TaskActivityFeed';
+import { getStatusLabel, getStatusColor } from '../../hooks/useBoardColumns';
 
 const PRIORITIES: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
 const TASK_TYPES: TaskType[] = ['STORY', 'TASK', 'BUG'];
@@ -453,8 +454,8 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
               </div>
             )}
 
-            {/* Subtasks section — only for STORY */}
-            {isEdit && task?.type === 'STORY' && (() => {
+            {/* Subtasks section — only for STORY in a sprint */}
+            {isEdit && task?.type === 'STORY' && task?.sprintId && (() => {
               const pct = task.subtaskCount > 0 ? Math.round((task.completedSubtaskCount / task.subtaskCount) * 100) : 0;
               const allDone = task.subtaskCount > 0 && task.completedSubtaskCount === task.subtaskCount;
               const barColor = allDone ? '#16A34A' : '#3B82F6';
@@ -663,6 +664,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                   members={members}
                   userMap={userMap}
                   isAdmin={isAdmin}
+                  readOnly={readOnly}
                 />
               </div>
             )}
@@ -690,8 +692,8 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
               gap: 22,
               overflowY: 'auto',
             }}>
-              {/* Start Planning Poker — only for non-subtask tasks */}
-              {!isSubtask && workspaceId && projectId && (
+              {/* Start Planning Poker — only for non-subtask tasks, hidden in readOnly */}
+              {!readOnly && !isSubtask && workspaceId && projectId && (
                 <button
                   type="button"
                   onClick={() => {
@@ -723,23 +725,27 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                 </button>
               )}
 
-              {/* Status */}
-              {onMove && columns.length > 0 && (
-                <div>
-                  <label style={sidebarLabel}>{t('tasks.modal.status')}</label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    style={{ ...fieldStyle, fontSize: 12, padding: '7px 10px' }}
-                    onFocus={focusHandler}
-                    onBlur={blurHandler}
-                  >
-                    {columns.map((col) => (
-                      <option key={col.name} value={col.name}>{col.name.replace(/_/g, ' ')}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              {/* Status (read-only pill — status changes only via board drag) */}
+              <div>
+                <label style={sidebarLabel}>{t('tasks.modal.status')}</label>
+                {(() => {
+                  const sColor = getStatusColor(status, columns);
+                  return (
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                      fontSize: 11, fontWeight: 600,
+                      color: sColor,
+                      background: `${sColor}15`,
+                      border: `1px solid ${sColor}33`,
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '3px 9px',
+                    }}>
+                      <span style={{ width: 7, height: 7, borderRadius: '50%', background: sColor, flexShrink: 0 }} />
+                      {getStatusLabel(status, columns, t)}
+                    </span>
+                  );
+                })()}
+              </div>
 
               {/* Priority */}
               <div>
@@ -876,7 +882,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                 <div>
                   <label style={sidebarLabel}>{t('tasks.modal.ready')}</label>
                   <button
-                    onClick={() => setReady(r => !r)}
+                    onClick={readOnly ? undefined : () => setReady(r => !r)}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -888,7 +894,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                       color: ready ? '#16A34A' : '#D97706',
                       border: `1px solid ${ready ? '#16A34A40' : '#D9770640'}`,
                       borderRadius: 'var(--radius-md)',
-                      cursor: 'pointer',
+                      cursor: readOnly ? 'default' : 'pointer',
                       transition: 'all 150ms',
                     }}
                   >

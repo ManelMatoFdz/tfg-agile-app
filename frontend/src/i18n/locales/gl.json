@@ -411,6 +411,7 @@
       "workflowColumns": "Columnas do workflow",
       "columnsActive": "{{count}} columnas activas",
       "columnName": "Nome da columna",
+      "columnNamePlaceholder": "Nome da columna",
       "wipLimit": "Límite WIP",
       "wipNone": "Ningún",
       "addColumn": "Engadir columna",
@@ -512,6 +513,14 @@
       "byPriority": "Tarefas por prioridade",
       "velocity": "Velocidade por sprint (SP completados)",
       "tasksByMember": "Tarefas por membro",
+      "avgVelocity": "Velocidade media",
+      "avgVelocitySub": "Media de {{n}} sprint(s) completado(s)",
+      "noCompletedSprints": "Sen sprints completados",
+      "avgLabel": "Media",
+      "memberName": "Membro",
+      "memberTasks": "Tarefas",
+      "memberPoints": "Puntos",
+      "memberProgress": "Progreso",
       "noTasks": "Non hai datos suficientes para mostrar métricas."
     },
     "backlog": {
@@ -530,6 +539,7 @@
       "colPriority": "Prioridade",
       "colEstimate": "Estimación",
       "colStatus": "Estado",
+      "colLabels": "Etiquetas",
       "colAssignee": "Asignado",
       "totalItems": "Total elementos",
       "totalPoints": "Total puntos",
@@ -538,8 +548,9 @@
     },
     "sprints": {
       "title": "Sprints",
+      "subtitle": "Xestiona os teus ciclos de desenvolvemento e milestones do proxecto",
       "noSprints": "Non hai sprints aínda",
-      "noSprintsSubtitle": "Crea un sprint para comezar",
+      "noSprintsSubtitle": "Crea un sprint para comezar a planificar os teus ciclos de desenvolvemento",
       "newSprint": "Novo sprint",
       "sprint": "sprint",
       "sprintsCount": "sprints",
@@ -559,6 +570,26 @@
       "completeError": "Erro ao completar o sprint.",
       "deleteConfirm": "Eliminar este sprint?",
       "deleteError": "Erro ao eliminar o sprint.",
+      "activate": "Activar",
+      "activateError": "Erro ao activar o sprint.",
+      "activateConfirm": {
+        "title": "Activar sprint",
+        "message": "Seguro que queres activar este sprint? Só pode haber un sprint activo á vez por proxecto."
+      },
+      "activeSprint": "Sprint activo",
+      "plannedSprints": "Sprints planificados",
+      "completedSprints": "Sprints completados",
+      "noActiveSprint": "Non hai ningún sprint activo",
+      "noPlanned": "Non hai sprints planificados",
+      "noCompleted": "Non hai sprints completados aínda",
+      "progress": "Progreso",
+      "tasksDone": "{{done}}/{{total}} tarefas completadas",
+      "endSprint": "Finalizar sprint",
+      "startSprint": "Iniciar sprint",
+      "noGoal": "Sen obxectivo definido.",
+      "storyPointsLabel": "Story Points",
+      "current": "Actual",
+      "readyToStart": "Listo para iniciar",
       "edit": {
         "title": "Editar sprint",
         "submit": "Gardar cambios",
@@ -620,7 +651,8 @@
         "startDate": "Data de inicio",
         "endDate": "Data de fin",
         "submit": "Crear sprint",
-        "error": "Erro ao crear o sprint."
+        "error": "Erro ao crear o sprint.",
+        "overlapError": "As datas solápanse cun sprint existente."
       },
       "planning": {
         "title": "Sprint Planning",
@@ -631,7 +663,27 @@
         "error": "Erro ao engadir as tarefas.",
         "goal": "Obxectivo do sprint",
         "noEstimate": "Sen estimar",
-        "unestimated": "{{count}} tarefa(s) sen story points. Considera estimalas con Planning Poker antes de planificar."
+        "unestimated": "{{count}} tarefa(s) sen story points. Considera estimalas con Planning Poker antes de planificar.",
+        "commitment": "Compromiso",
+        "items": "elementos",
+        "backlog": "Backlog",
+        "dropHere": "Move tarefas do backlog aquí",
+        "removeFromSprint": "Quitar do sprint",
+        "viewSprintBacklog": "Ver Sprint Backlog",
+        "avgVelocity": "Vel. media"
+      },
+      "sprintBacklog": {
+        "title": "Sprint Backlog",
+        "subtitle": "Listaxe completa de tarefas asignadas a este sprint",
+        "button": "Backlog",
+        "loadError": "Erro ao cargar o backlog do sprint.",
+        "noTasks": "Non hai tarefas neste sprint",
+        "noTasksSub": "Engade tarefas desde a pantalla de planificación do sprint.",
+        "completed": "Completadas",
+        "addTasks": "Engadir tarefas",
+        "searchBacklog": "Buscar no backlog...",
+        "selectedCount": "{{count}} seleccionada(s)",
+        "selectHint": "Selecciona tarefas do backlog para engadir"
       },
       "review": {
         "title": "Sprint Review",
@@ -731,8 +783,10 @@
       "DESCRIPTION_CHANGED_impersonal": "A descrición foi actualizada",
       "STORY_POINTS_CHANGED": "estimada en {{newValue}} puntos",
       "STORY_POINTS_CHANGED_impersonal": "Estimada en {{newValue}} puntos",
-      "READY_CHANGED": "marcou como {{newValue}}",
-      "READY_CHANGED_impersonal": "Marcada como {{newValue}}"
+      "READY_CHANGED_true": "marcou a tarefa como lista para o sprint",
+      "READY_CHANGED_true_impersonal": "A tarefa foi marcada como lista para o sprint",
+      "READY_CHANGED_false": "quitou a tarefa de listos para o sprint",
+      "READY_CHANGED_false_impersonal": "A tarefa foi quitada de listos para o sprint"
     },
     "comments": {
       "title": "Comentarios",

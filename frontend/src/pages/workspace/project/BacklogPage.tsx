@@ -20,6 +20,7 @@ import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
 import { useProjectMember } from '../../../hooks/useProjectMember';
 import { useProjectMembers } from '../../../hooks/useProjectMembers';
+import { useBoardColumns, getStatusLabel } from '../../../hooks/useBoardColumns';
 import type { Label } from '../../../types';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; bg: string; border: string }> = {
@@ -51,6 +52,7 @@ export default function BacklogPage() {
 
   const { canCreateTask, canEditBacklogTask, canDeleteBacklogTask } = useProjectMember(projectId);
   const { members, userMap } = useProjectMembers(projectId);
+  const columns = useBoardColumns(projectId);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,12 +126,10 @@ export default function BacklogPage() {
 
   const memberSummaries: UserSummary[] = members.map((m) => userMap[m.userId]).filter(Boolean) as UserSummary[];
 
-  const STATUS_OPTIONS = [
-    { key: 'TODO', label: t('tasks.status.TODO') },
-    { key: 'IN_PROGRESS', label: t('tasks.status.IN_PROGRESS') },
-    { key: 'IN_REVIEW', label: t('tasks.status.IN_REVIEW') },
-    { key: 'DONE', label: t('tasks.status.DONE') },
-  ];
+  const STATUS_OPTIONS = columns.map((c) => ({
+    key: c.name,
+    label: getStatusLabel(c.name, columns, t),
+  }));
 
   const totalPoints = tasks.reduce((sum, task) => sum + (task.storyPoints ?? 0), 0);
   const readyCount = tasks.filter((task) => task.ready).length;
@@ -161,9 +161,12 @@ export default function BacklogPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <PageTitle as="h2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
-            {t('projects.backlog.title')}
-          </PageTitle>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <ClipboardList size={22} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+            <PageTitle as="h2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
+              {t('projects.backlog.title')}
+            </PageTitle>
+          </div>
           <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--text-muted)', fontWeight: 400 }}>
             {t('projects.backlog.subtitle')}
           </p>
@@ -266,7 +269,7 @@ export default function BacklogPage() {
           {/* Table header */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '56px 1fr 120px 100px 120px 80px',
+            gridTemplateColumns: '56px 1fr 120px 100px 120px 120px 80px',
             alignItems: 'center',
             gap: 16,
             padding: '14px 24px',
@@ -280,6 +283,7 @@ export default function BacklogPage() {
           }}>
             <span>{t('projects.backlog.colType')}</span>
             <span>{t('projects.backlog.colSummary')}</span>
+            <span style={{ textAlign: 'center' }}>{t('projects.backlog.colLabels')}</span>
             <span style={{ textAlign: 'center' }}>{t('projects.backlog.colPriority')}</span>
             <span style={{ textAlign: 'center' }}>{t('projects.backlog.colEstimate')}</span>
             <span style={{ textAlign: 'center' }}>{t('projects.backlog.colStatus')}</span>
@@ -303,7 +307,7 @@ export default function BacklogPage() {
                   style={{
                     background: 'var(--bg-elevated)',
                     border: '1px solid var(--border)',
-                    borderLeft: isStory ? '3px solid #2563EB' : '1px solid var(--border)',
+                    borderLeft: `3px solid ${typeConf.color}`,
                     borderRadius: 'var(--radius-lg)',
                     overflow: 'hidden',
                     boxShadow: 'var(--shadow-sm)',
@@ -315,7 +319,7 @@ export default function BacklogPage() {
                       width: '100%',
                       textAlign: 'left',
                       display: 'grid',
-                      gridTemplateColumns: '56px 1fr 120px 100px 120px 80px',
+                      gridTemplateColumns: '56px 1fr 120px 100px 120px 120px 80px',
                       alignItems: 'center',
                       gap: 16,
                       padding: '18px 24px',
@@ -382,6 +386,47 @@ export default function BacklogPage() {
                         }}>
                           {task.description}
                         </p>
+                      )}
+                    </div>
+
+                    {/* Labels */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 4 }}>
+                      {task.labels && task.labels.length > 0 ? (
+                        <>
+                          {task.labels.slice(0, 3).map((label) => (
+                            <span
+                              key={label.id}
+                              style={{
+                                display: 'inline-block',
+                                fontSize: 10,
+                                fontWeight: 700,
+                                letterSpacing: '0.04em',
+                                textTransform: 'uppercase',
+                                color: label.color,
+                                background: `${label.color}14`,
+                                border: `1px solid ${label.color}40`,
+                                borderRadius: 'var(--radius-sm)',
+                                padding: '1px 8px',
+                                whiteSpace: 'nowrap',
+                                lineHeight: '16px',
+                              }}
+                            >
+                              {label.name}
+                            </span>
+                          ))}
+                          {task.labels.length > 3 && (
+                            <span style={{
+                              fontSize: 10, fontWeight: 600, color: 'var(--text-faint)',
+                              padding: '2px 6px', background: 'var(--bg-hover)',
+                              borderRadius: 'var(--radius-sm)',
+                              lineHeight: '16px',
+                            }}>
+                              +{task.labels.length - 3}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>—</span>
                       )}
                     </div>
 
@@ -464,6 +509,10 @@ export default function BacklogPage() {
 
                   {/* Expanded subtasks */}
                   {isStory && isExpanded && (storySubtasks[task.id] ?? []).map((sub) => {
+                    const subTypeConf = TYPE_ICON[sub.type ?? 'TASK'];
+                    const SubTypeIcon = subTypeConf.icon;
+                    const subPConfig = PRIORITY_CONFIG[sub.priority];
+                    const subReadyConf = sub.ready ? READY_CONFIG.ready : READY_CONFIG.notReady;
                     const subAssignee = sub.assigneeId ? userMap[sub.assigneeId] : undefined;
                     return (
                       <button
@@ -472,10 +521,11 @@ export default function BacklogPage() {
                         style={{
                           width: '100%',
                           textAlign: 'left',
-                          display: 'flex',
+                          display: 'grid',
+                          gridTemplateColumns: '56px 1fr 120px 100px 120px 120px 80px',
                           alignItems: 'center',
-                          gap: 10,
-                          padding: '10px 24px 10px 72px',
+                          gap: 16,
+                          padding: '12px 24px',
                           background: 'var(--bg)',
                           border: 'none',
                           borderTop: '1px solid var(--border)',
@@ -485,20 +535,114 @@ export default function BacklogPage() {
                         onMouseEnter={e => canEditBacklogTask && (e.currentTarget.style.background = 'var(--bg-hover)')}
                         onMouseLeave={e => (e.currentTarget.style.background = 'var(--bg)')}
                       >
-                        <CheckSquare size={13} strokeWidth={2} style={{ color: '#2563EB', flexShrink: 0 }} />
-                        <p style={{
-                          flex: 1,
-                          margin: 0,
-                          fontSize: 12,
-                          fontWeight: 400,
-                          color: sub.status === 'DONE' ? 'var(--text-muted)' : 'var(--text)',
-                          textDecoration: sub.status === 'DONE' ? 'line-through' : 'none',
-                          overflow: 'hidden',
-                          whiteSpace: 'nowrap',
-                          textOverflow: 'ellipsis',
-                        }}>
-                          {sub.title}
-                        </p>
+                        {/* Type icon with indent */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 4, paddingLeft: 14 }}>
+                          <span style={{ color: 'var(--text-faint)', fontSize: 11, marginRight: 2 }}>↳</span>
+                          <SubTypeIcon size={14} strokeWidth={2} style={{ color: subTypeConf.color, flexShrink: 0 }} />
+                        </div>
+
+                        {/* Title */}
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{
+                            margin: 0,
+                            fontSize: 13,
+                            fontWeight: 400,
+                            color: sub.status === 'DONE' ? 'var(--text-muted)' : 'var(--text)',
+                            textDecoration: sub.status === 'DONE' ? 'line-through' : 'none',
+                            overflow: 'hidden',
+                            whiteSpace: 'nowrap',
+                            textOverflow: 'ellipsis',
+                          }}>
+                            {sub.title}
+                          </p>
+                        </div>
+
+                        {/* Labels */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 4 }}>
+                          {sub.labels && sub.labels.length > 0 ? (
+                            <>
+                              {sub.labels.slice(0, 2).map((label) => (
+                                <span
+                                  key={label.id}
+                                  style={{
+                                    display: 'inline-block',
+                                    fontSize: 9,
+                                    fontWeight: 700,
+                                    letterSpacing: '0.04em',
+                                    textTransform: 'uppercase',
+                                    color: label.color,
+                                    background: `${label.color}14`,
+                                    border: `1px solid ${label.color}40`,
+                                    borderRadius: 'var(--radius-sm)',
+                                    padding: '1px 6px',
+                                    whiteSpace: 'nowrap',
+                                    lineHeight: '14px',
+                                  }}
+                                >
+                                  {label.name}
+                                </span>
+                              ))}
+                              {sub.labels.length > 2 && (
+                                <span style={{
+                                  fontSize: 9, fontWeight: 600, color: 'var(--text-faint)',
+                                  padding: '1px 4px', background: 'var(--bg-hover)',
+                                  borderRadius: 'var(--radius-sm)', lineHeight: '14px',
+                                }}>
+                                  +{sub.labels.length - 2}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>—</span>
+                          )}
+                        </div>
+
+                        {/* Priority */}
+                        <div style={{ textAlign: 'center' }}>
+                          <span style={{
+                            display: 'inline-block',
+                            fontSize: 9,
+                            fontWeight: 700,
+                            letterSpacing: '0.06em',
+                            textTransform: 'uppercase',
+                            color: subPConfig.color,
+                            background: `${subPConfig.color}12`,
+                            borderRadius: 'var(--radius-pill)',
+                            padding: '2px 8px',
+                          }}>
+                            {t(`tasks.priority.${sub.priority}`)}
+                          </span>
+                        </div>
+
+                        {/* Estimate */}
+                        <div style={{ textAlign: 'center' }}>
+                          {sub.storyPoints != null ? (
+                            <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
+                              {sub.storyPoints} pts
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>—</span>
+                          )}
+                        </div>
+
+                        {/* Status */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+                          <span style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: '50%',
+                            background: subReadyConf.dot,
+                            flexShrink: 0,
+                          }} />
+                          <span style={{
+                            fontSize: 10,
+                            fontWeight: 600,
+                            color: subReadyConf.color,
+                          }}>
+                            {sub.ready ? t('tasks.modal.readyLabel') : t('tasks.modal.notReadyLabel')}
+                          </span>
+                        </div>
+
                         {/* Assignee */}
                         <div style={{ display: 'flex', justifyContent: 'center' }}>
                           {subAssignee ? (
@@ -508,7 +652,19 @@ export default function BacklogPage() {
                               size={24}
                             />
                           ) : (
-                            <span style={{ width: 24 }} />
+                            <span style={{
+                              width: 24,
+                              height: 24,
+                              borderRadius: '50%',
+                              border: '1.5px dashed var(--border)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'var(--text-faint)',
+                              fontSize: 10,
+                            }}>
+                              —
+                            </span>
                           )}
                         </div>
                       </button>
@@ -642,6 +798,7 @@ export default function BacklogPage() {
         <TaskModal
           task={modalTask}
           projectId={projectId}
+          columns={columns}
           defaultStatus="TODO"
           defaultType={createType}
           onClose={() => setModalTask(undefined)}

@@ -228,28 +228,15 @@ export default function TeamDetailPage() {
 
   // Fetch team statistics: active projects & average velocity
   useEffect(() => {
-    if (!workspaceId || members.length === 0) return;
-    const memberUserIds = new Set(members.map((m) => m.userId));
+    if (!workspaceId || !teamId) return;
 
     (async () => {
       try {
         const projects = (await projectsApi.list(workspaceId)).data;
-        // Find projects where at least one team member is a project member
-        let teamProjects = 0;
-        const projectIds: string[] = [];
-        await Promise.all(
-          projects.map(async (p) => {
-            try {
-              const projectMembers = (await projectsApi.getMembers(p.id)).data;
-              const hasOverlap = projectMembers.some((pm) => memberUserIds.has(pm.userId));
-              if (hasOverlap) {
-                teamProjects++;
-                projectIds.push(p.id);
-              }
-            } catch { /* ignore projects without access */ }
-          }),
-        );
-        setActiveProjectsCount(teamProjects);
+        // Find projects assigned to this team via team_id
+        const teamProjectsList = projects.filter((p) => p.teamId === teamId);
+        const projectIds = teamProjectsList.map((p) => p.id);
+        setActiveProjectsCount(teamProjectsList.length);
 
         // Calculate average velocity from completed sprints across team projects
         const allCompletedSprints: { doneStoryPoints: number }[] = [];
@@ -274,7 +261,7 @@ export default function TeamDetailPage() {
         setAvgVelocity(0);
       }
     })();
-  }, [workspaceId, members]);
+  }, [workspaceId, teamId]);
 
   const teamMemberSet = new Set(members.map((m) => m.userId));
 

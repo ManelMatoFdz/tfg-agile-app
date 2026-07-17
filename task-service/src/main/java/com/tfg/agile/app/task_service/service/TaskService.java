@@ -101,6 +101,9 @@ public class TaskService {
             if (!parent.getProjectId().equals(projectId)) {
                 throw new ConflictException("PARENT_WRONG_PROJECT");
             }
+            if (parent.getSprintId() == null) {
+                throw new ConflictException("SUBTASKS_ONLY_IN_SPRINT");
+            }
             // Subtasks are always TASK type
             type = TaskType.TASK;
             // Inherit sprint from parent

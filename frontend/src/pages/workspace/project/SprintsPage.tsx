@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, ChevronRight, LayoutDashboard, BarChart2, X, Zap, BookOpen, CheckSquare, Bug } from 'lucide-react';
-import type { Sprint, SprintTaskSnapshot, Task, TaskPriority, TaskType } from '../../../types';
+import {
+  Plus, X, Zap, BookOpen, CheckSquare, Bug,
+  Calendar, BarChart2, Columns2, PlayCircle, CheckCircle2, CalendarClock,
+  Pencil, Trash2, ListChecks,
+} from 'lucide-react';
+import type { Sprint, SprintTaskSnapshot, Task, TaskType } from '../../../types';
 
 const TYPE_ICON_MAP: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
   STORY: { icon: BookOpen, color: '#7C3AED' },
@@ -16,36 +20,14 @@ import SnapshotModal from '../../../components/sprints/SnapshotModal';
 import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
 import { useProjectMember } from '../../../hooks/useProjectMember';
+import { useBoardColumns } from '../../../hooks/useBoardColumns';
 
-// ── Color maps (theme-independent hex) ───────────────────────────────────────
-
-const PRIORITY_COLOR: Record<TaskPriority, string> = {
-  CRITICAL: 'var(--danger)',
-  HIGH:     'var(--ochre)',
-  MEDIUM:   'var(--ink-blue)',
-  LOW:      'var(--text-faint)',
-};
-
-const STATUS_COLOR: Record<string, string> = {
-  TODO:        'var(--text-faint)',
-  IN_PROGRESS: 'var(--ink-blue)',
-  IN_REVIEW:   'var(--ochre)',
-  DONE:        'var(--success)',
-};
-const DEFAULT_STATUS_COLOR = 'var(--text-faint)';
-
-const SPRINT_LEFT_COLOR: Record<Sprint['status'], string> = {
-  PLANNING:  'var(--border)',
-  ACTIVE:    'var(--accent)',
-  COMPLETED: 'var(--success)',
-};
-
-// ── Shared input / button helpers ─────────────────────────────────────────────
+// ── Shared styles ────────────────────────────────────────────────────────────
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
-  padding: '6px 10px',
-  fontSize: 12,
+  padding: '8px 12px',
+  fontSize: 13,
   background: 'var(--bg)',
   border: '1px solid var(--border)',
   borderRadius: 'var(--radius-md)',
@@ -56,15 +38,15 @@ const inputStyle: React.CSSProperties = {
 
 const labelStyle: React.CSSProperties = {
   display: 'block',
-  fontSize: 11,
+  fontSize: 12,
   fontWeight: 600,
   color: 'var(--text-muted)',
   marginBottom: 4,
 };
 
 const btnAccent: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', gap: 5,
-  padding: '5px 12px', fontSize: 12, fontWeight: 500,
+  display: 'flex', alignItems: 'center', gap: 6,
+  padding: '8px 16px', fontSize: 13, fontWeight: 600,
   background: 'var(--accent)', color: 'var(--accent-fg)',
   border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
 };
@@ -77,14 +59,34 @@ const btnSecondary: React.CSSProperties = {
 
 const btnOutline: React.CSSProperties = {
   display: 'flex', alignItems: 'center', gap: 4,
-  padding: '4px 10px', fontSize: 11, fontWeight: 500,
+  padding: '6px 12px', fontSize: 12, fontWeight: 500,
   background: 'transparent',
   border: '1px solid var(--border)',
-  borderRadius: 'var(--radius-sm)',
+  borderRadius: 'var(--radius-md)',
   color: 'var(--text-muted)', cursor: 'pointer',
 };
 
-// ── Overlay modal wrapper ─────────────────────────────────────────────────────
+// ── Section header ───────────────────────────────────────────────────────────
+
+function SectionHeader({ icon: Icon, color, title }: {
+  icon: typeof PlayCircle;
+  color: string;
+  title: string;
+}) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+      <Icon size={22} strokeWidth={2} style={{ color }} />
+      <h3 style={{
+        margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text)',
+        letterSpacing: '-0.02em',
+      }}>
+        {title}
+      </h3>
+    </div>
+  );
+}
+
+// ── Overlay modal wrapper ────────────────────────────────────────────────────
 
 function ModalOverlay({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   return (
@@ -110,7 +112,7 @@ const modalBox: React.CSSProperties = {
   borderRadius: 'var(--radius-md)',
 };
 
-// ── CreateSprintModal ─────────────────────────────────────────────────────────
+// ── CreateSprintModal ────────────────────────────────────────────────────────
 
 interface CreateSprintModalProps {
   projectId: string;
@@ -127,22 +129,29 @@ function CreateSprintModal({ projectId, onClose, onCreate }: CreateSprintModalPr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const canSubmit = name.trim() && startDate && endDate;
+
   const handleSubmit = async () => {
-    if (!name.trim()) return;
+    if (!canSubmit) return;
     setLoading(true);
     setError(null);
     try {
       const dto: CreateSprintDto = {
         name: name.trim(),
         goal: goal.trim() || undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        startDate,
+        endDate,
       };
       const sprint = await sprintsApi.createSprint(projectId, dto);
       onCreate(sprint);
       onClose();
-    } catch {
-      setError(t('projects.sprints.create.error'));
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? '';
+      if (msg.includes('SPRINT_DATES_OVERLAP')) {
+        setError(t('projects.sprints.create.overlapError'));
+      } else {
+        setError(t('projects.sprints.create.error'));
+      }
     } finally {
       setLoading(false);
     }
@@ -150,20 +159,20 @@ function CreateSprintModal({ projectId, onClose, onCreate }: CreateSprintModalPr
 
   return (
     <ModalOverlay onClose={onClose}>
-      <div style={{ ...modalBox, maxWidth: 440 }}>
+      <div style={{ ...modalBox, maxWidth: 480 }}>
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 12px', borderBottom: '1px solid var(--border)' }}>
-          <h2 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 14px', borderBottom: '1px solid var(--border)' }}>
+          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
             {t('projects.sprints.create.title')}
           </h2>
           <button onClick={onClose} style={{ ...btnSecondary, padding: 4, borderRadius: 'var(--radius-sm)' }}>
-            <X size={14} />
+            <X size={16} />
           </button>
         </div>
 
-        <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && (
-            <div style={{ fontSize: 11, color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '6px 10px' }}>
+            <div style={{ fontSize: 12, color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
               {error}
             </div>
           )}
@@ -174,44 +183,35 @@ function CreateSprintModal({ projectId, onClose, onCreate }: CreateSprintModalPr
               placeholder={t('projects.sprints.create.namePlaceholder')} autoFocus style={inputStyle} />
           </div>
 
-          <div>
-            <label style={labelStyle}>
-              {t('projects.sprints.create.goal')}{' '}
-              <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
-            </label>
-            <textarea value={goal} onChange={(e) => setGoal(e.target.value)}
-              placeholder={t('projects.sprints.create.goalPlaceholder')} rows={2}
-              style={{ ...inputStyle, resize: 'none' }} />
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label style={labelStyle}>
-                {t('projects.sprints.create.startDate')}{' '}
-                <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
-              </label>
+              <label style={labelStyle}>{t('projects.sprints.create.startDate')}</label>
               <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} />
             </div>
             <div>
-              <label style={labelStyle}>
-                {t('projects.sprints.create.endDate')}{' '}
-                <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
-              </label>
+              <label style={labelStyle}>{t('projects.sprints.create.endDate')}</label>
               <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} />
             </div>
           </div>
+
+          <div>
+            <label style={labelStyle}>{t('projects.sprints.create.goal')}</label>
+            <textarea value={goal} onChange={(e) => setGoal(e.target.value)}
+              placeholder={t('projects.sprints.create.goalPlaceholder')} rows={3}
+              style={{ ...inputStyle, resize: 'none' }} />
+          </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '10px 18px 14px', borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 20px 16px', borderTop: '1px solid var(--border)' }}>
           <button onClick={onClose} style={btnSecondary}>{t('common.cancel')}</button>
           <button
             onClick={handleSubmit}
-            disabled={loading || !name.trim()}
-            style={{ ...btnAccent, opacity: loading || !name.trim() ? 0.5 : 1, cursor: loading || !name.trim() ? 'not-allowed' : 'pointer' }}
-            onMouseEnter={e => { if (!loading && name.trim()) (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'; }}
+            disabled={loading || !canSubmit}
+            style={{ ...btnAccent, opacity: loading || !canSubmit ? 0.5 : 1, cursor: loading || !canSubmit ? 'not-allowed' : 'pointer' }}
+            onMouseEnter={e => { if (!loading && canSubmit) (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent)'; }}
           >
-            {loading ? '…' : t('projects.sprints.create.submit')}
+            {loading ? '...' : t('projects.sprints.create.submit')}
           </button>
         </div>
       </div>
@@ -219,7 +219,7 @@ function CreateSprintModal({ projectId, onClose, onCreate }: CreateSprintModalPr
   );
 }
 
-// ── EditSprintModal ───────────────────────────────────────────────────────────
+// ── EditSprintModal ──────────────────────────────────────────────────────────
 
 interface EditSprintModalProps {
   sprint: Sprint;
@@ -236,21 +236,28 @@ function EditSprintModal({ sprint, onClose, onUpdate }: EditSprintModalProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const isActive = sprint.status === 'ACTIVE';
+  const canSubmit = name.trim() && (isActive || (startDate && endDate));
+
   const handleSubmit = async () => {
-    if (!name.trim()) return;
+    if (!canSubmit) return;
     setLoading(true);
     setError(null);
     try {
       const updated = await sprintsApi.updateSprint(sprint.id, {
         name: name.trim(),
         goal: goal.trim() || undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        ...(isActive ? {} : { startDate: startDate || undefined, endDate: endDate || undefined }),
       });
       onUpdate(updated);
       onClose();
-    } catch {
-      setError(t('projects.sprints.edit.error'));
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? '';
+      if (msg.includes('SPRINT_DATES_OVERLAP')) {
+        setError(t('projects.sprints.create.overlapError'));
+      } else {
+        setError(t('projects.sprints.edit.error'));
+      }
     } finally {
       setLoading(false);
     }
@@ -258,19 +265,19 @@ function EditSprintModal({ sprint, onClose, onUpdate }: EditSprintModalProps) {
 
   return (
     <ModalOverlay onClose={onClose}>
-      <div style={{ ...modalBox, maxWidth: 440 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px 12px', borderBottom: '1px solid var(--border)' }}>
-          <h2 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+      <div style={{ ...modalBox, maxWidth: 480 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px 14px', borderBottom: '1px solid var(--border)' }}>
+          <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
             {t('projects.sprints.edit.title')}
           </h2>
           <button onClick={onClose} style={{ ...btnSecondary, padding: 4, borderRadius: 'var(--radius-sm)' }}>
-            <X size={14} />
+            <X size={16} />
           </button>
         </div>
 
-        <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && (
-            <div style={{ fontSize: 11, color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '6px 10px' }}>
+            <div style={{ fontSize: 12, color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
               {error}
             </div>
           )}
@@ -279,43 +286,36 @@ function EditSprintModal({ sprint, onClose, onUpdate }: EditSprintModalProps) {
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
               placeholder={t('projects.sprints.create.namePlaceholder')} autoFocus style={inputStyle} />
           </div>
+          {!isActive && (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div>
+                <label style={labelStyle}>{t('projects.sprints.create.startDate')}</label>
+                <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>{t('projects.sprints.create.endDate')}</label>
+                <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} />
+              </div>
+            </div>
+          )}
           <div>
-            <label style={labelStyle}>
-              {t('projects.sprints.create.goal')}{' '}
-              <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
-            </label>
+            <label style={labelStyle}>{t('projects.sprints.create.goal')}</label>
             <textarea value={goal} onChange={(e) => setGoal(e.target.value)}
-              placeholder={t('projects.sprints.create.goalPlaceholder')} rows={2}
+              placeholder={t('projects.sprints.create.goalPlaceholder')} rows={3}
               style={{ ...inputStyle, resize: 'none' }} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <div>
-              <label style={labelStyle}>
-                {t('projects.sprints.create.startDate')}{' '}
-                <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
-              </label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} style={inputStyle} />
-            </div>
-            <div>
-              <label style={labelStyle}>
-                {t('projects.sprints.create.endDate')}{' '}
-                <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
-              </label>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} style={inputStyle} />
-            </div>
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6, padding: '10px 18px 14px', borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 20px 16px', borderTop: '1px solid var(--border)' }}>
           <button onClick={onClose} style={btnSecondary}>{t('common.cancel')}</button>
           <button
             onClick={handleSubmit}
-            disabled={loading || !name.trim()}
-            style={{ ...btnAccent, opacity: loading || !name.trim() ? 0.5 : 1, cursor: loading || !name.trim() ? 'not-allowed' : 'pointer' }}
-            onMouseEnter={e => { if (!loading && name.trim()) (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'; }}
+            disabled={loading || !canSubmit}
+            style={{ ...btnAccent, opacity: loading || !canSubmit ? 0.5 : 1, cursor: loading || !canSubmit ? 'not-allowed' : 'pointer' }}
+            onMouseEnter={e => { if (!loading && canSubmit) (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent)'; }}
           >
-            {loading ? '…' : t('projects.sprints.edit.submit')}
+            {loading ? '...' : t('projects.sprints.edit.submit')}
           </button>
         </div>
       </div>
@@ -323,213 +323,43 @@ function EditSprintModal({ sprint, onClose, onUpdate }: EditSprintModalProps) {
   );
 }
 
-// ── SprintPlanningModal ───────────────────────────────────────────────────────
+// ── Progress bar ─────────────────────────────────────────────────────────────
 
-interface SprintPlanningModalProps {
-  sprintId: string;
-  projectId: string;
-  sprintGoal?: string | null;
-  existingTaskIds: Set<string>;
-  onClose: () => void;
-  onAdd: (tasks: Task[]) => void;
-}
-
-function SprintPlanningModal({ sprintId, projectId, sprintGoal, existingTaskIds, onClose, onAdd }: SprintPlanningModalProps) {
-  const { t } = useTranslation();
-  const [backlog, setBacklog] = useState<Task[]>([]);
-  const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    sprintsApi
-      .getBacklog(projectId)
-      .then((tasks) => setBacklog(tasks.filter((t) => !existingTaskIds.has(t.id))))
-      .catch(() => setError(t('projects.sprints.planning.error')))
-      .finally(() => setLoading(false));
-  }, [projectId, existingTaskIds, t]);
-
-  const toggle = (id: string) =>
-    setSelected((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-
-  const handleAdd = async () => {
-    if (selected.size === 0) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const added = await sprintsApi.assignTasksToSprint(sprintId, [...selected]);
-      onAdd(added);
-      onClose();
-    } catch {
-      setError(t('projects.sprints.planning.error'));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const selectedPoints = backlog
-    .filter((t) => selected.has(t.id))
-    .reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
-
-  const unestimatedCount = backlog.filter((t) => t.storyPoints == null).length;
-
+function ProgressBar({ done, total }: { done: number; total: number }) {
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   return (
-    <ModalOverlay onClose={onClose}>
-      <div style={{ ...modalBox, maxWidth: 520, display: 'flex', flexDirection: 'column', maxHeight: 'calc(100vh - 2rem)' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '14px 18px 10px', borderBottom: '1px solid var(--border)' }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-              {t('projects.sprints.planning.title')}
-            </h2>
-            <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--text-faint)' }}>
-              {t('projects.sprints.planning.subtitle')}
-            </p>
-          </div>
-          <button onClick={onClose} style={{ ...btnSecondary, padding: 4, borderRadius: 'var(--radius-sm)', marginTop: 1 }}>
-            <X size={14} />
-          </button>
-        </div>
-
-        <div style={{ padding: '10px 18px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {sprintGoal && (
-            <div style={{
-              display: 'flex', alignItems: 'flex-start', gap: 6,
-              background: 'var(--accent-muted)', border: '1px solid var(--accent)',
-              borderRadius: 'var(--radius-sm)', padding: '6px 10px',
-            }}>
-              <Zap size={12} strokeWidth={2} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }} />
-              <p style={{ margin: 0, fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                {t('projects.sprints.planning.goal')}: {sprintGoal}
-              </p>
-            </div>
-          )}
-
-          {!loading && unestimatedCount > 0 && (
-            <div style={{
-              fontSize: 11, color: 'var(--ochre)',
-              background: 'var(--ochre-soft)', border: '1px solid var(--ochre)',
-              borderRadius: 'var(--radius-sm)', padding: '5px 10px',
-            }}>
-              {t('projects.sprints.planning.unestimated', { count: unestimatedCount })}
-            </div>
-          )}
-
-          {error && (
-            <div style={{ fontSize: 11, color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '5px 10px' }}>
-              {error}
-            </div>
-          )}
-        </div>
-
-        {/* Backlog list */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 18px', minHeight: 0 }}>
-          {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
-              <div style={{ width: 20, height: 20, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-            </div>
-          ) : backlog.length === 0 ? (
-            <p style={{ margin: 0, fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '40px 0' }}>
-              {t('projects.sprints.planning.noBacklog')}
-            </p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              {backlog.map((task) => (
-                <label
-                  key={task.id}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '7px 8px', borderRadius: 'var(--radius-sm)',
-                    cursor: 'pointer',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected.has(task.id)}
-                    onChange={() => toggle(task.id)}
-                    style={{ width: 14, height: 14, cursor: 'pointer', accentColor: 'var(--accent)', flexShrink: 0 }}
-                  />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                      {task.title}
-                    </p>
-                    {task.description && (
-                      <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                        {task.description}
-                      </p>
-                    )}
-                  </div>
-                  <span style={{
-                    flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                    color: PRIORITY_COLOR[task.priority],
-                    fontFamily: 'var(--font-mono)',
-                  }}>
-                    {t(`tasks.priority.${task.priority}`)}
-                  </span>
-                  {task.storyPoints != null ? (
-                    <span style={{
-                      flexShrink: 0, fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-mono)',
-                      color: 'var(--text-faint)', background: 'var(--bg-hover)',
-                      border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1px 5px',
-                    }}>
-                      {task.storyPoints}
-                    </span>
-                  ) : (
-                    <span style={{
-                      flexShrink: 0, fontSize: 9, fontWeight: 600, letterSpacing: '0.03em',
-                      color: 'var(--ochre)', background: 'var(--ochre-soft)',
-                      border: '1px solid var(--ochre)',
-                      borderRadius: 'var(--radius-sm)', padding: '1px 5px',
-                    }}>
-                      {t('projects.sprints.planning.noEstimate')}
-                    </span>
-                  )}
-                </label>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Footer */}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <div style={{
+        height: 8, borderRadius: 4,
+        background: 'var(--border)',
+        overflow: 'hidden',
+      }}>
         <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '10px 18px 14px', borderTop: '1px solid var(--border)', marginTop: 4,
-        }}>
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-            {selected.size > 0 && `${selected.size} sel.${selectedPoints > 0 ? ` · ${selectedPoints} pts` : ''}`}
-          </div>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button onClick={onClose} style={btnSecondary}>{t('common.cancel')}</button>
-            <button
-              onClick={handleAdd}
-              disabled={saving || selected.size === 0}
-              style={{ ...btnAccent, opacity: saving || selected.size === 0 ? 0.5 : 1, cursor: saving || selected.size === 0 ? 'not-allowed' : 'pointer' }}
-              onMouseEnter={e => { if (!saving && selected.size > 0) (e.currentTarget as HTMLElement).style.background = 'var(--accent-hover)'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'var(--accent)'; }}
-            >
-              {saving ? '…' : t('projects.sprints.planning.addSelected')}
-            </button>
-          </div>
-        </div>
+          height: '100%', borderRadius: 4,
+          background: 'var(--accent)',
+          width: `${pct}%`,
+          transition: 'width 0.3s ease',
+        }} />
       </div>
-    </ModalOverlay>
+    </div>
   );
 }
 
-// ── SprintsPage ───────────────────────────────────────────────────────────────
+// ── Date formatter ───────────────────────────────────────────────────────────
+
+function formatDateShort(date: string | null | undefined): string {
+  if (!date) return '—';
+  return new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+// ── SprintsPage ──────────────────────────────────────────────────────────────
 
 export default function SprintsPage() {
   const { t } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
 
   const { canManageSprint, canPlanSprint, canAddToActiveSprint, canEditSprintTask, canMoveTask, canDeleteSprintTask } = useProjectMember(projectId);
+  const columns = useBoardColumns(projectId);
 
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [loading, setLoading] = useState(true);
@@ -537,16 +367,14 @@ export default function SprintsPage() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [editSprint, setEditSprint] = useState<Sprint | null>(null);
-  const [confirmAction, setConfirmAction] = useState<{ type: 'activate' | 'delete'; sprintId: string } | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [sprintTasks, setSprintTasks] = useState<Record<string, Task[]>>({});
   const [sprintSnapshots, setSprintSnapshots] = useState<Record<string, SprintTaskSnapshot[]>>({});
-  const [loadingTasksId, setLoadingTasksId] = useState<string | null>(null);
-  const [planningSprintId, setPlanningSprintId] = useState<string | null>(null);
   const [editTask, setEditTask] = useState<Task | null | undefined>(undefined);
   const [editTaskSprintId, setEditTaskSprintId] = useState<string | null>(null);
   const [selectedSnapshot, setSelectedSnapshot] = useState<SprintTaskSnapshot | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [confirmActivate, setConfirmActivate] = useState<string | null>(null);
 
   useEffect(() => {
     if (!projectId) return;
@@ -558,35 +386,15 @@ export default function SprintsPage() {
       .finally(() => setLoading(false));
   }, [projectId, t]);
 
-  const handleExpand = async (sprintId: string) => {
-    if (expandedId === sprintId) { setExpandedId(null); return; }
-    setExpandedId(sprintId);
-    const sprint = sprints.find((s) => s.id === sprintId);
-    const isCompleted = sprint?.status === 'COMPLETED';
-    if (isCompleted && !sprintSnapshots[sprintId]) {
-      setLoadingTasksId(sprintId);
-      try {
-        const snaps = await sprintsApi.getSprintSnapshots(sprintId);
-        setSprintSnapshots((prev) => ({ ...prev, [sprintId]: snaps }));
-        // also populate sprintTasks with empty so the regular path doesn't refetch
-        setSprintTasks((prev) => ({ ...prev, [sprintId]: prev[sprintId] ?? [] }));
-      } catch {
-        setError(t('projects.sprints.loadError'));
-      } finally {
-        setLoadingTasksId(null);
-      }
-    } else if (!isCompleted && !sprintTasks[sprintId]) {
-      setLoadingTasksId(sprintId);
-      try {
-        const tasks = await sprintsApi.getSprintTasks(sprintId);
-        setSprintTasks((prev) => ({ ...prev, [sprintId]: tasks }));
-      } catch {
-        setError(t('projects.sprints.loadError'));
-      } finally {
-        setLoadingTasksId(null);
-      }
+  // Auto-load tasks for active sprint
+  const activeSprint = sprints.find((s) => s.status === 'ACTIVE');
+  useEffect(() => {
+    if (activeSprint && !sprintTasks[activeSprint.id]) {
+      sprintsApi.getSprintTasks(activeSprint.id)
+        .then((tasks) => setSprintTasks((prev) => ({ ...prev, [activeSprint.id]: tasks })))
+        .catch(() => {});
     }
-  };
+  }, [activeSprint, sprintTasks]);
 
   const handleDeleteSprint = async (sprintId: string) => {
     setActionLoading(true);
@@ -594,7 +402,7 @@ export default function SprintsPage() {
       await sprintsApi.deleteSprint(sprintId);
       setSprints((prev) => prev.filter((s) => s.id !== sprintId));
       setSprintTasks((prev) => { const next = { ...prev }; delete next[sprintId]; return next; });
-      setConfirmAction(null);
+      setConfirmDelete(null);
     } catch {
       setError(t('projects.sprints.deleteError'));
     } finally {
@@ -602,18 +410,16 @@ export default function SprintsPage() {
     }
   };
 
-  const handleActivate = async (sprintId: string) => {
-    const sprint = sprints.find((s) => s.id === sprintId);
-    if (sprint && !sprint.endDate) {
-      setError(t('projects.sprints.activateEndDateRequired'));
-      setConfirmAction(null);
-      return;
-    }
+  const handleActivateSprint = async (sprintId: string) => {
     setActionLoading(true);
     try {
       const updated = await sprintsApi.activateSprint(sprintId);
-      setSprints((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-      setConfirmAction(null);
+      setSprints((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
+      setConfirmActivate(null);
+      // Load tasks for newly active sprint
+      sprintsApi.getSprintTasks(sprintId)
+        .then((tasks) => setSprintTasks((prev) => ({ ...prev, [sprintId]: tasks })))
+        .catch(() => {});
     } catch {
       setError(t('projects.sprints.activateError'));
     } finally {
@@ -663,35 +469,23 @@ export default function SprintsPage() {
     }
   };
 
-  const handleAddToSprint = (sprintId: string, added: Task[]) => {
-    setSprintTasks((prev) => ({ ...prev, [sprintId]: [...(prev[sprintId] ?? []), ...added] }));
-  };
-
-  const formatDate = (date: string | null | undefined) =>
-    date ? new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null;
-
-  const totalPoints = (sprintId: string) =>
-    (sprintTasks[sprintId] ?? []).reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
+  // Categorize sprints
+  const plannedSprints = sprints.filter((s) => s.status === 'PLANNING');
+  const completedSprints = sprints.filter((s) => s.status === 'COMPLETED');
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <PageTitle as="h2" style={{ fontSize: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+        <div>
+          <PageTitle as="h2" style={{ fontSize: 28, marginBottom: 4 }}>
             {t('projects.sprints.title')}
           </PageTitle>
-          {!loading && (
-            <span style={{
-              fontSize: 11, fontWeight: 600, color: 'var(--text-faint)',
-              background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-sm)', padding: '1px 6px', fontFamily: 'var(--font-mono)',
-            }}>
-              {sprints.length}
-            </span>
-          )}
+          <p style={{ margin: 0, fontSize: 15, color: 'var(--text-faint)' }}>
+            {t('projects.sprints.subtitle')}
+          </p>
         </div>
         {canManageSprint && (
           <button
@@ -700,7 +494,7 @@ export default function SprintsPage() {
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
           >
-            <Plus size={12} strokeWidth={2.5} />
+            <Plus size={14} strokeWidth={2.5} />
             {t('projects.sprints.newSprint')}
           </button>
         )}
@@ -712,391 +506,330 @@ export default function SprintsPage() {
           <div style={{ width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
         </div>
       ) : sprints.length === 0 ? (
-        <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '48px 24px', textAlign: 'center' }}>
-          <div style={{ width: 40, height: 40, background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
-            <Zap size={18} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
+        <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '56px 24px', textAlign: 'center' }}>
+          <div style={{ width: 48, height: 48, background: 'var(--bg-hover)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+            <Zap size={22} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
           </div>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>{t('projects.sprints.noSprints')}</p>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>{t('projects.sprints.noSprintsSubtitle')}</p>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text-muted)' }}>{t('projects.sprints.noSprints')}</p>
+          <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--text-faint)' }}>{t('projects.sprints.noSprintsSubtitle')}</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {sprints.map((sprint) => {
-            const isExpanded = expandedId === sprint.id;
-            const tasks = sprintTasks[sprint.id] ?? [];
-            const snaps = sprintSnapshots[sprint.id] ?? [];
-            const isLoadingTasks = loadingTasksId === sprint.id;
-            const isCompletedSprint = sprint.status === 'COMPLETED';
-            const pts = totalPoints(sprint.id);
-            const startFmt = formatDate(sprint.startDate);
-            const endFmt = formatDate(sprint.endDate);
-            const overdueDays = (() => {
-              if (sprint.status !== 'ACTIVE' || !sprint.endDate) return 0;
-              const end = new Date(sprint.endDate); end.setHours(23, 59, 59, 999);
-              const today = new Date();
-              return today > end ? Math.ceil((today.getTime() - end.getTime()) / 86_400_000) : 0;
-            })();
-            const pendingCount = tasks.filter((t) => t.status !== 'DONE').length;
-            const confirmThis = confirmAction?.sprintId === sprint.id ? confirmAction.type : null;
+        <>
+          {/* ── Active Sprint ── */}
+          <div>
+            <SectionHeader icon={PlayCircle} color="var(--accent)" title={t('projects.sprints.activeSprint')} />
 
-            return (
-              <div
-                key={sprint.id}
-                style={{
+            {activeSprint ? (() => {
+              const tasks = sprintTasks[activeSprint.id] ?? [];
+              const doneCount = tasks.filter((t) => t.status === 'DONE').length;
+              const totalCount = tasks.length;
+              const totalPts = tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
+
+              return (
+                <div style={{
+                  marginTop: 12,
                   background: 'var(--bg-elevated)',
                   border: '1px solid var(--border)',
-                  borderLeft: `2px solid ${SPRINT_LEFT_COLOR[sprint.status]}`,
                   borderRadius: 'var(--radius-md)',
                   overflow: 'hidden',
-                }}
-              >
-                {/* Sprint header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px' }}>
-                  {/* Expand */}
-                  <button
-                    onClick={() => handleExpand(sprint.id)}
-                    style={{ flexShrink: 0, border: 'none', background: 'transparent', padding: 2, cursor: 'pointer', color: 'var(--text-faint)', borderRadius: 'var(--radius-sm)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--bg-hover)'; (e.currentTarget as HTMLElement).style.color = 'var(--text)'; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-faint)'; }}
-                  >
-                    <ChevronRight
-                      size={14}
-                      strokeWidth={2}
-                      style={{ transition: `transform var(--duration)`, transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
-                    />
-                  </button>
-
-                  {/* Name + meta */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
-                        {sprint.name}
-                      </span>
-                      <span style={{
-                        fontSize: 9, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                        color: sprint.status === 'ACTIVE' ? 'var(--accent)' : sprint.status === 'COMPLETED' ? 'var(--success)' : 'var(--text-faint)',
-                        fontFamily: 'var(--font-mono)',
-                      }}>
-                        {t(`projects.sprints.status.${sprint.status}`)}
-                      </span>
-                      {isExpanded && (isCompletedSprint ? snaps.length > 0 : tasks.length > 0) && (() => {
-                        const count = isCompletedSprint ? snaps.length : tasks.length;
-                        const snapPts = isCompletedSprint ? snaps.reduce((s, snap) => s + (snap.storyPoints ?? 0), 0) : pts;
-                        return (
-                          <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-                            {count} {count === 1 ? t('projects.sprints.task') : t('projects.sprints.tasks')}
-                            {snapPts > 0 && ` · ${snapPts} pts`}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                    {(startFmt || endFmt || sprint.goal) && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 1 }}>
-                        {(startFmt || endFmt) && (
-                          <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-                            {startFmt ?? '—'} → {endFmt ?? '—'}
-                          </span>
-                        )}
-                        {sprint.goal && (
-                          <span style={{ fontSize: 10, color: 'var(--text-faint)', fontStyle: 'italic', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: 200 }}>
-                            {sprint.goal}
-                          </span>
-                        )}
+                }}>
+                  <div style={{ display: 'flex', gap: 0 }}>
+                    {/* Left: info */}
+                    <div style={{ flex: 1, padding: '20px 24px', minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <span style={{
+                          fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+                          color: 'var(--accent)', background: 'var(--accent-muted)',
+                          padding: '2px 8px', borderRadius: 'var(--radius-sm)',
+                        }}>
+                          {t('projects.sprints.current')}
+                        </span>
                       </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                    {sprint.status === 'PLANNING' && canManageSprint && (
-                      confirmThis === 'activate' ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t('projects.sprints.activateConfirm')}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+                          {activeSprint.name}
+                        </h3>
+                        {canManageSprint && (
                           <button
-                            onClick={() => handleActivate(sprint.id)}
-                            disabled={actionLoading}
-                            style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                          >
-                            {t('common.confirm')}
-                          </button>
-                          <button
-                            onClick={() => setConfirmAction(null)}
-                            style={{ fontSize: 11, color: 'var(--text-faint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                          >
-                            {t('common.cancel')}
-                          </button>
-                        </div>
-                      ) : confirmThis === 'delete' ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t('projects.sprints.deleteConfirm')}</span>
-                          <button
-                            onClick={() => handleDeleteSprint(sprint.id)}
-                            disabled={actionLoading}
-                            style={{ fontSize: 11, fontWeight: 600, color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                          >
-                            {t('common.delete')}
-                          </button>
-                          <button
-                            onClick={() => setConfirmAction(null)}
-                            style={{ fontSize: 11, color: 'var(--text-faint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                          >
-                            {t('common.cancel')}
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => setEditSprint(sprint)}
-                            style={btnOutline}
+                            onClick={() => setEditSprint(activeSprint)}
+                            style={{ ...btnOutline, marginBottom: 8 }}
+                            title={t('common.edit')}
                             onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
                             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                           >
-                            {t('common.edit')}
+                            <Pencil size={12} strokeWidth={2} />
                           </button>
-                          <button
-                            onClick={() => setConfirmAction({ type: 'delete', sprintId: sprint.id })}
-                            style={{ ...btnOutline, color: 'var(--danger)', borderColor: 'var(--danger)' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--danger-bg)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                          >
-                            {t('common.delete')}
-                          </button>
-                          <button
-                            onClick={() => setConfirmAction({ type: 'activate', sprintId: sprint.id })}
-                            style={{ ...btnOutline, color: 'var(--accent)', borderColor: 'var(--accent)' }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-muted)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                          >
-                            {t('projects.sprints.activate')}
-                          </button>
-                        </>
-                      )
-                    )}
+                        )}
+                      </div>
+                      <p style={{
+                        margin: '0 0 12px', fontSize: 13, color: 'var(--text-faint)',
+                        fontStyle: activeSprint.goal ? 'normal' : 'italic',
+                      }}>
+                        {activeSprint.goal
+                          ? `${t('projects.sprints.planning.goal')}: ${activeSprint.goal}`
+                          : t('projects.sprints.noGoal')}
+                      </p>
 
-                    {sprint.status === 'ACTIVE' && (
-                      <Link
-                        to={`/workspaces/${workspaceId}/projects/${projectId}/board`}
-                        style={{ ...btnOutline, textDecoration: 'none' }}
-                        onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                      >
-                        <LayoutDashboard size={11} strokeWidth={1.75} />
-                        {t('projects.sprints.viewBoard')}
-                      </Link>
-                    )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Calendar size={14} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+                          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>
+                            {formatDateShort(activeSprint.startDate)} - {formatDateShort(activeSprint.endDate)}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <Zap size={14} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+                          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>
+                            {totalPts} {t('projects.sprints.storyPointsLabel')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-                    <Link
-                      to={`/workspaces/${workspaceId}/projects/${projectId}/sprints/${sprint.id}/report`}
-                      style={{ ...btnOutline, textDecoration: 'none' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                      onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                    >
-                      <BarChart2 size={11} strokeWidth={1.75} />
-                      {t('projects.sprints.viewReport')}
-                    </Link>
+                    {/* Right: progress + report */}
+                    <div style={{
+                      flex: '0 0 40%', padding: '24px 28px',
+                      display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14,
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                          {t('projects.sprints.progress')}
+                        </span>
+                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>
+                          {t('projects.sprints.tasksDone', { done: doneCount, total: totalCount })}
+                        </span>
+                      </div>
+                      <ProgressBar done={doneCount} total={totalCount} />
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <Link
+                          to={`/workspaces/${workspaceId}/projects/${projectId}/sprints/${activeSprint.id}/backlog`}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            padding: '8px 14px', fontSize: 12, fontWeight: 500,
+                            background: 'transparent',
+                            border: '1px solid var(--border)',
+                            borderRadius: 'var(--radius-md)',
+                            color: 'var(--text)', cursor: 'pointer',
+                            textDecoration: 'none', flex: 1,
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <ListChecks size={14} strokeWidth={2} />
+                          {t('projects.sprints.sprintBacklog.button')}
+                        </Link>
+                        <Link
+                          to={`/workspaces/${workspaceId}/projects/${projectId}/sprints/${activeSprint.id}/report`}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            padding: '8px 14px', fontSize: 12, fontWeight: 500,
+                            background: 'transparent',
+                            border: '1px solid var(--border)',
+                            borderRadius: 'var(--radius-md)',
+                            color: 'var(--text)', cursor: 'pointer',
+                            textDecoration: 'none', flex: 1,
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <BarChart2 size={14} strokeWidth={2} />
+                          {t('projects.sprints.viewReport')}
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 </div>
+              );
+            })() : (
+              <p style={{ marginTop: 10, fontSize: 13, color: 'var(--text-faint)', fontStyle: 'italic' }}>
+                {t('projects.sprints.noActiveSprint')}
+              </p>
+            )}
+          </div>
 
-                {/* Overdue banner */}
-                {overdueDays > 0 && (
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '6px 12px',
-                    background: 'var(--ochre-soft)',
-                    borderTop: '1px solid var(--ochre)',
-                  }}>
-                    <span style={{ fontSize: 12 }}>⚠</span>
-                    <p style={{ margin: 0, fontSize: 11, color: 'var(--ochre)' }}>
-                      {t('projects.kanban.overdueBanner', { days: overdueDays, pending: pendingCount })}
-                    </p>
-                  </div>
-                )}
+          {/* ── Planned Sprints ── */}
+          <div>
+            <SectionHeader icon={CalendarClock} color="#E08A2E" title={t('projects.sprints.plannedSprints')} />
 
-                {/* Expanded: task list */}
-                {isExpanded && (
-                  <div style={{ borderTop: '1px solid var(--border)' }}>
-                    {isLoadingTasks ? (
-                      <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
-                        <div style={{ width: 18, height: 18, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                      </div>
-                    ) : isCompletedSprint ? (
-                      snaps.length === 0 ? (
-                        <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', padding: '20px 0' }}>
-                          {t('projects.sprints.noTasks')}
+            {plannedSprints.length === 0 ? (
+              <p style={{ marginTop: 10, fontSize: 13, color: 'var(--text-faint)', fontStyle: 'italic' }}>
+                {t('projects.sprints.noPlanned')}
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
+                {plannedSprints.map((sprint) => {
+                  const isDeleting = confirmDelete === sprint.id;
+
+                  return (
+                    <div
+                      key={sprint.id}
+                      style={{
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '16px 20px',
+                        display: 'flex', alignItems: 'center', gap: 16,
+                      }}
+                    >
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{ margin: '0 0 4px', fontSize: 15, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+                          {sprint.name}
+                        </h4>
+                        <p style={{
+                          margin: '0 0 8px', fontSize: 12, color: 'var(--text-faint)',
+                          fontStyle: sprint.goal ? 'normal' : 'italic',
+                          overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                        }}>
+                          {sprint.goal
+                            ? `${t('projects.sprints.planning.goal')}: ${sprint.goal}`
+                            : t('projects.sprints.noGoal')}
                         </p>
-                      ) : (
-                        <div>
-                          {snaps.map((snap, idx) => (
-                            <div
-                              key={snap.id}
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => setSelectedSnapshot(snap)}
-                              onKeyDown={(e) => e.key === 'Enter' && setSelectedSnapshot(snap)}
-                              style={{
-                                display: 'flex', alignItems: 'center', gap: 10,
-                                padding: '7px 12px',
-                                borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
-                                opacity: snap.returnedToBacklog ? 0.7 : 1,
-                                cursor: 'pointer',
-                              }}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <Calendar size={14} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+                            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>
+                              {formatDateShort(sprint.startDate)} - {formatDateShort(sprint.endDate)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                        {isDeleting ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{t('projects.sprints.deleteConfirm')}</span>
+                            <button
+                              onClick={() => handleDeleteSprint(sprint.id)}
+                              disabled={actionLoading}
+                              style={{ fontSize: 12, fontWeight: 600, color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                            >
+                              {t('common.delete')}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDelete(null)}
+                              style={{ fontSize: 12, color: 'var(--text-faint)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                            >
+                              {t('common.cancel')}
+                            </button>
+                          </div>
+                        ) : canManageSprint && (
+                          <>
+                            <Link
+                              to={`/workspaces/${workspaceId}/projects/${projectId}/sprints/${sprint.id}/planning`}
+                              style={{ ...btnOutline, color: 'var(--accent)', borderColor: 'var(--accent)', textDecoration: 'none' }}
+                              onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-muted)')}
+                              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                            >
+                              <Columns2 size={12} strokeWidth={2} />
+                              {t('projects.sprints.planning.title')}
+                            </Link>
+                            {sprint.startDate && new Date(sprint.startDate) <= new Date(new Date().toDateString()) && (
+                              <button
+                                onClick={() => setConfirmActivate(sprint.id)}
+                                style={{ ...btnOutline, color: 'var(--success)', borderColor: 'var(--success)' }}
+                                title={t('projects.sprints.activate')}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'var(--success-bg, rgba(34,197,94,0.1))')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                <PlayCircle size={12} strokeWidth={2} />
+                                {t('projects.sprints.activate')}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setEditSprint(sprint)}
+                              style={btnOutline}
+                              title={t('common.edit')}
                               onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
                               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                             >
-                              <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: PRIORITY_COLOR[snap.priority] }} />
-
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                                    {snap.title}
-                                  </p>
-                                  {snap.returnedToBacklog && (
-                                    <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 600, color: 'var(--ochre)', background: 'var(--ochre-soft)', border: '1px solid var(--ochre)', borderRadius: 'var(--radius-sm)', padding: '0 4px', whiteSpace: 'nowrap' }}>
-                                      {t('projects.sprints.report.backlogBadge')}
-                                    </span>
-                                  )}
-                                </div>
-                                {snap.description && (
-                                  <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                                    {snap.description}
-                                  </p>
-                                )}
-                              </div>
-
-                              <span style={{
-                                flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
-                                textTransform: 'uppercase', color: STATUS_COLOR[snap.statusAtEnd] ?? DEFAULT_STATUS_COLOR,
-                                fontFamily: 'var(--font-mono)',
-                              }}>
-                                {t(`tasks.status.${snap.statusAtEnd}`, { defaultValue: snap.statusAtEnd.replace(/_/g, ' ') })}
-                              </span>
-
-                              {snap.storyPoints != null ? (
-                                <span style={{
-                                  flexShrink: 0, fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-mono)',
-                                  color: 'var(--text-faint)', background: 'var(--bg-hover)',
-                                  border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1px 5px',
-                                }}>
-                                  {snap.storyPoints}
-                                </span>
-                              ) : (
-                                <span style={{ flexShrink: 0, width: 28 }} />
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )
-                    ) : tasks.length === 0 ? (
-                      <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', padding: '20px 0' }}>
-                        {t('projects.sprints.noTasks')}
-                      </p>
-                    ) : (
-                      <div>
-                        {tasks.map((task, idx) => (
-                          <div
-                            key={task.id}
-                            style={{
-                              display: 'flex', alignItems: 'center', gap: 10,
-                              padding: '7px 12px',
-                              borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
-                            }}
-                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                          >
-                            {/* Type icon + Priority dot */}
-                            {(() => { const tc = TYPE_ICON_MAP[task.type ?? 'TASK']; const TIcon = tc.icon; return <TIcon size={12} strokeWidth={2} style={{ color: tc.color, flexShrink: 0 }} />; })()}
-                            <span style={{ flexShrink: 0, width: 6, height: 6, borderRadius: '50%', background: PRIORITY_COLOR[task.priority] }} />
-
-                            {/* Title */}
-                            <button
-                              onClick={() => { setEditTask(task); setEditTaskSprintId(sprint.id); }}
-                              style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                            >
-                              {task.parentTitle && (
-                                <p style={{ margin: '0 0 1px', fontSize: 10, fontWeight: 600, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                                  {'↳ '}{task.parentTitle}
-                                </p>
-                              )}
-                              <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                                {task.title}
-                              </p>
-                              {task.description && (
-                                <p style={{ margin: '1px 0 0', fontSize: 11, color: 'var(--text-faint)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                                  {task.description}
-                                </p>
-                              )}
+                              <Pencil size={12} strokeWidth={2} />
                             </button>
-
-                            {/* Status */}
-                            <span style={{
-                              flexShrink: 0, fontSize: 9, fontWeight: 700, letterSpacing: '0.08em',
-                              textTransform: 'uppercase', color: STATUS_COLOR[task.status] ?? DEFAULT_STATUS_COLOR,
-                              fontFamily: 'var(--font-mono)',
-                            }}>
-                              {t(`tasks.status.${task.status}`, { defaultValue: task.status.replace(/_/g, ' ') })}
-                            </span>
-
-                            {/* Story points */}
-                            {task.storyPoints != null ? (
-                              <span style={{
-                                flexShrink: 0, fontSize: 10, fontWeight: 600, fontFamily: 'var(--font-mono)',
-                                color: 'var(--text-faint)', background: 'var(--bg-hover)',
-                                border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '1px 5px',
-                              }}>
-                                {task.storyPoints}
-                              </span>
-                            ) : (
-                              <span style={{ flexShrink: 0, width: 28 }} />
-                            )}
-
-                            {/* Remove */}
-                            {((sprint.status === 'PLANNING' && canPlanSprint) || (sprint.status === 'ACTIVE' && canAddToActiveSprint)) && (
-                              <button
-                                onClick={() => handleRemoveFromSprint(sprint.id, task.id)}
-                                title={t('projects.sprints.removeTask')}
-                                style={{
-                                  flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  width: 20, height: 20, border: 'none', background: 'transparent',
-                                  borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                                  color: 'var(--text-muted)',
-                                  transition: `background var(--duration), color var(--duration)`,
-                                }}
-                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'var(--danger-bg)'; (e.currentTarget as HTMLElement).style.color = 'var(--danger)'; }}
-                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--text-muted)'; }}
-                              >
-                                <X size={11} strokeWidth={2} />
-                              </button>
-                            )}
-                          </div>
-                        ))}
+                            <button
+                              onClick={() => setConfirmDelete(sprint.id)}
+                              style={{ ...btnOutline, color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                              title={t('common.delete')}
+                              onMouseEnter={e => (e.currentTarget.style.background = 'var(--danger-bg)')}
+                              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                            >
+                              <Trash2 size={12} strokeWidth={2} />
+                            </button>
+                          </>
+                        )}
                       </div>
-                    )}
-
-                    {/* Add tasks button */}
-                    {((sprint.status === 'PLANNING' && canPlanSprint) || (sprint.status === 'ACTIVE' && canAddToActiveSprint)) && (
-                      <div style={{ padding: '6px 12px 10px', borderTop: '1px solid var(--border)' }}>
-                        <button
-                          onClick={() => { setPlanningSprintId(sprint.id); if (!sprintTasks[sprint.id]) handleExpand(sprint.id); }}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: 4,
-                            fontSize: 11, fontWeight: 500, color: 'var(--text-faint)',
-                            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                            transition: `color var(--duration)`,
-                          }}
-                          onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
-                          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
-                        >
-                          <Plus size={11} strokeWidth={2.5} />
-                          {t('projects.sprints.addTasks')}
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
+            )}
+          </div>
+
+          {/* ── Completed Sprints ── */}
+          <div>
+            <SectionHeader icon={CheckCircle2} color="var(--success)" title={t('projects.sprints.completedSprints')} />
+
+            {completedSprints.length === 0 ? (
+              <p style={{ marginTop: 10, fontSize: 13, color: 'var(--text-faint)', fontStyle: 'italic' }}>
+                {t('projects.sprints.noCompleted')}
+              </p>
+            ) : (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+                gap: 12, marginTop: 12,
+              }}>
+                {completedSprints.map((sprint) => {
+                  const doneTasks = sprint.closedDoneTasks ?? 0;
+                  const totalTasks = sprint.closedTotalTasks ?? 0;
+                  const doneSP = sprint.closedDoneStoryPoints ?? 0;
+
+                  return (
+                    <Link
+                      key={sprint.id}
+                      to={`/workspaces/${workspaceId}/projects/${projectId}/sprints/${sprint.id}/report`}
+                      style={{
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-md)',
+                        padding: '16px 18px',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        transition: 'border-color 0.15s ease',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                      onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                        <CheckCircle2 size={14} strokeWidth={2} style={{ color: 'var(--success)' }} />
+                        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+                          {sprint.name}
+                        </h4>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+                        <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+                          {formatDateShort(sprint.startDate)} - {formatDateShort(sprint.endDate)}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                          {doneTasks}/{totalTasks} {t('projects.sprints.tasks')}
+                        </span>
+                        {doneSP > 0 && (
+                          <span style={{ fontSize: 12, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+                            {doneSP} pts
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ marginTop: 8 }}>
+                        <ProgressBar done={doneTasks} total={totalTasks} />
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {/* Modals */}
@@ -1113,20 +846,9 @@ export default function SprintsPage() {
           sprint={editSprint}
           onClose={() => setEditSprint(null)}
           onUpdate={(updated) => {
-            setSprints((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+            setSprints((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
             setEditSprint(null);
           }}
-        />
-      )}
-
-      {planningSprintId && projectId && (
-        <SprintPlanningModal
-          sprintId={planningSprintId}
-          projectId={projectId}
-          sprintGoal={sprints.find((s) => s.id === planningSprintId)?.goal}
-          existingTaskIds={new Set((sprintTasks[planningSprintId] ?? []).map((t) => t.id))}
-          onClose={() => setPlanningSprintId(null)}
-          onAdd={(added) => handleAddToSprint(planningSprintId, added)}
         />
       )}
 
@@ -1138,6 +860,7 @@ export default function SprintsPage() {
           <TaskModal
             task={editTask}
             projectId={projectId}
+            columns={columns}
             defaultStatus="TODO"
             readOnly={isCompleted || (isActive && !canEditSprintTask)}
             onClose={() => { setEditTask(undefined); setEditTaskSprintId(null); }}
@@ -1148,13 +871,40 @@ export default function SprintsPage() {
         );
       })()}
 
+      {confirmActivate && (
+        <ModalOverlay onClose={() => setConfirmActivate(null)}>
+          <div style={{ ...modalBox, maxWidth: 420 }}>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+                {t('projects.sprints.activateConfirm.title')}
+              </h2>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                {t('projects.sprints.activateConfirm.message')}
+              </p>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 24px 16px', borderTop: '1px solid var(--border)' }}>
+              <button onClick={() => setConfirmActivate(null)} style={btnSecondary}>
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={() => handleActivateSprint(confirmActivate)}
+                disabled={actionLoading}
+                style={{ ...btnAccent, opacity: actionLoading ? 0.5 : 1 }}
+              >
+                {actionLoading ? '...' : t('projects.sprints.activate')}
+              </button>
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
+
       {selectedSnapshot && (
         <SnapshotModal
           snapshot={selectedSnapshot}
           onClose={() => setSelectedSnapshot(null)}
+          columns={columns}
         />
       )}
-
     </div>
   );
 }

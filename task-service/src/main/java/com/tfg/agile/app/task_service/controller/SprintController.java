@@ -47,21 +47,33 @@ public class SprintController {
         return sprintService.getSprint(sprintId, callerId);
     }
 
+    @GetMapping("/projects/{projectId}/velocity")
+    public VelocityDto getVelocity(@PathVariable("projectId") UUID projectId,
+                                   @AuthenticationPrincipal UUID callerId) {
+        return sprintService.getVelocity(projectId, callerId);
+    }
+
     @GetMapping("/sprints/{sprintId}/tasks")
     public List<TaskResponseDto> getSprintTasks(@PathVariable("sprintId") UUID sprintId,
                                                 @RequestParam(required = false) List<String> priority,
                                                 @RequestParam(required = false) List<UUID> assigneeId,
                                                 @RequestParam(required = false) List<UUID> labelId,
                                                 @RequestParam(required = false) String search,
+                                                @RequestParam(required = false, defaultValue = "false") boolean includeStories,
                                                 @AuthenticationPrincipal UUID callerId) {
-        return sprintService.getSprintTasks(sprintId, priority, assigneeId, labelId, search, callerId);
+        return sprintService.getSprintTasks(sprintId, priority, assigneeId, labelId, search, includeStories, callerId);
     }
 
-    /** Returns root PBIs in the sprint (STORYs, BUGs, root TASKs) — for SprintsPage list view */
+    /** Returns root PBIs in the sprint (STORYs, BUGs, root TASKs) — for sprint backlog view */
     @GetMapping("/sprints/{sprintId}/stories")
     public List<TaskResponseDto> getSprintStories(@PathVariable("sprintId") UUID sprintId,
+                                                   @RequestParam(required = false) List<String> priority,
+                                                   @RequestParam(required = false) List<UUID> assigneeId,
+                                                   @RequestParam(required = false) List<UUID> labelId,
+                                                   @RequestParam(required = false) List<String> status,
+                                                   @RequestParam(required = false) String search,
                                                    @AuthenticationPrincipal UUID callerId) {
-        return sprintService.getSprintAllTasks(sprintId, callerId);
+        return sprintService.getSprintAllTasks(sprintId, priority, assigneeId, labelId, status, search, callerId);
     }
 
     @PostMapping("/projects/{projectId}/sprints")

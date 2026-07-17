@@ -1,14 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { X, Archive } from 'lucide-react';
-import type { SprintTaskSnapshot, TaskPriority } from '../../types';
-
-const STATUS_COLOR: Record<string, string> = {
-  TODO:        'var(--text-faint)',
-  IN_PROGRESS: 'var(--ink-blue)',
-  IN_REVIEW:   'var(--ochre)',
-  DONE:        'var(--success)',
-};
-const DEFAULT_STATUS_COLOR = 'var(--text-faint)';
+import type { SprintTaskSnapshot, TaskPriority, BoardColumn } from '../../types';
+import { getStatusLabel, getStatusColor } from '../../hooks/useBoardColumns';
 
 const PRIORITY_STYLE: Record<TaskPriority, { color: string; bg: string }> = {
   CRITICAL: { color: 'var(--danger)', bg: 'var(--danger-bg)' },
@@ -28,9 +21,10 @@ const labelStyle: React.CSSProperties = {
 interface Props {
   snapshot: SprintTaskSnapshot;
   onClose: () => void;
+  columns?: BoardColumn[];
 }
 
-export default function SnapshotModal({ snapshot, onClose }: Props) {
+export default function SnapshotModal({ snapshot, onClose, columns = [] }: Props) {
   const { t } = useTranslation();
   const pStyle = PRIORITY_STYLE[snapshot.priority];
 
@@ -114,12 +108,12 @@ export default function SnapshotModal({ snapshot, onClose }: Props) {
               <label style={labelStyle}>{t('tasks.modal.status')}</label>
               <span style={{
                 display: 'inline-block', fontSize: 11, fontWeight: 600,
-                color: STATUS_COLOR[snapshot.statusAtEnd] ?? DEFAULT_STATUS_COLOR,
-                background: `${STATUS_COLOR[snapshot.statusAtEnd] ?? DEFAULT_STATUS_COLOR}15`,
-                border: `1px solid ${STATUS_COLOR[snapshot.statusAtEnd] ?? DEFAULT_STATUS_COLOR}33`,
+                color: getStatusColor(snapshot.statusAtEnd, columns),
+                background: `${getStatusColor(snapshot.statusAtEnd, columns)}15`,
+                border: `1px solid ${getStatusColor(snapshot.statusAtEnd, columns)}33`,
                 borderRadius: 'var(--radius-sm)', padding: '2px 8px',
               }}>
-                {t(`tasks.status.${snapshot.statusAtEnd}`, { defaultValue: snapshot.statusAtEnd.replace(/_/g, ' ') })}
+                {getStatusLabel(snapshot.statusAtEnd, columns, t)}
               </span>
             </div>
             <div>

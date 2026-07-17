@@ -89,17 +89,28 @@ public class SprintService {
     }
 
     @Transactional(readOnly = true)
+    public VelocityDto getVelocity(UUID projectId, UUID callerId) {
+        requireMember(projectId, callerId);
+        long count = sprintRepository.countCompleted(projectId);
+        double avg = count > 0 ? sprintRepository.averageVelocity(projectId) : 0;
+        return new VelocityDto(Math.round(avg * 10.0) / 10.0, count);
+    }
+
+    @Transactional(readOnly = true)
     public List<TaskResponseDto> getSprintTasks(UUID sprintId,
                                                 List<String> priorities,
                                                 List<UUID> assigneeIds,
                                                 List<UUID> labelIds,
                                                 String search,
+                                                boolean includeStories,
                                                 UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         requireMember(sprint.getProjectId(), callerId);
 
-        Specification<Task> spec = Specification.where(TaskSpecifications.hasSprintId(sprintId))
-                .and(TaskSpecifications.isNotStoryType());
+        Specification<Task> spec = Specification.where(TaskSpecifications.hasSprintId(sprintId));
+        if (!includeStories) {
+            spec = spec.and(TaskSpecifications.isNotStoryType());
+        }
         spec = applyFilters(spec, priorities, assigneeIds, labelIds, null, search);
 
         return taskRepository.findAll(spec, Sort.by(Sort.Order.asc("status"), Sort.Order.asc("position")))
@@ -109,12 +120,19 @@ public class SprintService {
     }
 
     @Transactional(readOnly = true)
-    public List<TaskResponseDto> getSprintAllTasks(UUID sprintId, UUID callerId) {
+    public List<TaskResponseDto> getSprintAllTasks(UUID sprintId,
+                                                    List<String> priorities,
+                                                    List<UUID> assigneeIds,
+                                                    List<UUID> labelIds,
+                                                    List<String> statuses,
+                                                    String search,
+                                                    UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         requireMember(sprint.getProjectId(), callerId);
 
         Specification<Task> spec = Specification.where(TaskSpecifications.hasSprintId(sprintId))
                 .and(TaskSpecifications.isRootTask());
+        spec = applyFilters(spec, priorities, assigneeIds, labelIds, statuses, search);
 
         return taskRepository.findAll(spec, Sort.by(Sort.Order.desc("priority"), Sort.Order.asc("position")))
                 .stream()
@@ -128,6 +146,7 @@ public class SprintService {
         requireScrumMasterOrAdmin(perms);
 
         validateDateRange(dto.startDate(), dto.endDate());
+        validateNoOverlap(projectId, UUID.randomUUID(), dto.startDate(), dto.endDate());
 
         Sprint sprint = Sprint.builder()
                 .projectId(projectId)
@@ -152,12 +171,15 @@ public class SprintService {
             throw new ForbiddenException("CANNOT_EDIT_COMPLETED_SPRINT");
         }
 
-        validateDateRange(dto.startDate(), dto.endDate());
-
         sprint.setName(dto.name());
         sprint.setGoal(dto.goal());
-        sprint.setStartDate(dto.startDate());
-        sprint.setEndDate(dto.endDate());
+
+        if (sprint.getStatus() == SprintStatus.PLANNING) {
+            validateDateRange(dto.startDate(), dto.endDate());
+            validateNoOverlap(sprint.getProjectId(), sprint.getId(), dto.startDate(), dto.endDate());
+            sprint.setStartDate(dto.startDate());
+            sprint.setEndDate(dto.endDate());
+        }
         if (dto.reviewNotes() != null) {
             sprint.setReviewNotes(dto.reviewNotes());
         }
@@ -176,6 +198,12 @@ public class SprintService {
         if (sprint.getStatus() != SprintStatus.PLANNING) {
             throw new ConflictException("SPRINT_NOT_PLANNING");
         }
+        if (sprint.getStartDate() == null) {
+            throw new IllegalArgumentException("SPRINT_START_DATE_REQUIRED");
+        }
+        if (sprint.getStartDate().isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("SPRINT_START_DATE_IN_FUTURE");
+        }
         if (sprint.getEndDate() == null) {
             throw new IllegalArgumentException("SPRINT_END_DATE_REQUIRED");
         }
@@ -187,11 +215,25 @@ public class SprintService {
         }
 
         sprint.setStatus(SprintStatus.ACTIVE);
-        sprint.setStartDate(LocalDate.now());
         SprintResponseDto result = SprintResponseDto.from(sprintRepository.save(sprint));
         projectServiceClient.touchProject(sprint.getProjectId());
         projectServiceClient.touchMemberActivity(sprint.getProjectId(), callerId);
         return result;
+    }
+
+    /**
+     * Internal method to activate a sprint. Used by the scheduler for auto-start.
+     * Only activates if no other sprint is already active for the same project.
+     */
+    @Transactional
+    public boolean activateSprintInternal(Sprint sprint) {
+        if (sprintRepository.existsByProjectIdAndStatus(sprint.getProjectId(), SprintStatus.ACTIVE)) {
+            return false;
+        }
+        sprint.setStatus(SprintStatus.ACTIVE);
+        sprintRepository.save(sprint);
+        projectServiceClient.touchProject(sprint.getProjectId());
+        return true;
     }
 
     /**
@@ -451,6 +493,13 @@ public class SprintService {
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {
         if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
             throw new IllegalArgumentException("SPRINT_END_DATE_BEFORE_START_DATE");
+        }
+    }
+
+    private void validateNoOverlap(UUID projectId, UUID excludeId, LocalDate startDate, LocalDate endDate) {
+        if (startDate != null && endDate != null &&
+                sprintRepository.existsOverlapping(projectId, excludeId, startDate, endDate)) {
+            throw new IllegalArgumentException("SPRINT_DATES_OVERLAP");
         }
     }
 }

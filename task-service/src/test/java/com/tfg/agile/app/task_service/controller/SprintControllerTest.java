@@ -59,7 +59,7 @@ class SprintControllerTest {
         when(sprintService.getBacklog(projectId, null, null, null, null, null, callerId)).thenReturn(List.of(taskResponse));
         when(sprintService.listSprints(projectId, callerId)).thenReturn(List.of(sprintResponse));
         when(sprintService.getSprint(sprintId, callerId)).thenReturn(sprintResponse);
-        when(sprintService.getSprintTasks(sprintId, null, null, null, null, callerId)).thenReturn(List.of(taskResponse));
+        when(sprintService.getSprintTasks(sprintId, null, null, null, null, false, callerId)).thenReturn(List.of(taskResponse));
         when(sprintService.createSprint(projectId, createRequest, callerId)).thenReturn(sprintResponse);
         when(sprintService.updateSprint(sprintId, updateRequest, callerId)).thenReturn(sprintResponse);
         when(sprintService.activateSprint(sprintId, callerId)).thenReturn(sprintResponse);
@@ -69,7 +69,7 @@ class SprintControllerTest {
         assertThat(controller.getBacklog(projectId, null, null, null, null, null, callerId)).hasSize(1);
         assertThat(controller.listSprints(projectId, callerId)).hasSize(1);
         assertThat(controller.getSprint(sprintId, callerId)).isEqualTo(sprintResponse);
-        assertThat(controller.getSprintTasks(sprintId, null, null, null, null, callerId)).hasSize(1);
+        assertThat(controller.getSprintTasks(sprintId, null, null, null, null, false, callerId)).hasSize(1);
         assertThat(controller.createSprint(projectId, createRequest, callerId).getStatusCode().value()).isEqualTo(201);
         assertThat(controller.updateSprint(sprintId, updateRequest, callerId)).isEqualTo(sprintResponse);
         assertThat(controller.activateSprint(sprintId, callerId)).isEqualTo(sprintResponse);

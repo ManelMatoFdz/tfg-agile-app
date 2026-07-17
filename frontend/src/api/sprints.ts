@@ -5,8 +5,13 @@ import type { TaskFilters } from '../components/kanban/TaskFilterBar';
 export interface CreateSprintDto {
   name: string;
   goal?: string;
-  startDate?: string;
-  endDate?: string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface VelocityDto {
+  averageVelocity: number;
+  completedSprints: number;
 }
 
 export interface UpdateSprintDto {
@@ -50,8 +55,8 @@ export const sprintsApi = {
   deleteSprint: (sprintId: string) =>
     taskClient.delete(`/sprints/${sprintId}`),
 
-  getSprintTasks: (sprintId: string, filters?: TaskFilters) =>
-    taskClient.get<Task[]>(`/sprints/${sprintId}/tasks`, { params: buildFilterParams(filters) }).then((r) => r.data),
+  getSprintTasks: (sprintId: string, filters?: TaskFilters, includeStories?: boolean) =>
+    taskClient.get<Task[]>(`/sprints/${sprintId}/tasks`, { params: { ...buildFilterParams(filters), ...(includeStories ? { includeStories: true } : {}) } }).then((r) => r.data),
 
   assignTasksToSprint: (sprintId: string, taskIds: string[]) =>
     taskClient.post<Task[]>(`/sprints/${sprintId}/tasks`, { taskIds }).then((r) => r.data),
@@ -59,9 +64,12 @@ export const sprintsApi = {
   removeTaskFromSprint: (sprintId: string, taskId: string) =>
     taskClient.delete<Task>(`/sprints/${sprintId}/tasks/${taskId}`).then((r) => r.data),
 
-  getSprintStories: (sprintId: string) =>
-    taskClient.get<Task[]>(`/sprints/${sprintId}/stories`).then((r) => r.data),
+  getSprintStories: (sprintId: string, filters?: TaskFilters) =>
+    taskClient.get<Task[]>(`/sprints/${sprintId}/stories`, { params: buildFilterParams(filters) }).then((r) => r.data),
 
   getSprintSnapshots: (sprintId: string) =>
     taskClient.get<SprintTaskSnapshot[]>(`/sprints/${sprintId}/snapshots`).then((r) => r.data),
+
+  getVelocity: (projectId: string) =>
+    taskClient.get<VelocityDto>(`/projects/${projectId}/velocity`).then((r) => r.data),
 };

@@ -411,6 +411,7 @@
       "workflowColumns": "Workflow Columns",
       "columnsActive": "{{count}} columns active",
       "columnName": "Column name",
+      "columnNamePlaceholder": "Column name",
       "wipLimit": "WIP Limit",
       "wipNone": "None",
       "addColumn": "Add Column",
@@ -512,6 +513,14 @@
       "byPriority": "Tasks by priority",
       "velocity": "Velocity per sprint (completed SP)",
       "tasksByMember": "Tasks by member",
+      "avgVelocity": "Avg. velocity",
+      "avgVelocitySub": "Average of {{n}} completed sprint(s)",
+      "noCompletedSprints": "No completed sprints",
+      "avgLabel": "Avg",
+      "memberName": "Member",
+      "memberTasks": "Tasks",
+      "memberPoints": "Points",
+      "memberProgress": "Progress",
       "noTasks": "Not enough data to show metrics."
     },
     "backlog": {
@@ -530,6 +539,7 @@
       "colPriority": "Priority",
       "colEstimate": "Estimate",
       "colStatus": "Status",
+      "colLabels": "Labels",
       "colAssignee": "Assignee",
       "totalItems": "Total items",
       "totalPoints": "Total points",
@@ -538,8 +548,9 @@
     },
     "sprints": {
       "title": "Sprints",
+      "subtitle": "Manage your development cycles and project milestones",
       "noSprints": "No sprints yet",
-      "noSprintsSubtitle": "Create a sprint to get started",
+      "noSprintsSubtitle": "Create a sprint to start planning your development cycles",
       "newSprint": "New sprint",
       "sprint": "sprint",
       "sprintsCount": "sprints",
@@ -559,6 +570,26 @@
       "completeError": "Error completing the sprint.",
       "deleteConfirm": "Delete this sprint?",
       "deleteError": "Error deleting the sprint.",
+      "activate": "Activate",
+      "activateError": "Error activating the sprint.",
+      "activateConfirm": {
+        "title": "Activate sprint",
+        "message": "Are you sure you want to activate this sprint? Only one sprint can be active at a time per project."
+      },
+      "activeSprint": "Active Sprint",
+      "plannedSprints": "Planned Sprints",
+      "completedSprints": "Completed Sprints",
+      "noActiveSprint": "No active sprint",
+      "noPlanned": "No planned sprints",
+      "noCompleted": "No completed sprints yet",
+      "progress": "Progress",
+      "tasksDone": "{{done}}/{{total}} Tasks Done",
+      "endSprint": "End Sprint",
+      "startSprint": "Start Sprint",
+      "noGoal": "No sprint goal defined yet.",
+      "storyPointsLabel": "Story Points",
+      "current": "Current",
+      "readyToStart": "Ready to start",
       "edit": {
         "title": "Edit sprint",
         "submit": "Save changes",
@@ -620,7 +651,8 @@
         "startDate": "Start date",
         "endDate": "End date",
         "submit": "Create sprint",
-        "error": "Error creating the sprint."
+        "error": "Error creating the sprint.",
+        "overlapError": "Dates overlap with an existing sprint."
       },
       "planning": {
         "title": "Sprint Planning",
@@ -631,7 +663,27 @@
         "error": "Error adding tasks.",
         "goal": "Sprint goal",
         "noEstimate": "No estimate",
-        "unestimated": "{{count}} task(s) without story points. Consider estimating with Planning Poker first."
+        "unestimated": "{{count}} task(s) without story points. Consider estimating with Planning Poker first.",
+        "commitment": "Commitment",
+        "items": "items",
+        "backlog": "Backlog",
+        "dropHere": "Move backlog tasks here",
+        "removeFromSprint": "Remove from sprint",
+        "viewSprintBacklog": "View Sprint Backlog",
+        "avgVelocity": "Avg. velocity"
+      },
+      "sprintBacklog": {
+        "title": "Sprint Backlog",
+        "subtitle": "Full list of tasks assigned to this sprint",
+        "button": "Backlog",
+        "loadError": "Error loading the sprint backlog.",
+        "noTasks": "No tasks in this sprint",
+        "noTasksSub": "Add tasks from the sprint planning screen.",
+        "completed": "Completed",
+        "addTasks": "Add tasks",
+        "searchBacklog": "Search backlog...",
+        "selectedCount": "{{count}} selected",
+        "selectHint": "Select backlog tasks to add"
       },
       "review": {
         "title": "Sprint Review",
@@ -731,8 +783,10 @@
       "DESCRIPTION_CHANGED_impersonal": "Description updated",
       "STORY_POINTS_CHANGED": "estimated at {{newValue}} points",
       "STORY_POINTS_CHANGED_impersonal": "Estimated at {{newValue}} points",
-      "READY_CHANGED": "marked as {{newValue}}",
-      "READY_CHANGED_impersonal": "Marked as {{newValue}}"
+      "READY_CHANGED_true": "marked the task as ready for sprint",
+      "READY_CHANGED_true_impersonal": "Task was marked as ready for sprint",
+      "READY_CHANGED_false": "removed the task from sprint-ready",
+      "READY_CHANGED_false_impersonal": "Task was removed from sprint-ready"
     },
     "comments": {
       "title": "Comments",

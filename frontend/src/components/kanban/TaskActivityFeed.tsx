@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, Fragment } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Activity, Plus, ArrowRight, User, Tag, Layers,
-  CornerDownRight, Type, AlignLeft, Target, Undo2,
+  CornerDownRight, Type, AlignLeft, Target, Undo2, CheckCircle2,
 } from 'lucide-react';
 import type { TaskActivity, TaskComment, UserSummary } from '../../types';
 import { tasksApi } from '../../api/tasks';
@@ -47,6 +47,7 @@ const ICON_MAP: Record<string, typeof Activity> = {
   TITLE_CHANGED: Type,
   DESCRIPTION_CHANGED: AlignLeft,
   STORY_POINTS_CHANGED: Target,
+  READY_CHANGED: CheckCircle2,
 };
 
 const ICON_COLOR_MAP: Record<string, string> = {
@@ -63,6 +64,7 @@ const ICON_COLOR_MAP: Record<string, string> = {
   TITLE_CHANGED: '#6366F1',
   DESCRIPTION_CHANGED: '#6366F1',
   STORY_POINTS_CHANGED: '#0891B2',
+  READY_CHANGED: '#16A34A',
 };
 
 function ActivityRow({
@@ -125,7 +127,8 @@ function buildMessage(
   activity: TaskActivity,
   actorName: string | null,
 ): React.ReactNode {
-  const key = `tasks.activity.${activity.type}`;
+  const suffix = activity.type === 'READY_CHANGED' ? `_${activity.newValue}` : '';
+  const key = `tasks.activity.${activity.type}${suffix}`;
   const keyImpersonal = `${key}_impersonal`;
 
   if (actorName) {

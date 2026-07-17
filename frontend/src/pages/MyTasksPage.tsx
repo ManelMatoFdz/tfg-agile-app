@@ -5,6 +5,7 @@ import type { Task, TaskPriority } from '../types';
 import { tasksApi } from '../api/tasks';
 import Alert from '../components/ui/Alert';
 import PageTitle from '../components/motion/PageTitle';
+import { getStatusLabel, getStatusColor } from '../hooks/useBoardColumns';
 
 const STATUS_ORDER: string[] = ['IN_PROGRESS', 'IN_REVIEW', 'TODO', 'DONE'];
 
@@ -22,13 +23,6 @@ const PRIORITY_BG: Record<TaskPriority, string> = {
   LOW:      'var(--bg-hover)',
 };
 
-const STATUS_COLOR: Record<string, string> = {
-  TODO:        'var(--text-faint)',
-  IN_PROGRESS: 'var(--ink-blue)',
-  IN_REVIEW:   'var(--ochre)',
-  DONE:        'var(--success)',
-};
-const DEFAULT_STATUS_COLOR = 'var(--text-faint)';
 
 export default function MyTasksPage() {
   const { t } = useTranslation();
@@ -53,6 +47,13 @@ export default function MyTasksPage() {
       });
 
   const activeTasks = tasks.filter((t) => t.status !== 'DONE').length;
+
+  // Build dynamic status order: known statuses first, then any custom ones
+  const allStatuses = [...new Set(tasks.map((t) => t.status))];
+  const statusGroups = [
+    ...STATUS_ORDER.filter((s) => allStatuses.includes(s)),
+    ...allStatuses.filter((s) => !STATUS_ORDER.includes(s)),
+  ];
 
   return (
     <div style={{ maxWidth: '40rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -121,7 +122,7 @@ export default function MyTasksPage() {
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-          {STATUS_ORDER.map((status) => {
+          {statusGroups.map((status) => {
             const group = tasksByStatus(status);
             if (group.length === 0) return null;
             return (
@@ -130,7 +131,7 @@ export default function MyTasksPage() {
                 style={{
                   background: 'var(--bg-elevated)',
                   border: '0.0625rem solid var(--border)',
-                  borderLeft: `0.125rem solid ${STATUS_COLOR[status] ?? DEFAULT_STATUS_COLOR}`,
+                  borderLeft: `0.125rem solid ${getStatusColor(status, [])}`,
                   borderRadius: 'var(--radius-md)',
                   overflow: 'hidden',
                 }}
@@ -141,7 +142,7 @@ export default function MyTasksPage() {
                   alignItems: 'center',
                   gap: '0.375rem',
                   padding: '0.375rem 0.75rem',
-                  background: `${STATUS_COLOR[status] ?? DEFAULT_STATUS_COLOR}10`,
+                  background: `${getStatusColor(status, [])}10`,
                   borderBottom: '0.0625rem solid var(--border)',
                 }}>
                   <span style={{
@@ -149,9 +150,9 @@ export default function MyTasksPage() {
                     fontWeight: 700,
                     letterSpacing: '0.08em',
                     textTransform: 'uppercase',
-                    color: STATUS_COLOR[status] ?? DEFAULT_STATUS_COLOR,
+                    color: getStatusColor(status, []),
                   }}>
-                    {t(`tasks.status.${status}`, { defaultValue: status.replace(/_/g, ' ') })}
+                    {getStatusLabel(status, [], t)}
                   </span>
                   <span style={{ fontSize: '0.625rem', color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
                     {group.length}

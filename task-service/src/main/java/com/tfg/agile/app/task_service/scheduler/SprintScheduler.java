@@ -26,6 +26,33 @@ public class SprintScheduler {
     }
 
     @Scheduled(cron = "0 0 0 * * *")
+    public void autoStartSprints() {
+        List<Sprint> ready = sprintRepository.findByStatusAndStartDateLessThanEqual(
+                SprintStatus.PLANNING, LocalDate.now());
+
+        int activated = 0;
+        for (Sprint sprint : ready) {
+            try {
+                if (sprintService.activateSprintInternal(sprint)) {
+                    activated++;
+                    log.info("Auto-started sprint '{}' (id={}, project={})",
+                            sprint.getName(), sprint.getId(), sprint.getProjectId());
+                } else {
+                    log.info("Skipped auto-start for sprint '{}' (id={}) — another sprint is already active for project {}",
+                            sprint.getName(), sprint.getId(), sprint.getProjectId());
+                }
+            } catch (Exception e) {
+                log.error("Failed to auto-start sprint '{}' (id={}): {}",
+                        sprint.getName(), sprint.getId(), e.getMessage(), e);
+            }
+        }
+
+        if (activated > 0) {
+            log.info("Sprint auto-start: {} sprint(s) activated", activated);
+        }
+    }
+
+    @Scheduled(cron = "0 0 0 * * *")
     public void closeOverdueSprints() {
         List<Sprint> overdue = sprintRepository.findByStatusAndEndDateBefore(
                 SprintStatus.ACTIVE, LocalDate.now());

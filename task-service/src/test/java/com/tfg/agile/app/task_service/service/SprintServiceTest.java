@@ -119,7 +119,7 @@ class SprintServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
         when(taskRepository.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of(task));
 
-        var response = service.getSprintTasks(sprint.getId(), null, null, null, null, callerId);
+        var response = service.getSprintTasks(sprint.getId(), null, null, null, null, false, callerId);
 
         assertThat(response).hasSize(1);
         assertThat(response.get(0).sprintId()).isEqualTo(sprint.getId());
