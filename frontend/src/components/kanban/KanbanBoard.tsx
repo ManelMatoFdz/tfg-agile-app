@@ -12,8 +12,10 @@ import {
   useDraggable,
 } from '@dnd-kit/core';
 import type { DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core';
-import type { Task, BoardColumn, UserSummary } from '../../types';
+import type { Task, BoardColumn, UserSummary, TaskPriority } from '../../types';
 import { tasksApi } from '../../api/tasks';
+
+const PRIORITY_ORDER: Record<TaskPriority, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 import { useProjectMembers } from '../../hooks/useProjectMembers';
 import TaskCard from './TaskCard';
 import TaskModal from './TaskModal';
@@ -133,7 +135,9 @@ export default function KanbanBoard({
   const columnNames = new Set(columns.map((c) => c.name));
 
   const tasksByColumn = (colName: string) =>
-    tasks.filter((t) => t.status === colName).sort((a, b) => a.position - b.position);
+    tasks.filter((t) => t.status === colName).sort((a, b) =>
+      (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9) || a.position - b.position
+    );
 
   // Orphaned tasks (status doesn't match any column)
   const orphanedTasks = tasks.filter((t) => !columnNames.has(t.status));
@@ -244,8 +248,8 @@ export default function KanbanBoard({
       <div
         key={colName}
         style={{
-          flex: '1 1 0',
-          minWidth: 240,
+          flex: '1 0 280px',
+          minWidth: 280,
           background: 'var(--bg-elevated)',
           border: `1px solid ${isOver ? 'var(--accent)' : 'var(--border)'}`,
           borderRadius: 'var(--radius-lg)',
@@ -368,7 +372,9 @@ export default function KanbanBoard({
             renderColumn(
               t('projects.kanban.uncategorized'),
               '#6B7280',
-              orphanedTasks.sort((a, b) => a.position - b.position),
+              orphanedTasks.sort((a, b) =>
+              (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9) || a.position - b.position
+            ),
               false,
             )
           }

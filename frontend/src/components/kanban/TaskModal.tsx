@@ -10,6 +10,7 @@ import { useProjectMembers } from '../../hooks/useProjectMembers';
 import { useProjectMember } from '../../hooks/useProjectMember';
 import TaskComments from './TaskComments';
 import TaskActivityFeed from './TaskActivityFeed';
+import SubtaskModal from './SubtaskModal';
 import { getStatusLabel, getStatusColor } from '../../hooks/useBoardColumns';
 
 const PRIORITIES: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -87,10 +88,9 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const isEdit = !!task;
   const isSubtask = !!(task?.parentId ?? parentId);
-  const isStoryWithChildren = task?.type === 'STORY' && (task?.subtaskCount ?? 0) > 0;
-
   const [title, setTitle] = useState(task?.title ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
+  const [definitionOfDone, setDefinitionOfDone] = useState(task?.definitionOfDone ?? '');
   const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? 'MEDIUM');
   const [taskType, setTaskType] = useState<TaskType>(task?.type ?? (parentId ? 'TASK' : defaultType));
   const [status, setStatus] = useState<string>(task?.status ?? defaultStatus);
@@ -106,6 +106,8 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
   const [subtasks, setSubtasks] = useState<Task[]>([]);
   const [showSubtaskForm, setShowSubtaskForm] = useState(false);
   const [subtaskTitle, setSubtaskTitle] = useState('');
+  const [selectedSubtask, setSelectedSubtask] = useState<Task | null>(null);
+  const [toggledSubtaskIds, setToggledSubtaskIds] = useState<Set<string>>(new Set());
 
   const { members, userMap } = useProjectMembers(projectId);
   const { isAdmin } = useProjectMember(projectId);
@@ -116,7 +118,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
   }, [projectId]);
 
   useEffect(() => {
-    if (!task || task.type !== 'STORY' || task.subtaskCount === 0) return;
+    if (!task || task.subtaskCount === 0) return;
     tasksApi.getSubtasks(task.id).then(setSubtasks).catch(() => {});
   }, [task]);
 
@@ -133,6 +135,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
             assigneeId: assigneeId || null,
             labelIds: selectedLabelIds.length > 0 ? selectedLabelIds : undefined,
             ready,
+            ...(!isSubtask ? { definitionOfDone: definitionOfDone.trim() || undefined } : {}),
           }
         : {
             title: title.trim(),
@@ -142,10 +145,15 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
             parentId: parentId || undefined,
             assigneeId: assigneeId || undefined,
             labelIds: selectedLabelIds.length > 0 ? selectedLabelIds : undefined,
+            ...(!parentId ? { definitionOfDone: definitionOfDone.trim() || undefined } : {}),
           };
       await onSave?.(dto);
       if (isEdit && onMove && status !== task?.status) {
         await onMove(status);
+      }
+      // Persist subtask toggles
+      for (const stId of toggledSubtaskIds) {
+        await tasksApi.toggleSubtaskDone(stId);
       }
       onClose();
     } catch {
@@ -313,22 +321,6 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
               </div>
             )}
 
-            {/* Story auto-status info */}
-            {isStoryWithChildren && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 8,
-                padding: '6px 10px',
-                background: 'rgba(124,58,237,0.06)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid rgba(124,58,237,0.15)',
-              }}>
-                <BookOpen size={14} strokeWidth={2} style={{ color: '#7C3AED', flexShrink: 0 }} />
-                <span style={{ fontSize: 12, color: '#7C3AED' }}>{t('tasks.modal.storyStatusDerived')}</span>
-              </div>
-            )}
-
             {/* Title */}
             <div>
               <input
@@ -368,6 +360,27 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                 onBlur={blurHandler}
               />
             </div>
+
+            {/* Definition of Done — only for root tasks */}
+            {!isSubtask && (
+              <div>
+                <label style={sidebarLabel}>{t('tasks.modal.definitionOfDone')}</label>
+                <textarea
+                  value={definitionOfDone}
+                  onChange={(e) => setDefinitionOfDone(e.target.value)}
+                  placeholder={readOnly ? '--' : t('tasks.modal.dodPlaceholder')}
+                  rows={3}
+                  readOnly={readOnly}
+                  style={{
+                    ...(readOnly ? readOnlyFieldStyle : fieldStyle),
+                    resize: 'vertical',
+                    minHeight: 60,
+                  }}
+                  onFocus={e => { if (!readOnly) focusHandler(e); }}
+                  onBlur={blurHandler}
+                />
+              </div>
+            )}
 
             {/* Type selector — only on create, not for subtasks */}
             {!isEdit && !parentId && (
@@ -454,10 +467,17 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
               </div>
             )}
 
-            {/* Subtasks section — only for STORY in a sprint */}
-            {isEdit && task?.type === 'STORY' && task?.sprintId && (() => {
-              const pct = task.subtaskCount > 0 ? Math.round((task.completedSubtaskCount / task.subtaskCount) * 100) : 0;
-              const allDone = task.subtaskCount > 0 && task.completedSubtaskCount === task.subtaskCount;
+            {/* Subtasks section — any PBI in a sprint */}
+            {isEdit && task?.sprintId && (() => {
+              const totalSubs = subtasks.length || task.subtaskCount;
+              const doneSubs = subtasks.length > 0
+                ? subtasks.filter(s => {
+                    const doneCols = columns.filter(c => c.doneEquivalent).map(c => c.name);
+                    return doneCols.length > 0 ? doneCols.includes(s.status) : s.completedAt != null;
+                  }).length
+                : task.completedSubtaskCount;
+              const pct = totalSubs > 0 ? Math.round((doneSubs / totalSubs) * 100) : 0;
+              const allDone = totalSubs > 0 && doneSubs === totalSubs;
               const barColor = allDone ? '#16A34A' : '#3B82F6';
               return (
                 <div style={{
@@ -474,15 +494,15 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                     <label style={{ ...sidebarLabel, margin: 0 }}>
                       {t('tasks.modal.subtasks')}
                     </label>
-                    {task.subtaskCount > 0 && (
+                    {totalSubs > 0 && (
                       <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)' }}>
-                        {task.completedSubtaskCount}/{task.subtaskCount} {t('tasks.modal.subtaskCompleted')}
+                        {doneSubs}/{totalSubs} {t('tasks.modal.subtaskCompleted')}
                       </span>
                     )}
                   </div>
 
                   {/* Progress bar */}
-                  {task.subtaskCount > 0 && (
+                  {totalSubs > 0 && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
                       <div style={{
                         flex: 1,
@@ -521,7 +541,12 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                       overflowY: 'auto',
                     }}>
                       {subtasks.map((st) => {
-                        const isDone = st.status === 'DONE';
+                        const doneStatuses = columns.filter(c => c.doneEquivalent).map(c => c.name);
+                        const isDone = doneStatuses.length > 0
+                          ? doneStatuses.includes(st.status)
+                          : st.completedAt != null;
+                        const stAssignee = st.assigneeId ? userMap[st.assigneeId] : null;
+                        const stAssigneeName = stAssignee ? (stAssignee.fullName ?? stAssignee.username) : null;
                         return (
                           <div key={st.id} style={{
                             display: 'flex',
@@ -529,43 +554,78 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                             gap: 10,
                             padding: '8px 14px',
                           }}>
-                            {/* Visual-only checkbox */}
-                            <span style={{
-                              width: 18,
-                              height: 18,
-                              borderRadius: 4,
-                              border: isDone ? 'none' : '2px solid #CBD5E1',
-                              background: isDone ? '#3B82F6' : '#fff',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0,
-                            }}>
+                            {/* Interactive checkbox — local toggle, saved on modal save */}
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (readOnly) return;
+                                const doneColumns = columns.filter(c => c.doneEquivalent).map(c => c.name);
+                                const firstCol = columns.length > 0 ? columns[0].name : 'TODO';
+                                const firstDoneCol = doneColumns.length > 0 ? doneColumns[0] : 'DONE';
+                                setSubtasks(prev => prev.map(s => {
+                                  if (s.id !== st.id) return s;
+                                  const wasDone = doneColumns.length > 0 ? doneColumns.includes(s.status) : s.completedAt != null;
+                                  return {
+                                    ...s,
+                                    status: wasDone ? firstCol : firstDoneCol,
+                                    completedAt: wasDone ? null : new Date().toISOString(),
+                                  };
+                                }));
+                                setToggledSubtaskIds(prev => {
+                                  const next = new Set(prev);
+                                  if (next.has(st.id)) next.delete(st.id);
+                                  else next.add(st.id);
+                                  return next;
+                                });
+                              }}
+                              style={{
+                                width: 18,
+                                height: 18,
+                                borderRadius: 4,
+                                border: isDone ? 'none' : '2px solid #CBD5E1',
+                                background: isDone ? '#3B82F6' : '#fff',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                cursor: readOnly ? 'default' : 'pointer',
+                                padding: 0,
+                                transition: 'background 150ms, border-color 150ms',
+                              }}
+                            >
                               {isDone && (
                                 <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
                                   <path d="M2 5.5L4.5 8L9 3" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                                 </svg>
                               )}
-                            </span>
-                            <span style={{
-                              flex: 1,
-                              fontSize: 13,
-                              fontWeight: 400,
-                              color: isDone ? '#94A3B8' : '#1F2937',
-                              textDecoration: isDone ? 'line-through' : 'none',
-                              overflow: 'hidden',
-                              whiteSpace: 'nowrap',
-                              textOverflow: 'ellipsis',
-                            }}>
+                            </button>
+                            <span
+                              style={{
+                                flex: 1,
+                                fontSize: 13,
+                                fontWeight: 400,
+                                color: isDone ? '#94A3B8' : '#1F2937',
+                                textDecoration: isDone ? 'line-through' : 'none',
+                                overflow: 'hidden',
+                                whiteSpace: 'nowrap',
+                                textOverflow: 'ellipsis',
+                                cursor: 'pointer',
+                              }}
+                              onClick={() => setSelectedSubtask(st)}
+                            >
                               {st.title}
                             </span>
+                            {stAssigneeName && (
+                              <AssigneeAvatar name={stAssigneeName} avatarUrl={stAssignee?.avatarUrl} size={20} />
+                            )}
                           </div>
                         );
                       })}
                     </div>
                   )}
 
-                  {task.subtaskCount === 0 && !showSubtaskForm && (
+                  {totalSubs === 0 && !showSubtaskForm && (
                     <p style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic', margin: 0 }}>
                       {t('tasks.modal.noSubtasks')}
                     </p>
@@ -657,7 +717,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
 
             {/* Comments — only for existing tasks */}
             {isEdit && projectId && task && (
-              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, paddingBottom: 4 }}>
                 <TaskComments
                   taskId={task.id}
                   projectId={projectId}
@@ -676,6 +736,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                   taskId={task.id}
                   comments={[]}
                   userMap={userMap}
+                  labels={projectLabels}
                 />
               </div>
             )}
@@ -1038,6 +1099,22 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
           </div>
         </div>
       </div>
+
+      {/* SubtaskModal overlay */}
+      {selectedSubtask && (
+        <SubtaskModal
+          subtask={selectedSubtask}
+          columns={columns}
+          readOnly={readOnly}
+          onClose={() => setSelectedSubtask(null)}
+          onUpdated={(updated) => {
+            setSubtasks(prev => prev.map(s => s.id === updated.id ? updated : s));
+          }}
+          onDeleted={(deletedId) => {
+            setSubtasks(prev => prev.filter(s => s.id !== deletedId));
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -1053,7 +1130,7 @@ function nameToColor(name: string): string {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-function AssigneeDropdown({
+export function AssigneeDropdown({
   value,
   onChange,
   members,

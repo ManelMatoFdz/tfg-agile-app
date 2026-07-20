@@ -62,6 +62,12 @@ public class TaskController {
         return taskService.move(taskId, dto, callerId);
     }
 
+    @PatchMapping("/tasks/{taskId}/toggle-done")
+    public TaskResponseDto toggleDone(@PathVariable("taskId") UUID taskId,
+                                      @AuthenticationPrincipal UUID callerId) {
+        return taskService.toggleSubtaskDone(taskId, callerId);
+    }
+
     @GetMapping("/tasks/{taskId}/subtasks")
     public List<TaskResponseDto> getSubtasks(@PathVariable("taskId") UUID taskId,
                                              @AuthenticationPrincipal UUID callerId) {

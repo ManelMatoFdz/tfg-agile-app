@@ -92,9 +92,6 @@ public class TaskService {
         // Subtask validation
         if (parentId != null) {
             Task parent = getTaskOrThrow(parentId);
-            if (parent.getType() != TaskType.STORY) {
-                throw new ConflictException("ONLY_STORY_CAN_HAVE_CHILDREN");
-            }
             if (parent.getParentId() != null) {
                 throw new ConflictException("MAX_ONE_LEVEL_DEPTH");
             }
@@ -125,6 +122,7 @@ public class TaskService {
                 .assigneeId(dto.assigneeId())
                 .sprintId(sprintId)
                 .position(position)
+                .definitionOfDone(parentId == null ? dto.definitionOfDone() : null)
                 .build();
 
         // Subtasks cannot have story points
@@ -174,6 +172,7 @@ public class TaskService {
         UUID oldAssigneeId = task.getAssigneeId();
         boolean oldReady = task.isReady();
         Set<UUID> oldLabelIds = task.getLabels().stream().map(Label::getId).collect(Collectors.toSet());
+        Map<UUID, String> oldLabelNames = task.getLabels().stream().collect(Collectors.toMap(Label::getId, Label::getName));
 
         task.setTitle(dto.title());
         task.setDescription(dto.description());
@@ -181,10 +180,7 @@ public class TaskService {
             task.setPriority(TaskPriority.valueOf(dto.priority().toUpperCase()));
         }
 
-        // STORY: assignee is derived from children, don't allow manual change
-        if (task.getType() != TaskType.STORY || taskRepository.countByParentId(task.getId()) == 0) {
-            task.setAssigneeId(dto.assigneeId());
-        }
+        task.setAssigneeId(dto.assigneeId());
 
         if (dto.labelIds() != null) {
             task.setLabels(new HashSet<>(labelRepository.findAllById(dto.labelIds())));
@@ -192,6 +188,10 @@ public class TaskService {
 
         if (dto.ready() != null) {
             task.setReady(dto.ready());
+        }
+
+        if (task.getParentId() == null && dto.definitionOfDone() != null) {
+            task.setDefinitionOfDone(dto.definitionOfDone());
         }
 
         Task saved = taskRepository.save(task);
@@ -225,8 +225,9 @@ public class TaskService {
             }
             for (UUID removed : oldLabelIds) {
                 if (!newLabelIds.contains(removed)) {
+                    String removedName = oldLabelNames.getOrDefault(removed, removed.toString());
                     activityService.record(saved.getId(), callerId, TaskActivityType.LABEL_REMOVED,
-                            removed.toString(), null);
+                            removedName, null);
                 }
             }
         }
@@ -244,11 +245,6 @@ public class TaskService {
     public TaskResponseDto move(UUID taskId, MoveTaskRequestDto dto, UUID callerId) {
         Task task = getTaskOrThrow(taskId);
         MemberPermissionsDto perms = requireMember(task.getProjectId(), callerId);
-
-        // STORYs with children cannot be moved manually — status is derived
-        if (task.getType() == TaskType.STORY && taskRepository.countByParentId(task.getId()) > 0) {
-            throw new ForbiddenException("STORY_STATUS_IS_DERIVED");
-        }
 
         // Moving tasks on the Kanban board is a Developer responsibility
         if (!isAdmin(perms) && !isDeveloper(perms)) {
@@ -278,11 +274,6 @@ public class TaskService {
 
         if (!oldStatus.equals(newStatus)) {
             activityService.record(saved.getId(), callerId, TaskActivityType.STATUS_CHANGED, oldStatus, newStatus);
-        }
-
-        // Auto-complete parent STORY if this is a subtask
-        if (task.getParentId() != null) {
-            evaluateParentAutoComplete(task.getParentId(), task.getProjectId());
         }
 
         projectServiceClient.touchProject(task.getProjectId());
@@ -317,50 +308,46 @@ public class TaskService {
 
         taskRepository.delete(task);
 
-        // If deleting a subtask, record on parent and re-evaluate auto-complete
+        // If deleting a subtask, record on parent
         if (parentId != null) {
             activityService.record(parentId, callerId, TaskActivityType.SUBTASK_REMOVED, taskTitle, null);
-            evaluateParentAutoComplete(parentId, projectId);
         }
 
         projectServiceClient.touchProject(projectId);
         projectServiceClient.touchMemberActivity(projectId, callerId);
     }
 
-    // ── Auto-complete logic ──────────────────────────────────────────────────
+    // ── Toggle subtask done ─────────────────────────────────────────────────
 
-    private void evaluateParentAutoComplete(UUID parentId, UUID projectId) {
-        Task parent = taskRepository.findById(parentId).orElse(null);
-        if (parent == null || parent.getType() != TaskType.STORY) return;
-
-        List<Task> children = taskRepository.findByParentId(parentId);
-        if (children.isEmpty()) return;
-
-        Set<String> doneStatuses = boardColumnService.getDoneEquivalentStatuses(projectId);
-        boolean allDone = children.stream().allMatch(c -> doneStatuses.contains(c.getStatus()));
-
-        if (allDone) {
-            // All children done → auto-complete the STORY
-            String doneColumn = doneStatuses.iterator().next();
-            String oldStatus = parent.getStatus();
-            parent.setStatus(doneColumn);
-            if (parent.getCompletedAt() == null) {
-                parent.setCompletedAt(Instant.now());
-            }
-            if (!oldStatus.equals(doneColumn)) {
-                activityService.record(parent.getId(), null, TaskActivityType.STATUS_CHANGED, oldStatus, doneColumn);
-            }
-        } else {
-            // Not all done → STORY should be IN_PROGRESS (second column or first non-done)
-            if (doneStatuses.contains(parent.getStatus())) {
-                String oldStatus = parent.getStatus();
-                String firstColumn = boardColumnService.getFirstColumnName(projectId);
-                parent.setStatus(firstColumn);
-                parent.setCompletedAt(null);
-                activityService.record(parent.getId(), null, TaskActivityType.STATUS_CHANGED, oldStatus, firstColumn);
-            }
+    @Transactional
+    public TaskResponseDto toggleSubtaskDone(UUID taskId, UUID callerId) {
+        Task task = getTaskOrThrow(taskId);
+        if (task.getParentId() == null) {
+            throw new ConflictException("NOT_A_SUBTASK");
         }
-        taskRepository.save(parent);
+        requireMember(task.getProjectId(), callerId);
+
+        Set<String> doneStatuses = boardColumnService.getDoneEquivalentStatuses(task.getProjectId());
+        boolean isDone = doneStatuses.contains(task.getStatus());
+
+        String oldStatus = task.getStatus();
+        String newStatus;
+        if (isDone) {
+            newStatus = boardColumnService.getFirstColumnName(task.getProjectId());
+            task.setCompletedAt(null);
+        } else {
+            newStatus = doneStatuses.iterator().next();
+            task.setCompletedAt(Instant.now());
+        }
+
+        task.setStatus(newStatus);
+        Task saved = taskRepository.save(task);
+
+        if (!oldStatus.equals(newStatus)) {
+            activityService.record(saved.getId(), callerId, TaskActivityType.STATUS_CHANGED, oldStatus, newStatus);
+        }
+
+        return toDto(saved);
     }
 
     // ── DTO conversion ───────────────────────────────────────────────────────
@@ -370,7 +357,7 @@ public class TaskService {
         int completedSubtaskCount = 0;
         String parentTitle = null;
 
-        if (t.getType() == TaskType.STORY) {
+        if (t.getParentId() == null) {
             subtaskCount = taskRepository.countByParentId(t.getId());
             if (subtaskCount > 0) {
                 Set<String> doneStatuses = boardColumnService.getDoneEquivalentStatuses(t.getProjectId());

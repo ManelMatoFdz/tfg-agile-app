@@ -9,6 +9,7 @@ export interface CreateTaskDto {
   parentId?: string;
   assigneeId?: string;
   labelIds?: string[];
+  definitionOfDone?: string;
 }
 
 export interface UpdateTaskDto {
@@ -18,6 +19,7 @@ export interface UpdateTaskDto {
   assigneeId?: string | null;
   labelIds?: string[];
   ready?: boolean;
+  definitionOfDone?: string;
 }
 
 export interface MoveTaskDto {
@@ -62,6 +64,10 @@ export const tasksApi = {
 
   deleteComment: (commentId: string) =>
     taskClient.delete(`/comments/${commentId}`),
+
+  // Toggle subtask done/not-done
+  toggleSubtaskDone: (taskId: string) =>
+    taskClient.patch<Task>(`/tasks/${taskId}/toggle-done`).then((r) => r.data),
 
   // Activity
   getActivity: (taskId: string) =>

@@ -102,15 +102,12 @@ public class SprintService {
                                                 List<UUID> assigneeIds,
                                                 List<UUID> labelIds,
                                                 String search,
-                                                boolean includeStories,
                                                 UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         requireMember(sprint.getProjectId(), callerId);
 
-        Specification<Task> spec = Specification.where(TaskSpecifications.hasSprintId(sprintId));
-        if (!includeStories) {
-            spec = spec.and(TaskSpecifications.isNotStoryType());
-        }
+        Specification<Task> spec = Specification.where(TaskSpecifications.hasSprintId(sprintId))
+                .and(TaskSpecifications.isRootTask());
         spec = applyFilters(spec, priorities, assigneeIds, labelIds, null, search);
 
         return taskRepository.findAll(spec, Sort.by(Sort.Order.asc("status"), Sort.Order.asc("position")))
@@ -249,10 +246,12 @@ public class SprintService {
         Set<String> doneStatuses = boardColumnService.getDoneEquivalentStatuses(projectId);
         String firstColumn = boardColumnService.getFirstColumnName(projectId);
 
-        int closedTotal = allSprintTasks.size();
-        int closedDone = (int) allSprintTasks.stream().filter(t -> doneStatuses.contains(t.getStatus())).count();
-        int closedTotalSP = allSprintTasks.stream().mapToInt(t -> t.getStoryPoints() != null ? t.getStoryPoints() : 0).sum();
-        int closedDoneSP = allSprintTasks.stream().filter(t -> doneStatuses.contains(t.getStatus())).mapToInt(t -> t.getStoryPoints() != null ? t.getStoryPoints() : 0).sum();
+        // Metrics count only root tasks (PBIs) — subtasks are implementation details
+        List<Task> rootTasks = allSprintTasks.stream().filter(t -> t.getParentId() == null).toList();
+        int closedTotal = rootTasks.size();
+        int closedDone = (int) rootTasks.stream().filter(t -> doneStatuses.contains(t.getStatus())).count();
+        int closedTotalSP = rootTasks.stream().mapToInt(t -> t.getStoryPoints() != null ? t.getStoryPoints() : 0).sum();
+        int closedDoneSP = rootTasks.stream().filter(t -> doneStatuses.contains(t.getStatus())).mapToInt(t -> t.getStoryPoints() != null ? t.getStoryPoints() : 0).sum();
 
         sprint.setClosedTotalTasks(closedTotal);
         sprint.setClosedDoneTasks(closedDone);

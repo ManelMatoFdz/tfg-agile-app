@@ -7,9 +7,8 @@ import {
 } from 'recharts';
 import {
   ClipboardList, Zap, RefreshCw, Users, TrendingUp,
-  BookOpen, CheckSquare, Bug,
 } from 'lucide-react';
-import type { TeamMember, Sprint, Task, TaskPriority, TaskType } from '../../../types';
+import type { TeamMember, Sprint, Task, TaskPriority, UserSummary } from '../../../types';
 import { tasksApi } from '../../../api/tasks';
 import { sprintsApi, type VelocityDto } from '../../../api/sprints';
 import { projectsApi } from '../../../api/projects';
@@ -18,18 +17,13 @@ import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
 import CountUp from '../../../components/motion/CountUp';
 import { useBoardColumns, getStatusLabel, getStatusColor } from '../../../hooks/useBoardColumns';
+import { AssigneeAvatar } from '../../../components/kanban/TaskModal';
 
 const PRIORITY_COLORS: Record<TaskPriority, string> = {
   CRITICAL: '#DC2626',
   HIGH:     '#D97706',
   MEDIUM:   '#2563EB',
   LOW:      '#94A3B8',
-};
-
-const TYPE_ICON: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
-  STORY: { icon: BookOpen, color: '#7C3AED' },
-  TASK:  { icon: CheckSquare, color: '#2563EB' },
-  BUG:   { icon: Bug, color: '#DC2626' },
 };
 
 // ── Card wrapper ──────────────────────────────────────────────────────────────
@@ -81,7 +75,7 @@ export default function ProjectMetricsPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sprints, setSprints] = useState<Sprint[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
-  const [userNames, setUserNames] = useState<Record<string, string>>({});
+  const [userSummaries, setUserSummaries] = useState<Record<string, UserSummary>>({});
   const [velocity, setVelocity] = useState<VelocityDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -105,9 +99,9 @@ export default function ProjectMetricsPage() {
         if (ids.length > 0) {
           usersApi.batch(ids)
             .then((res) => {
-              const map: Record<string, string> = {};
-              res.data.forEach((u) => { map[u.id] = u.fullName || u.username; });
-              setUserNames(map);
+              const map: Record<string, UserSummary> = {};
+              res.data.forEach((u) => { map[u.id] = u; });
+              setUserSummaries(map);
             })
             .catch(() => {});
         }
@@ -126,26 +120,27 @@ export default function ProjectMetricsPage() {
     </div>
   );
 
-  // ── Derived metrics ───────────────────────────────────────────────────────
+  // ── Derived metrics (root tasks only — excludes subtasks) ────────────────
 
-  const total = tasks.length;
-  const done = tasks.filter((t) => t.status === 'DONE').length;
-  const totalSP = tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
-  const doneSP = tasks.filter((t) => t.status === 'DONE').reduce((s, t) => s + (t.storyPoints ?? 0), 0);
-  const backlogTasks = tasks.filter((t) => !t.sprintId);
-  const sprintedTasks = tasks.filter((t) => !!t.sprintId);
+  const rootTasks = tasks.filter((t) => !t.parentId);
+  const total = rootTasks.length;
+  const done = rootTasks.filter((t) => t.status === 'DONE').length;
+  const totalSP = rootTasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
+  const doneSP = rootTasks.filter((t) => t.status === 'DONE').reduce((s, t) => s + (t.storyPoints ?? 0), 0);
+  const backlogTasks = rootTasks.filter((t) => !t.sprintId);
+  const sprintedTasks = rootTasks.filter((t) => !!t.sprintId);
   const completedSprints = sprints.filter((s) => s.status === 'COMPLETED').length;
   const activeSprint = sprints.find((s) => s.status === 'ACTIVE');
   const donePct = total > 0 ? Math.round((done / total) * 100) : 0;
-  const unassigned = tasks.filter((t) => !t.assigneeId).length;
+  const unassigned = rootTasks.filter((t) => !t.assigneeId).length;
 
   // ── Chart data ────────────────────────────────────────────────────────────
 
-  const statuses = [...new Set(tasks.map((t) => t.status))];
+  const statuses = [...new Set(rootTasks.map((t) => t.status))];
   const statusPieData = statuses
     .map((s) => ({
       name: getStatusLabel(s, columns, t),
-      value: tasks.filter((t) => t.status === s).length,
+      value: rootTasks.filter((t) => t.status === s).length,
       color: getStatusColor(s, columns),
     }))
     .filter((d) => d.value > 0);
@@ -153,37 +148,35 @@ export default function ProjectMetricsPage() {
   const priorities: TaskPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
   const priorityData = priorities.map((p) => ({
     name: t(`tasks.priority.${p}`),
-    total: tasks.filter((t) => t.priority === p).length,
-    done: tasks.filter((t) => t.priority === p && t.status === 'DONE').length,
+    total: rootTasks.filter((t) => t.priority === p).length,
+    done: rootTasks.filter((t) => t.priority === p && t.status === 'DONE').length,
     color: PRIORITY_COLORS[p],
   })).filter((d) => d.total > 0);
 
   const velocityData = sprints
     .filter((s) => s.status !== 'PLANNING')
     .map((s) => {
-      const sprintTasks = tasks.filter((t) => t.sprintId === s.id);
+      const sprintTasks = rootTasks.filter((t) => t.sprintId === s.id);
       const sp = sprintTasks.filter((t) => t.status === 'DONE').reduce((acc, t) => acc + (t.storyPoints ?? 0), 0);
       return { name: s.name, sp };
     });
 
   const memberTaskData = members
     .map((m) => {
-      const memberTasks = tasks.filter((t) => t.assigneeId === m.userId);
+      const memberTasks = rootTasks.filter((t) => t.assigneeId === m.userId);
       const assigned = memberTasks.length;
       const memberDone = memberTasks.filter((t) => t.status === 'DONE').length;
       const memberSP = memberTasks.reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
       const memberDoneSP = memberTasks.filter((t) => t.status === 'DONE').reduce((sum, t) => sum + (t.storyPoints ?? 0), 0);
-      const typeCounts: Record<string, number> = {};
-      memberTasks.forEach((t) => { typeCounts[t.type ?? 'TASK'] = (typeCounts[t.type ?? 'TASK'] || 0) + 1; });
-      const topType = Object.entries(typeCounts).sort((a, b) => b[1] - a[1])[0]?.[0] as TaskType | undefined;
+      const user = userSummaries[m.userId];
       return {
-        name: userNames[m.userId] ?? t('common.unknownUser'),
+        name: user?.fullName || user?.username || t('common.unknownUser'),
+        avatarUrl: user?.avatarUrl,
         userId: m.userId,
         assigned,
         done: memberDone,
         sp: memberSP,
         doneSP: memberDoneSP,
-        topType,
       };
     })
     .filter((d) => d.assigned > 0)
@@ -199,7 +192,7 @@ export default function ProjectMetricsPage() {
       <style>{`
         .pm-stats-grid{display:grid;gap:12px;grid-template-columns:1fr 1fr}
         .pm-charts-grid{display:grid;gap:16px;grid-template-columns:1fr}
-        .pm-member-row{display:grid;grid-template-columns:40px 1fr 100px 100px 80px;gap:12px;align-items:center}
+        .pm-member-row{display:grid;grid-template-columns:34px 2fr 1fr 1fr 1fr;gap:8px;align-items:center}
         @media(min-width:1024px){
           .pm-stats-grid{grid-template-columns:repeat(5,1fr)}
           .pm-charts-grid{grid-template-columns:1fr 1fr}
@@ -284,7 +277,7 @@ export default function ProjectMetricsPage() {
           </div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 20px', marginTop: 12 }}>
             {statuses.map((s) => {
-              const count = tasks.filter((t) => t.status === s).length;
+              const count = rootTasks.filter((t) => t.status === s).length;
               if (count === 0) return null;
               return (
                 <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -356,6 +349,10 @@ export default function ProjectMetricsPage() {
           </h3>
           {total > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Tasks section */}
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, color: 'var(--text-faint)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                {t('projects.metrics.tasksSectionLabel')}
+              </p>
               {[
                 { label: t('projects.metrics.inSprints'), count: sprintedTasks.length, color: 'var(--accent)' },
                 { label: t('projects.metrics.inBacklog'), count: backlogTasks.length, color: 'var(--ochre)' },
@@ -372,17 +369,14 @@ export default function ProjectMetricsPage() {
                 </div>
               ))}
 
-              <div style={{ marginTop: 8, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, textAlign: 'center' }}>
-                {[
-                  { value: sprints.length, label: t('projects.metrics.totalSprints'), color: 'var(--text)' },
-                  { value: completedSprints, label: t('projects.metrics.completed'), color: 'var(--success)' },
-                  { value: sprints.filter((s) => s.status === 'ACTIVE').length, label: t('projects.metrics.active'), color: 'var(--accent)' },
-                ].map((stat) => (
-                  <div key={stat.label}>
-                    <p style={{ margin: 0, fontSize: 18, fontWeight: 800, color: stat.color, fontFamily: 'var(--font-mono)' }}>{stat.value}</p>
-                    <p style={{ margin: '2px 0 0', fontSize: 10, color: 'var(--text-faint)', letterSpacing: '0.03em' }}>{stat.label}</p>
-                  </div>
-                ))}
+              {/* Sprint ratio */}
+              <div style={{ marginTop: 8, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
+                  {total > 0 ? Math.round((sprintedTasks.length / total) * 100) : 0}%
+                </span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                  {t('projects.metrics.plannedRatio')}
+                </span>
               </div>
             </div>
           ) : (
@@ -488,8 +482,6 @@ export default function ProjectMetricsPage() {
 
           {memberTaskData.map((d) => {
             const pct = d.assigned > 0 ? Math.round((d.done / d.assigned) * 100) : 0;
-            const topTypeConf = d.topType ? TYPE_ICON[d.topType] : null;
-            const TopIcon = topTypeConf?.icon;
             return (
               <div
                 key={d.userId}
@@ -503,16 +495,9 @@ export default function ProjectMetricsPage() {
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
                 {/* Avatar */}
-                <div style={{
-                  width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-                  background: 'var(--accent-muted)', color: 'var(--accent)',
-                  fontSize: 13, fontWeight: 700,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {d.name.charAt(0).toUpperCase()}
-                </div>
+                <AssigneeAvatar name={d.name} avatarUrl={d.avatarUrl} size={34} />
 
-                {/* Name + top type badge */}
+                {/* Name */}
                 <div style={{ minWidth: 0 }}>
                   <p style={{
                     margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text)',
@@ -520,14 +505,6 @@ export default function ProjectMetricsPage() {
                   }}>
                     {d.name}
                   </p>
-                  {TopIcon && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                      <TopIcon size={11} strokeWidth={2} style={{ color: topTypeConf!.color }} />
-                      <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>
-                        {t(`tasks.type.${d.topType}`)}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 {/* Tasks count */}

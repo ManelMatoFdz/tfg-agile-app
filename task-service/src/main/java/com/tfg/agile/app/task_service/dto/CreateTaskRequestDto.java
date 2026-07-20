@@ -12,5 +12,6 @@ public record CreateTaskRequestDto(
         String type,
         UUID parentId,
         UUID assigneeId,
-        List<UUID> labelIds
+        List<UUID> labelIds,
+        String definitionOfDone
 ) {}

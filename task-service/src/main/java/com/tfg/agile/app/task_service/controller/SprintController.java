@@ -59,9 +59,8 @@ public class SprintController {
                                                 @RequestParam(required = false) List<UUID> assigneeId,
                                                 @RequestParam(required = false) List<UUID> labelId,
                                                 @RequestParam(required = false) String search,
-                                                @RequestParam(required = false, defaultValue = "false") boolean includeStories,
                                                 @AuthenticationPrincipal UUID callerId) {
-        return sprintService.getSprintTasks(sprintId, priority, assigneeId, labelId, search, includeStories, callerId);
+        return sprintService.getSprintTasks(sprintId, priority, assigneeId, labelId, search, callerId);
     }
 
     /** Returns root PBIs in the sprint (STORYs, BUGs, root TASKs) — for sprint backlog view */

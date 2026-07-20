@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Columns, AlertTriangle, Settings, Filter as FilterIcon } from 'lucide-react';
+import { LayoutDashboard, AlertTriangle, Settings, Filter as FilterIcon, Calendar, Zap } from 'lucide-react';
 import { sprintsApi } from '../../../api/sprints';
 import { boardColumnsApi } from '../../../api/boardColumns';
 import { labelsApi } from '../../../api/labels';
@@ -171,7 +171,7 @@ export default function KanbanPage() {
             justifyContent: 'center',
             margin: '0 auto 16px',
           }}>
-            <Columns size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+            <LayoutDashboard size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
           </div>
           <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
             {t('projects.kanban.noActiveSprint')}
@@ -195,78 +195,79 @@ export default function KanbanPage() {
           {/* Active sprint header */}
           <div style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             justifyContent: 'space-between',
             gap: 12,
-            marginBottom: 16,
+            marginBottom: activeSprint.goal ? 12 : 16,
             flexWrap: 'wrap',
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '14px 20px',
-            boxShadow: 'var(--shadow-sm)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-                {activeSprint.name}
-              </span>
-
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <LayoutDashboard size={20} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                {t('projects.tabs.board')}: {activeSprint.name}
+              </h2>
               <span style={{
-                fontSize: 11,
+                fontSize: 10,
                 fontWeight: 700,
-                letterSpacing: '0.05em',
+                letterSpacing: '0.08em',
                 textTransform: 'uppercase',
-                padding: '3px 10px',
-                borderRadius: 'var(--radius-pill)',
-                background: 'var(--success-bg)',
-                color: 'var(--success)',
+                padding: '4px 10px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'var(--accent-muted)',
+                color: 'var(--accent)',
               }}>
                 {t('projects.sprints.status.ACTIVE')}
               </span>
-
-              {activeSprint.goal && (
-                <span style={{
-                  fontSize: 12,
-                  color: 'var(--text-muted)',
-                  fontStyle: 'italic',
-                  overflow: 'hidden',
-                  whiteSpace: 'nowrap',
-                  textOverflow: 'ellipsis',
-                  maxWidth: 280,
-                }}>
-                  {activeSprint.goal}
-                </span>
-              )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
               {daysRemaining != null && (
                 <span style={{
                   fontSize: 12,
-                  fontWeight: 500,
+                  fontWeight: 600,
                   color: daysRemaining <= 3 ? 'var(--warning)' : 'var(--text-muted)',
+                  padding: '4px 10px',
+                  background: daysRemaining <= 3 ? 'var(--warning-bg)' : 'var(--bg-hover)',
+                  borderRadius: 'var(--radius-sm)',
                 }}>
                   {t('projects.kanban.endsIn', { days: daysRemaining })}
                 </span>
               )}
 
+              {activeSprint.startDate && (
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  padding: '6px 14px',
+                  background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                }}>
+                  <Calendar size={13} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>
+                    {new Date(activeSprint.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                    {' - '}
+                    {activeSprint.endDate
+                      ? new Date(activeSprint.endDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+                      : '—'}
+                  </span>
+                </div>
+              )}
+
               {canConfigureBoard && (
                 <button
                   onClick={() => navigate(`/workspaces/${workspaceId}/projects/${projectId}/board-settings`)}
-                  title={t('projects.boardSettings.title')}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 32,
-                    height: 32,
+                    gap: 6,
+                    padding: '6px 14px',
+                    fontSize: 12,
+                    fontWeight: 500,
                     borderRadius: 'var(--radius-md)',
                     border: '1px solid var(--border)',
                     background: 'var(--bg-elevated)',
                     color: 'var(--text-muted)',
                     cursor: 'pointer',
                     transition: 'background 150ms, color 150ms, border-color 150ms',
-                    padding: 0,
                   }}
                   onMouseEnter={e => {
                     e.currentTarget.style.background = 'var(--bg-hover)';
@@ -279,11 +280,32 @@ export default function KanbanPage() {
                     e.currentTarget.style.borderColor = 'var(--border)';
                   }}
                 >
-                  <Settings size={15} strokeWidth={1.75} />
+                  <Settings size={14} strokeWidth={1.75} />
+                  {t('projects.boardSettings.title')}
                 </button>
               )}
             </div>
           </div>
+
+          {/* Sprint Goal */}
+          {activeSprint.goal && (
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 8,
+              background: 'var(--accent-muted)', border: '1px solid var(--accent)',
+              borderRadius: 'var(--radius-md)', padding: '12px 16px',
+              marginBottom: 16,
+            }}>
+              <Zap size={14} strokeWidth={2} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  {t('projects.sprints.planning.goal')}
+                </span>
+                <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text)' }}>
+                  {activeSprint.goal}
+                </p>
+              </div>
+            </div>
+          )}
 
           {sprintOverdueDays > 0 && (
             <div style={{

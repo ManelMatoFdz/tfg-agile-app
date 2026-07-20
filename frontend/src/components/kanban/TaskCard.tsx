@@ -45,7 +45,7 @@ export default function TaskCard({ task, assignee, columnColor, onClick }: Props
         border: '1px solid var(--border)',
         borderLeft: `3px solid ${leftBorderColor}`,
         borderRadius: 'var(--radius-card)',
-        padding: '10px 12px',
+        padding: '12px 14px',
         cursor: 'pointer',
         transition: 'transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease',
         boxShadow: 'var(--shadow-sm)',
@@ -66,7 +66,7 @@ export default function TaskCard({ task, assignee, columnColor, onClick }: Props
       }}
     >
       {/* Type + Priority badge */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <TypeIcon size={13} strokeWidth={2} style={{ color: typeConfig.color, flexShrink: 0 }} />
           <span style={{
@@ -102,20 +102,6 @@ export default function TaskCard({ task, assignee, columnColor, onClick }: Props
         )}
       </div>
 
-      {task.parentTitle && (
-        <p style={{
-          margin: '0 0 2px',
-          fontSize: 10,
-          fontWeight: 600,
-          color: 'var(--text-faint)',
-          overflow: 'hidden',
-          whiteSpace: 'nowrap',
-          textOverflow: 'ellipsis',
-        }}>
-          {'↳ '}{task.parentTitle}
-        </p>
-      )}
-
       <p style={{
         margin: 0,
         fontSize: 13,
@@ -131,8 +117,43 @@ export default function TaskCard({ task, assignee, columnColor, onClick }: Props
         {task.title}
       </p>
 
+      {/* Subtask progress indicator */}
+      {task.subtaskCount > 0 && (() => {
+        const pct = Math.round((task.completedSubtaskCount / task.subtaskCount) * 100);
+        const allDone = task.completedSubtaskCount === task.subtaskCount;
+        const barColor = allDone ? '#16A34A' : '#3B82F6';
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+            <div style={{
+              flex: 1,
+              height: 4,
+              background: '#E5E7EB',
+              borderRadius: 2,
+              overflow: 'hidden',
+            }}>
+              <div style={{
+                height: '100%',
+                width: `${pct}%`,
+                background: barColor,
+                borderRadius: 2,
+                transition: 'width 300ms ease',
+              }} />
+            </div>
+            <span style={{
+              fontSize: 10,
+              fontWeight: 600,
+              color: 'var(--text-faint)',
+              fontFamily: 'var(--font-mono)',
+              whiteSpace: 'nowrap',
+            }}>
+              {task.completedSubtaskCount}/{task.subtaskCount}
+            </span>
+          </div>
+        );
+      })()}
+
       {hasFooter && (
-        <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+        <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', minWidth: 0 }}>
             {taskLabels.slice(0, MAX_VISIBLE_LABELS).map((lbl) => (
               <span

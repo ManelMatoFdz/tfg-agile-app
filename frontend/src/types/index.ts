@@ -160,6 +160,7 @@ export interface Task {
   subtaskCount: number;
   completedSubtaskCount: number;
   parentTitle?: string | null;
+  definitionOfDone?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -221,7 +222,8 @@ export type TaskActivityType =
   | 'SUBTASK_REMOVED'
   | 'TITLE_CHANGED'
   | 'DESCRIPTION_CHANGED'
-  | 'STORY_POINTS_CHANGED';
+  | 'STORY_POINTS_CHANGED'
+  | 'READY_CHANGED';
 
 export interface TaskActivity {
   id: string;

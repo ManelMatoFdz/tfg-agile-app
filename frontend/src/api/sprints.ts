@@ -55,8 +55,8 @@ export const sprintsApi = {
   deleteSprint: (sprintId: string) =>
     taskClient.delete(`/sprints/${sprintId}`),
 
-  getSprintTasks: (sprintId: string, filters?: TaskFilters, includeStories?: boolean) =>
-    taskClient.get<Task[]>(`/sprints/${sprintId}/tasks`, { params: { ...buildFilterParams(filters), ...(includeStories ? { includeStories: true } : {}) } }).then((r) => r.data),
+  getSprintTasks: (sprintId: string, filters?: TaskFilters) =>
+    taskClient.get<Task[]>(`/sprints/${sprintId}/tasks`, { params: buildFilterParams(filters) }).then((r) => r.data),
 
   assignTasksToSprint: (sprintId: string, taskIds: string[]) =>
     taskClient.post<Task[]>(`/sprints/${sprintId}/tasks`, { taskIds }).then((r) => r.data),

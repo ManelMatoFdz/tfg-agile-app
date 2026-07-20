@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { X, Archive } from 'lucide-react';
+import { X, Archive, Info } from 'lucide-react';
 import type { SprintTaskSnapshot, TaskPriority, BoardColumn } from '../../types';
 import { getStatusLabel, getStatusColor } from '../../hooks/useBoardColumns';
 
@@ -59,6 +59,18 @@ export default function SnapshotModal({ snapshot, onClose, columns = [] }: Props
         </div>
 
         <div style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Snapshot info banner */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            background: 'var(--info-bg)', border: '1px solid var(--ink-blue)',
+            borderRadius: 'var(--radius-sm)', padding: '7px 10px',
+          }}>
+            <Info size={12} strokeWidth={2} style={{ color: 'var(--ink-blue)', flexShrink: 0 }} />
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--ink-blue)' }}>
+              {t('projects.sprints.report.snapshotBanner')}
+            </p>
+          </div>
+
           {/* Returned to backlog banner */}
           {snapshot.returnedToBacklog && (
             <div style={{

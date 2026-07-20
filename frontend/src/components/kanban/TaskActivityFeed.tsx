@@ -4,7 +4,7 @@ import {
   Activity, Plus, ArrowRight, User, Tag, Layers,
   CornerDownRight, Type, AlignLeft, Target, Undo2, CheckCircle2,
 } from 'lucide-react';
-import type { TaskActivity, TaskComment, UserSummary } from '../../types';
+import type { TaskActivity, TaskComment, UserSummary, Label } from '../../types';
 import { tasksApi } from '../../api/tasks';
 import { AssigneeAvatar } from './TaskModal';
 
@@ -70,11 +70,13 @@ const ICON_COLOR_MAP: Record<string, string> = {
 function ActivityRow({
   activity,
   userMap,
+  labels,
   relativeTime,
   t,
 }: {
   activity: TaskActivity;
   userMap: Record<string, UserSummary>;
+  labels: Label[];
   relativeTime: (d: string) => string;
   t: (key: string, opts?: Record<string, unknown>) => string;
 }) {
@@ -84,7 +86,7 @@ function ActivityRow({
   const actor = activity.actorId ? userMap[activity.actorId] : null;
   const actorName = actor ? (actor.fullName ?? actor.username) : null;
 
-  const message = buildMessage(t, activity, actorName);
+  const message = buildMessage(t, activity, actorName, userMap, labels);
 
   return (
     <div style={{
@@ -122,13 +124,54 @@ function ActivityRow({
   );
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function resolveValues(
+  activity: TaskActivity,
+  userMap: Record<string, UserSummary>,
+  labels: Label[],
+): { oldValue: string; newValue: string } {
+  let oldValue = activity.oldValue ?? '';
+  let newValue = activity.newValue ?? '';
+
+  if (activity.type === 'ASSIGNEE_CHANGED') {
+    if (oldValue && userMap[oldValue]) {
+      const u = userMap[oldValue];
+      oldValue = u.fullName ?? u.username;
+    }
+    if (newValue && userMap[newValue]) {
+      const u = userMap[newValue];
+      newValue = u.fullName ?? u.username;
+    }
+  }
+
+  if (activity.type === 'LABEL_REMOVED' && oldValue && UUID_RE.test(oldValue)) {
+    const lbl = labels.find((l) => l.id === oldValue);
+    if (lbl) oldValue = lbl.name;
+  }
+
+  return { oldValue, newValue };
+}
+
 function buildMessage(
   t: (key: string, opts?: Record<string, unknown>) => string,
   activity: TaskActivity,
   actorName: string | null,
+  userMap: Record<string, UserSummary>,
+  labels: Label[],
 ): React.ReactNode {
-  const suffix = activity.type === 'READY_CHANGED' ? `_${activity.newValue}` : '';
-  const key = `tasks.activity.${activity.type}${suffix}`;
+  const { oldValue, newValue } = resolveValues(activity, userMap, labels);
+
+  let typeKey: string = activity.type;
+  if (activity.type === 'READY_CHANGED') {
+    typeKey = `READY_CHANGED_${activity.newValue}`;
+  } else if (activity.type === 'ASSIGNEE_CHANGED') {
+    if (!oldValue && newValue) typeKey = 'ASSIGNEE_SET';
+    else if (oldValue && !newValue) typeKey = 'ASSIGNEE_UNSET';
+  } else if (activity.type === 'STORY_POINTS_CHANGED' && !oldValue) {
+    typeKey = 'STORY_POINTS_SET';
+  }
+  const key = `tasks.activity.${typeKey}`;
   const keyImpersonal = `${key}_impersonal`;
 
   if (actorName) {
@@ -136,27 +179,22 @@ function buildMessage(
       <Fragment>
         <span style={{ fontWeight: 600, color: 'var(--text)' }}>{actorName}</span>
         {' '}
-        {t(key, {
-          oldValue: activity.oldValue ?? '',
-          newValue: activity.newValue ?? '',
-        })}
+        {t(key, { oldValue, newValue })}
       </Fragment>
     );
   }
 
-  return t(keyImpersonal, {
-    oldValue: activity.oldValue ?? '',
-    newValue: activity.newValue ?? '',
-  });
+  return t(keyImpersonal, { oldValue, newValue });
 }
 
 interface Props {
   taskId: string;
   comments: TaskComment[];
   userMap: Record<string, UserSummary>;
+  labels?: Label[];
 }
 
-export default function TaskActivityFeed({ taskId, comments, userMap }: Props) {
+export default function TaskActivityFeed({ taskId, comments, userMap, labels = [] }: Props) {
   const { t } = useTranslation();
   const relativeTime = useRelativeTime(t);
   const [activities, setActivities] = useState<TaskActivity[]>([]);
@@ -234,6 +272,7 @@ export default function TaskActivityFeed({ taskId, comments, userMap }: Props) {
             key={activity.id}
             activity={activity}
             userMap={userMap}
+            labels={labels}
             relativeTime={relativeTime}
             t={t}
           />

@@ -28,6 +28,7 @@ public record TaskResponseDto(
         int subtaskCount,
         int completedSubtaskCount,
         String parentTitle,
+        String definitionOfDone,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -47,7 +48,7 @@ public record TaskResponseDto(
                 t.getReporterId(), t.getAssigneeId(),
                 t.getCompletedAt(), t.getStoryPoints(), t.isReady(), t.getPosition(), labelDtos,
                 info.subtaskCount(), info.completedSubtaskCount(), info.parentTitle(),
-                t.getCreatedAt(), t.getUpdatedAt()
+                t.getDefinitionOfDone(), t.getCreatedAt(), t.getUpdatedAt()
         );
     }
 

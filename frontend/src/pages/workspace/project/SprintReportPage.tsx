@@ -16,6 +16,7 @@ import { tasksApi } from '../../../api/tasks';
 import Alert from '../../../components/ui/Alert';
 import SnapshotModal from '../../../components/sprints/SnapshotModal';
 import TaskModal from '../../../components/kanban/TaskModal';
+import SubtaskModal from '../../../components/kanban/SubtaskModal';
 import PageTitle from '../../../components/motion/PageTitle';
 import CountUp from '../../../components/motion/CountUp';
 import { useBoardColumns, getStatusLabel, getStatusColor } from '../../../hooks/useBoardColumns';
@@ -148,6 +149,7 @@ export default function SprintReportPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSnapshot, setSelectedSnapshot] = useState<SprintTaskSnapshot | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [subtaskModalTask, setSubtaskModalTask] = useState<Task | null>(null);
   const [expandedStories, setExpandedStories] = useState<Set<string>>(new Set());
   const [storySubtasks, setStorySubtasks] = useState<Record<string, Task[]>>({});
 
@@ -184,26 +186,30 @@ export default function SprintReportPage() {
   const isActive = sprint.status === 'ACTIVE';
   const hasSnapshots = isCompleted && snapshots.length > 0;
 
-  const total    = hasSnapshots ? snapshots.length
-    : isCompleted ? (sprint.closedTotalTasks ?? tasks.length)
-    : tasks.length;
-  const done     = hasSnapshots ? snapshots.filter((s) => s.completed).length
-    : isCompleted ? (sprint.closedDoneTasks ?? tasks.filter((t) => t.status === 'DONE').length)
-    : tasks.filter((t) => t.status === 'DONE').length;
-  const totalSP  = hasSnapshots ? snapshots.reduce((sum, s) => sum + (s.storyPoints ?? 0), 0)
-    : isCompleted ? (sprint.closedTotalStoryPoints ?? tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0))
-    : tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
-  const doneSP   = hasSnapshots ? snapshots.filter((s) => s.completed).reduce((sum, s) => sum + (s.storyPoints ?? 0), 0)
-    : isCompleted ? (sprint.closedDoneStoryPoints ?? tasks.filter((t) => t.status === 'DONE').reduce((s, t) => s + (t.storyPoints ?? 0), 0))
-    : tasks.filter((t) => t.status === 'DONE').reduce((s, t) => s + (t.storyPoints ?? 0), 0);
-  const incomplete = hasSnapshots ? snapshots.filter((s) => s.returnedToBacklog).length
+  // Metrics count only root tasks (PBIs) — subtasks are implementation details
+  const rootSnapshots = snapshots.filter((s) => !s.parentTaskId);
+  const rootTasks = tasks.filter((t) => !t.parentId);
+
+  const total    = hasSnapshots ? rootSnapshots.length
+    : isCompleted ? (sprint.closedTotalTasks ?? rootTasks.length)
+    : rootTasks.length;
+  const done     = hasSnapshots ? rootSnapshots.filter((s) => s.completed).length
+    : isCompleted ? (sprint.closedDoneTasks ?? rootTasks.filter((t) => t.status === 'DONE').length)
+    : rootTasks.filter((t) => t.status === 'DONE').length;
+  const totalSP  = hasSnapshots ? rootSnapshots.reduce((sum, s) => sum + (s.storyPoints ?? 0), 0)
+    : isCompleted ? (sprint.closedTotalStoryPoints ?? rootTasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0))
+    : rootTasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
+  const doneSP   = hasSnapshots ? rootSnapshots.filter((s) => s.completed).reduce((sum, s) => sum + (s.storyPoints ?? 0), 0)
+    : isCompleted ? (sprint.closedDoneStoryPoints ?? rootTasks.filter((t) => t.status === 'DONE').reduce((s, t) => s + (t.storyPoints ?? 0), 0))
+    : rootTasks.filter((t) => t.status === 'DONE').reduce((s, t) => s + (t.storyPoints ?? 0), 0);
+  const incomplete = hasSnapshots ? rootSnapshots.filter((s) => s.returnedToBacklog).length
     : isCompleted ? (sprint.closedIncompleteTasks ?? 0)
     : 0;
 
   const donePct = total > 0 ? done / total : 0;
 
   const lateCount = hasSnapshots && sprint.endDate
-    ? snapshots.filter((s) => {
+    ? rootSnapshots.filter((s) => {
         if (!s.completed || s.returnedToBacklog || !s.completedAt) return false;
         return new Date(s.completedAt) > new Date(sprint.endDate!);
       }).length
@@ -215,7 +221,10 @@ export default function SprintReportPage() {
   const startDate = sprint.startDate ? new Date(sprint.startDate) : null;
   const endDate = sprint.endDate ? new Date(sprint.endDate) : null;
   const durationDays = startDate && endDate ? Math.ceil((endDate.getTime() - startDate.getTime()) / 86_400_000) : null;
-  const velocity = doneSP > 0 ? doneSP : null;
+  const estimatedCount = hasSnapshots
+    ? rootSnapshots.filter((s) => s.storyPoints != null && s.storyPoints > 0).length
+    : rootTasks.filter((t) => t.storyPoints != null && t.storyPoints > 0).length;
+  const avgSPPerTask = estimatedCount > 0 ? Math.round((totalSP / estimatedCount) * 10) / 10 : 0;
 
   const formatDate = (d: Date) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   const formatDateShort = (d: string | null | undefined) => {
@@ -224,14 +233,14 @@ export default function SprintReportPage() {
   };
 
   const allStatuses = hasSnapshots
-    ? [...new Set(snapshots.map((s) => s.statusAtEnd))]
-    : [...new Set(tasks.map((t) => t.status))];
+    ? [...new Set(rootSnapshots.map((s) => s.statusAtEnd))]
+    : [...new Set(rootTasks.map((t) => t.status))];
   const pieData = allStatuses
     .map((s) => ({
       name: getStatusLabel(s, columns, t),
       value: hasSnapshots
-        ? snapshots.filter((snap) => snap.statusAtEnd === s).length
-        : tasks.filter((task) => task.status === s).length,
+        ? rootSnapshots.filter((snap) => snap.statusAtEnd === s).length
+        : rootTasks.filter((task) => task.status === s).length,
       color: getStatusColor(s, columns),
     }))
     .filter((d) => d.value > 0);
@@ -240,15 +249,15 @@ export default function SprintReportPage() {
   const priorityData = priorities.map((p) => ({
     name: t(`tasks.priority.${p}`),
     total: hasSnapshots
-      ? snapshots.filter((s) => s.priority === p).length
-      : tasks.filter((t) => t.priority === p).length,
+      ? rootSnapshots.filter((s) => s.priority === p).length
+      : rootTasks.filter((t) => t.priority === p).length,
     done: hasSnapshots
-      ? snapshots.filter((s) => s.priority === p && s.completed).length
-      : tasks.filter((t) => t.priority === p && t.status === 'DONE').length,
+      ? rootSnapshots.filter((s) => s.priority === p && s.completed).length
+      : rootTasks.filter((t) => t.priority === p && t.status === 'DONE').length,
     color: PRIORITY_COLOR[p],
   })).filter((d) => d.total > 0);
 
-  const burndownResult = buildBurndown(sprint, tasks);
+  const burndownResult = buildBurndown(sprint, rootTasks);
   const burndown = burndownResult?.points ?? null;
   const burndownUsesTaskCount = burndownResult?.useTaskCount ?? false;
 
@@ -407,12 +416,22 @@ export default function SprintReportPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <PageTitle as="h2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <BarChart3 size={22} strokeWidth={2} style={{ color: 'var(--accent)' }} />
-              {sprint.name}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <PageTitle as="h2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <BarChart3 size={22} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                {t('projects.sprints.report.pageTitle')}: {sprint.name}
+              </span>
+            </PageTitle>
+            <span style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
+              color: isCompleted ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--text-faint)',
+              background: isCompleted ? 'var(--success-bg, rgba(34,197,94,0.1))' : isActive ? 'var(--accent-muted)' : 'var(--bg-hover)',
+              padding: '4px 10px', borderRadius: 'var(--radius-sm)',
+            }}>
+              {t(`projects.sprints.status.${sprint.status}`)}
             </span>
-          </PageTitle>
+          </div>
           <p style={{ margin: '4px 0 0', fontSize: 10, color: 'var(--text-faint)' }}>
             {t('projects.sprints.report.generatedAt')}{' '}
             <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>
@@ -421,29 +440,19 @@ export default function SprintReportPage() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          {sprint.startDate && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '6px 14px',
-              background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)',
-            }}>
-              <Calendar size={13} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
-              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>
-                {formatDateShort(sprint.startDate)} - {formatDateShort(sprint.endDate)}
-              </span>
-            </div>
-          )}
-          <span style={{
-            fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-            color: isCompleted ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--text-faint)',
-            background: isCompleted ? 'var(--success-bg, rgba(34,197,94,0.1))' : isActive ? 'var(--accent-muted)' : 'var(--bg-hover)',
-            padding: '4px 10px', borderRadius: 'var(--radius-sm)',
+        {sprint.startDate && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '6px 14px', flexShrink: 0,
+            background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
           }}>
-            {t(`projects.sprints.status.${sprint.status}`)}
-          </span>
-        </div>
+            <Calendar size={13} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+            <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>
+              {formatDateShort(sprint.startDate)} - {formatDateShort(sprint.endDate)}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Sprint Goal */}
@@ -558,21 +567,23 @@ export default function SprintReportPage() {
           )}
         </div>
 
-        {/* Velocity */}
+        {/* Avg SP per task */}
         <div style={{ ...card, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '3px solid #16A34A' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              {t('projects.sprints.report.velocity')}
+              {t('projects.sprints.report.avgSPPerTask')}
             </p>
             <Zap size={15} strokeWidth={1.75} style={{ color: '#16A34A' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
             <span style={{ fontSize: 26, fontWeight: 800, color: '#16A34A', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em' }}>
-              {velocity ?? '—'}
+              {avgSPPerTask > 0 ? avgSPPerTask : '—'}
             </span>
-            {velocity && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>pts</span>}
+            {avgSPPerTask > 0 && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>pts</span>}
           </div>
-          <p style={{ margin: 0, fontSize: 10, color: 'var(--text-muted)' }}>{t('projects.sprints.report.velocityDesc')}</p>
+          <p style={{ margin: 0, fontSize: 10, color: 'var(--text-muted)' }}>
+            {t('projects.sprints.report.avgSPPerTaskDesc', { count: estimatedCount })}
+          </p>
         </div>
       </div>
 
@@ -694,12 +705,20 @@ export default function SprintReportPage() {
       {/* Task list — flat paginated table */}
       <div style={{ ...card, overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
-          <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
-            {t('projects.sprints.report.taskList')}
-          </h3>
-          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-            {sortedItems.length} {sortedItems.length === 1 ? t('projects.sprints.task') : t('projects.sprints.tasks')}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+              {t('projects.sprints.report.taskList')}
+            </h3>
+            <span style={{
+              fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
+              fontFamily: 'var(--font-mono)',
+              background: 'var(--bg-hover)',
+              borderRadius: 'var(--radius-pill)',
+              padding: '2px 10px',
+            }}>
+              {sortedItems.length}
+            </span>
+          </div>
         </div>
 
         {total === 0 ? (
@@ -733,7 +752,7 @@ export default function SprintReportPage() {
               const typeConf = TYPE_ICON[item.type ?? 'TASK'];
               const TypeIcon = typeConf?.icon ?? CheckSquare;
               const typeColor = typeConf?.color ?? '#2563EB';
-              const isStory = item.type === 'STORY' && item.subtaskCount > 0;
+              const isStory = item.subtaskCount > 0;
               const storyKey = item.taskId ?? item.id;
               const isExpanded = expandedStories.has(storyKey);
 
@@ -923,27 +942,63 @@ export default function SprintReportPage() {
                             subtaskCount: 0,
                             original: sub as Task,
                           };
-                      const subTypeConf = TYPE_ICON[subItem.type ?? 'TASK'];
-                      const SubTypeIcon = subTypeConf?.icon ?? CheckSquare;
-                      const subTypeColor = subTypeConf?.color ?? '#2563EB';
                       return (
                         <div
                           key={subItem.id}
                           role="button"
                           tabIndex={0}
                           onClick={() => {
-                            if (subItem.isSnapshot) setSelectedSnapshot(subItem.original as SprintTaskSnapshot);
-                            else setSelectedTask(subItem.original as Task);
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              if (subItem.isSnapshot) setSelectedSnapshot(subItem.original as SprintTaskSnapshot);
-                              else setSelectedTask(subItem.original as Task);
+                            if (subItem.isSnapshot) {
+                              const snap = subItem.original as SprintTaskSnapshot;
+                              setSubtaskModalTask({
+                                id: snap.taskId ?? snap.id,
+                                projectId: projectId!,
+                                title: snap.title,
+                                description: snap.description ?? null,
+                                status: snap.statusAtEnd,
+                                priority: snap.priority,
+                                type: snap.type ?? 'TASK',
+                                completedAt: snap.completedAt ?? null,
+                                ready: false,
+                                position: 0,
+                                subtaskCount: 0,
+                                completedSubtaskCount: 0,
+                                reporterId: '',
+                                createdAt: '',
+                                updatedAt: '',
+                              } as Task);
+                            } else {
+                              setSubtaskModalTask(subItem.original as Task);
                             }
                           }}
-                          className="report-task-header"
+                          onKeyDown={(e) => {
+                            if (e.key !== 'Enter') return;
+                            if (subItem.isSnapshot) {
+                              const snap = subItem.original as SprintTaskSnapshot;
+                              setSubtaskModalTask({
+                                id: snap.taskId ?? snap.id,
+                                projectId: projectId!,
+                                title: snap.title,
+                                description: snap.description ?? null,
+                                status: snap.statusAtEnd,
+                                priority: snap.priority,
+                                type: snap.type ?? 'TASK',
+                                completedAt: snap.completedAt ?? null,
+                                ready: false,
+                                position: 0,
+                                subtaskCount: 0,
+                                completedSubtaskCount: 0,
+                                reporterId: '',
+                                createdAt: '',
+                                updatedAt: '',
+                              } as Task);
+                            } else {
+                              setSubtaskModalTask(subItem.original as Task);
+                            }
+                          }}
                           style={{
-                            padding: '10px 20px',
+                            display: 'flex', alignItems: 'center', gap: 10,
+                            padding: '9px 20px 9px 60px',
                             borderBottom: '1px solid var(--border)',
                             background: 'var(--bg)',
                             cursor: 'pointer',
@@ -953,50 +1008,32 @@ export default function SprintReportPage() {
                           onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
                           onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg)')}
                         >
-                          {/* Type icon indented */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 3, paddingLeft: 8 }}>
-                            <span style={{ color: 'var(--text-faint)', fontSize: 10, marginRight: 1 }}>↳</span>
-                            <SubTypeIcon size={13} strokeWidth={2} style={{ color: subTypeColor }} />
-                          </div>
+                          {/* Checkbox indicator */}
+                          <span style={{
+                            width: 16, height: 16, borderRadius: 4, flexShrink: 0,
+                            border: subItem.completed ? 'none' : '2px solid #CBD5E1',
+                            background: subItem.completed ? '#3B82F6' : '#fff',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            {subItem.completed && (
+                              <svg width="10" height="10" viewBox="0 0 11 11" fill="none">
+                                <path d="M2 5.5L4.5 8L9 3" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                          </span>
 
                           {/* Title */}
-                          <div style={{ minWidth: 0 }}>
-                            <p style={{
-                              margin: 0, fontSize: 12, fontWeight: 400,
-                              color: subItem.completed ? 'var(--text-muted)' : 'var(--text)',
-                              textDecoration: subItem.completed && !subItem.returnedToBacklog ? 'line-through' : 'none',
-                              overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
-                            }}>
-                              {subItem.title}
-                            </p>
-                          </div>
+                          <span style={{
+                            flex: 1, fontSize: 12, fontWeight: 400, minWidth: 0,
+                            color: subItem.completed ? 'var(--text-muted)' : 'var(--text)',
+                            textDecoration: subItem.completed && !subItem.returnedToBacklog ? 'line-through' : 'none',
+                            overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                          }}>
+                            {subItem.title}
+                          </span>
 
-                          {/* Priority */}
-                          <div style={{ textAlign: 'center' }}>
-                            <span style={{
-                              display: 'inline-block', fontSize: 9, fontWeight: 700,
-                              letterSpacing: '0.06em', textTransform: 'uppercase',
-                              color: PRIORITY_COLOR[subItem.priority],
-                              background: `${PRIORITY_COLOR[subItem.priority]}12`,
-                              borderRadius: 'var(--radius-pill)', padding: '2px 8px',
-                            }}>
-                              {t(`tasks.priority.${subItem.priority}`)}
-                            </span>
-                          </div>
-
-                          {/* Estimate */}
-                          <div style={{ textAlign: 'center' }}>
-                            {subItem.storyPoints != null ? (
-                              <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>
-                                {subItem.storyPoints} pts
-                              </span>
-                            ) : (
-                              <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>—</span>
-                            )}
-                          </div>
-
-                          {/* Status */}
-                          <div style={{ display: 'flex', justifyContent: 'center' }}>
+                          {/* Status — 80px to match parent grid column */}
+                          <div style={{ width: 80, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
                             {renderStatus(subItem)}
                           </div>
                         </div>
@@ -1085,6 +1122,15 @@ export default function SprintReportPage() {
           columns={columns}
           readOnly
           onClose={() => setSelectedTask(null)}
+        />
+      )}
+
+      {subtaskModalTask && (
+        <SubtaskModal
+          subtask={subtaskModalTask}
+          columns={columns}
+          readOnly
+          onClose={() => setSubtaskModalTask(null)}
         />
       )}
     </div>

@@ -482,8 +482,8 @@ function CommentInput({
               border: '1px solid var(--border)',
               borderRadius: 'var(--radius-md)',
               outline: 'none',
-              minHeight: isEditing ? 60 : 40,
-              maxHeight: 120,
+              minHeight: isEditing ? 70 : 56,
+              maxHeight: 160,
               overflowY: 'auto',
               lineHeight: 1.6,
               wordBreak: 'break-word',
@@ -810,7 +810,7 @@ export default function TaskComments({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
         <MessageSquare size={14} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
         <span style={{
@@ -863,7 +863,7 @@ export default function TaskComments({
       ) : comments.length === 0 ? (
         <div style={{
           textAlign: 'center',
-          padding: '20px 0',
+          padding: '28px 0',
           color: 'var(--text-faint)',
         }}>
           <p style={{ margin: 0, fontSize: 12, fontWeight: 500 }}>{t('tasks.comments.empty')}</p>
@@ -873,7 +873,7 @@ export default function TaskComments({
         <div style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: 14,
+          gap: 16,
         }}>
           {comments.map((comment) => (
             <CommentRow
