@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X, Search } from 'lucide-react';
 import { tasksApi } from '../../api/tasks';
-import { sprintsApi } from '../../api/sprints';
 import type { Task, TaskPriority } from '../../types';
 
 const PRIORITY_COLOR: Record<TaskPriority, { color: string; bg: string }> = {
@@ -15,7 +14,7 @@ const PRIORITY_COLOR: Record<TaskPriority, { color: string; bg: string }> = {
 interface Props {
   projectId: string;
   onClose: () => void;
-  onSelect: (taskId: string, taskTitle: string) => Promise<void>;
+  onSelect: (task: Task) => void | Promise<void>;
 }
 
 export default function SelectTaskModal({ projectId, onClose, onSelect }: Props) {
@@ -25,19 +24,10 @@ export default function SelectTaskModal({ projectId, onClose, onSelect }: Props)
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      tasksApi.getByProject(projectId),
-      sprintsApi.listSprints(projectId),
-    ]).then(([allTasks, sprints]) => {
-      const planningSprints = new Set(
-        sprints.filter((s) => s.status === 'PLANNING').map((s) => s.id)
-      );
-      setTasks(
-        allTasks.filter(
-          (t) => t.status !== 'DONE' && (t.sprintId == null || planningSprints.has(t.sprintId))
-        )
-      );
-    })
+    tasksApi.getByProject(projectId)
+      .then((allTasks) => {
+        setTasks(allTasks.filter((t) => t.status !== 'DONE'));
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [projectId]);
@@ -45,7 +35,7 @@ export default function SelectTaskModal({ projectId, onClose, onSelect }: Props)
   const handleSelect = async (task: Task) => {
     setSubmitting(true);
     try {
-      await onSelect(task.id, task.title);
+      await onSelect(task);
       onClose();
     } catch {
       setSubmitting(false);

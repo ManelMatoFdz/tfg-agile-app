@@ -931,6 +931,9 @@
     "loadError": "Erro ao cargar as sesións.",
     "activeSessions": "Sesións activas",
     "closedSessions": "Sesións pechadas",
+    "estimatedTask": "tarefa estimada",
+    "estimatedTasks": "tarefas estimadas",
+    "noEstimates": "Sen estimacións",
     "status": {
       "LOBBY": "Lobby",
       "VOTING": "Votando",
@@ -944,7 +947,8 @@
     },
     "roles": {
       "VOTER": "Votante",
-      "OBSERVER": "Observador"
+      "OBSERVER": "Observador",
+      "MODERATOR": "Moderador"
     },
     "create": {
       "title": "Nova sesión de poker",
@@ -990,7 +994,17 @@
       "revote": "Re-votar",
       "nextTask": "Seguinte tarefa",
       "history": "Historial de roldas",
-      "skipped": "Omitida"
+      "skipped": "Omitida",
+      "sessionActive": "Sesión activa",
+      "selectTaskBtn": "Seleccionar tarefa",
+      "startVoting": "Iniciar votación",
+      "changeTask": "Cambiar tarefa",
+      "waitingForModerator": "Agardando a que o moderador inicie a rolda",
+      "planningPoker": "Planning Poker",
+      "waitingForModeratorShort": "Agardando ao moderador...",
+      "noTaskSelected": "Sen tarefa seleccionada",
+      "noTaskSelectedSubtitle": "O moderador debe seleccionar unha tarefa antes de iniciar a votación",
+      "youBadge": "TI"
     }
   },
   "myTasks": {

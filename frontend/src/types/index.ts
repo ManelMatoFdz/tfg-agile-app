@@ -259,7 +259,7 @@ export interface TeamMember {
 export type SessionStatus = 'LOBBY' | 'VOTING' | 'REVEALED' | 'CLOSED';
 export type RoundStatus = 'VOTING' | 'REVEALED' | 'CONSENSUS';
 export type DeckType = 'FIBONACCI' | 'T_SHIRT' | 'POWERS_OF_2';
-export type ParticipantRole = 'VOTER' | 'OBSERVER';
+export type ParticipantRole = 'VOTER' | 'OBSERVER' | 'MODERATOR';
 
 export interface PokerSession {
   id: string;

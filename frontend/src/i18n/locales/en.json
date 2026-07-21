@@ -931,6 +931,9 @@
     "loadError": "Error loading sessions.",
     "activeSessions": "Active sessions",
     "closedSessions": "Closed sessions",
+    "estimatedTask": "estimated task",
+    "estimatedTasks": "estimated tasks",
+    "noEstimates": "No estimates",
     "status": {
       "LOBBY": "Lobby",
       "VOTING": "Voting",
@@ -944,7 +947,8 @@
     },
     "roles": {
       "VOTER": "Voter",
-      "OBSERVER": "Observer"
+      "OBSERVER": "Observer",
+      "MODERATOR": "Moderator"
     },
     "create": {
       "title": "New poker session",
@@ -990,7 +994,17 @@
       "revote": "Re-vote",
       "nextTask": "Next task",
       "history": "Round history",
-      "skipped": "Skipped"
+      "skipped": "Skipped",
+      "sessionActive": "Session Active",
+      "selectTaskBtn": "Select Task",
+      "startVoting": "Start Voting",
+      "changeTask": "Change Task",
+      "waitingForModerator": "Waiting for moderator to start the round",
+      "planningPoker": "Planning Poker",
+      "waitingForModeratorShort": "Waiting for moderator...",
+      "noTaskSelected": "No task selected",
+      "noTaskSelectedSubtitle": "The moderator must select a task before voting can begin",
+      "youBadge": "YOU"
     }
   },
   "myTasks": {

@@ -70,6 +70,14 @@ public class PokerSessionService {
         if (session.getStatus() == SessionStatus.CLOSED) {
             throw new ConflictException("SESSION_CLOSED");
         }
+        // Enforce single moderator per session
+        if (dto.role() == ParticipantRole.MODERATOR) {
+            boolean moderatorExists = session.getParticipants().stream()
+                    .anyMatch(p -> p.getRole() == ParticipantRole.MODERATOR && p.isConnected());
+            if (moderatorExists) {
+                throw new ConflictException("MODERATOR_ALREADY_EXISTS");
+            }
+        }
         if (participantRepository.existsBySessionIdAndUserId(sessionId, userId)) {
             // Re-connect existing participant
             var existing = participantRepository.findBySessionIdAndUserId(sessionId, userId).get();
@@ -88,17 +96,15 @@ public class PokerSessionService {
     public void leaveSession(UUID sessionId, UUID userId) {
         var participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("PARTICIPANT_NOT_FOUND"));
-        participant.setConnected(false);
-        participantRepository.save(participant);
+        participantRepository.delete(participant);
     }
 
     /** Called by the disconnect scheduler after the grace period. Returns sessionId → participants for broadcasting. */
     public Map<UUID, List<ParticipantDto>> disconnectUser(UUID userId) {
         var result = new HashMap<UUID, List<ParticipantDto>>();
         participantRepository.findByUserIdAndConnectedTrue(userId).forEach(participant -> {
-            participant.setConnected(false);
-            participantRepository.save(participant);
             UUID sessionId = participant.getSession().getId();
+            participantRepository.delete(participant);
             var participants = participantRepository.findBySessionId(sessionId)
                     .stream().map(this::toParticipantDto).toList();
             result.put(sessionId, participants);
@@ -108,8 +114,11 @@ public class PokerSessionService {
     
     public SessionResponseDto closeSession(UUID sessionId, UUID userId) {
         var session = findSession(sessionId);
-        if (!session.getCreatedBy().equals(userId)) {
-            throw new ForbiddenException("SESSION_CREATOR_REQUIRED");
+        boolean isModerator = session.getParticipants().stream()
+                .anyMatch(p -> p.getUserId().equals(userId) && p.getRole() == ParticipantRole.MODERATOR);
+        boolean isCreator = session.getCreatedBy().equals(userId);
+        if (!isModerator && !isCreator) {
+            throw new ForbiddenException("SESSION_MODERATOR_REQUIRED");
         }
         if (session.getStatus() == SessionStatus.CLOSED) {
             throw new ConflictException("SESSION_ALREADY_CLOSED");
@@ -218,7 +227,9 @@ public class PokerSessionService {
     }
 
     private void assertFacilitator(PokerSession session, UUID userId) {
-        if (!session.getCreatedBy().equals(userId)) {
+        boolean isModerator = session.getParticipants().stream()
+                .anyMatch(p -> p.getUserId().equals(userId) && p.getRole() == ParticipantRole.MODERATOR);
+        if (!isModerator) {
             throw new ForbiddenException("SESSION_FACILITATOR_REQUIRED");
         }
     }

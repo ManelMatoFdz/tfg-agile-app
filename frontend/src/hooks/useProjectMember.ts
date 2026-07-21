@@ -30,6 +30,8 @@ export interface ProjectMemberPermissions {
   canAddToActiveSprint: boolean;
   /** SM or ADMIN — sprint lifecycle (create, activate, complete) */
   canManageSprint: boolean;
+  /** SM, PO or ADMIN — create Planning Poker sessions */
+  canCreatePokerSession: boolean;
 }
 
 export function useProjectMember(projectId: string | undefined): ProjectMemberPermissions {
@@ -88,6 +90,7 @@ export function useProjectMember(projectId: string | undefined): ProjectMemberPe
   const canPlanSprint = isAdmin || isProductOwner || isDeveloper;
   const canAddToActiveSprint = isAdmin || isDeveloper;
   const canManageSprint = isAdmin || isScrumMaster;
+  const canCreatePokerSession = isAdmin || isScrumMaster || isProductOwner;
 
   return {
     member,
@@ -105,5 +108,6 @@ export function useProjectMember(projectId: string | undefined): ProjectMemberPe
     canPlanSprint,
     canAddToActiveSprint,
     canManageSprint,
+    canCreatePokerSession,
   };
 }
