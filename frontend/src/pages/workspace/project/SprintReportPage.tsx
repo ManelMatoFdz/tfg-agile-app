@@ -10,16 +10,18 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, Legend,
 } from 'recharts';
-import type { Sprint, SprintTaskSnapshot, Task, TaskPriority, TaskType } from '../../../types';
+import type { Sprint, SprintTaskSnapshot, Task, TaskPriority, TaskType, RetrospectiveData } from '../../../types';
 import { sprintsApi } from '../../../api/sprints';
 import { tasksApi } from '../../../api/tasks';
 import Alert from '../../../components/ui/Alert';
 import SnapshotModal from '../../../components/sprints/SnapshotModal';
+import RetrospectiveModal, { parseRetrospective } from '../../../components/sprints/RetrospectiveModal';
 import TaskModal from '../../../components/kanban/TaskModal';
 import SubtaskModal from '../../../components/kanban/SubtaskModal';
 import PageTitle from '../../../components/motion/PageTitle';
 import CountUp from '../../../components/motion/CountUp';
 import { useBoardColumns, getStatusLabel, getStatusColor } from '../../../hooks/useBoardColumns';
+import { useProjectMember } from '../../../hooks/useProjectMember';
 
 const PRIORITY_COLOR: Record<TaskPriority, string> = {
   CRITICAL: '#DC2626',
@@ -141,7 +143,9 @@ export default function SprintReportPage() {
   const { workspaceId, projectId, sprintId } = useParams<{ workspaceId: string; projectId: string; sprintId: string }>();
 
   const columns = useBoardColumns(projectId);
+  const { canManageSprint } = useProjectMember(projectId);
   const [sprint, setSprint] = useState<Sprint | null>(null);
+  const [showRetroModal, setShowRetroModal] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [snapshots, setSnapshots] = useState<SprintTaskSnapshot[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1089,23 +1093,119 @@ export default function SprintReportPage() {
         )}
       </div>
 
-      {/* Retrospective notes */}
-      {isCompleted && sprint.reviewNotes && (
-        <div style={{ ...card, padding: 20 }}>
-          <h3 style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
-            {t('projects.sprints.report.retrospective')}
-          </h3>
-          <p style={{
-            margin: 0,
-            fontSize: 13,
-            color: 'var(--text-muted)',
-            lineHeight: 1.6,
-            whiteSpace: 'pre-wrap',
-          }}>
-            {sprint.reviewNotes}
-          </p>
-        </div>
-      )}
+      {/* Retrospective */}
+      {isCompleted && (() => {
+        const retro = parseRetrospective(sprint.reviewNotes);
+
+        if (retro && typeof retro === 'object') {
+          // Structured retrospective
+          const techniqueColors: Record<string, Record<string, string>> = {
+            START_STOP_CONTINUE: { start: '#22C55E', stop: '#EF4444', continue: '#3B82F6' },
+            FOUR_LS: { loved: '#EC4899', learned: '#3B82F6', lacked: '#F59E0B', longedFor: '#8B5CF6' },
+            MAD_SAD_GLAD: { mad: '#EF4444', sad: '#F59E0B', glad: '#22C55E' },
+          };
+          const colors = techniqueColors[retro.technique] ?? {};
+          const fields = Object.keys(colors);
+
+          return (
+            <div style={{ ...card, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <h3 style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+                  {t('projects.sprints.retrospective.title')} — {t(`projects.sprints.retrospective.techniques.${retro.technique}.name`)}
+                </h3>
+                {canManageSprint && (
+                  <button
+                    onClick={() => setShowRetroModal(true)}
+                    style={{
+                      fontSize: 11, fontWeight: 500, color: 'var(--text-muted)',
+                      background: 'none', border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)', padding: '4px 10px', cursor: 'pointer',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; }}
+                  >
+                    {t('projects.sprints.retrospective.editButton')}
+                  </button>
+                )}
+              </div>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${fields.length}, 1fr)`,
+                gap: 12,
+              }}>
+                {fields.map((field) => (
+                  <div
+                    key={field}
+                    style={{
+                      background: 'var(--bg)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-md)',
+                      borderTop: `3px solid ${colors[field]}`,
+                      padding: '14px 16px',
+                    }}
+                  >
+                    <h4 style={{
+                      margin: '0 0 8px', fontSize: 12, fontWeight: 600,
+                      color: colors[field],
+                    }}>
+                      {t(`projects.sprints.retrospective.techniques.${retro.technique}.${field}`)}
+                    </h4>
+                    <p style={{
+                      margin: 0, fontSize: 13, color: 'var(--text-muted)',
+                      lineHeight: 1.6, whiteSpace: 'pre-wrap',
+                    }}>
+                      {retro.answers[field] || '—'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        }
+
+        if (typeof retro === 'string') {
+          // Plain text (backward compatibility)
+          return (
+            <div style={{ ...card, padding: 20 }}>
+              <h3 style={{ margin: '0 0 10px', fontSize: 13, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
+                {t('projects.sprints.report.retrospective')}
+              </h3>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                {retro}
+              </p>
+            </div>
+          );
+        }
+
+        // No retrospective — show CTA if user has permission
+        if (canManageSprint) {
+          return (
+            <div style={{ ...card, padding: 20, textAlign: 'center' }}>
+              <p style={{ margin: '0 0 4px', fontSize: 13, fontWeight: 600, color: 'var(--text-muted)' }}>
+                {t('projects.sprints.retrospective.noRetro')}
+              </p>
+              <p style={{ margin: '0 0 14px', fontSize: 12, color: 'var(--text-faint)' }}>
+                {t('projects.sprints.retrospective.addRetro')}
+              </p>
+              <button
+                onClick={() => setShowRetroModal(true)}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '8px 16px', fontSize: 13, fontWeight: 600,
+                  background: 'var(--accent)', color: 'var(--accent-fg)',
+                  border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-hover)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent)'; }}
+              >
+                {t('projects.sprints.retrospective.createButton')}
+              </button>
+            </div>
+          );
+        }
+
+        return null;
+      })()}
 
       {selectedSnapshot && (
         <SnapshotModal
@@ -1131,6 +1231,17 @@ export default function SprintReportPage() {
           columns={columns}
           readOnly
           onClose={() => setSubtaskModalTask(null)}
+        />
+      )}
+
+      {showRetroModal && sprint && (
+        <RetrospectiveModal
+          sprint={sprint}
+          onClose={() => setShowRetroModal(false)}
+          onSaved={(updated) => {
+            setSprint((prev) => prev ? { ...prev, ...updated } : updated);
+            setShowRetroModal(false);
+          }}
         />
       )}
     </div>

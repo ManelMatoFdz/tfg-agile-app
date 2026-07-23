@@ -296,7 +296,7 @@ export default function PokerPage() {
                 {closedSessions.map((session) => {
                   const isExpanded = expandedId === session.id;
                   const rounds = roundsMap[session.id] ?? [];
-                  const estimatedRounds = rounds.filter((r) => r.status === 'CONSENSUS');
+                  const estimatedRounds = rounds.filter((r) => r.status === 'CONSENSUS' && r.finalEstimate != null);
                   const isLoading = loadingRounds === session.id;
                   return (
                     <div

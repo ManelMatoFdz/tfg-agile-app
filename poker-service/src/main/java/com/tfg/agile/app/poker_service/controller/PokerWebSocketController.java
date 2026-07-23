@@ -17,6 +17,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -50,79 +51,87 @@ public class PokerWebSocketController {
         UUID userId = extractUserId(headerAccessor);
         String value = payload.get("value");
 
-        var participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
-                .orElseThrow(() -> new ForbiddenException("NOT_SESSION_PARTICIPANT"));
-        if (participant.getRole() != ParticipantRole.VOTER) {
-            sendError(userId, "Observers cannot vote");
-            return;
-        }
+        try {
+            var participant = participantRepository.findBySessionIdAndUserId(sessionId, userId)
+                    .orElseThrow(() -> new ForbiddenException("NOT_SESSION_PARTICIPANT"));
+            if (participant.getRole() != ParticipantRole.VOTER) {
+                sendError(userId, "Observers cannot vote");
+                return;
+            }
 
-        var round = roundRepository.findBySessionIdAndStatus(sessionId, RoundStatus.VOTING)
-                .orElse(null);
-        if (round == null) {
-            sendError(userId, "No active voting round");
-            return;
-        }
+            var round = roundRepository.findBySessionIdAndStatus(sessionId, RoundStatus.VOTING)
+                    .orElse(null);
+            if (round == null) {
+                sendError(userId, "No active voting round");
+                return;
+            }
 
-        var existingVote = voteRepository.findByRoundIdAndUserId(round.getId(), userId);
-        if (existingVote.isPresent()) {
-            existingVote.get().setValue(value);
-            voteRepository.save(existingVote.get());
-        } else {
-            var vote = PokerVote.builder()
-                    .round(round)
-                    .userId(userId)
-                    .value(value)
-                    .build();
-            voteRepository.save(vote);
-        }
+            // Reject votes after timer has expired
+            if (round.getTimerEndsAt() != null && Instant.now().isAfter(round.getTimerEndsAt())) {
+                sendError(userId, "TIMER_EXPIRED");
+                return;
+            }
 
-        broadcastVoteStatus(sessionId, round.getId());
+            var existingVote = voteRepository.findByRoundIdAndUserId(round.getId(), userId);
+            if (existingVote.isPresent()) {
+                existingVote.get().setValue(value);
+                voteRepository.save(existingVote.get());
+            } else {
+                var vote = PokerVote.builder()
+                        .round(round)
+                        .userId(userId)
+                        .value(value)
+                        .build();
+                voteRepository.save(vote);
+                round.getVotes().add(vote);
+            }
 
-        long voterCount = participantRepository.findBySessionIdAndUserId(sessionId, userId)
-                .map(p -> p.getSession().getParticipants().stream()
-                        .filter(pp -> pp.getRole() == ParticipantRole.VOTER)
-                        .count())
-                .orElse(0L);
-        long voteCount = voteRepository.countByRoundId(round.getId());
-        if (voteCount >= voterCount && voterCount > 0) {
-            var revealed = sessionService.revealRound(sessionId,
-                    round.getSession().getCreatedBy());
-            broadcastReveal(sessionId, revealed);
+            broadcastVoteStatus(sessionId, round.getId());
+        } catch (Exception e) {
+            sendError(userId, e.getMessage());
         }
     }
 
     @MessageMapping("/poker/{sessionId}/reveal")
-    @Transactional
     public void reveal(@DestinationVariable UUID sessionId,
                        SimpMessageHeaderAccessor headerAccessor) {
         UUID userId = extractUserId(headerAccessor);
-        var revealed = sessionService.revealRound(sessionId, userId);
-        broadcastReveal(sessionId, revealed);
+        try {
+            var revealed = sessionService.revealRound(sessionId, userId);
+            broadcastReveal(sessionId, revealed);
+        } catch (Exception e) {
+            sendError(userId, e.getMessage());
+        }
     }
 
     @MessageMapping("/poker/{sessionId}/next")
-    @Transactional
     public void acceptAndNext(@DestinationVariable UUID sessionId,
                               @Payload Map<String, Object> payload,
                               SimpMessageHeaderAccessor headerAccessor) {
         UUID userId = extractUserId(headerAccessor);
-        Integer finalEstimate = payload.get("finalEstimate") != null
-                ? Integer.valueOf(payload.get("finalEstimate").toString()) : null;
+        try {
+            Integer finalEstimate = payload.get("finalEstimate") != null
+                    ? ((Number) payload.get("finalEstimate")).intValue() : null;
 
-        sessionService.acceptEstimate(sessionId, userId, finalEstimate);
+            sessionService.acceptEstimate(sessionId, userId, finalEstimate);
 
-        broadcastState(sessionId);
+            broadcastState(sessionId);
+        } catch (Exception e) {
+            sendError(userId, e.getMessage());
+        }
     }
 
     @MessageMapping("/poker/{sessionId}/revote")
-    @Transactional
     public void revote(@DestinationVariable UUID sessionId,
                        SimpMessageHeaderAccessor headerAccessor) {
         UUID userId = extractUserId(headerAccessor);
-        sessionService.revote(sessionId, userId);
+        try {
+            sessionService.revote(sessionId, userId);
 
-        broadcastState(sessionId);
+            broadcastState(sessionId);
+        } catch (Exception e) {
+            sendError(userId, e.getMessage());
+        }
     }
     
     private void broadcastVoteStatus(UUID sessionId, UUID roundId) {

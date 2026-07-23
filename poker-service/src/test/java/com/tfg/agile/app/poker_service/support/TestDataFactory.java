@@ -73,6 +73,7 @@ public final class TestDataFactory {
         return new SessionResponseDto(
                 session.getId(), session.getProjectId(), session.getName(), session.getStatus(),
                 session.getDeck(), session.getCreatedBy(), session.getCurrentTaskId(),
+                session.getTimerSeconds(),
                 participants, session.getCreatedAt(), session.getUpdatedAt()
         );
     }
@@ -83,7 +84,8 @@ public final class TestDataFactory {
                 .toList();
         return new RoundResponseDto(
                 round.getId(), round.getTaskId(), round.getTaskTitle(), round.getStatus(),
-                round.getFinalEstimate(), votes, round.getStartedAt(), round.getRevealedAt()
+                round.getFinalEstimate(), votes, round.getStartedAt(), round.getRevealedAt(),
+                round.getTimerEndsAt()
         );
     }
 }

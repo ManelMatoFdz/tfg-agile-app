@@ -4,9 +4,9 @@ import { useTranslation } from 'react-i18next';
 import {
   Plus, X, Zap, BookOpen, CheckSquare, Bug,
   Calendar, BarChart2, Columns2, PlayCircle, CheckCircle2, CalendarClock,
-  Pencil, Trash2, ListChecks,
+  Pencil, Trash2, ListChecks, ClipboardList,
 } from 'lucide-react';
-import type { Sprint, SprintTaskSnapshot, Task, TaskType } from '../../../types';
+import type { Sprint, SprintTaskSnapshot, Task, TaskType, RetrospectiveData } from '../../../types';
 
 const TYPE_ICON_MAP: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
   STORY: { icon: BookOpen, color: '#7C3AED' },
@@ -17,6 +17,7 @@ import { sprintsApi, type CreateSprintDto } from '../../../api/sprints';
 import { tasksApi, type UpdateTaskDto, type CreateTaskDto } from '../../../api/tasks';
 import TaskModal from '../../../components/kanban/TaskModal';
 import SnapshotModal from '../../../components/sprints/SnapshotModal';
+import RetrospectiveModal from '../../../components/sprints/RetrospectiveModal';
 import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
 import { useProjectMember } from '../../../hooks/useProjectMember';
@@ -375,6 +376,7 @@ export default function SprintsPage() {
   const [selectedSnapshot, setSelectedSnapshot] = useState<SprintTaskSnapshot | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmActivate, setConfirmActivate] = useState<string | null>(null);
+  const [retroSprint, setRetroSprint] = useState<Sprint | null>(null);
 
   useEffect(() => {
     if (!projectId) return;
@@ -823,6 +825,24 @@ export default function SprintsPage() {
                       <div style={{ marginTop: 8 }}>
                         <ProgressBar done={doneTasks} total={totalTasks} />
                       </div>
+                      {!sprint.reviewNotes && canManageSprint && (
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setRetroSprint(sprint); }}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 5,
+                            marginTop: 10, padding: '6px 10px', fontSize: 11, fontWeight: 500,
+                            background: 'var(--accent-muted)', color: 'var(--accent)',
+                            border: '1px solid var(--accent)',
+                            borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                            width: '100%', justifyContent: 'center',
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent-fg)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent-muted)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                        >
+                          <ClipboardList size={12} strokeWidth={2} />
+                          {t('projects.sprints.retrospective.createButton')}
+                        </button>
+                      )}
                     </Link>
                   );
                 })}
@@ -903,6 +923,17 @@ export default function SprintsPage() {
           snapshot={selectedSnapshot}
           onClose={() => setSelectedSnapshot(null)}
           columns={columns}
+        />
+      )}
+
+      {retroSprint && (
+        <RetrospectiveModal
+          sprint={retroSprint}
+          onClose={() => setRetroSprint(null)}
+          onSaved={(updated) => {
+            setSprints((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
+            setRetroSprint(null);
+          }}
         />
       )}
     </div>

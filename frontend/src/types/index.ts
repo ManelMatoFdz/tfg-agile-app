@@ -124,6 +124,12 @@ export type ScrumRole = 'PRODUCT_OWNER' | 'SCRUM_MASTER' | 'DEVELOPER';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type TaskType = 'STORY' | 'TASK' | 'BUG';
 export type SprintStatus = 'PLANNING' | 'ACTIVE' | 'COMPLETED';
+export type RetrospectiveTechnique = 'START_STOP_CONTINUE' | 'FOUR_LS' | 'MAD_SAD_GLAD';
+
+export interface RetrospectiveData {
+  technique: RetrospectiveTechnique;
+  answers: Record<string, string>;
+}
 
 export interface BoardColumn {
   id: string;
@@ -269,6 +275,7 @@ export interface PokerSession {
   deck: DeckType;
   createdBy: string;
   currentTaskId?: string | null;
+  timerSeconds?: number | null;
   participants: PokerParticipant[];
   createdAt: string;
   updatedAt: string;
@@ -292,6 +299,7 @@ export interface PokerRound {
   votes: PokerVote[];
   startedAt: string;
   revealedAt?: string | null;
+  timerEndsAt?: string | null;
 }
 
 export interface PokerVote {

@@ -14,5 +14,6 @@ public record RoundResponseDto(
         Integer finalEstimate,
         List<VoteDto> votes,
         Instant startedAt,
-        Instant revealedAt
+        Instant revealedAt,
+        Instant timerEndsAt
 ) {}

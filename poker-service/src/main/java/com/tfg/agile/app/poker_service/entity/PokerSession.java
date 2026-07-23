@@ -45,6 +45,9 @@ public class PokerSession {
     @Column
     private UUID currentTaskId;
 
+    @Column
+    private Integer timerSeconds;
+
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<PokerParticipant> participants = new ArrayList<>();

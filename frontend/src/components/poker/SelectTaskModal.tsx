@@ -26,7 +26,7 @@ export default function SelectTaskModal({ projectId, onClose, onSelect }: Props)
   useEffect(() => {
     tasksApi.getByProject(projectId)
       .then((allTasks) => {
-        setTasks(allTasks.filter((t) => t.status !== 'DONE'));
+        setTasks(allTasks.filter((t) => t.status !== 'DONE' && !t.parentId));
       })
       .catch(() => {})
       .finally(() => setLoading(false));

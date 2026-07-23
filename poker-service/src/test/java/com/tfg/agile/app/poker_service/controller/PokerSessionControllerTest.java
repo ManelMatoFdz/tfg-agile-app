@@ -41,20 +41,20 @@ class PokerSessionControllerTest {
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
 
-        CreateSessionRequestDto createRequest = new CreateSessionRequestDto("Session", DeckType.FIBONACCI);
+        CreateSessionRequestDto createRequest = new CreateSessionRequestDto("Session", DeckType.FIBONACCI, null);
         JoinSessionRequestDto joinRequest = new JoinSessionRequestDto("User", ParticipantRole.VOTER);
         StartRoundRequestDto startRoundRequest = new StartRoundRequestDto(UUID.randomUUID(), "Task");
 
         SessionResponseDto sessionResponse = new SessionResponseDto(
                 sessionId, projectId, "Session", SessionStatus.LOBBY, DeckType.FIBONACCI,
-                userId, null, List.of(), Instant.now(), Instant.now()
+                userId, null, null, List.of(), Instant.now(), Instant.now()
         );
 
         ParticipantDto participantDto = new ParticipantDto(UUID.randomUUID(), userId, "User",
                 ParticipantRole.VOTER, true, Instant.now());
 
         RoundResponseDto roundResponse = new RoundResponseDto(UUID.randomUUID(), startRoundRequest.taskId(),
-                startRoundRequest.taskTitle(), RoundStatus.VOTING, null, List.of(), Instant.now(), null);
+                startRoundRequest.taskTitle(), RoundStatus.VOTING, null, List.of(), Instant.now(), null, null);
 
         when(service.createSession(projectId, userId, createRequest)).thenReturn(sessionResponse);
         when(service.listSessions(projectId)).thenReturn(List.of(sessionResponse));

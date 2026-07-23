@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.messaging.simp.config.SimpleBrokerRegistration;
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry;
 import org.springframework.web.socket.config.annotation.StompWebSocketEndpointRegistration;
 import org.springframework.web.socket.server.HandshakeInterceptor;
@@ -24,10 +25,14 @@ class WebSocketConfigTest {
         JwtService jwtService = mock(JwtService.class);
         WebSocketConfig config = new WebSocketConfig(jwtService);
         MessageBrokerRegistry registry = mock(MessageBrokerRegistry.class, RETURNS_SELF);
+        SimpleBrokerRegistration brokerReg = mock(SimpleBrokerRegistration.class, RETURNS_SELF);
+
+        when(registry.enableSimpleBroker("/topic", "/queue")).thenReturn(brokerReg);
 
         config.configureMessageBroker(registry);
 
         verify(registry).enableSimpleBroker("/topic", "/queue");
+        verify(brokerReg).setHeartbeatValue(new long[]{10000, 10000});
         verify(registry).setApplicationDestinationPrefixes("/app");
         verify(registry).setUserDestinationPrefix("/user");
     }

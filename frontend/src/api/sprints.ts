@@ -72,4 +72,7 @@ export const sprintsApi = {
 
   getVelocity: (projectId: string) =>
     taskClient.get<VelocityDto>(`/projects/${projectId}/velocity`).then((r) => r.data),
+
+  saveRetrospective: (sprintId: string, reviewNotes: string) =>
+    taskClient.patch<Sprint>(`/sprints/${sprintId}/retrospective`, { reviewNotes }).then((r) => r.data),
 };

@@ -5,7 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 
 public record CreateSessionRequestDto(
         @NotBlank String name,
-        DeckType deck
+        DeckType deck,
+        Integer timerSeconds
 ) {
     public CreateSessionRequestDto {
         if (deck == null) deck = DeckType.FIBONACCI;

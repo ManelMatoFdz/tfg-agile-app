@@ -643,6 +643,42 @@
         "returnedBanner": "This task was returned to the backlog when the sprint was completed.",
         "snapshotBanner": "You are viewing this task's state at sprint closure. Its current state may differ."
       },
+      "retrospective": {
+        "title": "Sprint Retrospective",
+        "createButton": "Create retrospective",
+        "editButton": "Edit retrospective",
+        "selectTechnique": "Choose a retrospective technique",
+        "backToTechniques": "Back",
+        "save": "Save retrospective",
+        "saving": "Saving...",
+        "error": "Error saving the retrospective.",
+        "noRetro": "No retrospective has been created for this sprint.",
+        "addRetro": "Add a retrospective to capture lessons learned.",
+        "techniques": {
+          "START_STOP_CONTINUE": {
+            "name": "Start / Stop / Continue",
+            "description": "Identify actions to start, stop, and continue doing.",
+            "start": "What should we start doing?",
+            "stop": "What should we stop doing?",
+            "continue": "What should we continue doing?"
+          },
+          "FOUR_LS": {
+            "name": "4Ls",
+            "description": "Reflect on what the team Loved, Learned, Lacked, and Longs for.",
+            "loved": "What did we love?",
+            "learned": "What did we learn?",
+            "lacked": "What did we lack?",
+            "longedFor": "What do we long for?"
+          },
+          "MAD_SAD_GLAD": {
+            "name": "Mad / Sad / Glad",
+            "description": "Express emotions about the sprint experience.",
+            "mad": "What made us mad?",
+            "sad": "What made us sad?",
+            "glad": "What made us glad?"
+          }
+        }
+      },
       "create": {
         "title": "New sprint",
         "name": "Name",
@@ -1004,7 +1040,28 @@
       "waitingForModeratorShort": "Waiting for moderator...",
       "noTaskSelected": "No task selected",
       "noTaskSelectedSubtitle": "The moderator must select a task before voting can begin",
-      "youBadge": "YOU"
+      "youBadge": "YOU",
+      "mostVoted": "Most Voted",
+      "basedOnVotes": "Based on {{count}} votes",
+      "agreedCount": "{{count}} participants agreed",
+      "allVoted": "All voted",
+      "teamVotes": "Team Votes",
+      "moderatorPanel": "Moderator Panel",
+      "saveToTask": "Save to Task",
+      "points": "Points",
+      "suggested": "Suggested",
+      "safeEstimate": "Safe estimate",
+      "or": "or",
+      "votedProgress": "{{voted}} of {{total}} voted",
+      "extremeVotersTitle": "Extreme votes detected",
+      "extremeHigh": "⬆ {{names}} voted {{value}} (highest)",
+      "extremeLow": "⬇ {{names}} voted {{value}} (lowest)",
+      "extremeVotersHint": "It is recommended that they explain their reasoning before deciding.",
+      "estimateSaved": "Estimation saved: \"{{task}}\" → {{points}} SP"
+    },
+    "timer": {
+      "noLimit": "No limit",
+      "expired": "Time's up"
     }
   },
   "myTasks": {

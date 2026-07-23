@@ -101,7 +101,6 @@ class PokerWebSocketControllerTest {
         when(voteRepository.findByRoundIdAndUserId(round.getId(), userId)).thenReturn(Optional.of(vote));
         when(voteRepository.save(any(PokerVote.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(roundRepository.findById(round.getId())).thenReturn(Optional.of(round));
-        when(voteRepository.countByRoundId(round.getId())).thenReturn(0L);
 
         controller.vote(sessionId, Map.of("value", "5"), headers(userId));
 
@@ -110,7 +109,7 @@ class PokerWebSocketControllerTest {
     }
 
     @Test
-    void vote_autoRevealsWhenAllVoted() {
+    void vote_noAutoRevealWhenAllVoted() {
         PokerWebSocketController controller = new PokerWebSocketController(
                 sessionService, roundRepository, voteRepository, participantRepository, messagingTemplate);
 
@@ -125,21 +124,17 @@ class PokerWebSocketControllerTest {
         PokerVote vote = TestDataFactory.vote(round, userId, "5");
         round.getVotes().add(vote);
 
-        RoundResponseDto revealed = new RoundResponseDto(round.getId(), round.getTaskId(), round.getTaskTitle(),
-                RoundStatus.REVEALED, null, List.of(), Instant.now(), Instant.now());
-
         when(participantRepository.findBySessionIdAndUserId(sessionId, userId)).thenReturn(Optional.of(participant));
         when(roundRepository.findBySessionIdAndStatus(sessionId, RoundStatus.VOTING)).thenReturn(Optional.of(round));
         when(voteRepository.findByRoundIdAndUserId(round.getId(), userId)).thenReturn(Optional.empty());
         when(voteRepository.save(any(PokerVote.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(roundRepository.findById(round.getId())).thenReturn(Optional.of(round));
-        when(voteRepository.countByRoundId(round.getId())).thenReturn(1L);
-        when(sessionService.revealRound(sessionId, creatorId)).thenReturn(revealed);
 
         controller.vote(sessionId, Map.of("value", "5"), headers(userId));
 
-        verify(sessionService).revealRound(sessionId, creatorId);
-        verify(messagingTemplate).convertAndSend(eq("/topic/poker/" + sessionId + "/reveal"), eq(revealed));
+        // Auto-reveal was removed — moderator must reveal manually
+        verify(sessionService, never()).revealRound(any(), any());
+        verify(messagingTemplate).convertAndSend(eq("/topic/poker/" + sessionId + "/votes"), (Object) any());
     }
 
     @Test
@@ -150,7 +145,7 @@ class PokerWebSocketControllerTest {
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         RoundResponseDto roundResponse = new RoundResponseDto(UUID.randomUUID(), UUID.randomUUID(),
-                "Task", RoundStatus.REVEALED, 5, List.of(), Instant.now(), Instant.now());
+                "Task", RoundStatus.REVEALED, 5, List.of(), Instant.now(), Instant.now(), null);
 
         when(sessionService.revealRound(sessionId, userId)).thenReturn(roundResponse);
 
@@ -167,7 +162,7 @@ class PokerWebSocketControllerTest {
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         SessionResponseDto sessionResponse = new SessionResponseDto(sessionId, UUID.randomUUID(), "Session",
-                SessionStatus.LOBBY, DeckType.FIBONACCI, userId, null, List.of(), Instant.now(), Instant.now());
+                SessionStatus.LOBBY, DeckType.FIBONACCI, userId, null, null, List.of(), Instant.now(), Instant.now());
 
         when(sessionService.getSession(sessionId)).thenReturn(sessionResponse);
 
@@ -185,7 +180,7 @@ class PokerWebSocketControllerTest {
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         SessionResponseDto sessionResponse = new SessionResponseDto(sessionId, UUID.randomUUID(), "Session",
-                SessionStatus.VOTING, DeckType.FIBONACCI, userId, null, List.of(), Instant.now(), Instant.now());
+                SessionStatus.VOTING, DeckType.FIBONACCI, userId, null, null, List.of(), Instant.now(), Instant.now());
 
         when(sessionService.getSession(sessionId)).thenReturn(sessionResponse);
 

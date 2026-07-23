@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Check } from 'lucide-react';
+import { Check, Lock } from 'lucide-react';
 import type { DeckType } from '../../types';
 
 interface Props {
@@ -8,6 +8,7 @@ interface Props {
   selectedValue: string | null;
   onVote: (value: string) => void;
   disabled?: boolean;
+  lockedMessage?: string;
 }
 
 const DECK_VALUES: Record<DeckType, string[]> = {
@@ -16,7 +17,7 @@ const DECK_VALUES: Record<DeckType, string[]> = {
   POWERS_OF_2: ['0', '1', '2', '4', '8', '16', '32', '64', '?', '\u2615'],
 };
 
-export default function VotingCards({ deck, selectedValue, onVote, disabled }: Props) {
+export default function VotingCards({ deck, selectedValue, onVote, disabled, lockedMessage }: Props) {
   const { t } = useTranslation();
   const values = DECK_VALUES[deck] ?? DECK_VALUES.FIBONACCI;
   const [hoveredVal, setHoveredVal] = useState<string | null>(null);
@@ -26,13 +27,23 @@ export default function VotingCards({ deck, selectedValue, onVote, disabled }: P
       background: '#FFFFFF',
       border: '1px solid #E2E8F0',
       borderRadius: 12,
-      padding: '20px 24px',
+      padding: '14px 24px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
     }}>
-      <p style={{ fontSize: 13, fontWeight: 600, color: '#64748B', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        {t('poker.room.yourVote')}
+      <p style={{
+        fontSize: 13, fontWeight: 600, marginBottom: 10,
+        textTransform: 'uppercase', letterSpacing: '0.05em',
+        color: lockedMessage ? '#94A3B8' : '#64748B',
+        display: 'flex', alignItems: 'center', gap: 6,
+        justifyContent: lockedMessage ? 'center' : undefined,
+      }}>
+        {lockedMessage ? (
+          <><Lock size={14} />{lockedMessage}</>
+        ) : (
+          t('poker.room.yourVote')
+        )}
       </p>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+      <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 10, justifyContent: 'center' }}>
         {values.map((val) => {
           const isSelected = selectedValue === val;
           const isHovered = hoveredVal === val;
@@ -44,7 +55,8 @@ export default function VotingCards({ deck, selectedValue, onVote, disabled }: P
               onMouseEnter={() => setHoveredVal(val)}
               onMouseLeave={() => setHoveredVal(null)}
               style={{
-                width: 62,
+                flex: '0 1 62px',
+                minWidth: 0,
                 height: 88,
                 borderRadius: 10,
                 border: `2px solid ${isSelected ? '#2563EB' : isHovered && !disabled ? '#93C5FD' : '#E2E8F0'}`,

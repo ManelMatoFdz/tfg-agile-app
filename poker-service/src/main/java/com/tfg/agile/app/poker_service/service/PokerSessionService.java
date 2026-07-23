@@ -47,6 +47,7 @@ public class PokerSessionService {
                 .projectId(projectId)
                 .name(dto.name())
                 .deck(dto.deck())
+                .timerSeconds(dto.timerSeconds())
                 .createdBy(userId)
                 .build();
         session = sessionRepository.save(session);
@@ -104,7 +105,8 @@ public class PokerSessionService {
         var result = new HashMap<UUID, List<ParticipantDto>>();
         participantRepository.findByUserIdAndConnectedTrue(userId).forEach(participant -> {
             UUID sessionId = participant.getSession().getId();
-            participantRepository.delete(participant);
+            participant.setConnected(false);
+            participantRepository.save(participant);
             var participants = participantRepository.findBySessionId(sessionId)
                     .stream().map(this::toParticipantDto).toList();
             result.put(sessionId, participants);
@@ -127,6 +129,23 @@ public class PokerSessionService {
         return toDto(sessionRepository.save(session));
     }
     
+    public SessionResponseDto updateTimer(UUID sessionId, UUID userId, UpdateTimerRequestDto dto) {
+        var session = findSession(sessionId);
+        assertFacilitator(session, userId);
+        session.setTimerSeconds(dto.timerSeconds());
+        return toDto(sessionRepository.save(session));
+    }
+
+    public SessionResponseDto selectTask(UUID sessionId, UUID userId, SelectTaskRequestDto dto) {
+        var session = findSession(sessionId);
+        assertFacilitator(session, userId);
+        if (session.getStatus() == SessionStatus.CLOSED) {
+            throw new ConflictException("SESSION_CLOSED");
+        }
+        session.setCurrentTaskId(dto.taskId());
+        return toDto(sessionRepository.save(session));
+    }
+
     public RoundResponseDto startRound(UUID sessionId, UUID userId, StartRoundRequestDto dto) {
         var session = findSession(sessionId);
         assertFacilitator(session, userId);
@@ -138,12 +157,14 @@ public class PokerSessionService {
         roundRepository.findBySessionIdAndStatus(sessionId, RoundStatus.VOTING)
                 .ifPresent(r -> { throw new ConflictException("ROUND_ALREADY_ACTIVE"); });
 
-        var round = PokerRound.builder()
+        var roundBuilder = PokerRound.builder()
                 .session(session)
                 .taskId(dto.taskId())
-                .taskTitle(dto.taskTitle())
-                .build();
-        round = roundRepository.save(round);
+                .taskTitle(dto.taskTitle());
+        if (session.getTimerSeconds() != null && session.getTimerSeconds() > 0) {
+            roundBuilder.timerEndsAt(Instant.now().plusSeconds(session.getTimerSeconds()));
+        }
+        var round = roundRepository.save(roundBuilder.build());
 
         session.setStatus(SessionStatus.VOTING);
         session.setCurrentTaskId(dto.taskId());
@@ -202,12 +223,14 @@ public class PokerSessionService {
         oldRound.setFinalEstimate(null);
         roundRepository.save(oldRound);
 
-        var newRound = PokerRound.builder()
+        var newRoundBuilder = PokerRound.builder()
                 .session(session)
                 .taskId(oldRound.getTaskId())
-                .taskTitle(oldRound.getTaskTitle())
-                .build();
-        newRound = roundRepository.save(newRound);
+                .taskTitle(oldRound.getTaskTitle());
+        if (session.getTimerSeconds() != null && session.getTimerSeconds() > 0) {
+            newRoundBuilder.timerEndsAt(Instant.now().plusSeconds(session.getTimerSeconds()));
+        }
+        var newRound = roundRepository.save(newRoundBuilder.build());
 
         session.setStatus(SessionStatus.VOTING);
         sessionRepository.save(session);
@@ -239,6 +262,7 @@ public class PokerSessionService {
         return new SessionResponseDto(
                 s.getId(), s.getProjectId(), s.getName(), s.getStatus(),
                 s.getDeck(), s.getCreatedBy(), s.getCurrentTaskId(),
+                s.getTimerSeconds(),
                 participants, s.getCreatedAt(), s.getUpdatedAt()
         );
     }
@@ -254,6 +278,6 @@ public class PokerSessionService {
                 .toList();
         return new RoundResponseDto(r.getId(), r.getTaskId(), r.getTaskTitle(),
                 r.getStatus(), r.getFinalEstimate(), votes,
-                r.getStartedAt(), r.getRevealedAt());
+                r.getStartedAt(), r.getRevealedAt(), r.getTimerEndsAt());
     }
 }

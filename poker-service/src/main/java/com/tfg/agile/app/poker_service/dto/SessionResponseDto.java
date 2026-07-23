@@ -15,6 +15,7 @@ public record SessionResponseDto(
         DeckType deck,
         UUID createdBy,
         UUID currentTaskId,
+        Integer timerSeconds,
         List<ParticipantDto> participants,
         Instant createdAt,
         Instant updatedAt

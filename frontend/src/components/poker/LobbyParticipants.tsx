@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import type { PokerParticipant } from '../../types';
+import { Check } from 'lucide-react';
+import type { PokerParticipant, UserSummary } from '../../types';
 
 const AVATAR_COLORS = [
   '#2563EB', '#7C3AED', '#16A34A', '#D97706', '#DC2626',
@@ -25,10 +26,18 @@ function getInitials(name: string): string {
 interface Props {
   participants: PokerParticipant[];
   currentUserId?: string;
+  voteStatus?: Record<string, boolean>;
+  isVoting?: boolean;
+  userMap?: Record<string, UserSummary>;
 }
 
-export default function LobbyParticipants({ participants, currentUserId }: Props) {
+export default function LobbyParticipants({ participants, currentUserId, voteStatus, isVoting, userMap = {} }: Props) {
   const { t } = useTranslation();
+
+  const voterCount = isVoting ? participants.filter((p) => p.role === 'VOTER').length : 0;
+  const votedCount = isVoting && voteStatus
+    ? Object.values(voteStatus).filter(Boolean).length
+    : 0;
 
   return (
     <div style={{
@@ -36,8 +45,8 @@ export default function LobbyParticipants({ participants, currentUserId }: Props
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
-      gap: 24,
-      padding: '32px 16px',
+      gap: 20,
+      padding: '24px 16px',
     }}>
       {/* Top row of participants */}
       <div style={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 32 }}>
@@ -46,6 +55,9 @@ export default function LobbyParticipants({ participants, currentUserId }: Props
             key={p.id}
             participant={p}
             isCurrentUser={p.userId === currentUserId}
+            hasVoted={voteStatus?.[p.userId]}
+            isVoting={isVoting}
+            avatarUrl={userMap[p.userId]?.avatarUrl}
             t={t}
           />
         ))}
@@ -57,29 +69,39 @@ export default function LobbyParticipants({ participants, currentUserId }: Props
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '32px 48px',
-        background: 'rgba(241,245,249,0.7)',
+        padding: '24px 40px',
+        background: isVoting ? 'rgba(245,158,11,0.04)' : '#FFFFFF',
         borderRadius: 24,
         minWidth: 240,
-        border: '1px solid #E2E8F0',
+        border: `1px solid ${isVoting ? 'rgba(245,158,11,0.2)' : '#E2E8F0'}`,
+        boxShadow: isVoting ? 'none' : '0 2px 12px rgba(0,0,0,0.04)',
       }}>
-        <p style={{
-          margin: 0,
-          fontSize: 18,
-          fontWeight: 700,
-          letterSpacing: '0.06em',
-          color: '#CBD5E1',
-          textTransform: 'uppercase',
-        }}>
-          {t('poker.room.planningPoker')}
-        </p>
-        <p style={{
-          margin: '6px 0 0',
-          fontSize: 13,
-          color: '#94A3B8',
-        }}>
-          {t('poker.room.waitingForModeratorShort')}
-        </p>
+        {isVoting ? (
+          <>
+            <p style={{
+              margin: 0, fontSize: 32, fontWeight: 800,
+              color: '#F59E0B',
+            }}>
+              {votedCount}/{voterCount}
+            </p>
+            <p style={{ margin: '6px 0 0', fontSize: 13, color: '#94A3B8' }}>
+              {t('poker.room.votedProgress', { voted: votedCount, total: voterCount })}
+            </p>
+          </>
+        ) : (
+          <>
+            <p style={{
+              margin: 0, fontSize: 18, fontWeight: 700,
+              letterSpacing: '0.06em', color: '#CBD5E1',
+              textTransform: 'uppercase',
+            }}>
+              {t('poker.room.planningPoker')}
+            </p>
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: '#94A3B8', fontWeight: 500 }}>
+              {t('poker.room.waitingForModerator')}
+            </p>
+          </>
+        )}
       </div>
 
       {/* Bottom row of participants */}
@@ -90,6 +112,9 @@ export default function LobbyParticipants({ participants, currentUserId }: Props
               key={p.id}
               participant={p}
               isCurrentUser={p.userId === currentUserId}
+              hasVoted={voteStatus?.[p.userId]}
+              isVoting={isVoting}
+              avatarUrl={userMap[p.userId]?.avatarUrl}
               t={t}
             />
           ))}
@@ -102,10 +127,16 @@ export default function LobbyParticipants({ participants, currentUserId }: Props
 function ParticipantAvatar({
   participant: p,
   isCurrentUser,
+  hasVoted,
+  isVoting,
+  avatarUrl,
   t,
 }: {
   participant: PokerParticipant;
   isCurrentUser: boolean;
+  hasVoted?: boolean;
+  isVoting?: boolean;
+  avatarUrl?: string | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   t: any;
 }) {
@@ -123,28 +154,56 @@ function ParticipantAvatar({
     }}>
       {/* Avatar */}
       <div style={{ position: 'relative' }}>
-        <div style={{
-          width: 48,
-          height: 48,
-          borderRadius: '50%',
-          background: color,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: 16,
-          fontWeight: 700,
-          color: '#FFFFFF',
-          border: isCurrentUser ? '3px solid #2563EB' : '2px solid #FFFFFF',
-          boxShadow: isCurrentUser
-            ? '0 0 0 2px #2563EB, 0 2px 8px rgba(37,99,235,0.2)'
-            : '0 2px 8px rgba(0,0,0,0.08)',
-          opacity: p.connected ? 1 : 0.4,
-        }}>
-          {initials}
-        </div>
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={p.displayName}
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              objectFit: 'cover',
+              border: isCurrentUser ? '3px solid #2563EB' : '2px solid #FFFFFF',
+              boxShadow: isCurrentUser
+                ? '0 0 0 2px #2563EB, 0 2px 8px rgba(37,99,235,0.2)'
+                : '0 2px 8px rgba(0,0,0,0.08)',
+              opacity: p.connected ? 1 : 0.4,
+            }}
+          />
+        ) : (
+          <div style={{
+            width: 48,
+            height: 48,
+            borderRadius: '50%',
+            background: color,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 16,
+            fontWeight: 700,
+            color: '#FFFFFF',
+            border: isCurrentUser ? '3px solid #2563EB' : '2px solid #FFFFFF',
+            boxShadow: isCurrentUser
+              ? '0 0 0 2px #2563EB, 0 2px 8px rgba(37,99,235,0.2)'
+              : '0 2px 8px rgba(0,0,0,0.08)',
+            opacity: p.connected ? 1 : 0.4,
+          }}>
+            {initials}
+          </div>
+        )}
 
-        {/* Connected badge */}
-        {p.connected && (
+        {/* Vote check badge (voting mode) */}
+        {isVoting && hasVoted ? (
+          <span style={{
+            position: 'absolute', bottom: 0, right: 0,
+            width: 16, height: 16, borderRadius: '50%',
+            background: '#16A34A', border: '2px solid #FFFFFF',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Check size={10} color="#FFFFFF" strokeWidth={3} />
+          </span>
+        ) : p.connected && (
+          /* Connected badge (lobby mode) */
           <span style={{
             position: 'absolute',
             bottom: 1,

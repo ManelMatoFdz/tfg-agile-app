@@ -29,7 +29,7 @@ export default function ProjectLayout() {
   }, [projectId]);
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Breadcrumb */}
       <nav style={{
         display: 'flex',
@@ -154,7 +154,9 @@ export default function ProjectLayout() {
         </nav>
       </div>
 
-      <Outlet />
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+        <Outlet />
+      </div>
     </div>
   );
 }

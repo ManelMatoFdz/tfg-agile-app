@@ -11,6 +11,7 @@ import type {
 export interface CreateSessionDto {
   name: string;
   deck?: DeckType;
+  timerSeconds?: number | null;
 }
 
 export interface JoinSessionDto {
@@ -41,6 +42,12 @@ export const pokerApi = {
 
   closeSession: (sessionId: string) =>
     pokerClient.post<PokerSession>(`/poker/sessions/${sessionId}/close`).then((r) => r.data),
+
+  updateTimer: (sessionId: string, timerSeconds: number | null) =>
+    pokerClient.post<PokerSession>(`/poker/sessions/${sessionId}/timer`, { timerSeconds }).then((r) => r.data),
+
+  selectTask: (sessionId: string, taskId: string) =>
+    pokerClient.post<PokerSession>(`/poker/sessions/${sessionId}/select-task`, { taskId }).then((r) => r.data),
 
   startRound: (sessionId: string, dto: StartRoundDto) =>
     pokerClient.post<PokerRound>(`/poker/sessions/${sessionId}/rounds`, dto).then((r) => r.data),

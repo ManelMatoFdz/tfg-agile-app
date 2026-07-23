@@ -97,6 +97,13 @@ public class SprintController {
         return sprintService.activateSprint(sprintId, callerId);
     }
 
+    @PatchMapping("/sprints/{sprintId}/retrospective")
+    public SprintResponseDto saveRetrospective(@PathVariable("sprintId") UUID sprintId,
+                                                @Valid @RequestBody SaveRetrospectiveRequestDto dto,
+                                                @AuthenticationPrincipal UUID callerId) {
+        return sprintService.saveRetrospective(sprintId, dto.reviewNotes(), callerId);
+    }
+
     @DeleteMapping("/sprints/{sprintId}")
     public ResponseEntity<Void> deleteSprint(@PathVariable("sprintId") UUID sprintId,
                                              @AuthenticationPrincipal UUID callerId) {

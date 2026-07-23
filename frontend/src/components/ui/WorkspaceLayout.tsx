@@ -235,7 +235,7 @@ export default function WorkspaceLayout() {
 
         <TopBar />
 
-        <main className="ws-content" style={{ flex: 1, padding: '24px 28px' }}>
+        <main className="ws-content" style={{ flex: 1, padding: '24px 28px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <Outlet />
         </main>
       </div>

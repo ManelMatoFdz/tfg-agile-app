@@ -643,6 +643,42 @@
         "returnedBanner": "Esta tarea fue devuelta al backlog al completar el sprint.",
         "snapshotBanner": "Estás viendo el estado de esta tarea al cierre del sprint. Puede que su estado actual sea diferente."
       },
+      "retrospective": {
+        "title": "Retrospectiva del Sprint",
+        "createButton": "Crear retrospectiva",
+        "editButton": "Editar retrospectiva",
+        "selectTechnique": "Elige una técnica de retrospectiva",
+        "backToTechniques": "Volver",
+        "save": "Guardar retrospectiva",
+        "saving": "Guardando...",
+        "error": "Error al guardar la retrospectiva.",
+        "noRetro": "No se ha creado una retrospectiva para este sprint.",
+        "addRetro": "Añade una retrospectiva para capturar las lecciones aprendidas.",
+        "techniques": {
+          "START_STOP_CONTINUE": {
+            "name": "Start / Stop / Continue",
+            "description": "Identifica acciones para empezar, dejar de hacer y continuar haciendo.",
+            "start": "¿Qué deberíamos empezar a hacer?",
+            "stop": "¿Qué deberíamos dejar de hacer?",
+            "continue": "¿Qué deberíamos seguir haciendo?"
+          },
+          "FOUR_LS": {
+            "name": "4Ls",
+            "description": "Reflexiona sobre lo que el equipo amó, aprendió, le faltó y desea.",
+            "loved": "¿Qué nos encantó?",
+            "learned": "¿Qué aprendimos?",
+            "lacked": "¿Qué nos faltó?",
+            "longedFor": "¿Qué deseamos?"
+          },
+          "MAD_SAD_GLAD": {
+            "name": "Mad / Sad / Glad",
+            "description": "Expresa emociones sobre la experiencia del sprint.",
+            "mad": "¿Qué nos frustró?",
+            "sad": "¿Qué nos entristeció?",
+            "glad": "¿Qué nos alegró?"
+          }
+        }
+      },
       "create": {
         "title": "Nuevo sprint",
         "name": "Nombre",
@@ -1004,7 +1040,28 @@
       "waitingForModeratorShort": "Esperando al moderador...",
       "noTaskSelected": "Sin tarea seleccionada",
       "noTaskSelectedSubtitle": "El moderador debe seleccionar una tarea antes de iniciar la votación",
-      "youBadge": "TÚ"
+      "youBadge": "TÚ",
+      "mostVoted": "Más votado",
+      "basedOnVotes": "Basado en {{count}} votos",
+      "agreedCount": "{{count}} participantes de acuerdo",
+      "allVoted": "Todos votaron",
+      "teamVotes": "Votos del equipo",
+      "moderatorPanel": "Panel del moderador",
+      "saveToTask": "Guardar en tarea",
+      "points": "Puntos",
+      "suggested": "Sugerido",
+      "safeEstimate": "Estimación segura",
+      "or": "o",
+      "votedProgress": "{{voted}} de {{total}} han votado",
+      "extremeVotersTitle": "Votos extremos detectados",
+      "extremeHigh": "⬆ {{names}} votó {{value}} (el más alto)",
+      "extremeLow": "⬇ {{names}} votó {{value}} (el más bajo)",
+      "extremeVotersHint": "Se recomienda que expliquen su razonamiento antes de decidir.",
+      "estimateSaved": "Estimación guardada: \"{{task}}\" → {{points}} SP"
+    },
+    "timer": {
+      "noLimit": "Sin límite",
+      "expired": "Tiempo agotado"
     }
   },
   "myTasks": {

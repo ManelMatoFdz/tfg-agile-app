@@ -301,6 +301,23 @@ public class SprintService {
     }
 
     @Transactional
+    public SprintResponseDto saveRetrospective(UUID sprintId, String reviewNotes, UUID callerId) {
+        Sprint sprint = getSprintOrThrow(sprintId);
+        MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
+        requireScrumMasterOrAdmin(perms);
+
+        if (sprint.getStatus() != SprintStatus.COMPLETED) {
+            throw new ConflictException("SPRINT_NOT_COMPLETED");
+        }
+
+        sprint.setReviewNotes(reviewNotes);
+        SprintResponseDto result = SprintResponseDto.from(sprintRepository.save(sprint));
+        projectServiceClient.touchProject(sprint.getProjectId());
+        projectServiceClient.touchMemberActivity(sprint.getProjectId(), callerId);
+        return result;
+    }
+
+    @Transactional
     public void deleteSprint(UUID sprintId, UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);

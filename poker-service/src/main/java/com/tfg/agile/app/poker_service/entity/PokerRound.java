@@ -51,6 +51,9 @@ public class PokerRound {
     @Column
     private Instant revealedAt;
 
+    @Column
+    private Instant timerEndsAt;
+
     @PrePersist
     void prePersist() {
         startedAt = Instant.now();

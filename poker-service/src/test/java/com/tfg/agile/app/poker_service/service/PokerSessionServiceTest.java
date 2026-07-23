@@ -67,7 +67,7 @@ class PokerSessionServiceTest {
             return session;
         });
 
-        var response = service.createSession(projectId, userId, new CreateSessionRequestDto("Planning", null));
+        var response = service.createSession(projectId, userId, new CreateSessionRequestDto("Planning", null, null));
 
         assertThat(response.projectId()).isEqualTo(projectId);
         assertThat(response.createdBy()).isEqualTo(userId);
@@ -143,18 +143,17 @@ class PokerSessionServiceTest {
     }
 
     @Test
-    void leaveSession_marksParticipantDisconnected() {
+    void leaveSession_deletesParticipant() {
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         PokerSession session = TestDataFactory.session(UUID.randomUUID(), UUID.randomUUID());
         PokerParticipant participant = TestDataFactory.participant(session, userId, ParticipantRole.VOTER);
 
         when(participantRepository.findBySessionIdAndUserId(sessionId, userId)).thenReturn(Optional.of(participant));
-        when(participantRepository.save(any(PokerParticipant.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         service.leaveSession(sessionId, userId);
 
-        assertThat(participant.isConnected()).isFalse();
+        verify(participantRepository).delete(participant);
     }
 
     @Test
@@ -166,7 +165,7 @@ class PokerSessionServiceTest {
 
         assertThatThrownBy(() -> service.closeSession(sessionId, UUID.randomUUID()))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("SESSION_CREATOR_REQUIRED");
+                .hasMessage("SESSION_MODERATOR_REQUIRED");
     }
 
     @Test
@@ -202,6 +201,7 @@ class PokerSessionServiceTest {
         UUID userId = UUID.randomUUID();
         UUID taskId = UUID.randomUUID();
         PokerSession session = TestDataFactory.session(UUID.randomUUID(), userId);
+        session.getParticipants().add(TestDataFactory.participant(session, userId, ParticipantRole.MODERATOR));
 
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(roundRepository.findBySessionIdAndStatus(sessionId, RoundStatus.VOTING)).thenReturn(Optional.empty());
@@ -220,6 +220,7 @@ class PokerSessionServiceTest {
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         PokerSession session = TestDataFactory.session(UUID.randomUUID(), userId);
+        session.getParticipants().add(TestDataFactory.participant(session, userId, ParticipantRole.MODERATOR));
 
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
         when(roundRepository.findBySessionIdAndStatus(sessionId, RoundStatus.VOTING)).thenReturn(Optional.empty());
@@ -234,6 +235,7 @@ class PokerSessionServiceTest {
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         PokerSession session = TestDataFactory.session(UUID.randomUUID(), userId);
+        session.getParticipants().add(TestDataFactory.participant(session, userId, ParticipantRole.MODERATOR));
         PokerRound round = TestDataFactory.round(session, UUID.randomUUID());
 
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
@@ -252,6 +254,7 @@ class PokerSessionServiceTest {
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         PokerSession session = TestDataFactory.session(UUID.randomUUID(), userId);
+        session.getParticipants().add(TestDataFactory.participant(session, userId, ParticipantRole.MODERATOR));
         PokerRound round = TestDataFactory.round(session, UUID.randomUUID());
         round.setStatus(RoundStatus.REVEALED);
 
@@ -272,6 +275,7 @@ class PokerSessionServiceTest {
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         PokerSession session = TestDataFactory.session(UUID.randomUUID(), userId);
+        session.getParticipants().add(TestDataFactory.participant(session, userId, ParticipantRole.MODERATOR));
         PokerRound round = TestDataFactory.round(session, UUID.randomUUID());
         round.setStatus(RoundStatus.REVEALED);
 
@@ -290,6 +294,7 @@ class PokerSessionServiceTest {
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
         PokerSession session = TestDataFactory.session(UUID.randomUUID(), userId);
+        session.getParticipants().add(TestDataFactory.participant(session, userId, ParticipantRole.MODERATOR));
         PokerRound round = TestDataFactory.round(session, UUID.randomUUID());
         round.setStatus(RoundStatus.REVEALED);
         round.setFinalEstimate(5);

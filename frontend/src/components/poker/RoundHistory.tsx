@@ -8,7 +8,7 @@ interface Props {
 
 export default function RoundHistory({ rounds }: Props) {
   const { t } = useTranslation();
-  const completedRounds = rounds.filter((r) => r.status === 'CONSENSUS');
+  const completedRounds = rounds.filter((r) => r.status === 'CONSENSUS' && r.finalEstimate != null);
 
   if (completedRounds.length === 0) return null;
 
