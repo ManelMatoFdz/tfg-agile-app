@@ -560,10 +560,19 @@ export default function SprintBacklogPage() {
                     <div style={{ textAlign: 'center' }}>
                       {task.storyPoints != null ? (
                         <span style={{
-                          fontSize: 12, fontWeight: 600, color: 'var(--text)',
+                          fontWeight: 700,
+                          color: 'var(--accent)',
+                          background: 'var(--accent-muted)',
+                          borderRadius: 'var(--radius-pill)',
+                          width: 26,
+                          height: 26,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 12,
                           fontFamily: 'var(--font-mono)',
                         }}>
-                          {task.storyPoints} pts
+                          {task.storyPoints}
                         </span>
                       ) : (
                         <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>—</span>
@@ -930,10 +939,20 @@ export default function SprintBacklogPage() {
                         {/* Story points */}
                         {task.storyPoints != null && (
                           <span style={{
-                            fontSize: 11, fontWeight: 700, color: 'var(--accent)',
-                            fontFamily: 'var(--font-mono)', flexShrink: 0,
+                            fontWeight: 700,
+                            color: 'var(--accent)',
+                            background: 'var(--accent-muted)',
+                            borderRadius: 'var(--radius-pill)',
+                            width: 22,
+                            height: 22,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: 10,
+                            fontFamily: 'var(--font-mono)',
+                            flexShrink: 0,
                           }}>
-                            {task.storyPoints} pts
+                            {task.storyPoints}
                           </span>
                         )}
                       </button>

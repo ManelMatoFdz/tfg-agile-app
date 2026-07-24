@@ -221,7 +221,6 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
       }}
     >
       <div style={{
-        width: '100%',
         width: isTwoColumn ? '85vw' : '100%',
         maxWidth: isTwoColumn ? 1060 : 600,
         height: isTwoColumn ? '85vh' : undefined,

@@ -128,7 +128,7 @@ export default function PokerPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <style>{`
-        .poker-grid{display:grid;gap:16px;grid-template-columns:1fr}
+        .poker-grid{display:grid;gap:16px;grid-template-columns:1fr;align-items:start}
         @media(min-width:640px){.poker-grid{grid-template-columns:1fr 1fr}}
         @media(min-width:1024px){.poker-grid{grid-template-columns:1fr 1fr 1fr}}
         .poker-session-card{transition:border-color 0.15s,box-shadow 0.15s,transform 0.15s}

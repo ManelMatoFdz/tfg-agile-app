@@ -2,7 +2,7 @@ import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router-
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
-  LayoutGrid, Users, UserPlus, Settings,
+  LayoutGrid, Users, UserPlus, Settings, CheckSquare,
   Menu,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -12,10 +12,11 @@ import LanguageSwitcher from './LanguageSwitcher';
 import TopBar from './TopBar';
 
 const WS_NAV = [
-  { to: '',         i18nKey: 'projects',      end: true,  Icon: LayoutGrid },
-  { to: 'members',  i18nKey: 'members',       end: false, Icon: UserPlus   },
-  { to: 'teams',    i18nKey: 'teams',         end: false, Icon: Users      },
-  { to: 'settings', i18nKey: 'settings',      end: false, Icon: Settings   },
+  { to: '',         i18nKey: 'projects',      end: true,  Icon: LayoutGrid   },
+  { to: 'my-tasks', i18nKey: 'myTasks',       end: false, Icon: CheckSquare  },
+  { to: 'members',  i18nKey: 'members',       end: false, Icon: UserPlus     },
+  { to: 'teams',    i18nKey: 'teams',         end: false, Icon: Users        },
+  { to: 'settings', i18nKey: 'settings',      end: false, Icon: Settings     },
 ] as const;
 
 const SIDEBAR_W = 240;

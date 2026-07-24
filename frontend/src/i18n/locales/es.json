@@ -1070,6 +1070,12 @@
     "tasks": "tareas",
     "activeSummary": "{{count}} tarea activa",
     "allDone": "Todo al día",
+    "subtitle": "Gestiona tus asignaciones en todos los proyectos activos.",
+    "allProjects": "Todos los proyectos",
+    "anyPriority": "Cualquier prioridad",
+    "noTasksInTab": "No hay tareas en este estado",
+    "goToProject": "Ir al proyecto",
+    "subtask": "Subtarea",
     "empty": "No tienes tareas asignadas",
     "emptySubtitle": "Cuando te asignen tareas en un proyecto, aparecerán aquí",
     "loadError": "Error al cargar las tareas."

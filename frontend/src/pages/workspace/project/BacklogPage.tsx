@@ -456,12 +456,19 @@ export default function BacklogPage() {
                     <div style={{ textAlign: 'center' }}>
                       {task.storyPoints != null ? (
                         <span style={{
+                          fontWeight: 700,
+                          color: 'var(--accent)',
+                          background: 'var(--accent-muted)',
+                          borderRadius: 'var(--radius-pill)',
+                          width: 26,
+                          height: 26,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
                           fontSize: 12,
-                          fontWeight: 600,
-                          color: 'var(--text)',
                           fontFamily: 'var(--font-mono)',
                         }}>
-                          {task.storyPoints} pts
+                          {task.storyPoints}
                         </span>
                       ) : (
                         <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>—</span>

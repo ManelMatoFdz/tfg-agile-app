@@ -61,18 +61,6 @@ export default function TopBar() {
 
       {/* Right: actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {/* My Tasks — only when inside a workspace */}
-        {workspaceId && (
-          <Link
-            to={`/workspaces/${workspaceId}/my-tasks`}
-            style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-muted)', textDecoration: 'none', transition: 'color 150ms' }}
-            onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; }}
-          >
-            {t('workspace.nav.myTasks')}
-          </Link>
-        )}
-
         <NotificationBell />
 
         {/* Profile dropdown */}

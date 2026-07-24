@@ -1070,6 +1070,12 @@
     "tasks": "tarefas",
     "activeSummary": "{{count}} tarefa activa",
     "allDone": "Todo ao día",
+    "subtitle": "Xestiona as túas asignacións en todos os proxectos activos.",
+    "allProjects": "Todos os proxectos",
+    "anyPriority": "Calquera prioridade",
+    "noTasksInTab": "Non hai tarefas neste estado",
+    "goToProject": "Ir ao proxecto",
+    "subtask": "Subtarefa",
     "empty": "Non tes tarefas asignadas",
     "emptySubtitle": "Cando che asignen tarefas nun proxecto, aparecerán aquí",
     "loadError": "Erro ao cargar as tarefas."

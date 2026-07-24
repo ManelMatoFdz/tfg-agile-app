@@ -1070,6 +1070,12 @@
     "tasks": "tasks",
     "activeSummary": "{{count}} active task",
     "allDone": "All caught up",
+    "subtitle": "Manage your assignments across all active projects.",
+    "allProjects": "All Projects",
+    "anyPriority": "Any Priority",
+    "noTasksInTab": "No tasks in this status",
+    "goToProject": "Go to project",
+    "subtask": "Subtask",
     "empty": "No tasks assigned to you",
     "emptySubtitle": "When tasks are assigned to you in a project, they will appear here",
     "loadError": "Error loading tasks."

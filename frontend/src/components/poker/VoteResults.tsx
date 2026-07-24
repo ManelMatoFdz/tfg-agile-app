@@ -188,11 +188,19 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
                     Story Points
                   </p>
                   <span style={{
-                    fontSize: 11, fontWeight: 700,
-                    color: '#2563EB', background: 'rgba(37,99,235,0.08)',
-                    borderRadius: 6, padding: '3px 10px',
+                    fontWeight: 700,
+                    color: 'var(--accent)',
+                    background: 'var(--accent-muted)',
+                    borderRadius: 'var(--radius-pill)',
+                    width: 26,
+                    height: 26,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                    fontFamily: 'var(--font-mono)',
                   }}>
-                    {task.storyPoints} SP
+                    {task.storyPoints}
                   </span>
                 </div>
               )}

@@ -4,10 +4,9 @@ import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
 import { useEffect, useState } from 'react';
 import { buildAvatarSrc } from '../../utils/avatarUrl';
-import { CheckSquare, User, Bell, LogOut, Zap, Menu, X } from 'lucide-react';
+import { User, Bell, LogOut, Zap, Menu, X } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { to: '/my-tasks',      i18nKey: 'myTasks',       Icon: CheckSquare },
   { to: '/profile',       i18nKey: 'profile',        Icon: User        },
   { to: '/notifications', i18nKey: 'notifications',  Icon: Bell        },
 ] as const;
