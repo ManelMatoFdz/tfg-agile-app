@@ -43,14 +43,14 @@ class UserProfileControllerTest {
 
         UpdateUserProfileRequestDto updateProfileRequest = new UpdateUserProfileRequestDto("John", "Bio");
         ChangePasswordRequestDto changePasswordRequest = new ChangePasswordRequestDto("current", "new-secret");
-        UpdateNotificationSettingsRequestDto settingsRequest = new UpdateNotificationSettingsRequestDto(true, false, true, false);
+        UpdateNotificationSettingsRequestDto settingsRequest = new UpdateNotificationSettingsRequestDto(false, true, false);
         MockMultipartFile avatarFile = new MockMultipartFile("file", "avatar.png", "image/png", new byte[]{1, 2, 3});
 
         UserProfileResponseDto profileResponse = new UserProfileResponseDto(userId, "john", "John", "john@example.com", "Bio", null, Instant.now(), Instant.now(), true);
         AvatarUploadResponseDto avatarResponse = new AvatarUploadResponseDto("/assets/avatars/me");
         NotificationResponseDto notificationResponse = new NotificationResponseDto(notificationId, "Title", "Message", "GENERAL", true, Instant.now(), null, null);
         PagedResponseDto<NotificationResponseDto> pageResponse = new PagedResponseDto<>(List.of(notificationResponse), 0, 10, 1, 1, false);
-        NotificationSettingsResponseDto settingsResponse = new NotificationSettingsResponseDto(true, true, true, true);
+        NotificationSettingsResponseDto settingsResponse = new NotificationSettingsResponseDto(true, true, true);
         MessageResponseDto messageResponse = new MessageResponseDto("ok");
 
         when(userProfileService.me(userId)).thenReturn(profileResponse);

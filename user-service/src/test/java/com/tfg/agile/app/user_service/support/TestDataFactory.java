@@ -70,7 +70,6 @@ public final class TestDataFactory {
         return NotificationSettings.builder()
                 .userId(user.getId())
                 .user(user)
-                .emailNotificationsEnabled(true)
                 .inAppNotificationsEnabled(true)
                 .projectUpdatesEnabled(true)
                 .taskRemindersEnabled(true)

@@ -16,23 +16,23 @@ public final class TestDataFactory {
     }
 
     public static MemberPermissionsDto adminPermissions() {
-        return new MemberPermissionsDto(true, false, null);
+        return new MemberPermissionsDto(UUID.randomUUID(), true, false, null);
     }
 
     public static MemberPermissionsDto teamAdminPermissions() {
-        return new MemberPermissionsDto(false, true, null);
+        return new MemberPermissionsDto(UUID.randomUUID(), false, true, null);
     }
 
     public static MemberPermissionsDto memberPermissions() {
-        return new MemberPermissionsDto(false, false, null);
+        return new MemberPermissionsDto(UUID.randomUUID(), false, false, null);
     }
 
     public static MemberPermissionsDto scrumMasterPermissions() {
-        return new MemberPermissionsDto(false, false, "SCRUM_MASTER");
+        return new MemberPermissionsDto(UUID.randomUUID(), false, false, "SCRUM_MASTER");
     }
 
     public static MemberPermissionsDto productOwnerPermissions() {
-        return new MemberPermissionsDto(false, false, "PRODUCT_OWNER");
+        return new MemberPermissionsDto(UUID.randomUUID(), false, false, "PRODUCT_OWNER");
     }
 
     public static Task task(UUID projectId, UUID reporterId) {

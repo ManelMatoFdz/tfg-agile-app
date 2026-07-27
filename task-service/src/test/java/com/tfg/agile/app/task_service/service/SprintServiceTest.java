@@ -1,12 +1,15 @@
 package com.tfg.agile.app.task_service.service;
 
 import com.tfg.agile.app.task_service.client.ProjectServiceClient;
+import com.tfg.agile.app.task_service.client.UserServiceClient;
 import com.tfg.agile.app.task_service.dto.AssignTaskToSprintRequestDto;
 import com.tfg.agile.app.task_service.dto.CreateSprintRequestDto;
 import com.tfg.agile.app.task_service.dto.UpdateSprintRequestDto;
 import com.tfg.agile.app.task_service.entity.Sprint;
 import com.tfg.agile.app.task_service.entity.SprintStatus;
+import com.tfg.agile.app.task_service.entity.SprintTaskSnapshot;
 import com.tfg.agile.app.task_service.entity.Task;
+import com.tfg.agile.app.task_service.entity.TaskPriority;
 import com.tfg.agile.app.task_service.entity.TaskType;
 import com.tfg.agile.app.task_service.exception.ConflictException;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
@@ -49,6 +52,8 @@ class SprintServiceTest {
     @Mock
     private ProjectServiceClient projectServiceClient;
     @Mock
+    private UserServiceClient userServiceClient;
+    @Mock
     private BoardColumnService boardColumnService;
     @Mock
     private LabelRepository labelRepository;
@@ -60,7 +65,7 @@ class SprintServiceTest {
 
     @BeforeEach
     void setUp() {
-        taskService = new TaskService(taskRepository, labelRepository, projectServiceClient, boardColumnService, activityService);
+        taskService = new TaskService(taskRepository, labelRepository, projectServiceClient, userServiceClient, boardColumnService, activityService);
         service = new SprintService(sprintRepository, taskRepository, snapshotRepository, projectServiceClient, boardColumnService, taskService, activityService);
     }
 
@@ -119,7 +124,7 @@ class SprintServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
         when(taskRepository.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of(task));
 
-        var response = service.getSprintTasks(sprint.getId(), null, null, null, null, false, callerId);
+        var response = service.getSprintTasks(sprint.getId(), null, null, null, null, callerId);
 
         assertThat(response).hasSize(1);
         assertThat(response.get(0).sprintId()).isEqualTo(sprint.getId());
@@ -515,6 +520,102 @@ class SprintServiceTest {
 
         assertThat(response.sprintId()).isNull();
         verify(taskRepository).save(task);
+    }
+
+    // ── Velocity ──────────────────────────────────────────────────────────────
+
+    @Test
+    void getVelocity_returnsAverageVelocity() {
+        UUID projectId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
+        when(sprintRepository.countCompleted(projectId)).thenReturn(3L);
+        when(sprintRepository.averageVelocity(projectId)).thenReturn(10.5);
+
+        var result = service.getVelocity(projectId, callerId);
+
+        assertThat(result.averageVelocity()).isEqualTo(10.5);
+        assertThat(result.completedSprints()).isEqualTo(3);
+    }
+
+    @Test
+    void getVelocity_returnsZeroWhenNoCompletedSprints() {
+        UUID projectId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
+        when(sprintRepository.countCompleted(projectId)).thenReturn(0L);
+
+        var result = service.getVelocity(projectId, callerId);
+
+        assertThat(result.averageVelocity()).isEqualTo(0.0);
+        assertThat(result.completedSprints()).isEqualTo(0);
+    }
+
+    // ── Retrospective ─────────────────────────────────────────────────────────
+
+    @Test
+    void saveRetrospective_savesNotesOnCompletedSprint() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+        sprint.setStatus(SprintStatus.COMPLETED);
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+        when(sprintRepository.save(sprint)).thenReturn(sprint);
+
+        var result = service.saveRetrospective(sprint.getId(), "What went well...", callerId);
+
+        assertThat(sprint.getReviewNotes()).isEqualTo("What went well...");
+    }
+
+    @Test
+    void saveRetrospective_throwsWhenSprintNotCompleted() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+        // Status is PLANNING by default
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+
+        assertThatThrownBy(() -> service.saveRetrospective(sprint.getId(), "Notes", callerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("SPRINT_NOT_COMPLETED");
+    }
+
+    // ── Snapshots ─────────────────────────────────────────────────────────────
+
+    @Test
+    void getSprintSnapshots_returnsMappedSnapshots() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+
+        SprintTaskSnapshot snapshot = SprintTaskSnapshot.builder()
+                .id(UUID.randomUUID())
+                .sprintId(sprint.getId())
+                .taskId(UUID.randomUUID())
+                .title("Task")
+                .statusAtEnd("DONE")
+                .priority(TaskPriority.MEDIUM)
+                .type(TaskType.TASK)
+                .completed(true)
+                .returnedToBacklog(false)
+                .createdAt(java.time.Instant.now())
+                .build();
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
+        when(snapshotRepository.findBySprintId(sprint.getId())).thenReturn(List.of(snapshot));
+
+        var result = service.getSprintSnapshots(sprint.getId(), callerId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).title()).isEqualTo("Task");
+        assertThat(result.get(0).completed()).isTrue();
     }
 }
 

@@ -1,6 +1,7 @@
 package com.tfg.agile.app.task_service.service;
 
 import com.tfg.agile.app.task_service.client.ProjectServiceClient;
+import com.tfg.agile.app.task_service.client.UserServiceClient;
 import com.tfg.agile.app.task_service.dto.CreateTaskRequestDto;
 import com.tfg.agile.app.task_service.dto.MoveTaskRequestDto;
 import com.tfg.agile.app.task_service.dto.UpdateTaskRequestDto;
@@ -41,6 +42,8 @@ class TaskServiceTest {
     @Mock
     private ProjectServiceClient projectServiceClient;
     @Mock
+    private UserServiceClient userServiceClient;
+    @Mock
     private BoardColumnService boardColumnService;
     @Mock
     private ActivityService activityService;
@@ -49,7 +52,7 @@ class TaskServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new TaskService(taskRepository, labelRepository, projectServiceClient, boardColumnService, activityService);
+        service = new TaskService(taskRepository, labelRepository, projectServiceClient, userServiceClient, boardColumnService, activityService);
     }
 
     @Test
@@ -116,7 +119,7 @@ class TaskServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
 
         assertThatThrownBy(() -> service.create(projectId,
-                new CreateTaskRequestDto("Task", "Desc", null, null, null, null, null),
+                new CreateTaskRequestDto("Task", "Desc", null, null, null, null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("ONLY_PO_OR_ADMIN_CAN_CREATE_TASKS");
@@ -130,7 +133,7 @@ class TaskServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
 
         assertThatThrownBy(() -> service.create(projectId,
-                new CreateTaskRequestDto("Task", "Desc", null, null, null, null, null),
+                new CreateTaskRequestDto("Task", "Desc", null, null, null, null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("ONLY_PO_OR_ADMIN_CAN_CREATE_TASKS");
@@ -147,7 +150,7 @@ class TaskServiceTest {
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = service.create(projectId,
-                new CreateTaskRequestDto("Task", "Desc", null, null, null, null, null),
+                new CreateTaskRequestDto("Task", "Desc", null, null, null, null, null, null),
                 callerId);
 
         assertThat(response.priority()).isEqualTo(TaskPriority.MEDIUM);
@@ -167,7 +170,7 @@ class TaskServiceTest {
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = service.create(projectId,
-                new CreateTaskRequestDto("Story", "Desc", null, "STORY", null, null, null),
+                new CreateTaskRequestDto("Story", "Desc", null, "STORY", null, null, null, null),
                 callerId);
 
         assertThat(response.type()).isEqualTo(TaskType.STORY);
@@ -186,7 +189,7 @@ class TaskServiceTest {
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = service.create(projectId,
-                new CreateTaskRequestDto("Subtask", "Desc", null, null, parent.getId(), null, null),
+                new CreateTaskRequestDto("Subtask", "Desc", null, null, parent.getId(), null, null, null),
                 callerId);
 
         assertThat(response.type()).isEqualTo(TaskType.TASK);
@@ -204,7 +207,7 @@ class TaskServiceTest {
         when(taskRepository.findById(bug.getId())).thenReturn(Optional.of(bug));
 
         assertThatThrownBy(() -> service.create(projectId,
-                new CreateTaskRequestDto("Subtask", "Desc", null, null, bug.getId(), null, null),
+                new CreateTaskRequestDto("Subtask", "Desc", null, null, bug.getId(), null, null, null),
                 callerId))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("ONLY_STORY_CAN_HAVE_CHILDREN");
@@ -220,7 +223,7 @@ class TaskServiceTest {
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
 
         assertThatThrownBy(() -> service.create(projectId,
-                new CreateTaskRequestDto("Subtask", "Desc", null, null, task.getId(), null, null),
+                new CreateTaskRequestDto("Subtask", "Desc", null, null, task.getId(), null, null, null),
                 callerId))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("ONLY_STORY_CAN_HAVE_CHILDREN");
@@ -237,7 +240,7 @@ class TaskServiceTest {
         when(taskRepository.findById(subtask.getId())).thenReturn(Optional.of(subtask));
 
         assertThatThrownBy(() -> service.create(projectId,
-                new CreateTaskRequestDto("Grandchild", "Desc", null, null, subtask.getId(), null, null),
+                new CreateTaskRequestDto("Grandchild", "Desc", null, null, subtask.getId(), null, null, null),
                 callerId))
                 .isInstanceOf(ConflictException.class)
                 .hasMessage("MAX_ONE_LEVEL_DEPTH");
@@ -258,7 +261,7 @@ class TaskServiceTest {
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = service.create(projectId,
-                new CreateTaskRequestDto("Subtask", "Desc", null, null, parent.getId(), null, null),
+                new CreateTaskRequestDto("Subtask", "Desc", null, null, parent.getId(), null, null, null),
                 callerId);
 
         assertThat(response.sprintId()).isEqualTo(sprintId);
@@ -349,7 +352,7 @@ class TaskServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
 
         assertThatThrownBy(() -> service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null),
+                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("ONLY_PO_OR_ADMIN_CAN_EDIT_BACKLOG_TASKS");
@@ -365,7 +368,7 @@ class TaskServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
 
         assertThatThrownBy(() -> service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null),
+                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("ONLY_PO_OR_ADMIN_CAN_EDIT_BACKLOG_TASKS");
@@ -382,7 +385,7 @@ class TaskServiceTest {
         when(taskRepository.save(task)).thenReturn(task);
 
         var response = service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated by PO", "Desc", "CRITICAL", null, null, null),
+                new UpdateTaskRequestDto("Updated by PO", "Desc", "CRITICAL", null, null, null, null),
                 callerId);
 
         assertThat(response.title()).isEqualTo("Updated by PO");
@@ -401,7 +404,7 @@ class TaskServiceTest {
         when(taskRepository.save(task)).thenReturn(task);
 
         var response = service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated by Developer", "Desc", "HIGH", null, null, null),
+                new UpdateTaskRequestDto("Updated by Developer", "Desc", "HIGH", null, null, null, null),
                 callerId);
 
         assertThat(response.title()).isEqualTo("Updated by Developer");
@@ -418,7 +421,7 @@ class TaskServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
 
         assertThatThrownBy(() -> service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null),
+                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("ONLY_DEVELOPERS_CAN_EDIT_SPRINT_TASKS");
@@ -435,7 +438,7 @@ class TaskServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
 
         assertThatThrownBy(() -> service.update(task.getId(),
-                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null),
+                new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("ONLY_DEVELOPERS_CAN_EDIT_SPRINT_TASKS");
@@ -572,5 +575,74 @@ class TaskServiceTest {
         service.delete(task.getId(), callerId);
 
         verify(taskRepository).delete(task);
+    }
+
+    // ── Subtask tests ─────────────────────────────────────────────────────────
+
+    @Test
+    void getSubtasks_returnsChildTasks() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Task parent = TestDataFactory.story(projectId, callerId);
+        Task child = TestDataFactory.subtask(projectId, callerId, parent.getId());
+
+        when(taskRepository.findById(parent.getId())).thenReturn(Optional.of(parent));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
+        when(taskRepository.findByParentId(parent.getId())).thenReturn(List.of(child));
+
+        var result = service.getSubtasks(parent.getId(), callerId);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).parentId()).isEqualTo(parent.getId());
+        verify(projectServiceClient).getMemberPermissions(projectId, callerId);
+    }
+
+    @Test
+    void toggleSubtaskDone_marksSubtaskAsDone() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Task subtask = TestDataFactory.subtask(projectId, callerId, UUID.randomUUID());
+
+        when(taskRepository.findById(subtask.getId())).thenReturn(Optional.of(subtask));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
+        when(boardColumnService.getDoneEquivalentStatuses(projectId)).thenReturn(Set.of("DONE"));
+        when(taskRepository.save(subtask)).thenReturn(subtask);
+
+        var result = service.toggleSubtaskDone(subtask.getId(), callerId);
+
+        assertThat(subtask.getStatus()).isEqualTo("DONE");
+        assertThat(subtask.getCompletedAt()).isNotNull();
+    }
+
+    @Test
+    void toggleSubtaskDone_undoneSubtask() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Task subtask = TestDataFactory.subtask(projectId, callerId, UUID.randomUUID());
+        subtask.setStatus("DONE");
+
+        when(taskRepository.findById(subtask.getId())).thenReturn(Optional.of(subtask));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
+        when(boardColumnService.getDoneEquivalentStatuses(projectId)).thenReturn(Set.of("DONE"));
+        when(boardColumnService.getFirstColumnName(projectId)).thenReturn("TODO");
+        when(taskRepository.save(subtask)).thenReturn(subtask);
+
+        var result = service.toggleSubtaskDone(subtask.getId(), callerId);
+
+        assertThat(subtask.getStatus()).isEqualTo("TODO");
+        assertThat(subtask.getCompletedAt()).isNull();
+    }
+
+    @Test
+    void toggleSubtaskDone_throwsWhenNotSubtask() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Task task = TestDataFactory.task(projectId, callerId);
+
+        when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> service.toggleSubtaskDone(task.getId(), callerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("NOT_A_SUBTASK");
     }
 }

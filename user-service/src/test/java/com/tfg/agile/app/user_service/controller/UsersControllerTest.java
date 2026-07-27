@@ -1,5 +1,6 @@
 package com.tfg.agile.app.user_service.controller;
 
+import com.tfg.agile.app.user_service.dto.UserLookupResponseDto;
 import com.tfg.agile.app.user_service.dto.UserSummaryDto;
 import com.tfg.agile.app.user_service.service.UserProfileService;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,21 @@ class UsersControllerTest {
 
         assertThat(response).isEqualTo(expected);
         verify(userProfileService).batchLookup(List.of(userId));
+    }
+
+    @Test
+    void lookup_delegatesToService() {
+        UsersController controller = new UsersController(userProfileService);
+        String email = "john@example.com";
+        UserLookupResponseDto expected = new UserLookupResponseDto(
+                UUID.randomUUID(), "jdoe", "John Doe", email, null);
+
+        when(userProfileService.lookupByEmail(email)).thenReturn(expected);
+
+        UserLookupResponseDto response = controller.lookup(email);
+
+        assertThat(response).isEqualTo(expected);
+        verify(userProfileService).lookupByEmail(email);
     }
 }
 

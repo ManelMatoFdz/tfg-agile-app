@@ -274,7 +274,6 @@ class UserProfileServiceTest {
 
         var response = userProfileService.getNotificationSettings(user.getId());
 
-        assertThat(response.isEmailNotificationsEnabled()).isTrue();
         assertThat(response.isInAppNotificationsEnabled()).isTrue();
         verify(notificationSettingsRepository).save(any(NotificationSettings.class));
     }
@@ -289,10 +288,9 @@ class UserProfileServiceTest {
 
         var response = userProfileService.updateNotificationSettings(
                 user.getId(),
-                new UpdateNotificationSettingsRequestDto(false, null, false, null)
+                new UpdateNotificationSettingsRequestDto(null, false, null)
         );
 
-        assertThat(response.isEmailNotificationsEnabled()).isFalse();
         assertThat(response.isProjectUpdatesEnabled()).isFalse();
         assertThat(response.isInAppNotificationsEnabled()).isTrue();
         assertThat(response.isTaskRemindersEnabled()).isTrue();
@@ -320,6 +318,26 @@ class UserProfileServiceTest {
         when(userRepository.findById(any())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userProfileService.me(java.util.UUID.randomUUID()))
+                .isInstanceOf(com.tfg.agile.app.user_service.exception.UserNotFoundException.class);
+    }
+
+    @Test
+    void lookupByEmail_returnsDto() {
+        User user = TestDataFactory.user();
+        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(user));
+
+        var result = userProfileService.lookupByEmail("john@example.com");
+
+        assertThat(result.getId()).isEqualTo(user.getId());
+        assertThat(result.getUsername()).isEqualTo(user.getUsername());
+        assertThat(result.getEmail()).isEqualTo(user.getEmail());
+    }
+
+    @Test
+    void lookupByEmail_throwsWhenNotFound() {
+        when(userRepository.findByEmail("nobody@example.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> userProfileService.lookupByEmail("nobody@example.com"))
                 .isInstanceOf(com.tfg.agile.app.user_service.exception.UserNotFoundException.class);
     }
 }

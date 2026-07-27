@@ -262,4 +262,52 @@ class WorkspaceServiceTest {
 
         assertThat(response.role()).isEqualTo(WorkspaceRole.ADMIN);
     }
+
+    // ── leaveWorkspace ────────────────────────────────────────────────────────
+
+    @Test
+    void leaveWorkspace_deletesCallerMembership() {
+        UUID callerId = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        WorkspaceMember member = TestDataFactory.workspaceMember(workspace, callerId, WorkspaceRole.MEMBER);
+
+        when(workspaceRepository.findById(workspace.getId())).thenReturn(Optional.of(workspace));
+        when(memberRepository.findByWorkspaceIdAndUserId(workspace.getId(), callerId)).thenReturn(Optional.of(member));
+
+        service.leaveWorkspace(workspace.getId(), callerId);
+
+        verify(memberRepository).delete(member);
+    }
+
+    @Test
+    void leaveWorkspace_throwsWhenLastAdmin() {
+        UUID callerId = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        WorkspaceMember adminMember = TestDataFactory.workspaceMember(workspace, callerId, WorkspaceRole.ADMIN);
+
+        when(workspaceRepository.findById(workspace.getId())).thenReturn(Optional.of(workspace));
+        when(memberRepository.findByWorkspaceIdAndUserId(workspace.getId(), callerId)).thenReturn(Optional.of(adminMember));
+        when(memberRepository.findByWorkspaceId(workspace.getId())).thenReturn(List.of(adminMember));
+
+        assertThatThrownBy(() -> service.leaveWorkspace(workspace.getId(), callerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("LAST_WORKSPACE_ADMIN");
+    }
+
+    @Test
+    void leaveWorkspace_adminCanLeaveWhenOtherAdminsExist() {
+        UUID callerId = UUID.randomUUID();
+        UUID otherAdminId = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        WorkspaceMember callerMember = TestDataFactory.workspaceMember(workspace, callerId, WorkspaceRole.ADMIN);
+        WorkspaceMember otherAdmin = TestDataFactory.workspaceMember(workspace, otherAdminId, WorkspaceRole.ADMIN);
+
+        when(workspaceRepository.findById(workspace.getId())).thenReturn(Optional.of(workspace));
+        when(memberRepository.findByWorkspaceIdAndUserId(workspace.getId(), callerId)).thenReturn(Optional.of(callerMember));
+        when(memberRepository.findByWorkspaceId(workspace.getId())).thenReturn(List.of(callerMember, otherAdmin));
+
+        service.leaveWorkspace(workspace.getId(), callerId);
+
+        verify(memberRepository).delete(callerMember);
+    }
 }

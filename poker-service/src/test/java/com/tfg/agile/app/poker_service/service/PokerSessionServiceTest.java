@@ -1,10 +1,14 @@
 package com.tfg.agile.app.poker_service.service;
 
+import com.tfg.agile.app.poker_service.client.ProjectServiceClient;
 import com.tfg.agile.app.poker_service.client.TaskServiceClient;
+import com.tfg.agile.app.poker_service.client.UserServiceClient;
 import com.tfg.agile.app.poker_service.config.DisconnectScheduler;
 import com.tfg.agile.app.poker_service.dto.CreateSessionRequestDto;
 import com.tfg.agile.app.poker_service.dto.JoinSessionRequestDto;
+import com.tfg.agile.app.poker_service.dto.SelectTaskRequestDto;
 import com.tfg.agile.app.poker_service.dto.StartRoundRequestDto;
+import com.tfg.agile.app.poker_service.dto.UpdateTimerRequestDto;
 import com.tfg.agile.app.poker_service.entity.*;
 import com.tfg.agile.app.poker_service.exception.ConflictException;
 import com.tfg.agile.app.poker_service.exception.ForbiddenException;
@@ -21,6 +25,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -47,13 +53,17 @@ class PokerSessionServiceTest {
     @Mock
     private TaskServiceClient taskServiceClient;
     @Mock
+    private ProjectServiceClient projectServiceClient;
+    @Mock
+    private UserServiceClient userServiceClient;
+    @Mock
     private DisconnectScheduler disconnectScheduler;
 
     private PokerSessionService service;
 
     @BeforeEach
     void setUp() {
-        service = new PokerSessionService(sessionRepository, participantRepository, roundRepository, voteRepository, taskServiceClient, disconnectScheduler);
+        service = new PokerSessionService(sessionRepository, participantRepository, roundRepository, voteRepository, taskServiceClient, projectServiceClient, userServiceClient, disconnectScheduler);
     }
 
     @Test
@@ -322,5 +332,166 @@ class PokerSessionServiceTest {
         when(roundRepository.findBySessionIdOrderByStartedAtAsc(sessionId)).thenReturn(List.of(round));
 
         assertThat(service.getRounds(sessionId)).hasSize(1);
+    }
+
+    @Test
+    void updateTimer_setsTimerSeconds() {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        PokerSession session = TestDataFactory.session(UUID.randomUUID(), userId);
+        PokerParticipant moderator = TestDataFactory.participant(session, userId, ParticipantRole.MODERATOR);
+        session.setParticipants(new ArrayList<>(List.of(moderator)));
+
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(sessionRepository.save(any(PokerSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.updateTimer(sessionId, userId, new UpdateTimerRequestDto(30));
+
+        assertThat(session.getTimerSeconds()).isEqualTo(30);
+        verify(sessionRepository).save(session);
+    }
+
+    @Test
+    void updateTimer_throwsWhenNotFacilitator() {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        PokerSession session = TestDataFactory.session(UUID.randomUUID(), UUID.randomUUID());
+
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> service.updateTimer(sessionId, userId, new UpdateTimerRequestDto(30)))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("SESSION_FACILITATOR_REQUIRED");
+    }
+
+    @Test
+    void selectTask_setsCurrentTaskId() {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID taskId = UUID.randomUUID();
+        PokerSession session = TestDataFactory.session(UUID.randomUUID(), userId);
+        PokerParticipant moderator = TestDataFactory.participant(session, userId, ParticipantRole.MODERATOR);
+        session.setParticipants(new ArrayList<>(List.of(moderator)));
+
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(sessionRepository.save(any(PokerSession.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.selectTask(sessionId, userId, new SelectTaskRequestDto(taskId));
+
+        assertThat(session.getCurrentTaskId()).isEqualTo(taskId);
+    }
+
+    @Test
+    void selectTask_throwsWhenSessionClosed() {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        PokerSession session = TestDataFactory.session(UUID.randomUUID(), userId);
+        session.setStatus(SessionStatus.CLOSED);
+        PokerParticipant moderator = TestDataFactory.participant(session, userId, ParticipantRole.MODERATOR);
+        session.setParticipants(new ArrayList<>(List.of(moderator)));
+
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> service.selectTask(sessionId, userId, new SelectTaskRequestDto(UUID.randomUUID())))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("SESSION_CLOSED");
+    }
+
+    @Test
+    void selectTask_throwsWhenNotFacilitator() {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        PokerSession session = TestDataFactory.session(UUID.randomUUID(), UUID.randomUUID());
+
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> service.selectTask(sessionId, userId, new SelectTaskRequestDto(UUID.randomUUID())))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("SESSION_FACILITATOR_REQUIRED");
+    }
+
+    @Test
+    void disconnectUser_setsConnectedFalse() {
+        UUID userId = UUID.randomUUID();
+        PokerSession session = TestDataFactory.session(UUID.randomUUID(), UUID.randomUUID());
+        PokerParticipant participant = TestDataFactory.participant(session, userId, ParticipantRole.VOTER);
+        assertThat(participant.isConnected()).isTrue();
+
+        when(participantRepository.findByUserIdAndConnectedTrue(userId)).thenReturn(List.of(participant));
+        when(participantRepository.save(any(PokerParticipant.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(participantRepository.findBySessionId(session.getId())).thenReturn(List.of(participant));
+
+        var result = service.disconnectUser(userId);
+
+        assertThat(participant.isConnected()).isFalse();
+        assertThat(result).containsKey(session.getId());
+    }
+
+    @Test
+    void disconnectUser_returnsEmptyMapWhenNoConnectedParticipants() {
+        UUID userId = UUID.randomUUID();
+
+        when(participantRepository.findByUserIdAndConnectedTrue(userId)).thenReturn(Collections.emptyList());
+
+        var result = service.disconnectUser(userId);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void startRound_throwsWhenRoundAlreadyActive() {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        PokerSession session = TestDataFactory.session(UUID.randomUUID(), userId);
+        PokerParticipant moderator = TestDataFactory.participant(session, userId, ParticipantRole.MODERATOR);
+        session.setParticipants(new ArrayList<>(List.of(moderator)));
+        PokerRound activeRound = TestDataFactory.round(session, UUID.randomUUID());
+
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(roundRepository.findBySessionIdAndStatus(sessionId, RoundStatus.VOTING)).thenReturn(Optional.of(activeRound));
+
+        assertThatThrownBy(() -> service.startRound(sessionId, userId,
+                new StartRoundRequestDto(UUID.randomUUID(), "Task")))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("ROUND_ALREADY_ACTIVE");
+    }
+
+    @Test
+    void revealRound_throwsWhenNotFacilitator() {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        PokerSession session = TestDataFactory.session(UUID.randomUUID(), UUID.randomUUID());
+
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> service.revealRound(sessionId, userId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("SESSION_FACILITATOR_REQUIRED");
+    }
+
+    @Test
+    void acceptEstimate_throwsWhenNotFacilitator() {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        PokerSession session = TestDataFactory.session(UUID.randomUUID(), UUID.randomUUID());
+
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> service.acceptEstimate(sessionId, userId, 5))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("SESSION_FACILITATOR_REQUIRED");
+    }
+
+    @Test
+    void revote_throwsWhenNotFacilitator() {
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        PokerSession session = TestDataFactory.session(UUID.randomUUID(), UUID.randomUUID());
+
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+
+        assertThatThrownBy(() -> service.revote(sessionId, userId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("SESSION_FACILITATOR_REQUIRED");
     }
 }

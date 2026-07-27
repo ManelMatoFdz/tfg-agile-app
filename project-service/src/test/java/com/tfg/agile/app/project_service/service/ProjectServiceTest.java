@@ -284,4 +284,53 @@ class ProjectServiceTest {
         assertThatThrownBy(() -> service.findById(project.getId(), callerId))
                 .isInstanceOf(ForbiddenException.class);
     }
+
+    // ── getMemberIds ──────────────────────────────────────────────────────────
+
+    @Test
+    void getMemberIds_returnsTeamMemberUserIds() {
+        UUID userId = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        Team team = TestDataFactory.team(workspace);
+        Project project = TestDataFactory.project(workspace, null);
+        project.setTeam(team);
+        TeamMember member = TestDataFactory.teamMember(team, userId);
+
+        when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
+        when(teamMemberRepository.findByTeamId(team.getId())).thenReturn(List.of(member));
+
+        var result = service.getMemberIds(project.getId());
+
+        assertThat(result.workspaceId()).isEqualTo(workspace.getId());
+        assertThat(result.memberUserIds()).containsExactly(userId);
+    }
+
+    @Test
+    void getMemberIds_returnsEmptyWhenNoTeam() {
+        Workspace workspace = TestDataFactory.workspace();
+        Project project = TestDataFactory.project(workspace, null);
+
+        when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
+
+        var result = service.getMemberIds(project.getId());
+
+        assertThat(result.workspaceId()).isEqualTo(workspace.getId());
+        assertThat(result.memberUserIds()).isEmpty();
+    }
+
+    // ── touchUpdatedAt ────────────────────────────────────────────────────────
+
+    @Test
+    void touchUpdatedAt_updatesTimestamp() {
+        Workspace workspace = TestDataFactory.workspace();
+        Project project = TestDataFactory.project(workspace, null);
+
+        when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
+        when(projectRepository.save(project)).thenReturn(project);
+
+        service.touchUpdatedAt(project.getId());
+
+        assertThat(project.getUpdatedAt()).isNotNull();
+        verify(projectRepository).save(project);
+    }
 }

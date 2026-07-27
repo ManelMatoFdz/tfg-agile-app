@@ -28,7 +28,7 @@ class ProjectServiceClientTest {
     void getMemberPermissions_returnsPermissionsOnSuccess() throws IOException {
         server = HttpServer.create(new InetSocketAddress(0), 0);
         server.createContext("/internal/projects", exchange -> {
-            String response = "{\"workspaceAdmin\":true,\"teamAdmin\":false,\"scrumRole\":\"SCRUM_MASTER\"}";
+            String response = "{\"workspaceId\":\"00000000-0000-0000-0000-000000000001\",\"workspaceAdmin\":true,\"teamAdmin\":false,\"scrumRole\":\"SCRUM_MASTER\"}";
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(200, response.getBytes(StandardCharsets.UTF_8).length);
             exchange.getResponseBody().write(response.getBytes(StandardCharsets.UTF_8));

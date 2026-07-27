@@ -4,12 +4,15 @@ import com.tfg.agile.app.poker_service.dto.CreateSessionRequestDto;
 import com.tfg.agile.app.poker_service.dto.JoinSessionRequestDto;
 import com.tfg.agile.app.poker_service.dto.ParticipantDto;
 import com.tfg.agile.app.poker_service.dto.RoundResponseDto;
+import com.tfg.agile.app.poker_service.dto.SelectTaskRequestDto;
 import com.tfg.agile.app.poker_service.dto.SessionResponseDto;
 import com.tfg.agile.app.poker_service.dto.StartRoundRequestDto;
+import com.tfg.agile.app.poker_service.dto.UpdateTimerRequestDto;
 import com.tfg.agile.app.poker_service.entity.DeckType;
 import com.tfg.agile.app.poker_service.entity.ParticipantRole;
 import com.tfg.agile.app.poker_service.entity.RoundStatus;
 import com.tfg.agile.app.poker_service.entity.SessionStatus;
+import com.tfg.agile.app.poker_service.repository.PokerRoundRepository;
 import com.tfg.agile.app.poker_service.service.PokerSessionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +25,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,11 +36,14 @@ class PokerSessionControllerTest {
     private PokerSessionService service;
 
     @Mock
+    private PokerRoundRepository roundRepository;
+
+    @Mock
     private SimpMessagingTemplate messagingTemplate;
 
     @Test
     void endpoints_delegateToService() {
-        PokerSessionController controller = new PokerSessionController(service, messagingTemplate);
+        PokerSessionController controller = new PokerSessionController(service, roundRepository, messagingTemplate);
         UUID projectId = UUID.randomUUID();
         UUID sessionId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
@@ -75,6 +82,53 @@ class PokerSessionControllerTest {
 
         verify(service).leaveSession(sessionId, userId);
         verify(service).closeSession(sessionId, userId);
+    }
+
+    @Test
+    void updateTimer_delegatesToServiceAndBroadcasts() {
+        PokerSessionController controller = new PokerSessionController(service, roundRepository, messagingTemplate);
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+
+        UpdateTimerRequestDto dto = new UpdateTimerRequestDto(30);
+
+        SessionResponseDto sessionResponse = new SessionResponseDto(
+                sessionId, UUID.randomUUID(), "Session", SessionStatus.LOBBY, DeckType.FIBONACCI,
+                userId, null, 30, List.of(), Instant.now(), Instant.now()
+        );
+
+        when(service.updateTimer(sessionId, userId, dto)).thenReturn(sessionResponse);
+        when(service.getSession(sessionId)).thenReturn(sessionResponse);
+
+        var result = controller.updateTimer(sessionId, userId, dto);
+
+        assertThat(result).isEqualTo(sessionResponse);
+        verify(service).updateTimer(sessionId, userId, dto);
+        verify(messagingTemplate).convertAndSend(eq("/topic/poker/" + sessionId + "/state"), eq(sessionResponse));
+    }
+
+    @Test
+    void selectTask_delegatesToServiceAndBroadcasts() {
+        PokerSessionController controller = new PokerSessionController(service, roundRepository, messagingTemplate);
+        UUID sessionId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        UUID taskId = UUID.randomUUID();
+
+        SelectTaskRequestDto dto = new SelectTaskRequestDto(taskId);
+
+        SessionResponseDto sessionResponse = new SessionResponseDto(
+                sessionId, UUID.randomUUID(), "Session", SessionStatus.LOBBY, DeckType.FIBONACCI,
+                userId, taskId, null, List.of(), Instant.now(), Instant.now()
+        );
+
+        when(service.selectTask(sessionId, userId, dto)).thenReturn(sessionResponse);
+        when(service.getSession(sessionId)).thenReturn(sessionResponse);
+
+        var result = controller.selectTask(sessionId, userId, dto);
+
+        assertThat(result).isEqualTo(sessionResponse);
+        verify(service).selectTask(sessionId, userId, dto);
+        verify(messagingTemplate).convertAndSend(eq("/topic/poker/" + sessionId + "/state"), eq(sessionResponse));
     }
 }
 

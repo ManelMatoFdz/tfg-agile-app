@@ -1,8 +1,10 @@
 package com.tfg.agile.app.project_service.service;
 
 import com.tfg.agile.app.project_service.dto.CreateTeamRequestDto;
+import com.tfg.agile.app.project_service.dto.UpdateScrumRoleRequestDto;
 import com.tfg.agile.app.project_service.dto.UpdateTeamMemberRoleRequestDto;
 import com.tfg.agile.app.project_service.dto.UpdateTeamRequestDto;
+import com.tfg.agile.app.project_service.entity.ScrumRole;
 import com.tfg.agile.app.project_service.entity.Team;
 import com.tfg.agile.app.project_service.entity.TeamMember;
 import com.tfg.agile.app.project_service.entity.TeamRole;
@@ -16,6 +18,7 @@ import com.tfg.agile.app.project_service.repository.TeamMemberRepository;
 import com.tfg.agile.app.project_service.repository.TeamRepository;
 import com.tfg.agile.app.project_service.repository.WorkspaceMemberRepository;
 import com.tfg.agile.app.project_service.repository.WorkspaceRepository;
+import com.tfg.agile.app.project_service.client.UserServiceClient;
 import com.tfg.agile.app.project_service.support.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,13 +44,14 @@ class TeamServiceTest {
     @Mock private WorkspaceRepository workspaceRepository;
     @Mock private WorkspaceMemberRepository workspaceMemberRepository;
     @Mock private ProjectRepository projectRepository;
+    @Mock private UserServiceClient userServiceClient;
 
     private TeamService service;
 
     @BeforeEach
     void setUp() {
         service = new TeamService(teamRepository, teamMemberRepository, workspaceRepository,
-                workspaceMemberRepository, projectRepository);
+                workspaceMemberRepository, projectRepository, userServiceClient);
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
@@ -82,7 +86,7 @@ class TeamServiceTest {
             return saved;
         });
 
-        var response = service.create(workspace.getId(), new CreateTeamRequestDto("Team", "Desc"), callerId);
+        var response = service.create(workspace.getId(), new CreateTeamRequestDto("Team", "Desc", null), callerId);
 
         assertThat(response.id()).isEqualTo(team.getId());
     }
@@ -92,7 +96,7 @@ class TeamServiceTest {
         UUID workspaceId = UUID.randomUUID();
         when(workspaceRepository.findById(workspaceId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.create(workspaceId, new CreateTeamRequestDto("T", null), UUID.randomUUID()))
+        assertThatThrownBy(() -> service.create(workspaceId, new CreateTeamRequestDto("T", null, null), UUID.randomUUID()))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -104,7 +108,7 @@ class TeamServiceTest {
         when(workspaceRepository.findById(workspace.getId())).thenReturn(Optional.of(workspace));
         when(workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), callerId)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.create(workspace.getId(), new CreateTeamRequestDto("T", null), callerId))
+        assertThatThrownBy(() -> service.create(workspace.getId(), new CreateTeamRequestDto("T", null, null), callerId))
                 .isInstanceOf(ForbiddenException.class);
     }
 
@@ -163,7 +167,7 @@ class TeamServiceTest {
         mockWorkspaceAdmin(workspace.getId(), callerId, true);
         when(teamRepository.save(team)).thenReturn(team);
 
-        var response = service.update(team.getId(), new UpdateTeamRequestDto("Updated", "Desc"), callerId);
+        var response = service.update(team.getId(), new UpdateTeamRequestDto("Updated", "Desc", null), callerId);
 
         assertThat(response.name()).isEqualTo("Updated");
     }
@@ -178,7 +182,7 @@ class TeamServiceTest {
         mockTeamMemberRole(team, callerId, TeamRole.ADMIN);
         when(teamRepository.save(team)).thenReturn(team);
 
-        var response = service.update(team.getId(), new UpdateTeamRequestDto("Updated", "Desc"), callerId);
+        var response = service.update(team.getId(), new UpdateTeamRequestDto("Updated", "Desc", null), callerId);
 
         assertThat(response.name()).isEqualTo("Updated");
     }
@@ -193,7 +197,7 @@ class TeamServiceTest {
         mockTeamMemberRole(team, callerId, TeamRole.MEMBER);
         mockWorkspaceAdmin(workspace.getId(), callerId, false);
 
-        assertThatThrownBy(() -> service.update(team.getId(), new UpdateTeamRequestDto("X", null), callerId))
+        assertThatThrownBy(() -> service.update(team.getId(), new UpdateTeamRequestDto("X", null, null), callerId))
                 .isInstanceOf(ForbiddenException.class);
     }
 
@@ -207,7 +211,7 @@ class TeamServiceTest {
         mockNotTeamMember(team.getId(), callerId);
         mockWorkspaceAdmin(workspace.getId(), callerId, false);
 
-        assertThatThrownBy(() -> service.update(team.getId(), new UpdateTeamRequestDto("X", null), callerId))
+        assertThatThrownBy(() -> service.update(team.getId(), new UpdateTeamRequestDto("X", null, null), callerId))
                 .isInstanceOf(ForbiddenException.class);
     }
 
@@ -503,5 +507,132 @@ class TeamServiceTest {
 
         assertThatThrownBy(() -> service.updateMemberRole(team.getId(), targetUser, new UpdateTeamMemberRoleRequestDto(TeamRole.ADMIN), callerId))
                 .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // ── leaveTeam ─────────────────────────────────────────────────────────────
+
+    @Test
+    void leaveTeam_deletesCallerMembership() {
+        UUID callerId = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        Team team = TestDataFactory.team(workspace);
+        TeamMember member = TestDataFactory.teamMember(team, callerId, TeamRole.MEMBER);
+
+        when(teamRepository.findById(team.getId())).thenReturn(Optional.of(team));
+        when(teamMemberRepository.findByTeamIdAndUserId(team.getId(), callerId)).thenReturn(Optional.of(member));
+
+        service.leaveTeam(team.getId(), callerId);
+
+        verify(teamMemberRepository).delete(member);
+    }
+
+    @Test
+    void leaveTeam_throwsWhenLastAdmin() {
+        UUID callerId = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        Team team = TestDataFactory.team(workspace);
+        TeamMember adminMember = TestDataFactory.teamMember(team, callerId, TeamRole.ADMIN);
+
+        when(teamRepository.findById(team.getId())).thenReturn(Optional.of(team));
+        when(teamMemberRepository.findByTeamIdAndUserId(team.getId(), callerId)).thenReturn(Optional.of(adminMember));
+        when(teamMemberRepository.findByTeamId(team.getId())).thenReturn(List.of(adminMember));
+
+        assertThatThrownBy(() -> service.leaveTeam(team.getId(), callerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("LAST_TEAM_ADMIN");
+    }
+
+    @Test
+    void leaveTeam_adminCanLeaveWhenOtherAdminsExist() {
+        UUID callerId = UUID.randomUUID();
+        UUID otherAdminId = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        Team team = TestDataFactory.team(workspace);
+        TeamMember callerMember = TestDataFactory.teamMember(team, callerId, TeamRole.ADMIN);
+        TeamMember otherAdmin = TestDataFactory.teamMember(team, otherAdminId, TeamRole.ADMIN);
+
+        when(teamRepository.findById(team.getId())).thenReturn(Optional.of(team));
+        when(teamMemberRepository.findByTeamIdAndUserId(team.getId(), callerId)).thenReturn(Optional.of(callerMember));
+        when(teamMemberRepository.findByTeamId(team.getId())).thenReturn(List.of(callerMember, otherAdmin));
+
+        service.leaveTeam(team.getId(), callerId);
+
+        verify(teamMemberRepository).delete(callerMember);
+    }
+
+    // ── updateScrumRole ───────────────────────────────────────────────────────
+
+    @Test
+    void updateScrumRole_setsNewRole() {
+        UUID callerId = UUID.randomUUID();
+        UUID targetUser = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        Team team = TestDataFactory.team(workspace);
+        TeamMember target = TestDataFactory.teamMember(team, targetUser, TeamRole.MEMBER);
+
+        when(teamRepository.findById(team.getId())).thenReturn(Optional.of(team));
+        mockWorkspaceAdmin(workspace.getId(), callerId, true);
+        when(teamMemberRepository.findByTeamIdAndUserId(team.getId(), callerId)).thenReturn(Optional.empty());
+        when(teamMemberRepository.findByTeamIdAndUserId(team.getId(), targetUser)).thenReturn(Optional.of(target));
+        when(teamMemberRepository.save(target)).thenReturn(target);
+        when(projectRepository.findByTeamId(team.getId())).thenReturn(List.of());
+
+        var result = service.updateScrumRole(team.getId(), targetUser, new UpdateScrumRoleRequestDto("SCRUM_MASTER"), callerId);
+
+        assertThat(result.scrumRole()).isEqualTo(ScrumRole.SCRUM_MASTER);
+    }
+
+    @Test
+    void updateScrumRole_clearsScrumRoleWhenNull() {
+        UUID callerId = UUID.randomUUID();
+        UUID targetUser = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        Team team = TestDataFactory.team(workspace);
+        TeamMember target = TestDataFactory.teamMember(team, targetUser, TeamRole.MEMBER, ScrumRole.SCRUM_MASTER);
+
+        when(teamRepository.findById(team.getId())).thenReturn(Optional.of(team));
+        mockWorkspaceAdmin(workspace.getId(), callerId, true);
+        when(teamMemberRepository.findByTeamIdAndUserId(team.getId(), callerId)).thenReturn(Optional.empty());
+        when(teamMemberRepository.findByTeamIdAndUserId(team.getId(), targetUser)).thenReturn(Optional.of(target));
+        when(teamMemberRepository.save(target)).thenReturn(target);
+        when(projectRepository.findByTeamId(team.getId())).thenReturn(List.of());
+
+        var result = service.updateScrumRole(team.getId(), targetUser, new UpdateScrumRoleRequestDto(null), callerId);
+
+        assertThat(result.scrumRole()).isNull();
+    }
+
+    @Test
+    void updateScrumRole_throwsWhenMemberNotFound() {
+        UUID callerId = UUID.randomUUID();
+        UUID targetUser = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        Team team = TestDataFactory.team(workspace);
+
+        when(teamRepository.findById(team.getId())).thenReturn(Optional.of(team));
+        mockWorkspaceAdmin(workspace.getId(), callerId, true);
+        when(teamMemberRepository.findByTeamIdAndUserId(team.getId(), callerId)).thenReturn(Optional.empty());
+        when(teamMemberRepository.findByTeamIdAndUserId(team.getId(), targetUser)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateScrumRole(team.getId(), targetUser, new UpdateScrumRoleRequestDto("SCRUM_MASTER"), callerId))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // ── touchMemberActivity ───────────────────────────────────────────────────
+
+    @Test
+    void touchMemberActivity_updatesLastActiveAt() {
+        UUID userId = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        Team team = TestDataFactory.team(workspace);
+        TeamMember member = TestDataFactory.teamMember(team, userId);
+
+        when(teamMemberRepository.findByTeamIdAndUserId(team.getId(), userId)).thenReturn(Optional.of(member));
+        when(teamMemberRepository.save(member)).thenReturn(member);
+
+        service.touchMemberActivity(team.getId(), userId);
+
+        assertThat(member.getLastActiveAt()).isNotNull();
+        verify(teamMemberRepository).save(member);
     }
 }
