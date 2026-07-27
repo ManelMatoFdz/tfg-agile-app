@@ -31,6 +31,10 @@ public class Team {
     @Column(length = 500)
     private String description;
 
+    @Column(length = 7)
+    @Builder.Default
+    private String color = "#6366f1";
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

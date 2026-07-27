@@ -35,9 +35,6 @@ public class NotificationSettings {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "email_notifications_enabled", nullable = false)
-    private boolean emailNotificationsEnabled;
-
     @Column(name = "in_app_notifications_enabled", nullable = false)
     private boolean inAppNotificationsEnabled;
 

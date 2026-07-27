@@ -1,6 +1,9 @@
 package com.tfg.agile.app.poker_service.service;
 
+import com.tfg.agile.app.poker_service.client.ProjectMemberIdsDto;
+import com.tfg.agile.app.poker_service.client.ProjectServiceClient;
 import com.tfg.agile.app.poker_service.client.TaskServiceClient;
+import com.tfg.agile.app.poker_service.client.UserServiceClient;
 import com.tfg.agile.app.poker_service.config.DisconnectScheduler;
 import com.tfg.agile.app.poker_service.dto.*;
 import com.tfg.agile.app.poker_service.entity.*;
@@ -26,6 +29,8 @@ public class PokerSessionService {
     private final PokerRoundRepository roundRepository;
     private final PokerVoteRepository voteRepository;
     private final TaskServiceClient taskServiceClient;
+    private final ProjectServiceClient projectServiceClient;
+    private final UserServiceClient userServiceClient;
     private final DisconnectScheduler disconnectScheduler;
 
     public PokerSessionService(PokerSessionRepository sessionRepository,
@@ -33,12 +38,16 @@ public class PokerSessionService {
                                PokerRoundRepository roundRepository,
                                PokerVoteRepository voteRepository,
                                TaskServiceClient taskServiceClient,
+                               ProjectServiceClient projectServiceClient,
+                               UserServiceClient userServiceClient,
                                DisconnectScheduler disconnectScheduler) {
         this.sessionRepository = sessionRepository;
         this.participantRepository = participantRepository;
         this.roundRepository = roundRepository;
         this.voteRepository = voteRepository;
         this.taskServiceClient = taskServiceClient;
+        this.projectServiceClient = projectServiceClient;
+        this.userServiceClient = userServiceClient;
         this.disconnectScheduler = disconnectScheduler;
     }
     
@@ -51,7 +60,31 @@ public class PokerSessionService {
                 .createdBy(userId)
                 .build();
         session = sessionRepository.save(session);
+
+        notifyPokerSessionCreated(session, userId);
+
         return toDto(session);
+    }
+
+    private void notifyPokerSessionCreated(PokerSession session, UUID creatorId) {
+        ProjectMemberIdsDto members = projectServiceClient.getMemberIds(session.getProjectId());
+        if (members == null || members.memberUserIds() == null) return;
+
+        String link = "/workspaces/" + members.workspaceId()
+                + "/projects/" + session.getProjectId()
+                + "/poker/" + session.getId();
+
+        for (UUID memberId : members.memberUserIds()) {
+            if (memberId.equals(creatorId)) continue;
+            userServiceClient.sendNotification(
+                    memberId,
+                    "Planning Poker",
+                    "Se ha creado la sesión «" + session.getName() + "»",
+                    "POKER_INVITATION",
+                    link,
+                    null
+            );
+        }
     }
 
     @Transactional(readOnly = true)

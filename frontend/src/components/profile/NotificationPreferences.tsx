@@ -1,21 +1,19 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Settings, Mail, Bell, ClipboardList, Clock } from 'lucide-react';
+import { Settings, Bell, ClipboardList, Clock } from 'lucide-react';
 import Toggle from '../ui/Toggle';
 import Alert from '../ui/Alert';
 import { notificationsApi } from '../../api/notifications';
 import type { NotificationSettings } from '../../types';
 
 const TOGGLE_ICONS: Record<string, React.ElementType> = {
-  emailNotificationsEnabled: Mail,
   inAppNotificationsEnabled: Bell,
   projectUpdatesEnabled: ClipboardList,
   taskRemindersEnabled: Clock,
 };
 
 const TOGGLE_KEYS: Array<{ key: keyof NotificationSettings; tKey: string }> = [
-  { key: 'emailNotificationsEnabled', tKey: 'email' },
   { key: 'inAppNotificationsEnabled', tKey: 'inApp' },
   { key: 'projectUpdatesEnabled', tKey: 'projectUpdates' },
   { key: 'taskRemindersEnabled', tKey: 'taskReminders' },

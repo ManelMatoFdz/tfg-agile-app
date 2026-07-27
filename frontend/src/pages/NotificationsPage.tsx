@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import type { TFunction } from 'i18next';
 import { CheckCircle2, Bell, ChevronLeft, ChevronRight } from 'lucide-react';
 import Alert from '../components/ui/Alert';
@@ -20,6 +21,8 @@ function normalizeNotification(item: NotificationApiItem): Notification {
     type: item.type ?? 'DEFAULT',
     read: typeof item.read === 'boolean' ? item.read : Boolean(item.isRead),
     createdAt: item.createdAt ?? new Date().toISOString(),
+    link: item.link,
+    data: item.data,
   };
 }
 
@@ -50,6 +53,11 @@ const typeConfig: Record<string, { iconPath: string; color: string; bg: string }
     color: 'var(--success)',
     bg: 'var(--success-bg)',
   },
+  POKER_INVITATION: {
+    iconPath: 'M3 10h18M3 6h18M3 14h18M3 18h18',
+    color: 'var(--violet, #8b5cf6)',
+    bg: 'var(--violet-soft, rgba(139,92,246,0.1))',
+  },
   DEFAULT: {
     iconPath: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
     color: 'var(--accent)',
@@ -59,6 +67,7 @@ const typeConfig: Record<string, { iconPath: string; color: string; bg: string }
 
 export default function NotificationsPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [page, setPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -118,6 +127,17 @@ export default function NotificationsPage() {
       );
     } finally {
       setInvitationActingId(null);
+    }
+  };
+
+  const handleClick = async (n: Notification) => {
+    if (n.type === 'WORKSPACE_INVITATION' && !n.read) return;
+    if (!n.read) {
+      await notificationsApi.markRead(n.id).catch(() => {});
+      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+    }
+    if (n.link) {
+      navigate(n.link);
     }
   };
 
@@ -258,6 +278,7 @@ export default function NotificationsPage() {
               return (
                 <div
                   key={n.id}
+                  onClick={() => handleClick(n)}
                   style={{
                     display: 'flex',
                     alignItems: 'flex-start',
@@ -266,6 +287,7 @@ export default function NotificationsPage() {
                     borderTop: idx > 0 ? '0.0625rem solid var(--border)' : 'none',
                     background: !n.read ? 'var(--accent-muted)' : 'transparent',
                     transition: `background var(--duration)`,
+                    cursor: n.link && !(n.type === 'WORKSPACE_INVITATION' && !n.read) ? 'pointer' : 'default',
                   }}
                   onMouseEnter={(e) => { if (n.read) e.currentTarget.style.background = 'var(--bg-hover)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = !n.read ? 'var(--accent-muted)' : 'transparent'; }}

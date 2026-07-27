@@ -1,6 +1,7 @@
 package com.tfg.agile.app.project_service.controller;
 
 import com.tfg.agile.app.project_service.dto.MemberPermissionsDto;
+import com.tfg.agile.app.project_service.dto.ProjectMemberIdsDto;
 import com.tfg.agile.app.project_service.service.ProjectService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +33,11 @@ public class InternalProjectController {
     public ResponseEntity<Void> touchProject(@PathVariable("projectId") UUID projectId) {
         projectService.touchUpdatedAt(projectId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{projectId}/member-ids")
+    public ProjectMemberIdsDto getMemberIds(@PathVariable("projectId") UUID projectId) {
+        return projectService.getMemberIds(projectId);
     }
 
     @PostMapping("/{projectId}/members/{userId}/touch")

@@ -15,11 +15,6 @@ import type { WorkspaceMember, WorkspaceRole, Team, UserLookup } from '../../typ
 
 const PAGE_SIZE = 5;
 
-const TEAM_COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#f97316', '#22c55e',
-  '#0ea5e9', '#14b8a6', '#eab308', '#ef4444', '#06b6d4',
-];
-
 const thStyle: React.CSSProperties = {
   padding: '10px 16px',
   fontSize: 11,
@@ -173,9 +168,9 @@ export default function WorkspaceMembersPage() {
   const userMap = useUserMap(members.map((m) => m.userId));
   const isAdmin = members.some((m) => m.userId === currentUser?.id && m.role === 'ADMIN');
 
-  // Build team color map
+  // Build team color map from persisted team color
   const teamColorMap = new Map<string, string>();
-  teams.forEach((t, i) => teamColorMap.set(t.id, TEAM_COLORS[i % TEAM_COLORS.length]));
+  teams.forEach((t) => teamColorMap.set(t.id, t.color || '#6366f1'));
 
   // Filter members
   const filtered = members.filter((m) => {

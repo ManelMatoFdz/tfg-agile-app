@@ -934,10 +934,6 @@
       "subtitle": "Configure how you want to receive them",
       "saveError": "Could not save preferences.",
       "loadError": "Error loading notification preferences.",
-      "email": {
-        "label": "Email notifications",
-        "description": "Receive updates in your inbox"
-      },
       "inApp": {
         "label": "In-app notifications",
         "description": "Show notifications within the platform"

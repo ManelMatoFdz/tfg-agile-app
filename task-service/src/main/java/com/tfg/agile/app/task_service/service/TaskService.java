@@ -2,6 +2,7 @@ package com.tfg.agile.app.task_service.service;
 
 import com.tfg.agile.app.task_service.client.MemberPermissionsDto;
 import com.tfg.agile.app.task_service.client.ProjectServiceClient;
+import com.tfg.agile.app.task_service.client.UserServiceClient;
 import com.tfg.agile.app.task_service.dto.*;
 import com.tfg.agile.app.task_service.dto.TaskResponseDto.SubtaskInfo;
 import com.tfg.agile.app.task_service.entity.*;
@@ -25,17 +26,20 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final LabelRepository labelRepository;
     private final ProjectServiceClient projectServiceClient;
+    private final UserServiceClient userServiceClient;
     private final BoardColumnService boardColumnService;
     private final ActivityService activityService;
 
     public TaskService(TaskRepository taskRepository,
                        LabelRepository labelRepository,
                        ProjectServiceClient projectServiceClient,
+                       UserServiceClient userServiceClient,
                        BoardColumnService boardColumnService,
                        ActivityService activityService) {
         this.taskRepository = taskRepository;
         this.labelRepository = labelRepository;
         this.projectServiceClient = projectServiceClient;
+        this.userServiceClient = userServiceClient;
         this.boardColumnService = boardColumnService;
         this.activityService = activityService;
     }
@@ -143,6 +147,10 @@ public class TaskService {
             activityService.record(parentId, callerId, TaskActivityType.SUBTASK_ADDED, null, saved.getTitle());
         }
 
+        if (saved.getAssigneeId() != null && !saved.getAssigneeId().equals(callerId)) {
+            notifyTaskAssigned(saved, perms.workspaceId());
+        }
+
         projectServiceClient.touchProject(projectId);
         projectServiceClient.touchMemberActivity(projectId, callerId);
         return toDto(saved);
@@ -213,6 +221,9 @@ public class TaskService {
             activityService.record(saved.getId(), callerId, TaskActivityType.ASSIGNEE_CHANGED,
                     oldAssigneeId != null ? oldAssigneeId.toString() : null,
                     saved.getAssigneeId() != null ? saved.getAssigneeId().toString() : null);
+            if (saved.getAssigneeId() != null && !saved.getAssigneeId().equals(callerId)) {
+                notifyTaskAssigned(saved, perms.workspaceId());
+            }
         }
         if (dto.labelIds() != null) {
             Set<UUID> newLabelIds = new HashSet<>(dto.labelIds());
@@ -274,6 +285,9 @@ public class TaskService {
 
         if (!oldStatus.equals(newStatus)) {
             activityService.record(saved.getId(), callerId, TaskActivityType.STATUS_CHANGED, oldStatus, newStatus);
+            if (saved.getAssigneeId() != null && !saved.getAssigneeId().equals(callerId)) {
+                notifyTaskStatusChanged(saved, oldStatus, newStatus, perms.workspaceId());
+            }
         }
 
         projectServiceClient.touchProject(task.getProjectId());
@@ -398,6 +412,30 @@ public class TaskService {
 
     private boolean isDeveloper(MemberPermissionsDto p) {
         return !isAdmin(p) && !isProductOwner(p) && !isScrumMaster(p);
+    }
+
+    private void notifyTaskAssigned(Task task, UUID workspaceId) {
+        String link = "/workspaces/" + workspaceId + "/projects/" + task.getProjectId() + "/board";
+        userServiceClient.sendNotification(
+                task.getAssigneeId(),
+                "Tarea asignada",
+                "Te han asignado la tarea «" + task.getTitle() + "»",
+                "TASK_REMINDER",
+                link,
+                null
+        );
+    }
+
+    private void notifyTaskStatusChanged(Task task, String oldStatus, String newStatus, UUID workspaceId) {
+        String link = "/workspaces/" + workspaceId + "/projects/" + task.getProjectId() + "/board";
+        userServiceClient.sendNotification(
+                task.getAssigneeId(),
+                "Tarea actualizada",
+                "La tarea «" + task.getTitle() + "» pasó de " + oldStatus + " a " + newStatus,
+                "TASK_REMINDER",
+                link,
+                null
+        );
     }
 
     @Transactional

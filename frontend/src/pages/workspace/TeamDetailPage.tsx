@@ -105,18 +105,6 @@ const PRESET_COLORS = [
 
 const DEFAULT_COLOR = '#6366f1';
 
-function getTeamColors(): Record<string, string> {
-  try {
-    return JSON.parse(localStorage.getItem('teamColors') || '{}');
-  } catch { return {}; }
-}
-
-function setTeamColorStorage(teamId: string, color: string) {
-  const colors = getTeamColors();
-  colors[teamId] = color;
-  localStorage.setItem('teamColors', JSON.stringify(colors));
-}
-
 function Avatar({ name, avatarUrl, size = 32 }: { name: string; avatarUrl?: string; size?: number }) {
   const [imgError, setImgError] = useState(false);
   const src = buildAvatarSrc(avatarUrl);
@@ -174,7 +162,6 @@ export default function TeamDetailPage() {
   const currentUser = useAuthStore((s) => s.user);
 
   const [team, setTeam] = useState<Team | null>(null);
-  const [teamColor, setTeamColor] = useState(DEFAULT_COLOR);
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [workspaceMemberIds, setWorkspaceMemberIds] = useState<string[]>([]);
   const [canManage, setCanManage] = useState(false);
@@ -205,8 +192,6 @@ export default function TeamDetailPage() {
 
   useEffect(() => {
     if (!teamId || !workspaceId) return;
-    const colors = getTeamColors();
-    if (teamId && colors[teamId]) setTeamColor(colors[teamId]);
 
     teamAction.run(teamsApi.getById(teamId)).then((data) => {
       if (data) setTeam(data);
@@ -341,7 +326,7 @@ export default function TeamDetailPage() {
     if (!team) return;
     setEditName(team.name);
     setEditDescription(team.description || '');
-    setEditColor(teamColor);
+    setEditColor(team.color || DEFAULT_COLOR);
     setShowEditModal(true);
   };
 
@@ -349,12 +334,10 @@ export default function TeamDetailPage() {
     e.preventDefault();
     if (!teamId) return;
     const data = await editAction.run(
-      teamsApi.update(teamId, { name: editName, description: editDescription || undefined }),
+      teamsApi.update(teamId, { name: editName, description: editDescription || undefined, color: editColor }),
     );
     if (data) {
       setTeam(data);
-      setTeamColorStorage(teamId, editColor);
-      setTeamColor(editColor);
       setShowEditModal(false);
       editAction.reset();
     }
@@ -410,7 +393,7 @@ export default function TeamDetailPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                 <div style={{
                   width: 52, height: 52,
-                  background: teamColor,
+                  background: team?.color || DEFAULT_COLOR,
                   borderRadius: 'var(--radius-md)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   color: '#fff', fontSize: 22, fontWeight: 700, flexShrink: 0,

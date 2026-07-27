@@ -25,6 +25,10 @@ app:
     api-key: ${INTERNAL_API_KEY:dev-internal-key}
   task-service:
     url: ${TASK_SERVICE_URL:http://localhost:8083}
+  project-service:
+    url: ${PROJECT_SERVICE_URL:http://localhost:8082}
+  user-service:
+    url: ${USER_SERVICE_URL:http://localhost:8081}
 
 security:
   jwt:

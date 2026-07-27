@@ -26,6 +26,7 @@ export interface Notification {
   read: boolean;
   isRead?: boolean;
   createdAt: string;
+  link?: string;
   data?: string;
 }
 
@@ -60,7 +61,6 @@ export interface NotificationPage {
 }
 
 export interface NotificationSettings {
-  emailNotificationsEnabled: boolean;
   inAppNotificationsEnabled: boolean;
   projectUpdatesEnabled: boolean;
   taskRemindersEnabled: boolean;
@@ -248,6 +248,7 @@ export interface Team {
   workspaceId: string;
   name: string;
   description?: string;
+  color?: string;
   createdAt: string;
 }
 

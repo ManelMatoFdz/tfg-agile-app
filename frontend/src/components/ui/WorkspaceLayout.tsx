@@ -171,7 +171,7 @@ export default function WorkspaceLayout() {
   }, [workspaceId, setWorkspace]);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex' }}>
+    <div style={{ height: '100vh', background: 'var(--bg)', display: 'flex', overflow: 'hidden' }}>
       <style>{`
         .ws-sidebar{transform:translateX(-${SIDEBAR_W}px)}
         @media (min-width:1024px){
@@ -209,7 +209,7 @@ export default function WorkspaceLayout() {
         <SidebarContent />
       </aside>
 
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: '100vh' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
         {/* Mobile top bar — hamburger only */}
         <div
           className="ws-mobile-top"
@@ -236,7 +236,7 @@ export default function WorkspaceLayout() {
 
         <TopBar />
 
-        <main className="ws-content" style={{ flex: 1, padding: '24px 28px', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <main className="ws-content" style={{ flex: 1, padding: '24px 28px', display: 'flex', flexDirection: 'column', minHeight: 0, overflowY: 'auto' }}>
           <Outlet />
         </main>
       </div>

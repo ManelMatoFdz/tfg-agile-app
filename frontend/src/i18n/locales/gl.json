@@ -934,10 +934,6 @@
       "subtitle": "Configura como queres recibilas",
       "saveError": "Non se puideron gardar as preferencias.",
       "loadError": "Erro ao cargar preferencias de notificacións.",
-      "email": {
-        "label": "Notificacións por correo",
-        "description": "Recibe actualizacións na túa bandexa de entrada"
-      },
       "inApp": {
         "label": "Notificacións na app",
         "description": "Mostra notificacións dentro da plataforma"

@@ -1,5 +1,6 @@
 package com.tfg.agile.app.project_service.service;
 
+import com.tfg.agile.app.project_service.client.UserServiceClient;
 import com.tfg.agile.app.project_service.dto.*;
 import com.tfg.agile.app.project_service.entity.*;
 import com.tfg.agile.app.project_service.exception.ConflictException;
@@ -21,17 +22,20 @@ public class TeamService {
     private final WorkspaceRepository workspaceRepository;
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final ProjectRepository projectRepository;
+    private final UserServiceClient userServiceClient;
 
     public TeamService(TeamRepository teamRepository,
                        TeamMemberRepository teamMemberRepository,
                        WorkspaceRepository workspaceRepository,
                        WorkspaceMemberRepository workspaceMemberRepository,
-                       ProjectRepository projectRepository) {
+                       ProjectRepository projectRepository,
+                       UserServiceClient userServiceClient) {
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.workspaceRepository = workspaceRepository;
         this.workspaceMemberRepository = workspaceMemberRepository;
         this.projectRepository = projectRepository;
+        this.userServiceClient = userServiceClient;
     }
 
     @Transactional
@@ -44,6 +48,7 @@ public class TeamService {
                 .workspace(workspace)
                 .name(dto.name())
                 .description(dto.description())
+                .color(dto.color() != null ? dto.color() : "#6366f1")
                 .build();
         teamRepository.save(team);
 
@@ -80,6 +85,7 @@ public class TeamService {
         requireTeamAdminOrWorkspaceAdmin(teamId, team.getWorkspace().getId(), callerId);
         team.setName(dto.name());
         team.setDescription(dto.description());
+        if (dto.color() != null) team.setColor(dto.color());
         return TeamResponseDto.from(teamRepository.save(team));
     }
 
@@ -119,7 +125,22 @@ public class TeamService {
                 .userId(targetUserId)
                 .role(TeamRole.MEMBER)
                 .build();
-        return TeamMemberResponseDto.from(teamMemberRepository.save(member));
+        TeamMemberResponseDto result = TeamMemberResponseDto.from(teamMemberRepository.save(member));
+
+        UUID workspaceId = team.getWorkspace().getId();
+        for (Project project : projectRepository.findByTeamId(teamId)) {
+            String link = "/workspaces/" + workspaceId + "/projects/" + project.getId() + "/board";
+            userServiceClient.sendNotification(
+                    targetUserId,
+                    "Añadido al proyecto",
+                    "Te han añadido al proyecto «" + project.getName() + "»",
+                    "PROJECT_UPDATE",
+                    link,
+                    null
+            );
+        }
+
+        return result;
     }
 
     @Transactional
@@ -161,8 +182,26 @@ public class TeamService {
                 throw new ConflictException("LAST_TEAM_ADMIN");
             }
         }
+        TeamRole oldRole = member.getRole();
         member.setRole(dto.role());
-        return TeamMemberResponseDto.from(teamMemberRepository.save(member));
+        TeamMemberResponseDto result = TeamMemberResponseDto.from(teamMemberRepository.save(member));
+
+        if (oldRole != dto.role()) {
+            UUID workspaceId = team.getWorkspace().getId();
+            for (Project project : projectRepository.findByTeamId(teamId)) {
+                String link = "/workspaces/" + workspaceId + "/projects/" + project.getId() + "/members";
+                userServiceClient.sendNotification(
+                        targetUserId,
+                        "Rol actualizado",
+                        "Tu rol en «" + project.getName() + "» ha cambiado a " + dto.role().name(),
+                        "PROJECT_UPDATE",
+                        link,
+                        null
+                );
+            }
+        }
+
+        return result;
     }
 
     @Transactional
@@ -171,11 +210,31 @@ public class TeamService {
         requireTeamAdminOrWorkspaceAdmin(teamId, team.getWorkspace().getId(), callerId);
         TeamMember member = teamMemberRepository.findByTeamIdAndUserId(teamId, targetUserId)
                 .orElseThrow(() -> new ResourceNotFoundException("MEMBER_NOT_FOUND"));
+        ScrumRole oldScrumRole = member.getScrumRole();
         String rawRole = dto != null ? dto.scrumRole() : null;
-        member.setScrumRole(rawRole == null || rawRole.isBlank()
+        ScrumRole newScrumRole = rawRole == null || rawRole.isBlank()
                 ? null
-                : ScrumRole.valueOf(rawRole.toUpperCase()));
-        return TeamMemberResponseDto.from(teamMemberRepository.save(member));
+                : ScrumRole.valueOf(rawRole.toUpperCase());
+        member.setScrumRole(newScrumRole);
+        TeamMemberResponseDto result = TeamMemberResponseDto.from(teamMemberRepository.save(member));
+
+        if (oldScrumRole != newScrumRole) {
+            UUID workspaceId = team.getWorkspace().getId();
+            String roleName = newScrumRole != null ? newScrumRole.name() : "Developer";
+            for (Project project : projectRepository.findByTeamId(teamId)) {
+                String link = "/workspaces/" + workspaceId + "/projects/" + project.getId() + "/members";
+                userServiceClient.sendNotification(
+                        targetUserId,
+                        "Rol Scrum actualizado",
+                        "Tu rol Scrum en «" + project.getName() + "» ha cambiado a " + roleName,
+                        "PROJECT_UPDATE",
+                        link,
+                        null
+                );
+            }
+        }
+
+        return result;
     }
 
     @Transactional

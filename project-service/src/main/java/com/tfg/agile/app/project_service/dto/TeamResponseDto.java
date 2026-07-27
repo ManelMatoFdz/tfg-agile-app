@@ -10,11 +10,13 @@ public record TeamResponseDto(
         UUID workspaceId,
         String name,
         String description,
+        String color,
         Instant createdAt,
         Instant updatedAt
 ) {
     public static TeamResponseDto from(Team t) {
         return new TeamResponseDto(t.getId(), t.getWorkspace().getId(),
-                t.getName(), t.getDescription(), t.getCreatedAt(), t.getUpdatedAt());
+                t.getName(), t.getDescription(), t.getColor(),
+                t.getCreatedAt(), t.getUpdatedAt());
     }
 }

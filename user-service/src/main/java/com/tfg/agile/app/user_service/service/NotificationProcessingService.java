@@ -20,22 +20,20 @@ public class NotificationProcessingService {
     private static final Logger log = LoggerFactory.getLogger(NotificationProcessingService.class);
     private static final String TYPE_PROJECT_UPDATE = "PROJECT_UPDATE";
     private static final String TYPE_TASK_REMINDER = "TASK_REMINDER";
+    private static final String TYPE_POKER_INVITATION = "POKER_INVITATION";
 
     private final UserRepository userRepository;
     private final NotificationSettingsRepository notificationSettingsRepository;
     private final NotificationRepository notificationRepository;
-    private final NotificationEmailSender notificationEmailSender;
 
     public NotificationProcessingService(
             UserRepository userRepository,
             NotificationSettingsRepository notificationSettingsRepository,
-            NotificationRepository notificationRepository,
-            NotificationEmailSender notificationEmailSender
+            NotificationRepository notificationRepository
     ) {
         this.userRepository = userRepository;
         this.notificationSettingsRepository = notificationSettingsRepository;
         this.notificationRepository = notificationRepository;
-        this.notificationEmailSender = notificationEmailSender;
     }
 
     @Transactional
@@ -65,15 +63,6 @@ public class NotificationProcessingService {
                     .build();
             notificationRepository.save(notification);
         }
-
-        if (settings.isEmailNotificationsEnabled()) {
-            notificationEmailSender.sendNotification(
-                    user.getEmail(),
-                    normalizeTitle(message.getTitle()),
-                    normalizeMessage(message.getMessage()),
-                    message.getLink()
-            );
-        }
     }
 
     private NotificationSettings findOrCreateSettings(User user) {
@@ -82,7 +71,6 @@ public class NotificationProcessingService {
                     Instant now = Instant.now();
                     NotificationSettings defaults = NotificationSettings.builder()
                             .user(user)
-                            .emailNotificationsEnabled(true)
                             .inAppNotificationsEnabled(true)
                             .projectUpdatesEnabled(true)
                             .taskRemindersEnabled(true)
@@ -96,7 +84,7 @@ public class NotificationProcessingService {
     private boolean isTypeEnabled(NotificationSettings settings, String type) {
         String normalizedType = normalizeType(type);
         return switch (normalizedType) {
-            case TYPE_PROJECT_UPDATE -> settings.isProjectUpdatesEnabled();
+            case TYPE_PROJECT_UPDATE, TYPE_POKER_INVITATION -> settings.isProjectUpdatesEnabled();
             case TYPE_TASK_REMINDER -> settings.isTaskRemindersEnabled();
             default -> true;
         };

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 import { Bell, CheckCircle2 } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import { notificationsApi } from '../../api/notifications';
@@ -29,6 +30,10 @@ const NOTIF_ICONS: Record<string, { iconPath: string; color: string; bg: string 
     iconPath: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
     color: 'var(--success)', bg: 'var(--success-bg)',
   },
+  POKER_INVITATION: {
+    iconPath: 'M3 10h18M3 6h18M3 14h18M3 18h18',
+    color: 'var(--violet, #8b5cf6)', bg: 'var(--violet-soft, rgba(139,92,246,0.1))',
+  },
   DEFAULT: {
     iconPath: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
     color: 'var(--accent)', bg: 'var(--accent-muted)',
@@ -44,11 +49,14 @@ function normalizeNotification(item: Partial<Notification> & { isRead?: boolean 
     type: item.type ?? 'DEFAULT',
     read: typeof item.read === 'boolean' ? item.read : Boolean(item.isRead),
     createdAt: item.createdAt ?? new Date().toISOString(),
+    link: item.link,
+    data: item.data,
   };
 }
 
 export default function NotificationBell() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const ref = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -97,6 +105,18 @@ export default function NotificationBell() {
     await notificationsApi.markAllRead();
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
+  };
+
+  const handleClick = async (n: Notification) => {
+    if (!n.read) {
+      await notificationsApi.markRead(n.id).catch(() => {});
+      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+      setUnreadCount((c) => Math.max(0, c - 1));
+    }
+    if (n.link) {
+      setOpen(false);
+      navigate(n.link);
+    }
   };
 
   return (
@@ -186,12 +206,14 @@ export default function NotificationBell() {
                 return (
                   <div
                     key={n.id}
+                    onClick={() => handleClick(n)}
                     style={{
                       display: 'flex', alignItems: 'flex-start', gap: 10,
                       padding: '10px 16px',
                       borderTop: idx > 0 ? '1px solid var(--border)' : 'none',
                       background: !n.read ? 'var(--accent-muted)' : 'transparent',
                       transition: 'background 150ms',
+                      cursor: n.link ? 'pointer' : 'default',
                     }}
                     onMouseEnter={e => { if (n.read) e.currentTarget.style.background = 'var(--bg-hover)'; }}
                     onMouseLeave={e => { e.currentTarget.style.background = !n.read ? 'var(--accent-muted)' : 'transparent'; }}

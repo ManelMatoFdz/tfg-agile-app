@@ -23,18 +23,6 @@ const PRESET_COLORS = [
 
 const DEFAULT_COLOR = '#6366f1';
 
-function getTeamColors(): Record<string, string> {
-  try {
-    return JSON.parse(localStorage.getItem('teamColors') || '{}');
-  } catch { return {}; }
-}
-
-function setTeamColorStorage(teamId: string, color: string) {
-  const colors = getTeamColors();
-  colors[teamId] = color;
-  localStorage.setItem('teamColors', JSON.stringify(colors));
-}
-
 const thStyle: React.CSSProperties = {
   padding: '10px 16px',
   fontSize: 11,
@@ -79,7 +67,6 @@ export default function TeamsPage() {
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamMemberIds, setTeamMemberIds] = useState<Record<string, string[]>>({});
-  const [teamColors, setTeamColors] = useState<Record<string, string>>(getTeamColors);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -122,11 +109,9 @@ export default function TeamsPage() {
     e.preventDefault();
     if (!workspaceId) return;
     const data = await createAction.run(
-      teamsApi.create(workspaceId, { name, description: description || undefined }),
+      teamsApi.create(workspaceId, { name, description: description || undefined, color: selectedColor }),
     );
     if (data) {
-      setTeamColorStorage(data.id, selectedColor);
-      setTeamColors((prev) => ({ ...prev, [data.id]: selectedColor }));
       setTeams((prev) => [...prev, data]);
       setTeamMemberIds((prev) => ({ ...prev, [data.id]: [] }));
       setShowCreateModal(false);
@@ -244,7 +229,7 @@ export default function TeamsPage() {
                         memberCount={memberIds?.length}
                         memberIds={memberIds || []}
                         members={members}
-                        color={teamColors[team.id] || DEFAULT_COLOR}
+                        color={team.color || DEFAULT_COLOR}
                         to={`/workspaces/${workspaceId}/teams/${team.id}`}
                       />
                     );

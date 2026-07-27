@@ -132,13 +132,14 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public MemberPermissionsDto getMemberPermissions(UUID projectId, UUID userId) {
         Project project = getProjectOrThrow(projectId);
+        UUID workspaceId = project.getWorkspace().getId();
 
         boolean wsAdmin = workspaceMemberRepository
-                .existsByWorkspaceIdAndUserIdAndRole(project.getWorkspace().getId(), userId, WorkspaceRole.ADMIN);
+                .existsByWorkspaceIdAndUserIdAndRole(workspaceId, userId, WorkspaceRole.ADMIN);
 
         if (project.getTeam() == null) {
             if (wsAdmin) {
-                return new MemberPermissionsDto(true, false, null);
+                return new MemberPermissionsDto(workspaceId, true, false, null);
             }
             throw new ResourceNotFoundException("MEMBER_NOT_FOUND");
         }
@@ -148,14 +149,27 @@ public class ProjectService {
 
         if (optionalMember.isEmpty()) {
             if (wsAdmin) {
-                return new MemberPermissionsDto(true, false, null);
+                return new MemberPermissionsDto(workspaceId, true, false, null);
             }
             throw new ResourceNotFoundException("MEMBER_NOT_FOUND");
         }
 
         TeamMember teamMember = optionalMember.get();
         boolean teamAdmin = teamMember.getRole() == TeamRole.ADMIN;
-        return new MemberPermissionsDto(wsAdmin, teamAdmin, teamMember.getScrumRole());
+        return new MemberPermissionsDto(workspaceId, wsAdmin, teamAdmin, teamMember.getScrumRole());
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectMemberIdsDto getMemberIds(UUID projectId) {
+        Project project = getProjectOrThrow(projectId);
+        UUID workspaceId = project.getWorkspace().getId();
+        if (project.getTeam() == null) {
+            return new ProjectMemberIdsDto(workspaceId, List.of());
+        }
+        List<UUID> userIds = teamMemberRepository.findByTeamId(project.getTeam().getId()).stream()
+                .map(TeamMember::getUserId)
+                .toList();
+        return new ProjectMemberIdsDto(workspaceId, userIds);
     }
 
     @Transactional

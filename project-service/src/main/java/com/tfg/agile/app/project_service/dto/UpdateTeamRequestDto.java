@@ -5,5 +5,6 @@ import jakarta.validation.constraints.Size;
 
 public record UpdateTeamRequestDto(
         @NotBlank @Size(max = 100) String name,
-        @Size(max = 500) String description
+        @Size(max = 500) String description,
+        @Size(max = 7) String color
 ) {}

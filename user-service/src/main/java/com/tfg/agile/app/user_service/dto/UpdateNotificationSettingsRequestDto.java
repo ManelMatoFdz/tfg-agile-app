@@ -9,7 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class UpdateNotificationSettingsRequestDto {
 
-    private Boolean emailNotificationsEnabled;
     private Boolean inAppNotificationsEnabled;
     private Boolean projectUpdatesEnabled;
     private Boolean taskRemindersEnabled;

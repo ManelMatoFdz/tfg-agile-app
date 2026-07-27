@@ -195,9 +195,6 @@ public class UserProfileService {
     public NotificationSettingsResponseDto updateNotificationSettings(UUID userId, UpdateNotificationSettingsRequestDto req) {
         NotificationSettings settings = findOrCreateSettings(getUser(userId));
 
-        if (req.getEmailNotificationsEnabled() != null) {
-            settings.setEmailNotificationsEnabled(req.getEmailNotificationsEnabled());
-        }
         if (req.getInAppNotificationsEnabled() != null) {
             settings.setInAppNotificationsEnabled(req.getInAppNotificationsEnabled());
         }
@@ -236,7 +233,6 @@ public class UserProfileService {
                     Instant now = Instant.now();
                     NotificationSettings defaults = NotificationSettings.builder()
                             .user(user)
-                            .emailNotificationsEnabled(true)
                             .inAppNotificationsEnabled(true)
                             .projectUpdatesEnabled(true)
                             .taskRemindersEnabled(true)
@@ -280,7 +276,6 @@ public class UserProfileService {
 
     private NotificationSettingsResponseDto toNotificationSettingsResponse(NotificationSettings settings) {
         return new NotificationSettingsResponseDto(
-                settings.isEmailNotificationsEnabled(),
                 settings.isInAppNotificationsEnabled(),
                 settings.isProjectUpdatesEnabled(),
                 settings.isTaskRemindersEnabled()

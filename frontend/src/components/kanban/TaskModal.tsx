@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
 import { X, ChevronDown, UserCircle, BookOpen, CheckSquare, Bug, Plus, PlayCircle } from 'lucide-react';
@@ -112,6 +113,8 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
   const { members, userMap } = useProjectMembers(projectId);
   const { isAdmin } = useProjectMember(projectId);
 
+  const modalCardRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (!projectId) return;
     labelsApi.getByProject(projectId).then(setProjectLabels).catch(() => {});
@@ -203,7 +206,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
   // For create mode, use single-column layout
   const isTwoColumn = isEdit;
 
-  return (
+  return createPortal(
     <div
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       style={{
@@ -220,7 +223,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
         animation: 'fade-in 200ms ease both',
       }}
     >
-      <div style={{
+      <div ref={modalCardRef} style={{
         width: isTwoColumn ? '85vw' : '100%',
         maxWidth: isTwoColumn ? 1060 : 600,
         height: isTwoColumn ? '85vh' : undefined,
@@ -275,11 +278,14 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
         </div>
 
         {/* Body */}
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          display: isTwoColumn ? 'flex' : 'block',
-        }}>
+        <div
+          onWheel={(e) => { e.stopPropagation(); e.currentTarget.scrollTop += e.deltaY; }}
+          style={{
+            flex: 1,
+            overflowY: 'auto',
+            display: isTwoColumn ? 'flex' : 'block',
+          }}
+        >
           {/* Main content (left) */}
           <div style={{
             flex: isTwoColumn ? 1 : undefined,
@@ -381,6 +387,38 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
               </div>
             )}
 
+            {/* Create mode: priority + assignee inline */}
+            {!isEdit && (
+              <div style={{ display: 'grid', gap: 14, gridTemplateColumns: '1fr 1fr' }}>
+                <div>
+                  <label style={sidebarLabel}>{t('tasks.modal.priority')}</label>
+                  <select
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                    style={fieldStyle}
+                    onFocus={focusHandler}
+                    onBlur={blurHandler}
+                  >
+                    {PRIORITIES.map((p) => (
+                      <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
+                    ))}
+                  </select>
+                </div>
+                {members.length > 0 && (
+                  <div>
+                    <label style={sidebarLabel}>{t('tasks.modal.assignee')}</label>
+                    <AssigneeDropdown
+                      value={assigneeId}
+                      onChange={setAssigneeId}
+                      members={members}
+                      userMap={userMap}
+                      placeholder={t('tasks.modal.unassigned')}
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Type selector — only on create, not for subtasks */}
             {!isEdit && !parentId && (
               <div>
@@ -419,38 +457,6 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                     );
                   })}
                 </div>
-              </div>
-            )}
-
-            {/* Create mode: priority + assignee inline */}
-            {!isEdit && (
-              <div style={{ display: 'grid', gap: 14, gridTemplateColumns: '1fr 1fr' }}>
-                <div>
-                  <label style={sidebarLabel}>{t('tasks.modal.priority')}</label>
-                  <select
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                    style={fieldStyle}
-                    onFocus={focusHandler}
-                    onBlur={blurHandler}
-                  >
-                    {PRIORITIES.map((p) => (
-                      <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
-                    ))}
-                  </select>
-                </div>
-                {members.length > 0 && (
-                  <div>
-                    <label style={sidebarLabel}>{t('tasks.modal.assignee')}</label>
-                    <AssigneeDropdown
-                      value={assigneeId}
-                      onChange={setAssigneeId}
-                      members={members}
-                      userMap={userMap}
-                      placeholder={t('tasks.modal.unassigned')}
-                    />
-                  </div>
-                )}
               </div>
             )}
 
@@ -1114,7 +1120,8 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
           }}
         />
       )}
-    </div>
+    </div>,
+    document.body,
   );
 }
 
@@ -1193,20 +1200,23 @@ export function AssigneeDropdown({
       </button>
 
       {open && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 4px)',
-          left: 0,
-          right: 0,
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-md)',
-          boxShadow: 'var(--shadow-lg)',
-          zIndex: 50,
-          maxHeight: 220,
-          overflowY: 'auto',
-          padding: '4px 0',
-        }}>
+        <div
+          onWheel={(e) => { e.stopPropagation(); e.currentTarget.scrollTop += e.deltaY; }}
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            right: 0,
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-lg)',
+            zIndex: 50,
+            maxHeight: 220,
+            overflowY: 'auto',
+            padding: '4px 0',
+          }}
+        >
           {/* Unassigned option */}
           <button
             type="button"
@@ -1364,19 +1374,21 @@ function LabelMultiSelect({
       </button>
 
       {open && (
-        <div style={{
-          position: 'absolute',
-          top: 'calc(100% + 4px)',
-          left: 0,
-          right: 0,
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-md)',
-          boxShadow: 'var(--shadow-lg)',
-          zIndex: 50,
-          maxHeight: 200,
-          overflowY: 'auto',
-          padding: '4px 0',
+        <div
+          onWheel={(e) => { e.stopPropagation(); e.currentTarget.scrollTop += e.deltaY; }}
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            right: 0,
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-lg)',
+            zIndex: 50,
+            maxHeight: 200,
+            overflowY: 'auto',
+            padding: '4px 0',
         }}>
           {labels.map((label) => {
             const isSelected = selected.includes(label.id);

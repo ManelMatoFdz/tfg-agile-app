@@ -5,13 +5,13 @@ export const teamsApi = {
   list: (workspaceId: string) =>
     projectClient.get<Team[]>(`/workspaces/${workspaceId}/teams`),
 
-  create: (workspaceId: string, data: { name: string; description?: string }) =>
+  create: (workspaceId: string, data: { name: string; description?: string; color?: string }) =>
     projectClient.post<Team>(`/workspaces/${workspaceId}/teams`, data),
 
   getById: (teamId: string) =>
     projectClient.get<Team>(`/teams/${teamId}`),
 
-  update: (teamId: string, data: { name: string; description?: string }) =>
+  update: (teamId: string, data: { name: string; description?: string; color?: string }) =>
     projectClient.put<Team>(`/teams/${teamId}`, data),
 
   delete: (teamId: string) =>
