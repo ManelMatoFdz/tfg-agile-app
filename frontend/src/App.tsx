@@ -24,6 +24,7 @@ import SprintBacklogPage from './pages/workspace/project/SprintBacklogPage';
 import PokerPage from './pages/workspace/project/PokerPage';
 import PokerRoomPage from './pages/workspace/project/PokerRoomPage';
 import ProjectMetricsPage from './pages/workspace/project/ProjectMetricsPage';
+import EpicsPage from './pages/workspace/project/EpicsPage';
 import MyTasksPage from './pages/MyTasksPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import WorkspaceLayout from './components/ui/WorkspaceLayout';
@@ -56,6 +57,7 @@ export default function App() {
               <Route index element={<Navigate to="board" replace />} />
               <Route path="board" element={<KanbanPage />} />
               <Route path="backlog" element={<BacklogPage />} />
+              <Route path="epics" element={<EpicsPage />} />
               <Route path="sprints" element={<SprintsPage />} />
               <Route path="sprints/:sprintId/planning" element={<SprintPlanningPage />} />
               <Route path="sprints/:sprintId/backlog" element={<SprintBacklogPage />} />

@@ -386,9 +386,37 @@
       "sprints": "Sprints",
       "members": "Membros",
       "poker": "Poker",
+      "epics": "Epics",
       "metrics": "Métricas",
       "settings": "Configuración",
       "boardSettings": "Taboleiro"
+    },
+    "epics": {
+      "title": "Epics",
+      "subtitle": "Agrupa tarefas baixo obxectivos de alto nivel para ver o progreso xeral.",
+      "noEpics": "Non hai epics aínda",
+      "noEpicsSubtitle": "Crea un epic para agrupar tarefas relacionadas",
+      "newEpic": "Novo epic",
+      "editEpic": "Editar epic",
+      "deleteConfirm": "Eliminar este epic? As tarefas quedarán sen epic asignado.",
+      "name": "Nome",
+      "namePlaceholder": "Ex: Módulo de pagos",
+      "description": "Descrición",
+      "descriptionPlaceholder": "Describe o obxectivo do epic...",
+      "color": "Cor",
+      "status": "Estado",
+      "startDate": "Data de inicio",
+      "targetDate": "Data obxectivo",
+      "tasks": "tarefas",
+      "progress": "Progreso",
+      "loadError": "Erro ao cargar os epics.",
+      "statusLabel": {
+        "OPEN": "Aberto",
+        "IN_PROGRESS": "En progreso",
+        "DONE": "Feito"
+      },
+      "filterAll": "Todos",
+      "noTasks": "Sen tarefas asignadas"
     },
     "kanban": {
       "title": "Taboleiro Kanban",
@@ -543,7 +571,8 @@
       "totalItems": "Total elementos",
       "totalPoints": "Total puntos",
       "readyForSprint": "Listos para sprint",
-      "page": "Páxina {{current}} de {{total}}"
+      "page": "Páxina {{current}} de {{total}}",
+      "groupByEpic": "Agrupar por epic"
     },
     "sprints": {
       "title": "Sprints",
@@ -786,6 +815,8 @@
       "subtaskCompleted": "completadas",
       "noSubtasks": "Sen subtarefas",
       "partOf": "Parte de",
+      "epic": "Epic",
+      "noEpic": "Sen epic",
       "definitionOfDone": "Definition of Done",
       "dodPlaceholder": "Criterios de aceptación para considerar a tarefa completada...",
       "loadError": "Erro ao gardar a tarefa."
@@ -835,7 +866,13 @@
       "READY_CHANGED_true": "marcou a tarefa como lista para o sprint",
       "READY_CHANGED_true_impersonal": "A tarefa foi marcada como lista para o sprint",
       "READY_CHANGED_false": "quitou a tarefa de listos para o sprint",
-      "READY_CHANGED_false_impersonal": "A tarefa foi quitada de listos para o sprint"
+      "READY_CHANGED_false_impersonal": "A tarefa foi quitada de listos para o sprint",
+      "EPIC_CHANGED": "cambiou o epic de {{oldValue}} a {{newValue}}",
+      "EPIC_CHANGED_impersonal": "O epic cambiou de {{oldValue}} a {{newValue}}",
+      "EPIC_SET": "asignou ao epic {{newValue}}",
+      "EPIC_SET_impersonal": "Asignada ao epic {{newValue}}",
+      "EPIC_UNSET": "quitou do epic {{oldValue}}",
+      "EPIC_UNSET_impersonal": "Quitada do epic {{oldValue}}"
     },
     "comments": {
       "title": "Comentarios",

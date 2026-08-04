@@ -29,6 +29,7 @@ function buildFilterParams(filters?: TaskFilters): Record<string, string | strin
   if (filters.assigneeIds.length > 0) params.assigneeId = filters.assigneeIds;
   if (filters.labelIds.length > 0) params.labelId = filters.labelIds;
   if (filters.statuses.length > 0) params.status = filters.statuses;
+  if (filters.epicIds && filters.epicIds.length > 0) params.epicId = filters.epicIds;
   if (filters.search) params.search = filters.search;
   return params;
 }

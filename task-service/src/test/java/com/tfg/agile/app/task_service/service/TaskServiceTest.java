@@ -11,6 +11,7 @@ import com.tfg.agile.app.task_service.entity.TaskType;
 import com.tfg.agile.app.task_service.exception.ConflictException;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
+import com.tfg.agile.app.task_service.repository.EpicRepository;
 import com.tfg.agile.app.task_service.repository.LabelRepository;
 import com.tfg.agile.app.task_service.repository.TaskRepository;
 import com.tfg.agile.app.task_service.support.TestDataFactory;
@@ -40,6 +41,8 @@ class TaskServiceTest {
     @Mock
     private LabelRepository labelRepository;
     @Mock
+    private EpicRepository epicRepository;
+    @Mock
     private ProjectServiceClient projectServiceClient;
     @Mock
     private UserServiceClient userServiceClient;
@@ -52,7 +55,7 @@ class TaskServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new TaskService(taskRepository, labelRepository, projectServiceClient, userServiceClient, boardColumnService, activityService);
+        service = new TaskService(taskRepository, labelRepository, epicRepository, projectServiceClient, userServiceClient, boardColumnService, activityService);
     }
 
     @Test

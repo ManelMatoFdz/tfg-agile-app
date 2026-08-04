@@ -386,9 +386,37 @@
       "sprints": "Sprints",
       "members": "Members",
       "poker": "Poker",
+      "epics": "Epics",
       "metrics": "Metrics",
       "settings": "Settings",
       "boardSettings": "Board"
+    },
+    "epics": {
+      "title": "Epics",
+      "subtitle": "Group tasks under high-level objectives to track overall progress.",
+      "noEpics": "No epics yet",
+      "noEpicsSubtitle": "Create an epic to group related tasks",
+      "newEpic": "New epic",
+      "editEpic": "Edit epic",
+      "deleteConfirm": "Delete this epic? Tasks will remain without an epic.",
+      "name": "Name",
+      "namePlaceholder": "E.g.: Payments module",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe the epic's objective...",
+      "color": "Color",
+      "status": "Status",
+      "startDate": "Start date",
+      "targetDate": "Target date",
+      "tasks": "tasks",
+      "progress": "Progress",
+      "loadError": "Error loading epics.",
+      "statusLabel": {
+        "OPEN": "Open",
+        "IN_PROGRESS": "In progress",
+        "DONE": "Done"
+      },
+      "filterAll": "All",
+      "noTasks": "No tasks assigned"
     },
     "kanban": {
       "title": "Kanban Board",
@@ -543,7 +571,8 @@
       "totalItems": "Total items",
       "totalPoints": "Total points",
       "readyForSprint": "Ready for sprint",
-      "page": "Page {{current}} of {{total}}"
+      "page": "Page {{current}} of {{total}}",
+      "groupByEpic": "Group by epic"
     },
     "sprints": {
       "title": "Sprints",
@@ -782,6 +811,8 @@
       "subtaskCompleted": "completed",
       "noSubtasks": "No subtasks",
       "partOf": "Part of",
+      "epic": "Epic",
+      "noEpic": "No epic",
       "definitionOfDone": "Definition of Done",
       "dodPlaceholder": "Acceptance criteria for considering the task complete...",
       "create": "Create task",
@@ -835,7 +866,13 @@
       "READY_CHANGED_true": "marked the task as ready for sprint",
       "READY_CHANGED_true_impersonal": "Task was marked as ready for sprint",
       "READY_CHANGED_false": "removed the task from sprint-ready",
-      "READY_CHANGED_false_impersonal": "Task was removed from sprint-ready"
+      "READY_CHANGED_false_impersonal": "Task was removed from sprint-ready",
+      "EPIC_CHANGED": "changed epic from {{oldValue}} to {{newValue}}",
+      "EPIC_CHANGED_impersonal": "Epic changed from {{oldValue}} to {{newValue}}",
+      "EPIC_SET": "assigned to epic {{newValue}}",
+      "EPIC_SET_impersonal": "Assigned to epic {{newValue}}",
+      "EPIC_UNSET": "removed from epic {{oldValue}}",
+      "EPIC_UNSET_impersonal": "Removed from epic {{oldValue}}"
     },
     "comments": {
       "title": "Comments",

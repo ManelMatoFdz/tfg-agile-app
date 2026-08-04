@@ -66,4 +66,8 @@ public final class TaskSpecifications {
     public static Specification<Task> hasType(TaskType type) {
         return (root, query, cb) -> cb.equal(root.get("type"), type);
     }
+
+    public static Specification<Task> hasEpicIdIn(List<UUID> epicIds) {
+        return (root, query, cb) -> root.get("epicId").in(epicIds);
+    }
 }

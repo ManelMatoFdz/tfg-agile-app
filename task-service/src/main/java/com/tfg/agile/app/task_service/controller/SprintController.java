@@ -28,9 +28,10 @@ public class SprintController {
                                             @RequestParam(required = false) List<UUID> assigneeId,
                                             @RequestParam(required = false) List<UUID> labelId,
                                             @RequestParam(required = false) List<String> status,
+                                            @RequestParam(required = false) List<UUID> epicId,
                                             @RequestParam(required = false) String search,
                                             @AuthenticationPrincipal UUID callerId) {
-        return sprintService.getBacklog(projectId, priority, assigneeId, labelId, status, search, callerId);
+        return sprintService.getBacklog(projectId, priority, assigneeId, labelId, status, epicId, search, callerId);
     }
 
     // ── Sprints ───────────────────────────────────────────────────────────────

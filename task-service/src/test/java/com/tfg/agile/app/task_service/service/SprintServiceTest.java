@@ -14,6 +14,7 @@ import com.tfg.agile.app.task_service.entity.TaskType;
 import com.tfg.agile.app.task_service.exception.ConflictException;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
+import com.tfg.agile.app.task_service.repository.EpicRepository;
 import com.tfg.agile.app.task_service.repository.LabelRepository;
 import com.tfg.agile.app.task_service.repository.SprintRepository;
 import com.tfg.agile.app.task_service.repository.SprintTaskSnapshotRepository;
@@ -58,6 +59,8 @@ class SprintServiceTest {
     @Mock
     private LabelRepository labelRepository;
     @Mock
+    private EpicRepository epicRepository;
+    @Mock
     private ActivityService activityService;
 
     private TaskService taskService;
@@ -65,7 +68,7 @@ class SprintServiceTest {
 
     @BeforeEach
     void setUp() {
-        taskService = new TaskService(taskRepository, labelRepository, projectServiceClient, userServiceClient, boardColumnService, activityService);
+        taskService = new TaskService(taskRepository, labelRepository, epicRepository, projectServiceClient, userServiceClient, boardColumnService, activityService);
         service = new SprintService(sprintRepository, taskRepository, snapshotRepository, projectServiceClient, boardColumnService, taskService, activityService);
     }
 
@@ -79,7 +82,7 @@ class SprintServiceTest {
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
         when(taskRepository.findAll(any(Specification.class), any(Sort.class))).thenReturn(List.of(task));
 
-        var response = service.getBacklog(projectId, null, null, null, null, null, callerId);
+        var response = service.getBacklog(projectId, null, null, null, null, null, null, callerId);
 
         assertThat(response).hasSize(1);
         assertThat(response.get(0).id()).isEqualTo(task.getId());

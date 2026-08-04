@@ -2,11 +2,12 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { X, ChevronDown, UserCircle, BookOpen, CheckSquare, Bug, Plus, PlayCircle } from 'lucide-react';
-import type { Task, TaskPriority, TaskType, BoardColumn, Label } from '../../types';
+import { X, ChevronDown, UserCircle, BookOpen, CheckSquare, Bug, Plus, PlayCircle, Target } from 'lucide-react';
+import type { Task, TaskPriority, TaskType, BoardColumn, Label, Epic } from '../../types';
 import type { CreateTaskDto, UpdateTaskDto } from '../../api/tasks';
 import { tasksApi } from '../../api/tasks';
 import { labelsApi } from '../../api/labels';
+import { epicsApi } from '../../api/epics';
 import { useProjectMembers } from '../../hooks/useProjectMembers';
 import { useProjectMember } from '../../hooks/useProjectMember';
 import TaskComments from './TaskComments';
@@ -101,6 +102,8 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
     task?.labels?.map((l) => l.id) ?? [],
   );
   const [projectLabels, setProjectLabels] = useState<Label[]>([]);
+  const [projectEpics, setProjectEpics] = useState<Epic[]>([]);
+  const [epicId, setEpicId] = useState<string>(task?.epicId ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -118,6 +121,7 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
   useEffect(() => {
     if (!projectId) return;
     labelsApi.getByProject(projectId).then(setProjectLabels).catch(() => {});
+    epicsApi.getByProject(projectId).then(setProjectEpics).catch(() => {});
   }, [projectId]);
 
   useEffect(() => {
@@ -153,6 +157,10 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
       await onSave?.(dto);
       if (isEdit && onMove && status !== task?.status) {
         await onMove(status);
+      }
+      // Assign/change epic if changed
+      if (isEdit && task && epicId !== (task.epicId ?? '')) {
+        await epicsApi.assignToTask(task.id, epicId || null);
       }
       // Persist subtask toggles
       for (const stId of toggledSubtaskIds) {
@@ -914,6 +922,35 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                 </div>
               )}
 
+              {/* Epic */}
+              {!isSubtask && projectEpics.length > 0 && (
+                <div>
+                  <label style={sidebarLabel}>{t('tasks.modal.epic')}</label>
+                  {readOnly ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {epicId && (() => {
+                        const epic = projectEpics.find(e => e.id === epicId);
+                        if (!epic) return <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>{t('tasks.modal.noEpic')}</span>;
+                        return (
+                          <>
+                            <span style={{ width: 8, height: 8, borderRadius: '50%', background: epic.color, flexShrink: 0 }} />
+                            <span style={{ fontSize: 13, fontWeight: 600, color: epic.color }}>{epic.name}</span>
+                          </>
+                        );
+                      })()}
+                      {!epicId && <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>{t('tasks.modal.noEpic')}</span>}
+                    </div>
+                  ) : (
+                    <EpicDropdown
+                      value={epicId}
+                      onChange={setEpicId}
+                      epics={projectEpics}
+                      placeholder={t('tasks.modal.noEpic')}
+                    />
+                  )}
+                </div>
+              )}
+
               {/* Story Points */}
               {!isSubtask && (
                 <div>
@@ -1468,5 +1505,143 @@ export function AssigneeAvatar({ name, avatarUrl, size = 22 }: { name: string; a
     }}>
       {initials}
     </span>
+  );
+}
+
+function EpicDropdown({
+  value,
+  onChange,
+  epics,
+  placeholder,
+}: {
+  value: string;
+  onChange: (id: string) => void;
+  epics: Epic[];
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const selected = value ? epics.find(e => e.id === value) : null;
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          ...fieldStyle,
+          fontSize: 12,
+          padding: '6px 10px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          cursor: 'pointer',
+          width: '100%',
+          textAlign: 'left',
+          background: 'var(--bg)',
+        }}
+      >
+        {selected ? (
+          <>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: selected.color, flexShrink: 0 }} />
+            <span style={{ flex: 1, color: 'var(--text)', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {selected.name}
+            </span>
+          </>
+        ) : (
+          <>
+            <Target size={14} strokeWidth={1.5} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+            <span style={{ flex: 1, color: 'var(--text-faint)', fontSize: 12 }}>{placeholder}</span>
+          </>
+        )}
+        <ChevronDown size={14} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+      </button>
+
+      {open && (
+        <div
+          onWheel={e => { e.stopPropagation(); e.currentTarget.scrollTop += e.deltaY; }}
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 4px)',
+            left: 0,
+            right: 0,
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-md)',
+            boxShadow: 'var(--shadow-lg)',
+            zIndex: 50,
+            maxHeight: 220,
+            overflowY: 'auto',
+            padding: '4px 0',
+          }}
+        >
+          {/* No epic option */}
+          <button
+            type="button"
+            onClick={() => { onChange(''); setOpen(false); }}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              padding: '8px 12px',
+              border: 'none',
+              background: !value ? 'var(--accent-muted)' : 'transparent',
+              cursor: 'pointer',
+              textAlign: 'left',
+              transition: 'background 100ms',
+            }}
+            onMouseEnter={e => { if (value) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+            onMouseLeave={e => { if (value) e.currentTarget.style.background = 'transparent'; }}
+          >
+            <Target size={14} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
+            <span style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic' }}>{placeholder}</span>
+          </button>
+
+          {epics.map(epic => {
+            const isSelected = epic.id === value;
+            return (
+              <button
+                key={epic.id}
+                type="button"
+                onClick={() => { onChange(epic.id); setOpen(false); }}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '7px 12px',
+                  border: 'none',
+                  background: isSelected ? 'var(--accent-muted)' : 'transparent',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'background 100ms',
+                }}
+                onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = isSelected ? 'var(--accent-muted)' : 'transparent'; }}
+              >
+                <span style={{ width: 10, height: 10, borderRadius: '50%', background: epic.color, flexShrink: 0 }} />
+                <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
+                  {epic.name}
+                </span>
+                {isSelected && (
+                  <span style={{ fontSize: 14, color: 'var(--accent)', flexShrink: 0 }}>✓</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

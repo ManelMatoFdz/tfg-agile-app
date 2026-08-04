@@ -102,6 +102,39 @@ export default function TaskCard({ task, assignee, columnColor, onClick }: Props
         )}
       </div>
 
+      {/* Epic badge */}
+      {task.epicName && task.epicColor && (
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          fontSize: 9,
+          fontWeight: 700,
+          letterSpacing: '0.04em',
+          textTransform: 'uppercase',
+          color: task.epicColor,
+          background: `${task.epicColor}14`,
+          border: `1px solid ${task.epicColor}40`,
+          borderRadius: 'var(--radius-sm)',
+          padding: '1px 7px',
+          marginBottom: 4,
+          maxWidth: '100%',
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis',
+          lineHeight: '14px',
+        }}>
+          <span style={{
+            width: 5,
+            height: 5,
+            borderRadius: '50%',
+            background: task.epicColor,
+            flexShrink: 0,
+          }} />
+          {task.epicName}
+        </span>
+      )}
+
       <p style={{
         margin: 0,
         fontSize: 13,

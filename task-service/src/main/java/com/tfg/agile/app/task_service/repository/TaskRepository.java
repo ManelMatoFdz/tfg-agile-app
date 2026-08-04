@@ -32,4 +32,11 @@ public interface TaskRepository extends JpaRepository<Task, UUID>, JpaSpecificat
     long countByProjectIdAndStatus(UUID projectId, String status);
 
     List<Task> findByParentIdAndSprintId(UUID parentId, UUID sprintId);
+
+    // Epic queries
+    List<Task> findByEpicIdOrderByPositionAsc(UUID epicId);
+
+    int countByEpicId(UUID epicId);
+
+    int countByEpicIdAndStatusIn(UUID epicId, java.util.Collection<String> statuses);
 }

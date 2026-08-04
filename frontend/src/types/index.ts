@@ -124,6 +124,7 @@ export type ScrumRole = 'PRODUCT_OWNER' | 'SCRUM_MASTER' | 'DEVELOPER';
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type TaskType = 'STORY' | 'TASK' | 'BUG';
 export type SprintStatus = 'PLANNING' | 'ACTIVE' | 'COMPLETED';
+export type EpicStatus = 'OPEN' | 'IN_PROGRESS' | 'DONE';
 export type RetrospectiveTechnique = 'START_STOP_CONTINUE' | 'FOUR_LS' | 'MAD_SAD_GLAD';
 
 export interface RetrospectiveData {
@@ -146,10 +147,29 @@ export interface Label {
   color: string;
 }
 
+export interface Epic {
+  id: string;
+  projectId: string;
+  name: string;
+  description?: string | null;
+  color: string;
+  status: EpicStatus;
+  startDate?: string | null;
+  targetDate?: string | null;
+  createdBy: string;
+  totalTasks: number;
+  doneTasks: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Task {
   id: string;
   projectId: string;
   sprintId?: string | null;
+  epicId?: string | null;
+  epicName?: string | null;
+  epicColor?: string | null;
   title: string;
   description?: string | null;
   status: string;
@@ -229,7 +249,8 @@ export type TaskActivityType =
   | 'TITLE_CHANGED'
   | 'DESCRIPTION_CHANGED'
   | 'STORY_POINTS_CHANGED'
-  | 'READY_CHANGED';
+  | 'READY_CHANGED'
+  | 'EPIC_CHANGED';
 
 export interface TaskActivity {
   id: string;

@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronRight, LayoutDashboard, ListChecks, RefreshCw,
-  Users, Layers, BarChart2, Settings,
+  Users, Layers, BarChart2, Settings, Target,
 } from 'lucide-react';
 import { projectsApi } from '../../api/projects';
 import type { Project } from '../../types';
@@ -11,6 +11,7 @@ import type { Project } from '../../types';
 const TABS = [
   { key: 'board',    path: 'board',    Icon: LayoutDashboard },
   { key: 'backlog',  path: 'backlog',  Icon: ListChecks      },
+  { key: 'epics',    path: 'epics',    Icon: Target          },
   { key: 'sprints',  path: 'sprints',  Icon: RefreshCw       },
   { key: 'members',  path: 'members',  Icon: Users           },
   { key: 'poker',    path: 'poker',    Icon: Layers          },
@@ -166,7 +167,7 @@ function getCurrentTabLabel(t: (key: string) => string): string {
   const segments = path.split('/');
   const last = segments[segments.length - 1];
   if (last === 'board-settings') return t('projects.tabs.boardSettings');
-  const tabKeys = ['board', 'backlog', 'sprints', 'members', 'poker', 'metrics', 'settings'];
+  const tabKeys = ['board', 'backlog', 'epics', 'sprints', 'members', 'poker', 'metrics', 'settings'];
   if (tabKeys.includes(last)) {
     return t(`projects.tabs.${last}`);
   }

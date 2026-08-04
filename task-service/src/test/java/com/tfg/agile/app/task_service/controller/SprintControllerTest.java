@@ -49,14 +49,15 @@ class SprintControllerTest {
 
         Instant now = Instant.now();
         TaskResponseDto taskResponse = new TaskResponseDto(
-                taskId, projectId, sprintId, "Task", "Desc", "TODO", TaskPriority.MEDIUM,
+                taskId, projectId, sprintId, null, null, null,
+                "Task", "Desc", "TODO", TaskPriority.MEDIUM,
                 TaskType.TASK, null,
                 callerId, null, null, 3, false, 0, List.of(),
                 0, 0, null, null,
                 now, now
         );
 
-        when(sprintService.getBacklog(projectId, null, null, null, null, null, callerId)).thenReturn(List.of(taskResponse));
+        when(sprintService.getBacklog(projectId, null, null, null, null, null, null, callerId)).thenReturn(List.of(taskResponse));
         when(sprintService.listSprints(projectId, callerId)).thenReturn(List.of(sprintResponse));
         when(sprintService.getSprint(sprintId, callerId)).thenReturn(sprintResponse);
         when(sprintService.getSprintTasks(sprintId, null, null, null, null, callerId)).thenReturn(List.of(taskResponse));
@@ -66,7 +67,7 @@ class SprintControllerTest {
         when(sprintService.assignTasksToSprint(sprintId, assignRequest, callerId)).thenReturn(List.of(taskResponse));
         when(sprintService.removeTaskFromSprint(sprintId, taskId, callerId)).thenReturn(taskResponse);
 
-        assertThat(controller.getBacklog(projectId, null, null, null, null, null, callerId)).hasSize(1);
+        assertThat(controller.getBacklog(projectId, null, null, null, null, null, null, callerId)).hasSize(1);
         assertThat(controller.listSprints(projectId, callerId)).hasSize(1);
         assertThat(controller.getSprint(sprintId, callerId)).isEqualTo(sprintResponse);
         assertThat(controller.getSprintTasks(sprintId, null, null, null, null, callerId)).hasSize(1);

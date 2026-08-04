@@ -56,6 +56,7 @@ public class SprintService {
                                             List<UUID> assigneeIds,
                                             List<UUID> labelIds,
                                             List<String> statuses,
+                                            List<UUID> epicIds,
                                             String search,
                                             UUID callerId) {
         requireMember(projectId, callerId);
@@ -63,7 +64,7 @@ public class SprintService {
         Specification<Task> spec = Specification.where(TaskSpecifications.hasProjectId(projectId))
                 .and(TaskSpecifications.inBacklog())
                 .and(TaskSpecifications.isRootTask());
-        spec = applyFilters(spec, priorities, assigneeIds, labelIds, statuses, search);
+        spec = applyFilters(spec, priorities, assigneeIds, labelIds, statuses, epicIds, search);
 
         return taskRepository.findAll(spec, Sort.by(Sort.Order.desc("priority"), Sort.Order.asc("position")))
                 .stream()
@@ -108,7 +109,7 @@ public class SprintService {
 
         Specification<Task> spec = Specification.where(TaskSpecifications.hasSprintId(sprintId))
                 .and(TaskSpecifications.isRootTask());
-        spec = applyFilters(spec, priorities, assigneeIds, labelIds, null, search);
+        spec = applyFilters(spec, priorities, assigneeIds, labelIds, null, null, search);
 
         return taskRepository.findAll(spec, Sort.by(Sort.Order.asc("status"), Sort.Order.asc("position")))
                 .stream()
@@ -129,7 +130,7 @@ public class SprintService {
 
         Specification<Task> spec = Specification.where(TaskSpecifications.hasSprintId(sprintId))
                 .and(TaskSpecifications.isRootTask());
-        spec = applyFilters(spec, priorities, assigneeIds, labelIds, statuses, search);
+        spec = applyFilters(spec, priorities, assigneeIds, labelIds, statuses, null, search);
 
         return taskRepository.findAll(spec, Sort.by(Sort.Order.desc("priority"), Sort.Order.asc("position")))
                 .stream()
@@ -449,6 +450,7 @@ public class SprintService {
                                              List<UUID> assigneeIds,
                                              List<UUID> labelIds,
                                              List<String> statuses,
+                                             List<UUID> epicIds,
                                              String search) {
         if (priorities != null && !priorities.isEmpty()) {
             List<TaskPriority> parsed = priorities.stream()
@@ -464,6 +466,9 @@ public class SprintService {
         }
         if (statuses != null && !statuses.isEmpty()) {
             spec = spec.and(TaskSpecifications.hasStatusIn(statuses));
+        }
+        if (epicIds != null && !epicIds.isEmpty()) {
+            spec = spec.and(TaskSpecifications.hasEpicIdIn(epicIds));
         }
         if (search != null && !search.isBlank()) {
             spec = spec.and(TaskSpecifications.titleContains(search.trim()));

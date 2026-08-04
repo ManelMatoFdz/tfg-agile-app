@@ -9,6 +9,7 @@ import com.tfg.agile.app.task_service.entity.*;
 import com.tfg.agile.app.task_service.exception.ConflictException;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
+import com.tfg.agile.app.task_service.repository.EpicRepository;
 import com.tfg.agile.app.task_service.repository.LabelRepository;
 import com.tfg.agile.app.task_service.repository.TaskRepository;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class TaskService {
 
     private final TaskRepository taskRepository;
     private final LabelRepository labelRepository;
+    private final EpicRepository epicRepository;
     private final ProjectServiceClient projectServiceClient;
     private final UserServiceClient userServiceClient;
     private final BoardColumnService boardColumnService;
@@ -32,12 +34,14 @@ public class TaskService {
 
     public TaskService(TaskRepository taskRepository,
                        LabelRepository labelRepository,
+                       EpicRepository epicRepository,
                        ProjectServiceClient projectServiceClient,
                        UserServiceClient userServiceClient,
                        BoardColumnService boardColumnService,
                        ActivityService activityService) {
         this.taskRepository = taskRepository;
         this.labelRepository = labelRepository;
+        this.epicRepository = epicRepository;
         this.projectServiceClient = projectServiceClient;
         this.userServiceClient = userServiceClient;
         this.boardColumnService = boardColumnService;
@@ -384,7 +388,14 @@ public class TaskService {
                     .orElse(null);
         }
 
-        return TaskResponseDto.from(t, new SubtaskInfo(subtaskCount, completedSubtaskCount, parentTitle));
+        TaskResponseDto.EpicInfo epicInfo = TaskResponseDto.EpicInfo.EMPTY;
+        if (t.getEpicId() != null) {
+            epicInfo = epicRepository.findById(t.getEpicId())
+                    .map(e -> new TaskResponseDto.EpicInfo(e.getName(), e.getColor()))
+                    .orElse(TaskResponseDto.EpicInfo.EMPTY);
+        }
+
+        return TaskResponseDto.from(t, new SubtaskInfo(subtaskCount, completedSubtaskCount, parentTitle), epicInfo);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

@@ -42,7 +42,8 @@ class TaskControllerTest {
 
         Instant now = Instant.now();
         TaskResponseDto response = new TaskResponseDto(
-                taskId, projectId, null, "Task", "Desc", "TODO", TaskPriority.MEDIUM,
+                taskId, projectId, null, null, null, null,
+                "Task", "Desc", "TODO", TaskPriority.MEDIUM,
                 TaskType.TASK, null,
                 callerId, null, null, 5, false, 0, List.of(),
                 0, 0, null, null,

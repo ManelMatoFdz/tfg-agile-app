@@ -12,6 +12,9 @@ public record TaskResponseDto(
         UUID id,
         UUID projectId,
         UUID sprintId,
+        UUID epicId,
+        String epicName,
+        String epicColor,
         String title,
         String description,
         String status,
@@ -37,13 +40,19 @@ public record TaskResponseDto(
         public static final SubtaskInfo EMPTY = new SubtaskInfo(0, 0, null);
     }
 
-    public static TaskResponseDto from(Task t, SubtaskInfo info) {
+    public record EpicInfo(String name, String color) {
+        public static final EpicInfo EMPTY = new EpicInfo(null, null);
+    }
+
+    public static TaskResponseDto from(Task t, SubtaskInfo info, EpicInfo epicInfo) {
         List<LabelDto> labelDtos = t.getLabels() != null
                 ? t.getLabels().stream().map(LabelDto::from).toList()
                 : List.of();
         TaskType type = t.getType() != null ? t.getType() : TaskType.TASK;
         return new TaskResponseDto(
-                t.getId(), t.getProjectId(), t.getSprintId(), t.getTitle(), t.getDescription(),
+                t.getId(), t.getProjectId(), t.getSprintId(),
+                t.getEpicId(), epicInfo.name(), epicInfo.color(),
+                t.getTitle(), t.getDescription(),
                 t.getStatus(), t.getPriority(), type, t.getParentId(),
                 t.getReporterId(), t.getAssigneeId(),
                 t.getCompletedAt(), t.getStoryPoints(), t.isReady(), t.getPosition(), labelDtos,
@@ -52,7 +61,11 @@ public record TaskResponseDto(
         );
     }
 
+    public static TaskResponseDto from(Task t, SubtaskInfo info) {
+        return from(t, info, EpicInfo.EMPTY);
+    }
+
     public static TaskResponseDto from(Task t) {
-        return from(t, SubtaskInfo.EMPTY);
+        return from(t, SubtaskInfo.EMPTY, EpicInfo.EMPTY);
     }
 }

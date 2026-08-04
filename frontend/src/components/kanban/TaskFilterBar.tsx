@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, X, Filter, ChevronDown } from 'lucide-react';
-import type { TaskPriority, Label, UserSummary } from '../../types';
+import type { TaskPriority, Label, UserSummary, Epic } from '../../types';
 
 export interface TaskFilters {
   priorities: TaskPriority[];
   assigneeIds: string[];
   labelIds: string[];
   statuses: string[];
+  epicIds: string[];
   search: string;
 }
 
@@ -16,6 +17,7 @@ export const EMPTY_FILTERS: TaskFilters = {
   assigneeIds: [],
   labelIds: [],
   statuses: [],
+  epicIds: [],
   search: '',
 };
 
@@ -25,6 +27,7 @@ export function hasActiveFilters(f: TaskFilters): boolean {
     f.assigneeIds.length > 0 ||
     f.labelIds.length > 0 ||
     f.statuses.length > 0 ||
+    f.epicIds.length > 0 ||
     f.search.length > 0
   );
 }
@@ -35,6 +38,7 @@ export function activeFilterCount(f: TaskFilters): number {
   if (f.assigneeIds.length > 0) count++;
   if (f.labelIds.length > 0) count++;
   if (f.statuses.length > 0) count++;
+  if (f.epicIds.length > 0) count++;
   if (f.search.length > 0) count++;
   return count;
 }
@@ -44,6 +48,7 @@ interface TaskFilterBarProps {
   onChange: (filters: TaskFilters) => void;
   members: UserSummary[];
   labels: Label[];
+  epics?: Epic[];
   showStatus?: boolean;
   statuses?: { key: string; label: string }[];
 }
@@ -285,6 +290,7 @@ export default function TaskFilterBar({
   onChange,
   members,
   labels,
+  epics = [],
   showStatus = false,
   statuses = [],
 }: TaskFilterBarProps) {
@@ -317,6 +323,12 @@ export default function TaskFilterBar({
     color: l.color,
   }));
 
+  const epicOptions = epics.map((e) => ({
+    key: e.id,
+    label: e.name,
+    color: e.color,
+  }));
+
   const active = hasActiveFilters(filters);
 
   // Build chip list
@@ -347,6 +359,16 @@ export default function TaskFilterBar({
       label: l?.name ?? id,
       color: l?.color,
       onRemove: () => toggle('labelIds', id),
+    });
+  });
+
+  filters.epicIds.forEach((id) => {
+    const e = epics.find((ee) => ee.id === id);
+    chips.push({
+      key: `e-${id}`,
+      label: e?.name ?? id,
+      color: e?.color,
+      onRemove: () => toggle('epicIds', id),
     });
   });
 
@@ -449,6 +471,16 @@ export default function TaskFilterBar({
             options={labelOptions}
             selected={filters.labelIds}
             onToggle={(key) => toggle('labelIds', key)}
+          />
+        )}
+
+        {/* Epic dropdown */}
+        {epicOptions.length > 0 && (
+          <MultiSelectDropdown
+            label="Epic"
+            options={epicOptions}
+            selected={filters.epicIds}
+            onToggle={(key) => toggle('epicIds', key)}
           />
         )}
 

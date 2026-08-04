@@ -57,6 +57,9 @@ public class Task {
     private UUID assigneeId;
 
     @Column
+    private UUID epicId;
+
+    @Column
     private UUID sprintId;
 
     @Column
