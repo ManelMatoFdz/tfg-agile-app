@@ -10,7 +10,9 @@ import com.tfg.agile.app.task_service.exception.ConflictException;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
 import com.tfg.agile.app.task_service.repository.EpicRepository;
+import com.tfg.agile.app.task_service.repository.GitEventRepository;
 import com.tfg.agile.app.task_service.repository.LabelRepository;
+import com.tfg.agile.app.task_service.repository.TaskDependencyRepository;
 import com.tfg.agile.app.task_service.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,8 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final LabelRepository labelRepository;
     private final EpicRepository epicRepository;
+    private final TaskDependencyRepository dependencyRepository;
+    private final GitEventRepository gitEventRepository;
     private final ProjectServiceClient projectServiceClient;
     private final UserServiceClient userServiceClient;
     private final BoardColumnService boardColumnService;
@@ -35,6 +39,8 @@ public class TaskService {
     public TaskService(TaskRepository taskRepository,
                        LabelRepository labelRepository,
                        EpicRepository epicRepository,
+                       TaskDependencyRepository dependencyRepository,
+                       GitEventRepository gitEventRepository,
                        ProjectServiceClient projectServiceClient,
                        UserServiceClient userServiceClient,
                        BoardColumnService boardColumnService,
@@ -42,6 +48,8 @@ public class TaskService {
         this.taskRepository = taskRepository;
         this.labelRepository = labelRepository;
         this.epicRepository = epicRepository;
+        this.dependencyRepository = dependencyRepository;
+        this.gitEventRepository = gitEventRepository;
         this.projectServiceClient = projectServiceClient;
         this.userServiceClient = userServiceClient;
         this.boardColumnService = boardColumnService;
@@ -292,6 +300,11 @@ public class TaskService {
             if (saved.getAssigneeId() != null && !saved.getAssigneeId().equals(callerId)) {
                 notifyTaskStatusChanged(saved, oldStatus, newStatus, perms.workspaceId());
             }
+
+            // When a blocking task moves to DONE, notify assignees of unblocked tasks
+            if (isDone) {
+                notifyUnblockedTasks(saved, perms.workspaceId());
+            }
         }
 
         projectServiceClient.touchProject(task.getProjectId());
@@ -318,9 +331,24 @@ public class TaskService {
         UUID parentId = task.getParentId();
         String taskTitle = task.getTitle();
 
+        // Remove all dependencies involving this task
+        List<TaskDependency> deps = dependencyRepository
+                .findByBlockingTaskIdOrBlockedTaskId(taskId, taskId);
+        if (!deps.isEmpty()) {
+            dependencyRepository.deleteAll(deps);
+        }
+
+        gitEventRepository.deleteByTaskId(taskId);
+
         // If STORY, delete all children first
         if (task.getType() == TaskType.STORY) {
             List<Task> children = taskRepository.findByParentId(taskId);
+            for (Task child : children) {
+                List<TaskDependency> childDeps = dependencyRepository
+                        .findByBlockingTaskIdOrBlockedTaskId(child.getId(), child.getId());
+                if (!childDeps.isEmpty()) dependencyRepository.deleteAll(childDeps);
+                gitEventRepository.deleteByTaskId(child.getId());
+            }
             taskRepository.deleteAll(children);
         }
 
@@ -395,7 +423,14 @@ public class TaskService {
                     .orElse(TaskResponseDto.EpicInfo.EMPTY);
         }
 
-        return TaskResponseDto.from(t, new SubtaskInfo(subtaskCount, completedSubtaskCount, parentTitle), epicInfo);
+        int blockedByCount = dependencyRepository.countByBlockedTaskId(t.getId());
+        int blocksCount = dependencyRepository.countByBlockingTaskId(t.getId());
+        TaskResponseDto.DependencyInfo depInfo = new TaskResponseDto.DependencyInfo(blockedByCount, blocksCount);
+
+        int gitEventCount = gitEventRepository.countByTaskId(t.getId());
+
+        return TaskResponseDto.from(t, new SubtaskInfo(subtaskCount, completedSubtaskCount, parentTitle), epicInfo,
+                depInfo, gitEventCount);
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
@@ -435,6 +470,37 @@ public class TaskService {
                 link,
                 null
         );
+    }
+
+    private void notifyUnblockedTasks(Task completedTask, UUID workspaceId) {
+        List<TaskDependency> blocking = dependencyRepository.findByBlockingTaskId(completedTask.getId());
+        if (blocking.isEmpty()) return;
+
+        Set<String> doneStatuses = boardColumnService.getDoneEquivalentStatuses(completedTask.getProjectId());
+
+        for (TaskDependency dep : blocking) {
+            Task blockedTask = taskRepository.findById(dep.getBlockedTaskId()).orElse(null);
+            if (blockedTask == null || blockedTask.getAssigneeId() == null) continue;
+
+            // Check if all blockers of this task are now done
+            List<TaskDependency> allBlockers = dependencyRepository.findByBlockedTaskId(blockedTask.getId());
+            boolean allDone = allBlockers.stream().allMatch(d -> {
+                Task blocker = taskRepository.findById(d.getBlockingTaskId()).orElse(null);
+                return blocker != null && doneStatuses.contains(blocker.getStatus());
+            });
+
+            if (allDone) {
+                String link = "/workspaces/" + workspaceId + "/projects/" + blockedTask.getProjectId() + "/board";
+                userServiceClient.sendNotification(
+                        blockedTask.getAssigneeId(),
+                        "Tarea desbloqueada",
+                        "La tarea «" + blockedTask.getTitle() + "» ya no está bloqueada",
+                        "TASK_REMINDER",
+                        link,
+                        null
+                );
+            }
+        }
     }
 
     private void notifyTaskStatusChanged(Task task, String oldStatus, String newStatus, UUID workspaceId) {

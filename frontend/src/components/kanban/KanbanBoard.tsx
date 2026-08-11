@@ -210,6 +210,11 @@ export default function KanbanBoard({
     const task = tasks.find((t) => t.id === taskId);
     if (!task || task.status === newStatus) return;
 
+    // Soft warning if moving a blocked task (allows the move)
+    if (task.blockedByCount > 0 && onError) {
+      onError(t('tasks.card.blockedWarning'));
+    }
+
     const newPosition = tasks.filter((t) => t.status === newStatus).length;
 
     // Optimistic update

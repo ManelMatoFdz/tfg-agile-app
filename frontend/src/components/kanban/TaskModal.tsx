@@ -2,12 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import { X, ChevronDown, UserCircle, BookOpen, CheckSquare, Bug, Plus, PlayCircle, Target } from 'lucide-react';
-import type { Task, TaskPriority, TaskType, BoardColumn, Label, Epic } from '../../types';
+import { X, ChevronDown, UserCircle, BookOpen, CheckSquare, Bug, Plus, PlayCircle, Target, Lock, Link2, Search, Trash2, GitBranch, GitCommit, GitPullRequest, ExternalLink } from 'lucide-react';
+import type { Task, TaskPriority, TaskType, BoardColumn, Label, Epic, TaskDependency, GitEvent } from '../../types';
 import type { CreateTaskDto, UpdateTaskDto } from '../../api/tasks';
 import { tasksApi } from '../../api/tasks';
 import { labelsApi } from '../../api/labels';
 import { epicsApi } from '../../api/epics';
+import { dependenciesApi } from '../../api/dependencies';
+import { gitApi, taskGitRef } from '../../api/git';
 import { useProjectMembers } from '../../hooks/useProjectMembers';
 import { useProjectMember } from '../../hooks/useProjectMember';
 import TaskComments from './TaskComments';
@@ -112,6 +114,13 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
   const [subtaskTitle, setSubtaskTitle] = useState('');
   const [selectedSubtask, setSelectedSubtask] = useState<Task | null>(null);
   const [toggledSubtaskIds, setToggledSubtaskIds] = useState<Set<string>>(new Set());
+  const [dependencies, setDependencies] = useState<TaskDependency[]>([]);
+  const [showDepSearch, setShowDepSearch] = useState(false);
+  const [depSearchQuery, setDepSearchQuery] = useState('');
+  const [allProjectTasks, setAllProjectTasks] = useState<Task[]>([]);
+  const [gitEvents, setGitEvents] = useState<GitEvent[]>([]);
+  const [showGitLinkForm, setShowGitLinkForm] = useState(false);
+  const [gitLinkUrl, setGitLinkUrl] = useState('');
 
   const { members, userMap } = useProjectMembers(projectId);
   const { isAdmin } = useProjectMember(projectId);
@@ -127,6 +136,16 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
   useEffect(() => {
     if (!task || task.subtaskCount === 0) return;
     tasksApi.getSubtasks(task.id).then(setSubtasks).catch(() => {});
+  }, [task]);
+
+  useEffect(() => {
+    if (!task) return;
+    dependenciesApi.getByTask(task.id).then(setDependencies).catch(() => {});
+  }, [task]);
+
+  useEffect(() => {
+    if (!task) return;
+    gitApi.getTaskEvents(task.id).then(setGitEvents).catch(() => {});
   }, [task]);
 
   const handleSave = async () => {
@@ -202,6 +221,76 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
       setError(t('tasks.modal.loadError'));
     }
   };
+
+  const handleAddDependency = async (blockedTaskId: string) => {
+    if (!task) return;
+    try {
+      const dep = await dependenciesApi.create(task.id, blockedTaskId);
+      setDependencies(prev => [...prev, dep]);
+      setShowDepSearch(false);
+      setDepSearchQuery('');
+    } catch {
+      setError(t('tasks.modal.dependencyError'));
+    }
+  };
+
+  const handleRemoveDependency = async (depId: string) => {
+    if (!task) return;
+    try {
+      await dependenciesApi.delete(task.id, depId);
+      setDependencies(prev => prev.filter(d => d.id !== depId));
+    } catch {
+      setError(t('tasks.modal.dependencyError'));
+    }
+  };
+
+  const handleLinkGitEvent = async () => {
+    if (!task || !gitLinkUrl.trim()) return;
+    try {
+      const event = await gitApi.link(task.id, gitLinkUrl.trim());
+      setGitEvents(prev => [event, ...prev.filter(e => e.id !== event.id)]);
+      setGitLinkUrl('');
+      setShowGitLinkForm(false);
+    } catch {
+      setError(t('tasks.modal.gitLinkError'));
+    }
+  };
+
+  const handleUnlinkGitEvent = async (eventId: string) => {
+    if (!task) return;
+    try {
+      await gitApi.unlink(task.id, eventId);
+      setGitEvents(prev => prev.filter(e => e.id !== eventId));
+    } catch {
+      setError(t('tasks.modal.gitLinkError'));
+    }
+  };
+
+  const openDepSearch = async () => {
+    if (!projectId) return;
+    setShowDepSearch(true);
+    if (allProjectTasks.length === 0) {
+      try {
+        const tasks = await tasksApi.getByProject(projectId);
+        setAllProjectTasks(tasks);
+      } catch { /* ignore */ }
+    }
+  };
+
+  const depSearchResults = allProjectTasks.filter(t => {
+    if (!task || t.id === task.id) return false;
+    // Exclude tasks that already have a dependency with the current task
+    const alreadyLinked = dependencies.some(d =>
+      (d.blockingTaskId === t.id && d.blockedTaskId === task.id) ||
+      (d.blockedTaskId === t.id && d.blockingTaskId === task.id)
+    );
+    if (alreadyLinked) return false;
+    if (!depSearchQuery.trim()) return false;
+    return t.title.toLowerCase().includes(depSearchQuery.toLowerCase());
+  }).slice(0, 8);
+
+  const blockedByDeps = dependencies.filter(d => d.blockedTaskId === task?.id);
+  const blocksDeps = dependencies.filter(d => d.blockingTaskId === task?.id);
 
   const completedAtFormatted = task?.completedAt
     ? new Date(task.completedAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
@@ -947,6 +1036,314 @@ export default function TaskModal({ task, projectId, columns = [], defaultStatus
                       epics={projectEpics}
                       placeholder={t('tasks.modal.noEpic')}
                     />
+                  )}
+                </div>
+              )}
+
+              {/* Dependencies */}
+              {!isSubtask && isEdit && task && (
+                <div>
+                  <label style={sidebarLabel}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <Link2 size={11} strokeWidth={2} />
+                      {t('tasks.modal.dependencies')}
+                    </span>
+                  </label>
+
+                  {/* Blocked by list */}
+                  {blockedByDeps.length > 0 && (
+                    <div style={{ marginBottom: 8 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#DC2626', display: 'block', marginBottom: 4 }}>
+                        {t('tasks.modal.blockedBy')}
+                      </span>
+                      {blockedByDeps.map(dep => (
+                        <div key={dep.id} style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          padding: '4px 8px', marginBottom: 3,
+                          background: '#DC262608', border: '1px solid #DC262620',
+                          borderRadius: 'var(--radius-sm)',
+                        }}>
+                          <Lock size={11} strokeWidth={2} style={{ color: '#DC2626', flexShrink: 0 }} />
+                          <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                            {dep.blockingTaskTitle}
+                          </span>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', flexShrink: 0 }}>
+                            {dep.blockingTaskStatus}
+                          </span>
+                          {!readOnly && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveDependency(dep.id)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--text-faint)', flexShrink: 0 }}
+                              onMouseEnter={e => (e.currentTarget.style.color = '#DC2626')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
+                            >
+                              <X size={12} strokeWidth={2} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Blocks list */}
+                  {blocksDeps.length > 0 && (
+                    <div style={{ marginBottom: 8 }}>
+                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#D97706', display: 'block', marginBottom: 4 }}>
+                        {t('tasks.modal.blocks')}
+                      </span>
+                      {blocksDeps.map(dep => (
+                        <div key={dep.id} style={{
+                          display: 'flex', alignItems: 'center', gap: 6,
+                          padding: '4px 8px', marginBottom: 3,
+                          background: '#D9770608', border: '1px solid #D9770620',
+                          borderRadius: 'var(--radius-sm)',
+                        }}>
+                          <Link2 size={11} strokeWidth={2} style={{ color: '#D97706', flexShrink: 0 }} />
+                          <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                            {dep.blockedTaskTitle}
+                          </span>
+                          <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', flexShrink: 0 }}>
+                            {dep.blockedTaskStatus}
+                          </span>
+                          {!readOnly && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveDependency(dep.id)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--text-faint)', flexShrink: 0 }}
+                              onMouseEnter={e => (e.currentTarget.style.color = '#DC2626')}
+                              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
+                            >
+                              <X size={12} strokeWidth={2} />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {dependencies.length === 0 && (
+                    <p style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic', margin: '0 0 6px' }}>
+                      {t('tasks.modal.noDependencies')}
+                    </p>
+                  )}
+
+                  {/* Add dependency */}
+                  {!readOnly && !showDepSearch && (
+                    <button
+                      type="button"
+                      onClick={openDepSearch}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        padding: 0, fontSize: 11, fontWeight: 600,
+                        fontFamily: 'var(--font-sans)', background: 'none',
+                        color: 'var(--accent)', border: 'none', cursor: 'pointer',
+                        transition: 'opacity 150ms',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+                      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                    >
+                      <Plus size={12} strokeWidth={2.5} />
+                      {t('tasks.modal.addDependency')}
+                    </button>
+                  )}
+
+                  {/* Dependency search */}
+                  {showDepSearch && (
+                    <div style={{ position: 'relative' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                        <div style={{ position: 'relative', flex: 1 }}>
+                          <Search size={12} strokeWidth={2} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)' }} />
+                          <input
+                            type="text"
+                            value={depSearchQuery}
+                            onChange={e => setDepSearchQuery(e.target.value)}
+                            placeholder={t('tasks.modal.searchTask')}
+                            autoFocus
+                            style={{ ...fieldStyle, fontSize: 11, padding: '5px 8px 5px 26px' }}
+                            onFocus={focusHandler}
+                            onBlur={blurHandler}
+                            onKeyDown={e => { if (e.key === 'Escape') { setShowDepSearch(false); setDepSearchQuery(''); } }}
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => { setShowDepSearch(false); setDepSearchQuery(''); }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', color: 'var(--text-faint)' }}
+                        >
+                          <X size={14} strokeWidth={2} />
+                        </button>
+                      </div>
+                      {depSearchResults.length > 0 && (
+                        <div style={{
+                          background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)',
+                          maxHeight: 180, overflowY: 'auto', padding: '2px 0',
+                        }}>
+                          {depSearchResults.map(t => {
+                            const typeConf = TYPE_CONFIG[t.type ?? 'TASK'];
+                            const TIcon = typeConf.icon;
+                            return (
+                              <button
+                                key={t.id}
+                                type="button"
+                                onClick={() => handleAddDependency(t.id)}
+                                style={{
+                                  width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                                  padding: '6px 10px', border: 'none', background: 'transparent',
+                                  cursor: 'pointer', textAlign: 'left', transition: 'background 100ms',
+                                }}
+                                onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                              >
+                                <TIcon size={12} strokeWidth={2} style={{ color: typeConf.color, flexShrink: 0 }} />
+                                <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                  {t.title}
+                                </span>
+                                <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', flexShrink: 0 }}>
+                                  {t.status}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Git activity */}
+              {!isSubtask && isEdit && task && (
+                <div>
+                  <label style={sidebarLabel}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <GitBranch size={11} strokeWidth={2} />
+                      {t('tasks.modal.gitActivity')}
+                    </span>
+                  </label>
+
+                  <div style={{ marginBottom: 8 }}>
+                    <span style={{ fontSize: 10, color: 'var(--text-faint)', display: 'block', marginBottom: 3 }}>
+                      {t('tasks.modal.gitRef')}
+                    </span>
+                    <code style={{
+                      fontSize: 11,
+                      fontFamily: 'var(--font-mono)',
+                      color: 'var(--text)',
+                      background: 'var(--bg-hover)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '2px 7px',
+                    }}>
+                      {taskGitRef(task.id)}
+                    </code>
+                  </div>
+
+                  {gitEvents.length === 0 ? (
+                    <p style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic', margin: '0 0 6px' }}>
+                      {t('tasks.modal.noGitActivity')}
+                    </p>
+                  ) : (
+                    <div style={{ marginBottom: 8 }}>
+                      {gitEvents.map(event => {
+                        const EventIcon = event.type === 'PULL_REQUEST' ? GitPullRequest
+                          : event.type === 'BRANCH' ? GitBranch : GitCommit;
+                        return (
+                          <div key={event.id} style={{
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            padding: '4px 8px', marginBottom: 3,
+                            background: 'var(--bg-hover)', border: '1px solid var(--border)',
+                            borderRadius: 'var(--radius-sm)',
+                          }}>
+                            <EventIcon size={11} strokeWidth={2} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                            <a
+                              href={event.externalUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4,
+                                fontSize: 12, fontWeight: 500, color: 'var(--text)', textDecoration: 'none',
+                                overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                              }}
+                            >
+                              <span style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                {event.title}
+                              </span>
+                              <ExternalLink size={10} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+                            </a>
+                            {event.status && (
+                              <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', flexShrink: 0 }}>
+                                {event.status}
+                              </span>
+                            )}
+                            {!readOnly && (
+                              <button
+                                type="button"
+                                onClick={() => handleUnlinkGitEvent(event.id)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', color: 'var(--text-faint)', flexShrink: 0 }}
+                                onMouseEnter={e => (e.currentTarget.style.color = '#DC2626')}
+                                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
+                              >
+                                <X size={12} strokeWidth={2} />
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {!readOnly && !showGitLinkForm && (
+                    <button
+                      type="button"
+                      onClick={() => setShowGitLinkForm(true)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        padding: 0, fontSize: 11, fontWeight: 600,
+                        fontFamily: 'var(--font-sans)', background: 'none',
+                        color: 'var(--accent)', border: 'none', cursor: 'pointer',
+                        transition: 'opacity 150ms',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.opacity = '0.7')}
+                      onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                    >
+                      <Plus size={12} strokeWidth={2.5} />
+                      {t('tasks.modal.linkManually')}
+                    </button>
+                  )}
+
+                  {showGitLinkForm && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <input
+                        type="text"
+                        value={gitLinkUrl}
+                        onChange={e => setGitLinkUrl(e.target.value)}
+                        placeholder={t('tasks.modal.gitUrlPlaceholder')}
+                        autoFocus
+                        style={{ ...fieldStyle, fontSize: 11, padding: '5px 8px' }}
+                        onFocus={focusHandler}
+                        onBlur={blurHandler}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') { e.preventDefault(); handleLinkGitEvent(); }
+                          if (e.key === 'Escape') { setShowGitLinkForm(false); setGitLinkUrl(''); }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleLinkGitEvent}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', color: 'var(--accent)' }}
+                      >
+                        <Plus size={14} strokeWidth={2.5} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setShowGitLinkForm(false); setGitLinkUrl(''); }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, display: 'flex', color: 'var(--text-faint)' }}
+                      >
+                        <X size={14} strokeWidth={2} />
+                      </button>
+                    </div>
                   )}
                 </div>
               )}

@@ -1,0 +1,28 @@
+package com.tfg.agile.app.task_service.repository;
+
+import com.tfg.agile.app.task_service.entity.GitEvent;
+import com.tfg.agile.app.task_service.entity.GitEventType;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface GitEventRepository extends JpaRepository<GitEvent, UUID> {
+
+    List<GitEvent> findByTaskIdOrderByReceivedAtDesc(UUID taskId);
+
+    List<GitEvent> findByProjectIdOrderByReceivedAtDesc(UUID projectId);
+
+    List<GitEvent> findByProjectIdAndTypeOrderByReceivedAtDesc(UUID projectId, GitEventType type);
+
+    Optional<GitEvent> findByProjectIdAndTypeAndExternalId(UUID projectId, GitEventType type, String externalId);
+
+    List<GitEvent> findByTaskIdIn(List<UUID> taskIds);
+
+    int countByTaskId(UUID taskId);
+
+    void deleteByTaskId(UUID taskId);
+
+    void deleteByProjectId(UUID projectId);
+}

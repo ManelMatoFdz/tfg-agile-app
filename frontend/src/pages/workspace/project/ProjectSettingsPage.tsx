@@ -1,15 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Plus, Trash2, Tag } from 'lucide-react';
+import { AlertTriangle, Plus, Trash2, Tag, GitBranch, Copy, Check } from 'lucide-react';
 import { projectsApi } from '../../../api/projects';
 import { categoriesApi } from '../../../api/categories';
 import { labelsApi } from '../../../api/labels';
+import { gitApi } from '../../../api/git';
 import { useAuthStore } from '../../../store/authStore';
 import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
 import { workspacesApi } from '../../../api/workspaces';
-import type { Category, Label, Project, ProjectVisibility } from '../../../types';
+import type { Category, GitIntegration, Label, Project, ProjectVisibility } from '../../../types';
 
 const PRESET_COLORS = [
   '#6366f1', '#8b5cf6', '#a855f7', '#d946ef',
@@ -80,6 +81,12 @@ export default function ProjectSettingsPage() {
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  const [gitIntegration, setGitIntegration] = useState<GitIntegration | null>(null);
+  const [repositoryUrl, setRepositoryUrl] = useState('');
+  const [freshSecret, setFreshSecret] = useState<string | null>(null);
+  const [gitSaving, setGitSaving] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
   useEffect(() => {
     if (!projectId || !workspaceId) return;
     Promise.all([
@@ -88,8 +95,9 @@ export default function ProjectSettingsPage() {
       categoriesApi.list(workspaceId),
       workspacesApi.getMembers(workspaceId),
       labelsApi.getByProject(projectId),
+      gitApi.getConfig(projectId),
     ])
-      .then(([projRes, teamMembersRes, catRes, wsMembersRes, labelsRes]) => {
+      .then(([projRes, teamMembersRes, catRes, wsMembersRes, labelsRes, gitRes]) => {
         setProject(projRes.data);
         setName(projRes.data.name);
         setDescription(projRes.data.description ?? '');
@@ -98,6 +106,8 @@ export default function ProjectSettingsPage() {
         setVisibility(projRes.data.visibility ?? 'PRIVATE');
         setCategories(catRes.data);
         setLabels(labelsRes);
+        setGitIntegration(gitRes);
+        setRepositoryUrl(gitRes?.repositoryUrl ?? '');
         const wsAdmin = wsMembersRes.data.some(
           (m) => m.userId === currentUser?.id && m.role === 'ADMIN',
         );
@@ -131,6 +141,41 @@ export default function ProjectSettingsPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleGitSetup = async () => {
+    if (!projectId || !repositoryUrl.trim()) return;
+    setGitSaving(true);
+    setError(null);
+    try {
+      const created = await gitApi.setup(projectId, repositoryUrl.trim());
+      setGitIntegration(created);
+      setFreshSecret(created.webhookSecret ?? null);
+      setSuccess(t('projects.settings.git.connected'));
+    } catch {
+      setError(t('projects.settings.git.saveError'));
+    } finally {
+      setGitSaving(false);
+    }
+  };
+
+  const handleGitDisconnect = async () => {
+    if (!projectId || !window.confirm(t('projects.settings.git.disconnectConfirm'))) return;
+    try {
+      await gitApi.disconnect(projectId);
+      setGitIntegration(null);
+      setRepositoryUrl('');
+      setFreshSecret(null);
+      setSuccess(t('projects.settings.git.disconnected'));
+    } catch {
+      setError(t('projects.settings.git.saveError'));
+    }
+  };
+
+  const copyToClipboard = (field: string, value: string) => {
+    navigator.clipboard.writeText(value);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 1500);
   };
 
   const handleDelete = async () => {
@@ -502,6 +547,142 @@ export default function ProjectSettingsPage() {
               </div>
             </section>
           </div>
+
+          {/* Git integration - full width */}
+          <section style={card}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <GitBranch size={16} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+              <div>
+                <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+                  {t('projects.settings.git.title')}
+                </h2>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
+                  {t('projects.settings.git.subtitle')}
+                </p>
+              </div>
+            </div>
+            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={labelStyle} htmlFor="git-repo-url">
+                  {t('projects.settings.git.repositoryUrl')}
+                </label>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <input
+                    id="git-repo-url"
+                    type="url"
+                    value={repositoryUrl}
+                    onChange={(e) => setRepositoryUrl(e.target.value)}
+                    placeholder={t('projects.settings.git.repositoryUrlPlaceholder')}
+                    style={{ ...inputStyle, flex: 1, minWidth: 240 }}
+                    onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-muted)'; }}
+                    onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleGitSetup}
+                    disabled={gitSaving || !repositoryUrl.trim()}
+                    style={{
+                      padding: '10px 16px', fontSize: 13, fontWeight: 600,
+                      background: 'var(--accent)', color: '#FFFFFF',
+                      border: 'none', borderRadius: 'var(--radius-md)',
+                      cursor: gitSaving || !repositoryUrl.trim() ? 'not-allowed' : 'pointer',
+                      opacity: gitSaving || !repositoryUrl.trim() ? 0.5 : 1,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {gitIntegration ? t('projects.settings.git.regenerate') : t('projects.settings.git.connect')}
+                  </button>
+                  {gitIntegration && (
+                    <button
+                      type="button"
+                      onClick={handleGitDisconnect}
+                      style={{
+                        padding: '10px 16px', fontSize: 13, fontWeight: 600,
+                        background: 'none', color: '#DC2626',
+                        border: '1px solid #DC2626', borderRadius: 'var(--radius-md)',
+                        cursor: 'pointer', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {t('projects.settings.git.disconnect')}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {gitIntegration && (
+                <>
+                  <div>
+                    <label style={labelStyle}>{t('projects.settings.git.webhookUrl')}</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <code style={{
+                        flex: 1, minWidth: 0, padding: '10px 14px',
+                        fontSize: 12, fontFamily: 'var(--font-mono, monospace)',
+                        background: 'var(--bg)', border: '1px solid var(--border)',
+                        borderRadius: 'var(--radius-md)', color: 'var(--text)',
+                        overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                      }}>
+                        {gitIntegration.webhookUrl}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard('url', gitIntegration.webhookUrl)}
+                        title={t('projects.settings.git.copy')}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 4,
+                          padding: '9px 12px', fontSize: 12, fontWeight: 600,
+                          background: 'var(--bg)', color: 'var(--text-muted)',
+                          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+                          cursor: 'pointer', whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {copiedField === 'url' ? <Check size={13} strokeWidth={2.5} /> : <Copy size={13} strokeWidth={2} />}
+                        {copiedField === 'url' ? t('projects.settings.git.copied') : t('projects.settings.git.copy')}
+                      </button>
+                    </div>
+                  </div>
+
+                  {freshSecret && (
+                    <div>
+                      <label style={labelStyle}>{t('projects.settings.git.webhookSecret')}</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <code style={{
+                          flex: 1, minWidth: 0, padding: '10px 14px',
+                          fontSize: 12, fontFamily: 'var(--font-mono, monospace)',
+                          background: 'var(--bg)', border: '1px solid var(--accent)',
+                          borderRadius: 'var(--radius-md)', color: 'var(--text)',
+                          overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                        }}>
+                          {freshSecret}
+                        </code>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard('secret', freshSecret)}
+                          title={t('projects.settings.git.copy')}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 4,
+                            padding: '9px 12px', fontSize: 12, fontWeight: 600,
+                            background: 'var(--bg)', color: 'var(--text-muted)',
+                            border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+                            cursor: 'pointer', whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {copiedField === 'secret' ? <Check size={13} strokeWidth={2.5} /> : <Copy size={13} strokeWidth={2} />}
+                          {copiedField === 'secret' ? t('projects.settings.git.copied') : t('projects.settings.git.copy')}
+                        </button>
+                      </div>
+                      <p style={{ margin: '6px 0 0', fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>
+                        {t('projects.settings.git.secretOnce')}
+                      </p>
+                    </div>
+                  )}
+
+                  <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                    {t('projects.settings.git.instructions')}
+                  </p>
+                </>
+              )}
+            </div>
+          </section>
 
           {/* Danger zone - full width */}
           <section style={{

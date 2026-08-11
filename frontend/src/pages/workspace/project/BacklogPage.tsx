@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, ClipboardList, Filter as FilterIcon, BookOpen, CheckSquare, Bug, ChevronRight, ChevronDown, ChevronLeft, Target } from 'lucide-react';
+import { Plus, ClipboardList, Filter as FilterIcon, BookOpen, CheckSquare, Bug, ChevronRight, ChevronDown, ChevronLeft, Target, Lock } from 'lucide-react';
 import type { Task, TaskPriority, TaskType, UserSummary } from '../../../types';
 import { sprintsApi } from '../../../api/sprints';
 import { tasksApi } from '../../../api/tasks';
@@ -282,6 +282,11 @@ export default function BacklogPage() {
           {/* Summary */}
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {task.blockedByCount > 0 && (
+                <span title={t('tasks.card.blocked')} style={{ display: 'flex', alignItems: 'center', flexShrink: 0, color: '#DC2626' }}>
+                  <Lock size={13} strokeWidth={2} />
+                </span>
+              )}
               <p style={{
                 margin: 0, fontSize: 14, fontWeight: 500, color: 'var(--text)',
                 overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',

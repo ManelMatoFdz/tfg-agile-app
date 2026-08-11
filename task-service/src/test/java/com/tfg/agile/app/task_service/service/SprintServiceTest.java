@@ -15,9 +15,11 @@ import com.tfg.agile.app.task_service.exception.ConflictException;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
 import com.tfg.agile.app.task_service.repository.EpicRepository;
+import com.tfg.agile.app.task_service.repository.GitEventRepository;
 import com.tfg.agile.app.task_service.repository.LabelRepository;
 import com.tfg.agile.app.task_service.repository.SprintRepository;
 import com.tfg.agile.app.task_service.repository.SprintTaskSnapshotRepository;
+import com.tfg.agile.app.task_service.repository.TaskDependencyRepository;
 import com.tfg.agile.app.task_service.repository.TaskRepository;
 import com.tfg.agile.app.task_service.support.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +63,10 @@ class SprintServiceTest {
     @Mock
     private EpicRepository epicRepository;
     @Mock
+    private TaskDependencyRepository dependencyRepository;
+    @Mock
+    private GitEventRepository gitEventRepository;
+    @Mock
     private ActivityService activityService;
 
     private TaskService taskService;
@@ -68,7 +74,7 @@ class SprintServiceTest {
 
     @BeforeEach
     void setUp() {
-        taskService = new TaskService(taskRepository, labelRepository, epicRepository, projectServiceClient, userServiceClient, boardColumnService, activityService);
+        taskService = new TaskService(taskRepository, labelRepository, epicRepository, dependencyRepository, gitEventRepository, projectServiceClient, userServiceClient, boardColumnService, activityService);
         service = new SprintService(sprintRepository, taskRepository, snapshotRepository, projectServiceClient, boardColumnService, taskService, activityService);
     }
 

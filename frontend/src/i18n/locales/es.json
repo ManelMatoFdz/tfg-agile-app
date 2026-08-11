@@ -387,9 +387,26 @@
       "members": "Miembros",
       "poker": "Poker",
       "epics": "Epics",
+      "repository": "Repositorio",
       "metrics": "Métricas",
       "settings": "Configuración",
       "boardSettings": "Tablero"
+    },
+    "repository": {
+      "title": "Repositorio",
+      "subtitle": "Actividad de código vinculada a las tareas del proyecto.",
+      "notConnected": "No hay ningún repositorio conectado",
+      "notConnectedSubtitle": "Conéctalo desde la configuración del proyecto para ver commits, ramas y pull requests aquí.",
+      "goToSettings": "Ir a configuración",
+      "connectedTo": "Conectado a",
+      "openPullRequests": "Pull requests abiertas",
+      "recentCommits": "Commits recientes",
+      "branches": "Ramas",
+      "noPullRequests": "No hay pull requests abiertas",
+      "noCommits": "No hay commits todavía",
+      "noBranches": "No hay ramas vinculadas",
+      "unlinked": "Sin tarea vinculada",
+      "loadError": "Error al cargar la actividad del repositorio."
     },
     "epics": {
       "title": "Epics",
@@ -515,6 +532,25 @@
         "namePlaceholder": "Nombre de la etiqueta",
         "add": "Añadir",
         "empty": "No hay etiquetas definidas para este proyecto."
+      },
+      "git": {
+        "title": "Integración con Git",
+        "subtitle": "Vincula un repositorio de GitHub para ver commits y pull requests en las tareas.",
+        "repositoryUrl": "URL del repositorio",
+        "repositoryUrlPlaceholder": "https://github.com/organizacion/repositorio",
+        "connect": "Conectar repositorio",
+        "regenerate": "Regenerar secreto",
+        "disconnect": "Desconectar",
+        "disconnectConfirm": "¿Desconectar el repositorio? Se eliminará toda la actividad git registrada.",
+        "webhookUrl": "URL del webhook",
+        "webhookSecret": "Secreto del webhook",
+        "secretOnce": "Guarda este secreto ahora: no se volverá a mostrar.",
+        "instructions": "En GitHub: Settings → Webhooks → Add webhook. Pega la URL y el secreto, elige content type application/json y suscríbete a los eventos Push, Pull requests y Branch or tag creation.",
+        "copy": "Copiar",
+        "copied": "Copiado",
+        "connected": "Repositorio conectado.",
+        "disconnected": "Repositorio desconectado.",
+        "saveError": "Error al guardar la integración git."
       }
     },
     "metrics": {
@@ -815,6 +851,20 @@
       "noEpic": "Sin epic",
       "definitionOfDone": "Definition of Done",
       "dodPlaceholder": "Criterios de aceptación para considerar la tarea completada...",
+      "dependencies": "Dependencias",
+      "blockedBy": "Bloqueada por",
+      "blocks": "Bloquea a",
+      "addDependency": "Añadir dependencia",
+      "searchTask": "Buscar tarea...",
+      "noDependencies": "Sin dependencias",
+      "blockedWarning": "Esta tarea está bloqueada por «{{title}}» ({{status}})",
+      "dependencyError": "Error al gestionar dependencia",
+      "gitActivity": "Actividad Git",
+      "noGitActivity": "Sin actividad git",
+      "gitRef": "Referencia para commits y ramas",
+      "linkManually": "Vincular manualmente",
+      "gitUrlPlaceholder": "URL del commit o de la pull request",
+      "gitLinkError": "No se reconoce la URL. Debe ser un commit o una pull request de GitHub.",
       "create": "Crear tarea",
       "save": "Guardar cambios",
       "deleteTask": "Eliminar tarea",
@@ -827,7 +877,10 @@
       "markNotDone": "Marcar como pendiente"
     },
     "card": {
-      "overdue": "Vencida"
+      "overdue": "Vencida",
+      "blocked": "Bloqueada",
+      "blockedWarning": "Esta tarea está bloqueada por otra tarea que aún no está completada",
+      "gitEvents": "Actividad git"
     },
     "activity": {
       "title": "Actividad",
@@ -872,7 +925,13 @@
       "EPIC_SET": "asignó al epic {{newValue}}",
       "EPIC_SET_impersonal": "Asignada al epic {{newValue}}",
       "EPIC_UNSET": "quitó del epic {{oldValue}}",
-      "EPIC_UNSET_impersonal": "Quitada del epic {{oldValue}}"
+      "EPIC_UNSET_impersonal": "Quitada del epic {{oldValue}}",
+      "DEPENDENCY_ADDED": "añadió dependencia con «{{newValue}}»",
+      "DEPENDENCY_ADDED_impersonal": "Dependencia añadida con «{{newValue}}»",
+      "DEPENDENCY_ADDED_blocking": "añadió dependencia: bloquea a «{{newValue}}»",
+      "DEPENDENCY_ADDED_blocked": "añadió dependencia: bloqueada por «{{oldValue}}»",
+      "DEPENDENCY_REMOVED": "eliminó dependencia con «{{oldValue}}»",
+      "DEPENDENCY_REMOVED_impersonal": "Dependencia eliminada con «{{oldValue}}»"
     },
     "comments": {
       "title": "Comentarios",

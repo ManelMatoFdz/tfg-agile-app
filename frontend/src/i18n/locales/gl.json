@@ -387,9 +387,26 @@
       "members": "Membros",
       "poker": "Poker",
       "epics": "Epics",
+      "repository": "Repositorio",
       "metrics": "Métricas",
       "settings": "Configuración",
       "boardSettings": "Taboleiro"
+    },
+    "repository": {
+      "title": "Repositorio",
+      "subtitle": "Actividade de código vinculada ás tarefas do proxecto.",
+      "notConnected": "Non hai ningún repositorio conectado",
+      "notConnectedSubtitle": "Conéctao dende a configuración do proxecto para ver commits, ramas e pull requests aquí.",
+      "goToSettings": "Ir á configuración",
+      "connectedTo": "Conectado a",
+      "openPullRequests": "Pull requests abertas",
+      "recentCommits": "Commits recentes",
+      "branches": "Ramas",
+      "noPullRequests": "Non hai pull requests abertas",
+      "noCommits": "Aínda non hai commits",
+      "noBranches": "Non hai ramas vinculadas",
+      "unlinked": "Sen tarefa vinculada",
+      "loadError": "Erro ao cargar a actividade do repositorio."
     },
     "epics": {
       "title": "Epics",
@@ -515,6 +532,25 @@
         "namePlaceholder": "Nome da etiqueta",
         "add": "Engadir",
         "empty": "Non hai etiquetas definidas para este proxecto."
+      },
+      "git": {
+        "title": "Integración con Git",
+        "subtitle": "Vincula un repositorio de GitHub para ver commits e pull requests nas tarefas.",
+        "repositoryUrl": "URL do repositorio",
+        "repositoryUrlPlaceholder": "https://github.com/organizacion/repositorio",
+        "connect": "Conectar repositorio",
+        "regenerate": "Rexerar segredo",
+        "disconnect": "Desconectar",
+        "disconnectConfirm": "Desconectar o repositorio? Eliminarase toda a actividade git rexistrada.",
+        "webhookUrl": "URL do webhook",
+        "webhookSecret": "Segredo do webhook",
+        "secretOnce": "Garda este segredo agora: non se volverá amosar.",
+        "instructions": "En GitHub: Settings → Webhooks → Add webhook. Pega a URL e o segredo, escolle content type application/json e subscríbete aos eventos Push, Pull requests e Branch or tag creation.",
+        "copy": "Copiar",
+        "copied": "Copiado",
+        "connected": "Repositorio conectado.",
+        "disconnected": "Repositorio desconectado.",
+        "saveError": "Erro ao gardar a integración git."
       }
     },
     "metrics": {
@@ -819,6 +855,20 @@
       "noEpic": "Sen epic",
       "definitionOfDone": "Definition of Done",
       "dodPlaceholder": "Criterios de aceptación para considerar a tarefa completada...",
+      "dependencies": "Dependencias",
+      "blockedBy": "Bloqueada por",
+      "blocks": "Bloquea a",
+      "addDependency": "Engadir dependencia",
+      "searchTask": "Buscar tarefa...",
+      "noDependencies": "Sen dependencias",
+      "blockedWarning": "Esta tarefa está bloqueada por «{{title}}» ({{status}})",
+      "dependencyError": "Erro ao xestionar dependencia",
+      "gitActivity": "Actividade Git",
+      "noGitActivity": "Sen actividade git",
+      "gitRef": "Referencia para commits e ramas",
+      "linkManually": "Vincular manualmente",
+      "gitUrlPlaceholder": "URL do commit ou da pull request",
+      "gitLinkError": "Non se recoñece a URL. Debe ser un commit ou unha pull request de GitHub.",
       "loadError": "Erro ao gardar a tarefa."
     },
     "subtaskModal": {
@@ -827,7 +877,10 @@
       "markNotDone": "Marcar como pendente"
     },
     "card": {
-      "overdue": "Vencida"
+      "overdue": "Vencida",
+      "blocked": "Bloqueada",
+      "blockedWarning": "Esta tarefa está bloqueada por outra tarefa que aínda non está completada",
+      "gitEvents": "Actividade git"
     },
     "activity": {
       "title": "Actividade",
@@ -872,7 +925,13 @@
       "EPIC_SET": "asignou ao epic {{newValue}}",
       "EPIC_SET_impersonal": "Asignada ao epic {{newValue}}",
       "EPIC_UNSET": "quitou do epic {{oldValue}}",
-      "EPIC_UNSET_impersonal": "Quitada do epic {{oldValue}}"
+      "EPIC_UNSET_impersonal": "Quitada do epic {{oldValue}}",
+      "DEPENDENCY_ADDED": "engadiu dependencia con «{{newValue}}»",
+      "DEPENDENCY_ADDED_impersonal": "Dependencia engadida con «{{newValue}}»",
+      "DEPENDENCY_ADDED_blocking": "engadiu dependencia: bloquea a «{{newValue}}»",
+      "DEPENDENCY_ADDED_blocked": "engadiu dependencia: bloqueada por «{{oldValue}}»",
+      "DEPENDENCY_REMOVED": "eliminou dependencia con «{{oldValue}}»",
+      "DEPENDENCY_REMOVED_impersonal": "Dependencia eliminada con «{{oldValue}}»"
     },
     "comments": {
       "title": "Comentarios",

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { BookOpen, CheckSquare, Bug } from 'lucide-react';
+import { BookOpen, CheckSquare, Bug, Lock, GitBranch } from 'lucide-react';
 import type { Task, TaskPriority, TaskType } from '../../types';
 import type { UserSummary } from '../../types';
 import { AssigneeAvatar } from './TaskModal';
@@ -102,38 +102,84 @@ export default function TaskCard({ task, assignee, columnColor, onClick }: Props
         )}
       </div>
 
-      {/* Epic badge */}
-      {task.epicName && task.epicColor && (
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 4,
-          fontSize: 9,
-          fontWeight: 700,
-          letterSpacing: '0.04em',
-          textTransform: 'uppercase',
-          color: task.epicColor,
-          background: `${task.epicColor}14`,
-          border: `1px solid ${task.epicColor}40`,
-          borderRadius: 'var(--radius-sm)',
-          padding: '1px 7px',
-          marginBottom: 4,
-          maxWidth: '100%',
-          overflow: 'hidden',
-          whiteSpace: 'nowrap',
-          textOverflow: 'ellipsis',
-          lineHeight: '14px',
-        }}>
+      {/* Epic badge + Blocked indicator + Git activity */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap', marginBottom: task.epicName || task.blockedByCount > 0 || task.gitEventCount > 0 ? 4 : 0 }}>
+        {task.epicName && task.epicColor && (
           <span style={{
-            width: 5,
-            height: 5,
-            borderRadius: '50%',
-            background: task.epicColor,
-            flexShrink: 0,
-          }} />
-          {task.epicName}
-        </span>
-      )}
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 9,
+            fontWeight: 700,
+            letterSpacing: '0.04em',
+            textTransform: 'uppercase',
+            color: task.epicColor,
+            background: `${task.epicColor}14`,
+            border: `1px solid ${task.epicColor}40`,
+            borderRadius: 'var(--radius-sm)',
+            padding: '1px 7px',
+            maxWidth: '100%',
+            overflow: 'hidden',
+            whiteSpace: 'nowrap',
+            textOverflow: 'ellipsis',
+            lineHeight: '14px',
+          }}>
+            <span style={{
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: task.epicColor,
+              flexShrink: 0,
+            }} />
+            {task.epicName}
+          </span>
+        )}
+        {task.blockedByCount > 0 && (
+          <span
+            title={t('tasks.card.blocked')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 3,
+              fontSize: 9,
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              color: '#DC2626',
+              background: '#DC262608',
+              border: '1px solid #DC262625',
+              borderRadius: 'var(--radius-sm)',
+              padding: '1px 7px',
+              lineHeight: '14px',
+            }}
+          >
+            <Lock size={8} strokeWidth={2.5} />
+            {t('tasks.card.blocked')}
+          </span>
+        )}
+        {task.gitEventCount > 0 && (
+          <span
+            title={t('tasks.card.gitEvents')}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 3,
+              fontSize: 9,
+              fontWeight: 700,
+              color: 'var(--text-muted)',
+              background: 'var(--bg-hover)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '1px 7px',
+              lineHeight: '14px',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            <GitBranch size={8} strokeWidth={2.5} />
+            {task.gitEventCount}
+          </span>
+        )}
+      </div>
 
       <p style={{
         margin: 0,

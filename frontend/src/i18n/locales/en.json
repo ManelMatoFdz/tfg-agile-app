@@ -387,9 +387,26 @@
       "members": "Members",
       "poker": "Poker",
       "epics": "Epics",
+      "repository": "Repository",
       "metrics": "Metrics",
       "settings": "Settings",
       "boardSettings": "Board"
+    },
+    "repository": {
+      "title": "Repository",
+      "subtitle": "Code activity linked to this project's tasks.",
+      "notConnected": "No repository connected",
+      "notConnectedSubtitle": "Connect one from the project settings to see commits, branches and pull requests here.",
+      "goToSettings": "Go to settings",
+      "connectedTo": "Connected to",
+      "openPullRequests": "Open pull requests",
+      "recentCommits": "Recent commits",
+      "branches": "Branches",
+      "noPullRequests": "No open pull requests",
+      "noCommits": "No commits yet",
+      "noBranches": "No linked branches",
+      "unlinked": "No linked task",
+      "loadError": "Failed to load repository activity."
     },
     "epics": {
       "title": "Epics",
@@ -515,6 +532,25 @@
         "namePlaceholder": "Label name",
         "add": "Add",
         "empty": "No labels defined for this project."
+      },
+      "git": {
+        "title": "Git integration",
+        "subtitle": "Link a GitHub repository to see commits and pull requests on tasks.",
+        "repositoryUrl": "Repository URL",
+        "repositoryUrlPlaceholder": "https://github.com/organization/repository",
+        "connect": "Connect repository",
+        "regenerate": "Regenerate secret",
+        "disconnect": "Disconnect",
+        "disconnectConfirm": "Disconnect the repository? All recorded git activity will be deleted.",
+        "webhookUrl": "Webhook URL",
+        "webhookSecret": "Webhook secret",
+        "secretOnce": "Save this secret now: it will not be shown again.",
+        "instructions": "In GitHub: Settings → Webhooks → Add webhook. Paste the URL and the secret, choose content type application/json and subscribe to the Push, Pull requests and Branch or tag creation events.",
+        "copy": "Copy",
+        "copied": "Copied",
+        "connected": "Repository connected.",
+        "disconnected": "Repository disconnected.",
+        "saveError": "Failed to save the git integration."
       }
     },
     "metrics": {
@@ -815,6 +851,20 @@
       "noEpic": "No epic",
       "definitionOfDone": "Definition of Done",
       "dodPlaceholder": "Acceptance criteria for considering the task complete...",
+      "dependencies": "Dependencies",
+      "blockedBy": "Blocked by",
+      "blocks": "Blocks",
+      "addDependency": "Add dependency",
+      "searchTask": "Search task...",
+      "noDependencies": "No dependencies",
+      "blockedWarning": "This task is blocked by \"{{title}}\" ({{status}})",
+      "dependencyError": "Error managing dependency",
+      "gitActivity": "Git activity",
+      "noGitActivity": "No git activity",
+      "gitRef": "Reference for commits and branches",
+      "linkManually": "Link manually",
+      "gitUrlPlaceholder": "Commit or pull request URL",
+      "gitLinkError": "URL not recognized. It must be a GitHub commit or pull request.",
       "create": "Create task",
       "save": "Save changes",
       "deleteTask": "Delete task",
@@ -827,7 +877,10 @@
       "markNotDone": "Mark as not done"
     },
     "card": {
-      "overdue": "Overdue"
+      "overdue": "Overdue",
+      "blocked": "Blocked",
+      "blockedWarning": "This task is blocked by another task that is not yet completed",
+      "gitEvents": "Git activity"
     },
     "activity": {
       "title": "Activity",
@@ -872,7 +925,13 @@
       "EPIC_SET": "assigned to epic {{newValue}}",
       "EPIC_SET_impersonal": "Assigned to epic {{newValue}}",
       "EPIC_UNSET": "removed from epic {{oldValue}}",
-      "EPIC_UNSET_impersonal": "Removed from epic {{oldValue}}"
+      "EPIC_UNSET_impersonal": "Removed from epic {{oldValue}}",
+      "DEPENDENCY_ADDED": "added dependency with \"{{newValue}}\"",
+      "DEPENDENCY_ADDED_impersonal": "Dependency added with \"{{newValue}}\"",
+      "DEPENDENCY_ADDED_blocking": "added dependency: blocks \"{{newValue}}\"",
+      "DEPENDENCY_ADDED_blocked": "added dependency: blocked by \"{{oldValue}}\"",
+      "DEPENDENCY_REMOVED": "removed dependency with \"{{oldValue}}\"",
+      "DEPENDENCY_REMOVED_impersonal": "Dependency removed with \"{{oldValue}}\""
     },
     "comments": {
       "title": "Comments",

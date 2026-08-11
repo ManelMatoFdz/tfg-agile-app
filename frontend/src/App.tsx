@@ -25,6 +25,7 @@ import PokerPage from './pages/workspace/project/PokerPage';
 import PokerRoomPage from './pages/workspace/project/PokerRoomPage';
 import ProjectMetricsPage from './pages/workspace/project/ProjectMetricsPage';
 import EpicsPage from './pages/workspace/project/EpicsPage';
+import RepositoryPage from './pages/workspace/project/RepositoryPage';
 import MyTasksPage from './pages/MyTasksPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import WorkspaceLayout from './components/ui/WorkspaceLayout';
@@ -64,6 +65,7 @@ export default function App() {
               <Route path="sprints/:sprintId/report" element={<SprintReportPage />} />
               <Route path="members" element={<ProjectMembersPage />} />
               <Route path="poker" element={<PokerPage />} />
+              <Route path="repository" element={<RepositoryPage />} />
               <Route path="metrics" element={<ProjectMetricsPage />} />
               <Route path="board-settings" element={<BoardSettingsPage />} />
               <Route path="settings" element={<ProjectSettingsPage />} />
