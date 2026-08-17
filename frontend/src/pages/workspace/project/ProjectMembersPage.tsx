@@ -17,8 +17,8 @@ const PAGE_SIZE = 8;
 const SCRUM_ROLES: (ScrumRole | null)[] = [null, 'PRODUCT_OWNER', 'SCRUM_MASTER', 'DEVELOPER'];
 
 const TEAM_ROLE_COLOR: Record<TeamRole, { color: string; bg: string }> = {
-  ADMIN:  { color: 'var(--accent)',   bg: 'var(--accent-muted)' },
-  MEMBER: { color: 'var(--success)',  bg: 'var(--success-bg)' },
+  ADMIN:  { color: 'var(--accent-text)',   bg: 'var(--accent-muted)' },
+  MEMBER: { color: 'var(--success-text)',  bg: 'var(--success-bg)' },
 };
 
 const SCRUM_ROLE_COLOR: Record<string, { color: string; bg: string }> = {
@@ -285,7 +285,7 @@ export default function ProjectMembersPage() {
       {membersAction.loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
           <div style={{
-            width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
+            width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent-text)',
             borderRadius: '50%', animation: 'spin 0.7s linear infinite',
           }} />
         </div>
@@ -421,7 +421,7 @@ export default function ProjectMembersPage() {
                           border: i === safePage ? '1px solid var(--accent)' : '1px solid var(--border)',
                           borderRadius: 'var(--radius-sm)',
                           background: i === safePage ? 'var(--accent-muted)' : 'var(--bg-elevated)',
-                          color: i === safePage ? 'var(--accent)' : 'var(--text-muted)',
+                          color: i === safePage ? 'var(--accent-text)' : 'var(--text-muted)',
                           cursor: 'pointer',
                         }}
                       >

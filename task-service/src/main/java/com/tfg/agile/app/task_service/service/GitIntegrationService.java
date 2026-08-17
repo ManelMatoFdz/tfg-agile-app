@@ -5,6 +5,7 @@ import com.tfg.agile.app.task_service.client.ProjectServiceClient;
 import com.tfg.agile.app.task_service.dto.GitEventDto;
 import com.tfg.agile.app.task_service.dto.GitIntegrationDto;
 import com.tfg.agile.app.task_service.dto.LinkGitEventRequestDto;
+import com.tfg.agile.app.task_service.dto.PagedResponseDto;
 import com.tfg.agile.app.task_service.dto.SetupGitIntegrationRequestDto;
 import com.tfg.agile.app.task_service.entity.GitEvent;
 import com.tfg.agile.app.task_service.entity.GitEventType;
@@ -16,6 +17,9 @@ import com.tfg.agile.app.task_service.repository.GitEventRepository;
 import com.tfg.agile.app.task_service.repository.GitIntegrationRepository;
 import com.tfg.agile.app.task_service.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +27,7 @@ import java.security.SecureRandom;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,6 +37,10 @@ import java.util.stream.Collectors;
 public class GitIntegrationService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
+
+    private static final int DEFAULT_PAGE = 0;
+    private static final int DEFAULT_SIZE = 10;
+    private static final int MAX_SIZE = 100;
 
     private static final Pattern COMMIT_URL = Pattern.compile("/commit/([0-9a-fA-F]{7,40})");
     private static final Pattern PR_URL = Pattern.compile("/pull/(\\d+)");
@@ -96,14 +105,39 @@ public class GitIntegrationService {
 
     // ── consulta de eventos ──────────────────────────────────────────────────
 
+    /**
+     * Actividad del repositorio para un tipo concreto de evento, paginada.
+     * Cada seccion de la pantalla de repositorio (PRs, commits, ramas) consulta
+     * su propio tipo, de modo que un proyecto con miles de commits no arrastra
+     * todo el historial en cada carga.
+     */
     @Transactional(readOnly = true)
-    public List<GitEventDto> findByProject(UUID projectId, UUID callerId) {
+    public PagedResponseDto<GitEventDto> findByProject(UUID projectId, UUID callerId,
+                                                       GitEventType type, String status,
+                                                       Integer page, Integer size) {
         projectServiceClient.getMemberPermissions(projectId, callerId);
-        List<GitEvent> events = gitEventRepository.findByProjectIdOrderByReceivedAtDesc(projectId);
-        Map<UUID, String> titles = taskTitles(projectId);
-        return events.stream()
-                .map(e -> GitEventDto.from(e, titles.get(e.getTaskId())))
-                .toList();
+
+        int safePage = page == null || page < 0 ? DEFAULT_PAGE : page;
+        int safeSize = size == null || size < 1 ? DEFAULT_SIZE : Math.min(size, MAX_SIZE);
+        PageRequest pageable = PageRequest.of(safePage, safeSize,
+                Sort.by(Sort.Direction.DESC, "receivedAt"));
+
+        Page<GitEvent> events = status == null || status.isBlank()
+                ? gitEventRepository.findByProjectIdAndType(projectId, type, pageable)
+                : gitEventRepository.findByProjectIdAndTypeAndStatus(projectId, type, status, pageable);
+
+        Map<UUID, String> titles = taskTitles(events.getContent());
+
+        return new PagedResponseDto<>(
+                events.getContent().stream()
+                        .map(e -> GitEventDto.from(e, titles.get(e.getTaskId())))
+                        .toList(),
+                events.getNumber(),
+                events.getSize(),
+                events.getTotalElements(),
+                events.getTotalPages(),
+                events.hasNext()
+        );
     }
 
     @Transactional(readOnly = true)
@@ -189,8 +223,17 @@ public class GitIntegrationService {
                 .orElseThrow(() -> new ResourceNotFoundException("TASK_NOT_FOUND"));
     }
 
-    private Map<UUID, String> taskTitles(UUID projectId) {
-        return taskRepository.findByProjectId(projectId).stream()
+    /** Resuelve los titulos solo de las tareas referenciadas por los eventos dados. */
+    private Map<UUID, String> taskTitles(List<GitEvent> events) {
+        List<UUID> taskIds = events.stream()
+                .map(GitEvent::getTaskId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (taskIds.isEmpty()) {
+            return Map.of();
+        }
+        return taskRepository.findAllById(taskIds).stream()
                 .collect(Collectors.toMap(Task::getId, Task::getTitle, (a, b) -> a));
     }
 

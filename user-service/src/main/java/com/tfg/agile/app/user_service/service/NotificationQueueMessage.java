@@ -23,6 +23,18 @@ public class NotificationQueueMessage implements Serializable {
     private String type;
     private String link;
     private String data;
+    private UUID actorUserId;
+
+    public NotificationQueueMessage(
+            UUID userId,
+            String title,
+            String message,
+            String type,
+            String link,
+            String data
+    ) {
+        this(userId, title, message, type, link, data, null);
+    }
 
     public static NotificationQueueMessage fromRequest(NotificationEnqueueRequestDto req) {
         return new NotificationQueueMessage(
@@ -31,7 +43,8 @@ public class NotificationQueueMessage implements Serializable {
                 req.getMessage(),
                 req.getType(),
                 req.getLink(),
-                req.getData()
+                req.getData(),
+                req.getActorUserId()
         );
     }
 }

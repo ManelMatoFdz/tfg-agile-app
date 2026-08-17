@@ -293,7 +293,7 @@ export default function WorkspaceSettingsPage() {
       <div style={{ display: 'flex', justifyContent: 'center', padding: '5rem 0' }}>
         <div style={{
           width: 24, height: 24,
-          border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
+          border: '2px solid var(--border)', borderTopColor: 'var(--accent-text)',
           borderRadius: '50%', animation: 'spin 0.7s linear infinite',
         }} />
       </div>
@@ -421,17 +421,17 @@ export default function WorkspaceSettingsPage() {
               padding: '14px 24px', background: 'var(--danger-bg)',
             }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--danger)' }}>
+                <h2 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--danger-text)' }}>
                   {t('workspace.settings.dangerZone')}
                 </h2>
-                <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--danger)', opacity: 0.7 }}>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--danger-text)', opacity: 0.7 }}>
                   {t('workspace.settings.dangerSubtitle')}
                 </p>
               </div>
               <button
                 onClick={() => setShowDeleteZone((v) => !v)}
                 style={{
-                  fontSize: 12, fontWeight: 500, color: 'var(--danger)',
+                  fontSize: 12, fontWeight: 500, color: 'var(--danger-text)',
                   background: 'none', border: 'none', cursor: 'pointer', padding: '4px 10px',
                 }}
               >
@@ -622,7 +622,7 @@ export default function WorkspaceSettingsPage() {
                           <span style={{
                             display: 'inline-block', padding: '2px 10px',
                             fontSize: 12, fontWeight: 600,
-                            color: 'var(--accent)', background: 'var(--accent-muted)',
+                            color: 'var(--accent-text)', background: 'var(--accent-muted)',
                             borderRadius: 'var(--radius-pill)',
                           }}>
                             {t('workspace.settings.categories.projects', { count })}
@@ -645,7 +645,7 @@ export default function WorkspaceSettingsPage() {
                                   borderRadius: 'var(--radius-sm)', cursor: 'pointer',
                                   color: 'var(--text-faint)', transition: 'color 150ms, background 150ms',
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.background = 'var(--accent-muted)'; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--accent-text)'; e.currentTarget.style.background = 'var(--accent-muted)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.background = 'none'; }}
                               >
                                 <Pencil size={14} strokeWidth={2} />
@@ -662,7 +662,7 @@ export default function WorkspaceSettingsPage() {
                                   opacity: deletingCategoryId === cat.id ? 0.4 : 1,
                                   transition: 'color 150ms, background 150ms',
                                 }}
-                                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.background = 'var(--danger-bg)'; }}
+                                onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--danger-text)'; e.currentTarget.style.background = 'var(--danger-bg)'; }}
                                 onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.background = 'none'; }}
                               >
                                 <Trash2 size={14} strokeWidth={2} />
@@ -842,7 +842,7 @@ export default function WorkspaceSettingsPage() {
                 borderRadius: 'var(--radius-md)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
-                <Trash2 size={18} strokeWidth={2} style={{ color: 'var(--danger)' }} />
+                <Trash2 size={18} strokeWidth={2} style={{ color: 'var(--danger-text)' }} />
               </div>
               <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                 {t('workspace.settings.categories.deleteConfirm.title')}

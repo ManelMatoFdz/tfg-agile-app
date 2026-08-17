@@ -6,7 +6,6 @@ import {
 } from 'lucide-react';
 import type { TaskActivity, TaskComment, UserSummary, Label } from '../../types';
 import { tasksApi } from '../../api/tasks';
-import { AssigneeAvatar } from './TaskModal';
 
 type FeedItem =
   | { kind: 'activity'; data: TaskActivity }
@@ -213,7 +212,7 @@ export default function TaskActivityFeed({ taskId, comments, userMap, labels = [
         <div style={{
           width: 16, height: 16,
           border: '2px solid var(--border)',
-          borderTopColor: 'var(--accent)',
+          borderTopColor: 'var(--accent-text)',
           borderRadius: '50%',
           animation: 'spin 0.7s linear infinite',
         }} />

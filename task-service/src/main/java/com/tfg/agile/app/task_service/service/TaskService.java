@@ -160,7 +160,7 @@ public class TaskService {
         }
 
         if (saved.getAssigneeId() != null && !saved.getAssigneeId().equals(callerId)) {
-            notifyTaskAssigned(saved, perms.workspaceId());
+            notifyTaskAssigned(saved, perms.workspaceId(), callerId);
         }
 
         projectServiceClient.touchProject(projectId);
@@ -234,7 +234,7 @@ public class TaskService {
                     oldAssigneeId != null ? oldAssigneeId.toString() : null,
                     saved.getAssigneeId() != null ? saved.getAssigneeId().toString() : null);
             if (saved.getAssigneeId() != null && !saved.getAssigneeId().equals(callerId)) {
-                notifyTaskAssigned(saved, perms.workspaceId());
+                notifyTaskAssigned(saved, perms.workspaceId(), callerId);
             }
         }
         if (dto.labelIds() != null) {
@@ -298,7 +298,7 @@ public class TaskService {
         if (!oldStatus.equals(newStatus)) {
             activityService.record(saved.getId(), callerId, TaskActivityType.STATUS_CHANGED, oldStatus, newStatus);
             if (saved.getAssigneeId() != null && !saved.getAssigneeId().equals(callerId)) {
-                notifyTaskStatusChanged(saved, oldStatus, newStatus, perms.workspaceId());
+                notifyTaskStatusChanged(saved, oldStatus, newStatus, perms.workspaceId(), callerId);
             }
 
             // When a blocking task moves to DONE, notify assignees of unblocked tasks
@@ -402,11 +402,11 @@ public class TaskService {
         int subtaskCount = 0;
         int completedSubtaskCount = 0;
         String parentTitle = null;
+        Set<String> doneStatuses = boardColumnService.getDoneEquivalentStatuses(t.getProjectId());
 
         if (t.getParentId() == null) {
             subtaskCount = taskRepository.countByParentId(t.getId());
             if (subtaskCount > 0) {
-                Set<String> doneStatuses = boardColumnService.getDoneEquivalentStatuses(t.getProjectId());
                 completedSubtaskCount = taskRepository.countByParentIdAndStatusIn(t.getId(), doneStatuses);
             }
         }
@@ -423,7 +423,9 @@ public class TaskService {
                     .orElse(TaskResponseDto.EpicInfo.EMPTY);
         }
 
-        int blockedByCount = dependencyRepository.countByBlockedTaskId(t.getId());
+        int blockedByCount = doneStatuses.isEmpty()
+                ? dependencyRepository.countByBlockedTaskId(t.getId())
+                : dependencyRepository.countActiveBlockers(t.getId(), doneStatuses);
         int blocksCount = dependencyRepository.countByBlockingTaskId(t.getId());
         TaskResponseDto.DependencyInfo depInfo = new TaskResponseDto.DependencyInfo(blockedByCount, blocksCount);
 
@@ -460,7 +462,7 @@ public class TaskService {
         return !isAdmin(p) && !isProductOwner(p) && !isScrumMaster(p);
     }
 
-    private void notifyTaskAssigned(Task task, UUID workspaceId) {
+    private void notifyTaskAssigned(Task task, UUID workspaceId, UUID actorUserId) {
         String link = "/workspaces/" + workspaceId + "/projects/" + task.getProjectId() + "/board";
         userServiceClient.sendNotification(
                 task.getAssigneeId(),
@@ -468,7 +470,8 @@ public class TaskService {
                 "Te han asignado la tarea «" + task.getTitle() + "»",
                 "TASK_REMINDER",
                 link,
-                null
+                null,
+                actorUserId
         );
     }
 
@@ -503,7 +506,7 @@ public class TaskService {
         }
     }
 
-    private void notifyTaskStatusChanged(Task task, String oldStatus, String newStatus, UUID workspaceId) {
+    private void notifyTaskStatusChanged(Task task, String oldStatus, String newStatus, UUID workspaceId, UUID actorUserId) {
         String link = "/workspaces/" + workspaceId + "/projects/" + task.getProjectId() + "/board";
         userServiceClient.sendNotification(
                 task.getAssigneeId(),
@@ -511,7 +514,8 @@ public class TaskService {
                 "La tarea «" + task.getTitle() + "» pasó de " + oldStatus + " a " + newStatus,
                 "TASK_REMINDER",
                 link,
-                null
+                null,
+                actorUserId
         );
     }
 

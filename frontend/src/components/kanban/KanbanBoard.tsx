@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 import type { AxiosError } from 'axios';
 import {
@@ -18,7 +19,7 @@ import { tasksApi } from '../../api/tasks';
 const PRIORITY_ORDER: Record<TaskPriority, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 import { useProjectMembers } from '../../hooks/useProjectMembers';
 import TaskCard from './TaskCard';
-import TaskModal from './TaskModal';
+import CreateTaskModal from './CreateTaskModal';
 
 // -- Draggable task card wrapper --
 
@@ -103,8 +104,6 @@ interface Props {
   onError?: (msg: string) => void;
   disableCreate?: boolean;
   canMove?: boolean;
-  canDelete?: boolean;
-  readOnly?: boolean;
 }
 
 export default function KanbanBoard({
@@ -116,16 +115,16 @@ export default function KanbanBoard({
   onError,
   disableCreate = false,
   canMove = true,
-  canDelete = true,
-  readOnly = false,
 }: Props) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
   const { userMap } = useProjectMembers(projectId);
-  const [modalTask, setModalTask] = useState<Task | null | undefined>(undefined);
-  const [modalKey, setModalKey] = useState(0);
-  const [defaultStatus, setDefaultStatus] = useState<string>(columns[0]?.name ?? 'TODO');
+  const [creating, setCreating] = useState(false);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [overColumn, setOverColumn] = useState<string | null>(null);
+  const [pendingMove, setPendingMove] = useState<{ task: Task; newStatus: string; newPosition: number } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -142,82 +141,16 @@ export default function KanbanBoard({
   // Orphaned tasks (status doesn't match any column)
   const orphanedTasks = tasks.filter((t) => !columnNames.has(t.status));
 
-  const openCreate = (status: string) => {
-    setDefaultStatus(status);
-    setModalTask(null);
-  };
-
-  const handleSave = async (
-    dto: Parameters<typeof tasksApi.create>[1] | Parameters<typeof tasksApi.update>[1],
-  ) => {
-    if (modalTask) {
-      const updated = await tasksApi.update(modalTask.id, dto as Parameters<typeof tasksApi.update>[1]);
-      onTasksChange(tasks.map((t) => (t.id === updated.id ? updated : t)));
-    } else {
-      const created = await tasksApi.create(projectId, dto as Parameters<typeof tasksApi.create>[1]);
-      onTasksChange([...tasks, created]);
-    }
-  };
-
-  const handleMove = async (status: string) => {
-    if (!modalTask) return;
-    const colTasks = tasksByColumn(status);
-    const updated = await tasksApi.move(modalTask.id, { status, position: colTasks.length });
-    onTasksChange(tasks.map((t) => (t.id === updated.id ? updated : t)));
-  };
-
-  const handleDelete = async () => {
-    if (!modalTask) return;
-    await tasksApi.delete(modalTask.id);
-    onTasksChange(tasks.filter((t) => t.id !== modalTask.id));
-  };
-
-  const openTaskModal = async (task: Task) => {
-    setModalTask(task);
-    setModalKey((k) => k + 1);
-    try {
-      const fresh = await tasksApi.getById(task.id);
-      if (JSON.stringify(fresh) !== JSON.stringify(task)) {
-        setModalTask(fresh);
-        setModalKey((k) => k + 1);
-        onTasksChange(tasks.map((t) => (t.id === fresh.id ? fresh : t)));
-      }
-    } catch {
-      // keep cached data on error
-    }
-  };
+  const openTask = (task: Task) =>
+    navigate(
+      `/workspaces/${workspaceId}/projects/${task.projectId ?? projectId}/tasks/${task.id}`,
+      { state: { from: location.pathname + location.search, task } },
+    );
 
   // -- Drag handlers --
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const task = tasks.find((t) => t.id === event.active.id);
-    if (task) setActiveTask(task);
-  };
-
-  const handleDragOver = (event: DragOverEvent) => {
-    setOverColumn((event.over?.id as string) ?? null);
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    setActiveTask(null);
-    setOverColumn(null);
-
-    if (!over || !canMove) return;
-
-    const taskId = active.id as string;
-    const newStatus = over.id as string;
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task || task.status === newStatus) return;
-
-    // Soft warning if moving a blocked task (allows the move)
-    if (task.blockedByCount > 0 && onError) {
-      onError(t('tasks.card.blockedWarning'));
-    }
-
-    const newPosition = tasks.filter((t) => t.status === newStatus).length;
-
-    // Optimistic update
+  const executeMove = useCallback(async (task: Task, newStatus: string, newPosition: number) => {
+    const taskId = task.id;
     const optimistic = tasks.map((t) =>
       t.id === taskId ? { ...t, status: newStatus, position: newPosition } : t,
     );
@@ -240,6 +173,37 @@ export default function KanbanBoard({
         }));
       }
     }
+  }, [tasks, onTasksChange, onRefresh, onError, t]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const task = tasks.find((t) => t.id === event.active.id);
+    if (task) setActiveTask(task);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    setOverColumn((event.over?.id as string) ?? null);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveTask(null);
+    setOverColumn(null);
+
+    if (!over || !canMove) return;
+
+    const taskId = active.id as string;
+    const newStatus = over.id as string;
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task || task.status === newStatus) return;
+
+    const newPosition = tasks.filter((t) => t.status === newStatus).length;
+
+    if (task.blockedByCount > 0) {
+      setPendingMove({ task, newStatus, newPosition });
+      return;
+    }
+
+    void executeMove(task, newStatus, newPosition);
   };
 
   const handleDragCancel = () => {
@@ -301,7 +265,7 @@ export default function KanbanBoard({
 
           {showCreate && !disableCreate && (
             <button
-              onClick={() => openCreate(colName)}
+              onClick={() => setCreating(true)}
               title={t('projects.kanban.newTask')}
               style={{
                 width: 26,
@@ -353,7 +317,7 @@ export default function KanbanBoard({
                 assignee={task.assigneeId ? userMap[task.assigneeId] : undefined}
                 columnColor={color}
                 canDrag={canMove}
-                onClick={() => openTaskModal(task)}
+                onClick={() => openTask(task)}
               />
             ))
           )}
@@ -376,7 +340,7 @@ export default function KanbanBoard({
           {orphanedTasks.length > 0 &&
             renderColumn(
               t('projects.kanban.uncategorized'),
-              '#6B7280',
+              'var(--text-muted)',
               orphanedTasks.sort((a, b) =>
               (PRIORITY_ORDER[a.priority] ?? 9) - (PRIORITY_ORDER[b.priority] ?? 9) || a.position - b.position
             ),
@@ -410,22 +374,90 @@ export default function KanbanBoard({
         </DragOverlay>
       </DndContext>
 
-      {modalTask !== undefined && (
-        <TaskModal
-          key={modalKey}
-          task={modalTask}
+      {creating && (
+        <CreateTaskModal
           projectId={projectId}
-          columns={columns}
-          defaultStatus={defaultStatus}
-          readOnly={!!modalTask && readOnly}
-          onClose={() => setModalTask(undefined)}
-          onSave={async (dto) => {
-            if (modalTask && !canMove) return;
-            await handleSave(dto);
-          }}
-          onMove={modalTask && canMove ? handleMove : undefined}
-          onDelete={modalTask && canDelete ? handleDelete : undefined}
+          onCreated={(created) => onTasksChange([...tasks, created])}
+          onClose={() => setCreating(false)}
         />
+      )}
+
+      {pendingMove && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setPendingMove(null)}
+        >
+          <div
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '24px 28px',
+              maxWidth: 420,
+              width: '90%',
+              boxShadow: 'var(--shadow-lg)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <span style={{ fontSize: 20 }}>🔒</span>
+              <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                {t('tasks.card.blockedMoveTitle')}
+              </h3>
+            </div>
+            <p style={{ margin: '0 0 20px', fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              {t('tasks.card.blockedMoveBody', { count: pendingMove.task.blockedByCount })}
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setPendingMove(null)}
+                style={{
+                  padding: '7px 16px',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-sans)',
+                  background: 'var(--bg-elevated)',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer',
+                }}
+              >
+                {t('tasks.card.blockedMoveCancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const { task, newStatus, newPosition } = pendingMove;
+                  setPendingMove(null);
+                  void executeMove(task, newStatus, newPosition);
+                }}
+                style={{
+                  padding: '7px 16px',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-sans)',
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: 'pointer',
+                }}
+              >
+                {t('tasks.card.blockedMoveConfirm')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Send, Pencil, Trash2, MessageSquare, Check, X } from 'lucide-react';
 import type { TaskComment, Task, UserSummary } from '../../types';
 import { tasksApi } from '../../api/tasks';
-import { AssigneeAvatar } from './TaskModal';
+import { AssigneeAvatar } from './AssigneePicker';
 import { useAuthStore } from '../../store/authStore';
 
 // ── Mention token format ─────────────────────────────────────────────────
@@ -490,7 +490,7 @@ function CommentInput({
               whiteSpace: 'pre-wrap',
               transition: 'border-color 150ms',
             }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent)'; }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--accent-text)'; }}
             onBlur={(e) => { e.currentTarget.style.borderColor = 'var(--border)'; }}
           />
         </div>
@@ -507,7 +507,7 @@ function CommentInput({
               height: 32,
               borderRadius: 'var(--radius-md)',
               border: 'none',
-              background: hasContent ? 'var(--accent)' : 'var(--bg-hover)',
+              background: hasContent ? 'var(--accent-text)' : 'var(--bg-hover)',
               color: hasContent ? '#fff' : 'var(--text-faint)',
               cursor: hasContent && !sending ? 'pointer' : 'not-allowed',
               transition: 'all 150ms',
@@ -577,7 +577,7 @@ function RenderedContent({
                 padding: '1px 6px',
                 fontSize: 12,
                 fontWeight: 600,
-                color: 'var(--accent)',
+                color: 'var(--accent-text)',
                 background: 'var(--accent-muted)',
                 borderRadius: 'var(--radius-pill)',
                 cursor: 'default',
@@ -855,7 +855,7 @@ export default function TaskComments({
           <div style={{
             width: 20, height: 20,
             border: '2px solid var(--border)',
-            borderTopColor: 'var(--accent)',
+            borderTopColor: 'var(--accent-text)',
             borderRadius: '50%',
             animation: 'spin 0.7s linear infinite',
           }} />

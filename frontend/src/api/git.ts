@@ -1,5 +1,5 @@
 import taskClient from './taskClient';
-import type { GitEvent, GitIntegration } from '../types';
+import type { GitEvent, GitEventType, GitIntegration, PagedResponse } from '../types';
 
 export const gitApi = {
   getConfig: (projectId: string) =>
@@ -14,8 +14,13 @@ export const gitApi = {
 
   disconnect: (projectId: string) => taskClient.delete(`/projects/${projectId}/git/config`),
 
-  getProjectEvents: (projectId: string) =>
-    taskClient.get<GitEvent[]>(`/projects/${projectId}/git/events`).then((r) => r.data),
+  getProjectEvents: (
+    projectId: string,
+    params: { type: GitEventType; page?: number; size?: number; status?: string },
+  ) =>
+    taskClient
+      .get<PagedResponse<GitEvent>>(`/projects/${projectId}/git/events`, { params })
+      .then((r) => r.data),
 
   getTaskEvents: (taskId: string) =>
     taskClient.get<GitEvent[]>(`/tasks/${taskId}/git-events`).then((r) => r.data),

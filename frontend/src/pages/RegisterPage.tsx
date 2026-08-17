@@ -108,7 +108,7 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div className="auth-compact" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* Header */}
         <div>
           <PageTitle as="h2" style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
@@ -274,7 +274,7 @@ export default function RegisterPage() {
           {t('auth.register.alreadyHaveAccount')}{' '}
           <Link
             to="/login"
-            style={{ fontWeight: 600, color: 'var(--accent)', textDecoration: 'none' }}
+            style={{ fontWeight: 600, color: 'var(--accent-text)', textDecoration: 'none' }}
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
           >

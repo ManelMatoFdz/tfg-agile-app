@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { GitBranch, GitCommit, GitPullRequest, ExternalLink } from 'lucide-react';
-import type { GitEvent, GitIntegration } from '../../../types';
+import { GitBranch, GitCommit, GitPullRequest, ExternalLink, CheckSquare, ChevronDown } from 'lucide-react';
+import type { GitEvent, GitEventType, GitIntegration } from '../../../types';
 import { gitApi } from '../../../api/git';
 import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
@@ -14,30 +14,94 @@ const PR_STATUS_COLORS: Record<string, string> = {
   closed: '#DC2626',
 };
 
+const PAGE_SIZE = 10;
+
+interface PagedEvents {
+  items: GitEvent[];
+  total: number;
+  hasMore: boolean;
+  loading: boolean;
+  loadingMore: boolean;
+  failed: boolean;
+  loadMore: () => void;
+}
+
+/**
+ * Carga incremental de eventos git de un tipo concreto. Cada seccion de la
+ * pantalla usa su propia instancia, de modo que "cargar mas" solo afecta a
+ * la lista sobre la que se pulsa.
+ */
+function usePagedEvents(
+  projectId: string | undefined,
+  enabled: boolean,
+  type: GitEventType,
+  status?: string,
+): PagedEvents {
+  const [items, setItems] = useState<GitEvent[]>([]);
+  const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const pageRef = useRef(0);
+
+  const fetchPage = useCallback(
+    async (page: number) => {
+      if (!projectId) return;
+      try {
+        const res = await gitApi.getProjectEvents(projectId, { type, status, page, size: PAGE_SIZE });
+        setItems(prev => (page === 0 ? res.items : [...prev, ...res.items]));
+        setTotal(res.totalElements);
+        setHasMore(res.hasNext);
+        pageRef.current = page;
+      } catch {
+        setFailed(true);
+      }
+    },
+    [projectId, type, status],
+  );
+
+  useEffect(() => {
+    if (!projectId || !enabled) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    fetchPage(0).finally(() => setLoading(false));
+  }, [projectId, enabled, fetchPage]);
+
+  const loadMore = () => {
+    setLoadingMore(true);
+    fetchPage(pageRef.current + 1).finally(() => setLoadingMore(false));
+  };
+
+  return { items, total, hasMore, loading, loadingMore, failed, loadMore };
+}
+
 export default function RepositoryPage() {
   const { t, i18n } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
 
   const [integration, setIntegration] = useState<GitIntegration | null>(null);
-  const [events, setEvents] = useState<GitEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!projectId) return;
     setLoading(true);
-    Promise.all([gitApi.getConfig(projectId), gitApi.getProjectEvents(projectId)])
-      .then(([config, gitEvents]) => {
-        setIntegration(config);
-        setEvents(gitEvents);
-      })
+    gitApi
+      .getConfig(projectId)
+      .then(setIntegration)
       .catch(() => setError(t('projects.repository.loadError')))
       .finally(() => setLoading(false));
   }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const openPrs = events.filter(e => e.type === 'PULL_REQUEST' && e.status === 'open');
-  const commits = events.filter(e => e.type === 'COMMIT').slice(0, 20);
-  const branches = events.filter(e => e.type === 'BRANCH');
+  const connected = !!integration;
+  const openPrs = usePagedEvents(projectId, connected, 'PULL_REQUEST', 'open');
+  const commits = usePagedEvents(projectId, connected, 'COMMIT');
+  const branches = usePagedEvents(projectId, connected, 'BRANCH');
+
+  const sectionFailed = openPrs.failed || commits.failed || branches.failed;
 
   const renderEvent = (event: GitEvent, icon: React.ReactNode, prefix?: string) => (
     <a
@@ -101,17 +165,29 @@ export default function RepositoryPage() {
         </span>
       )}
 
-      <span style={{
-        fontSize: 11,
-        color: 'var(--text-faint)',
-        flexShrink: 0,
-        maxWidth: 180,
-        overflow: 'hidden',
-        whiteSpace: 'nowrap',
-        textOverflow: 'ellipsis',
-      }}>
-        {event.taskTitle ?? t('projects.repository.unlinked')}
-      </span>
+      {event.taskTitle ? (
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+          fontSize: 11,
+          fontWeight: 600,
+          color: '#2563EB',
+          background: 'rgba(37,99,235,0.08)',
+          border: '1px solid rgba(37,99,235,0.2)',
+          borderRadius: 'var(--radius-pill)',
+          padding: '2px 8px',
+          flexShrink: 0,
+          maxWidth: 420,
+        }}>
+          <CheckSquare size={10} strokeWidth={2.5} style={{ flexShrink: 0 }} />
+          <span style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+            {event.taskTitle}
+          </span>
+        </span>
+      ) : (
+        <span style={{ fontSize: 11, color: 'var(--text-faint)', flexShrink: 0 }}>—</span>
+      )}
 
       {event.author && (
         <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>@{event.author}</span>
@@ -129,7 +205,7 @@ export default function RepositoryPage() {
     title: string,
     emptyLabel: string,
     icon: React.ReactNode,
-    items: GitEvent[],
+    paged: PagedEvents,
     renderItem: (event: GitEvent) => React.ReactNode,
   ) => (
     <section style={{
@@ -150,10 +226,24 @@ export default function RepositoryPage() {
           borderRadius: 'var(--radius-pill)',
           padding: '1px 8px',
         }}>
-          {items.length}
+          {paged.hasMore ? `${paged.items.length}/${paged.total}` : paged.total}
         </span>
       </header>
-      {items.length === 0 ? (
+
+      {paged.loading ? (
+        <div style={{
+          display: 'flex', justifyContent: 'center',
+          padding: '20px 0', borderTop: '1px solid var(--border)',
+        }}>
+          <div style={{
+            width: 18, height: 18,
+            border: '2px solid var(--border)',
+            borderTopColor: 'var(--accent-text)',
+            borderRadius: '50%',
+            animation: 'spin 0.7s linear infinite',
+          }} />
+        </div>
+      ) : paged.items.length === 0 ? (
         <p style={{
           margin: 0,
           padding: '16px 18px',
@@ -165,7 +255,48 @@ export default function RepositoryPage() {
           {emptyLabel}
         </p>
       ) : (
-        items.map(renderItem)
+        <>
+          {paged.items.map(renderItem)}
+          {paged.hasMore && (
+            <button
+              onClick={paged.loadMore}
+              disabled={paged.loadingMore}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                width: '100%',
+                padding: '10px 14px',
+                border: 'none',
+                borderTop: '1px solid var(--border)',
+                background: 'transparent',
+                fontFamily: 'var(--font-sans)',
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--accent-text)',
+                cursor: paged.loadingMore ? 'default' : 'pointer',
+                opacity: paged.loadingMore ? 0.6 : 1,
+                transition: 'background 150ms',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              {paged.loadingMore ? (
+                <div style={{
+                  width: 13, height: 13,
+                  border: '2px solid var(--border)',
+                  borderTopColor: 'var(--accent-text)',
+                  borderRadius: '50%',
+                  animation: 'spin 0.7s linear infinite',
+                }} />
+              ) : (
+                <ChevronDown size={13} strokeWidth={2.5} />
+              )}
+              {t('projects.repository.loadMore')}
+            </button>
+          )}
+        </>
       )}
     </section>
   );
@@ -176,7 +307,7 @@ export default function RepositoryPage() {
         <div style={{
           width: 28, height: 28,
           border: '3px solid var(--border)',
-          borderTopColor: 'var(--accent)',
+          borderTopColor: 'var(--accent-text)',
           borderRadius: '50%',
           animation: 'spin 0.7s linear infinite',
         }} />
@@ -186,7 +317,13 @@ export default function RepositoryPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
+      {(error || sectionFailed) && (
+        <Alert
+          type="error"
+          message={error ?? t('projects.repository.loadError')}
+          onClose={() => setError(null)}
+        />
+      )}
 
       <div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -216,7 +353,7 @@ export default function RepositoryPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 16px',
           }}>
-            <GitBranch size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+            <GitBranch size={24} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
           </div>
           <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
             {t('projects.repository.notConnected')}
@@ -260,7 +397,7 @@ export default function RepositoryPage() {
               href={integration.repositoryUrl}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent)', textDecoration: 'none' }}
+              style={{ fontSize: 13, fontWeight: 600, color: 'var(--accent-text)', textDecoration: 'none' }}
             >
               {integration.repositoryUrl.replace(/^https?:\/\//, '')}
             </a>
@@ -289,6 +426,7 @@ export default function RepositoryPage() {
             branches,
             e => renderEvent(e, <GitBranch size={14} strokeWidth={2} />),
           )}
+
         </>
       )}
     </div>

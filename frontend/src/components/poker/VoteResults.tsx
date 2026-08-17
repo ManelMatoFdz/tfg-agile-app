@@ -5,7 +5,7 @@ import {
   RotateCcw, Ban, CheckCircle, AlertTriangle,
   BookOpen, CheckSquare, Bug,
 } from 'lucide-react';
-import { AssigneeAvatar } from '../kanban/TaskModal';
+import { AssigneeAvatar } from '../kanban/AssigneePicker';
 import type { PokerRound, PokerParticipant, Task, UserSummary, TaskType } from '../../types';
 
 interface Props {
@@ -31,7 +31,7 @@ const PRIORITY_STYLE: Record<string, { color: string; bg: string }> = {
   CRITICAL: { color: '#DC2626', bg: 'rgba(220,38,38,0.08)' },
   HIGH:     { color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
   MEDIUM:   { color: '#2563EB', bg: 'rgba(37,99,235,0.08)' },
-  LOW:      { color: '#94A3B8', bg: '#EDF0F4' },
+  LOW:      { color: 'var(--text-faint)', bg: 'var(--bg-hover)' },
 };
 
 const TYPE_ICON: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
@@ -137,7 +137,7 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
       {/* ---- Task header ---- */}
       <div style={{
         marginBottom: 20, padding: '20px 24px',
-        background: '#FFFFFF', border: '1px solid #E2E8F0',
+        background: 'var(--bg-elevated)', border: '1px solid var(--border)',
         borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
         display: 'flex', flexDirection: 'column', gap: 12,
       }}>
@@ -150,7 +150,7 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
         }}>
           {t('poker.status.REVEALED')}
         </span>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#1E293B', lineHeight: 1.3 }}>
+        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3 }}>
           {round.taskTitle}
         </h2>
         {task && (() => {
@@ -160,7 +160,7 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                   {t('tasks.modal.type')}
                 </p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -171,7 +171,7 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
                 </div>
               </div>
               <div>
-                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                   {t('tasks.modal.priority')}
                 </p>
                 <span style={{
@@ -184,12 +184,12 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
               </div>
               {task.storyPoints != null && (
                 <div>
-                  <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                     Story Points
                   </p>
                   <span style={{
                     fontWeight: 700,
-                    color: 'var(--accent)',
+                    color: 'var(--accent-text)',
                     background: 'var(--accent-muted)',
                     borderRadius: 'var(--radius-pill)',
                     width: 26,
@@ -206,27 +206,27 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
               )}
               {task.description && (
                 <div>
-                  <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                  <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                     {t('tasks.modal.description')}
                   </p>
-                  <p style={{ margin: 0, fontSize: 13, color: '#1F2937', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                     {task.description}
                   </p>
                 </div>
               )}
               {task.definitionOfDone && (
                 <div>
-                  <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                  <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                     {t('tasks.modal.definitionOfDone')}
                   </p>
-                  <p style={{ margin: 0, fontSize: 13, color: '#1F2937', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                  <p style={{ margin: 0, fontSize: 13, color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                     {task.definitionOfDone}
                   </p>
                 </div>
               )}
               {(task.labels?.length ?? 0) > 0 && (
                 <div>
-                  <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                     {t('tasks.modal.labels')}
                   </p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -244,7 +244,7 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
               )}
               {subtasks.length > 0 && (
                 <div>
-                  <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                     {t('tasks.modal.subtasks')}
                   </p>
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -254,12 +254,12 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
                         <div key={st.id} style={{
                           display: 'flex', alignItems: 'center', gap: 8,
                           padding: '6px 0',
-                          borderBottom: '1px solid #F1F5F9',
+                          borderBottom: '1px solid var(--border)',
                         }}>
                           <div style={{
                             width: 18, height: 18, borderRadius: 4,
-                            border: isDone ? 'none' : '2px solid #CBD5E1',
-                            background: isDone ? '#3B82F6' : '#fff',
+                            border: isDone ? 'none' : '2px solid var(--border-strong)',
+                            background: isDone ? '#3B82F6' : 'var(--bg-elevated)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             flexShrink: 0,
                           }}>
@@ -271,7 +271,7 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
                           </div>
                           <span style={{
                             fontSize: 13, fontWeight: 400,
-                            color: isDone ? '#94A3B8' : '#1F2937',
+                            color: isDone ? 'var(--text-faint)' : 'var(--text)',
                             textDecoration: isDone ? 'line-through' : 'none',
                             overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
                           }}>
@@ -285,7 +285,7 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
               )}
               {task.assigneeId && userMap[task.assigneeId] && (
                 <div>
-                  <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                  <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                     {t('tasks.modal.assignee')}
                   </p>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -294,7 +294,7 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
                       avatarUrl={userMap[task.assigneeId].avatarUrl}
                       size={24}
                     />
-                    <span style={{ fontSize: 13, fontWeight: 500, color: '#1E293B' }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
                       {userMap[task.assigneeId].fullName ?? userMap[task.assigneeId].username}
                     </span>
                   </div>
@@ -359,57 +359,57 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
             <div className="vr-stats" style={{ marginBottom: 20 }}>
               {/* Average */}
               <div style={{
-                padding: 16, background: '#FFFFFF',
-                border: '1px solid #E2E8F0', borderRadius: 10,
+                padding: 16, background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)', borderRadius: 10,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                   <BarChart3 size={14} style={{ color: '#2563EB' }} />
-                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#64748B' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
                     {t('poker.room.average')}
                   </span>
                 </div>
                 <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: '#2563EB' }}>
                   {stats.avg}
                 </p>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#94A3B8' }}>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
                   {t('poker.room.basedOnVotes', { count: stats.totalVotes })}
                 </p>
               </div>
 
               {/* Most Voted */}
               <div style={{
-                padding: 16, background: '#FFFFFF',
-                border: '1px solid #E2E8F0', borderRadius: 10,
+                padding: 16, background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)', borderRadius: 10,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                   <ThumbsUp size={14} style={{ color: '#2563EB' }} />
-                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#64748B' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
                     {t('poker.room.mostVoted')}
                   </span>
                 </div>
                 <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: '#2563EB' }}>
                   {stats.mode}
                 </p>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#94A3B8' }}>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
                   {t('poker.room.agreedCount', { count: stats.modeCount })}
                 </p>
               </div>
 
               {/* Participants */}
               <div style={{
-                padding: 16, background: '#FFFFFF',
-                border: '1px solid #E2E8F0', borderRadius: 10,
+                padding: 16, background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)', borderRadius: 10,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                   <Users size={14} style={{ color: '#2563EB' }} />
-                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#64748B' }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
                     {t('poker.room.participants')}
                   </span>
                 </div>
-                <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: '#1E293B' }}>
+                <p style={{ margin: 0, fontSize: 28, fontWeight: 800, color: 'var(--text)' }}>
                   {stats.totalVotes}
                 </p>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#94A3B8' }}>
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
                   {stats.allVoted ? t('poker.room.allVoted') : `${stats.totalVotes}/${stats.voterCount}`}
                 </p>
               </div>
@@ -418,12 +418,12 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
 
           {/* Team Votes */}
           <div style={{
-            background: '#FFFFFF', border: '1px solid #E2E8F0',
+            background: 'var(--bg-elevated)', border: '1px solid var(--border)',
             borderRadius: 12, padding: '20px 24px',
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#1E293B' }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>
                 {t('poker.room.teamVotes')}
               </h3>
               <span style={{
@@ -485,7 +485,7 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
                         </div>
                       )}
                       <span style={{
-                        fontSize: 13, fontWeight: 500, color: '#1E293B',
+                        fontSize: 13, fontWeight: 500, color: 'var(--text)',
                         maxWidth: 100, overflow: 'hidden',
                         textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                       }}>
@@ -501,7 +501,7 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
 
         {/* ======== RIGHT: Moderator Panel ======== */}
         <div style={{
-          background: '#FFFFFF', border: '1px solid #E2E8F0',
+          background: 'var(--bg-elevated)', border: '1px solid var(--border)',
           borderRadius: 12, padding: 20,
           boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           alignSelf: 'start',
@@ -513,7 +513,7 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <Settings size={16} style={{ color: '#2563EB' }} />
-              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#1E293B' }}>
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
                 {t('poker.room.moderatorPanel')}
               </h3>
             </div>
@@ -523,7 +523,7 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
           <label style={{
             display: 'block', fontSize: 11, fontWeight: 700,
             letterSpacing: '0.06em', textTransform: 'uppercase',
-            color: '#64748B', marginBottom: 10,
+            color: 'var(--text-muted)', marginBottom: 10,
           }}>
             {t('poker.room.finalEstimate')}
           </label>
@@ -537,9 +537,9 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
               style={{
                 flex: 1, padding: '10px 14px',
                 fontSize: 18, fontWeight: 700, fontFamily: 'inherit',
-                color: '#1E293B',
-                background: isFacilitator ? '#F7F8FA' : '#F1F5F9',
-                border: '1px solid #E2E8F0', borderRadius: 8,
+                color: 'var(--text)',
+                background: isFacilitator ? 'var(--bg)' : 'var(--bg-sunken)',
+                border: '1px solid var(--border)', borderRadius: 8,
                 outline: 'none', textAlign: 'center',
                 cursor: isFacilitator ? 'text' : 'default',
                 transition: 'border-color 0.15s, box-shadow 0.15s',
@@ -552,18 +552,18 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
                 }
               }}
               onBlur={(e) => {
-                e.currentTarget.style.borderColor = '#E2E8F0';
+                e.currentTarget.style.borderColor = 'var(--border)';
                 e.currentTarget.style.boxShadow = 'none';
               }}
             />
-            <span style={{ fontSize: 13, fontWeight: 500, color: '#94A3B8', flexShrink: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-faint)', flexShrink: 0 }}>
               {t('poker.room.points')}
             </span>
           </div>
 
           {/* Suggested values */}
           {stats && (
-            <p style={{ margin: '0 0 20px', fontSize: 12, color: '#94A3B8', lineHeight: 1.5 }}>
+            <p style={{ margin: '0 0 20px', fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.5 }}>
               {t('poker.room.suggested')}:{' '}
               <span style={{ fontWeight: 700, color: '#2563EB' }}>{stats.mode}</span>
               {' '}({t('poker.room.mostVoted')})
@@ -604,13 +604,13 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
                   style={{
                     flex: 1, padding: '10px 14px',
                     fontSize: 13, fontWeight: 500, fontFamily: 'inherit',
-                    color: '#64748B', background: '#FFFFFF',
-                    border: '1px solid #E2E8F0', borderRadius: 8,
+                    color: 'var(--text-muted)', background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border)', borderRadius: 8,
                     cursor: 'pointer', transition: 'background 0.15s, color 0.15s',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = '#EDF0F4'; e.currentTarget.style.color = '#1E293B'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#64748B'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
                 >
                   <RotateCcw size={13} />
                   {t('poker.room.revote')}
@@ -620,13 +620,13 @@ export default function VoteResults({ round, participants, isFacilitator, onAcce
                   style={{
                     flex: 1, padding: '10px 14px',
                     fontSize: 13, fontWeight: 500, fontFamily: 'inherit',
-                    color: '#EF4444', background: '#FFFFFF',
+                    color: '#EF4444', background: 'var(--bg-elevated)',
                     border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8,
                     cursor: 'pointer', transition: 'background 0.15s',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                   }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.04)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; }}
                 >
                   <Ban size={13} />
                   {t('common.cancel')}

@@ -197,7 +197,7 @@ export default function ProjectSettingsPage() {
           width: 28,
           height: 28,
           border: '3px solid var(--border)',
-          borderTopColor: 'var(--accent)',
+          borderTopColor: 'var(--accent-text)',
           borderRadius: '50%',
           animation: 'spin 0.7s linear infinite',
         }} />
@@ -329,7 +329,7 @@ export default function ProjectSettingsPage() {
                           transition: 'border-color 150ms, background 150ms',
                         }}
                       >
-                        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: visibility === v ? 'var(--accent)' : 'var(--text)' }}>
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: visibility === v ? 'var(--accent-text)' : 'var(--text)' }}>
                           {t(`projects.settings.visibility.${v}`)}
                         </p>
                         <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
@@ -670,7 +670,7 @@ export default function ProjectSettingsPage() {
                           {copiedField === 'secret' ? t('projects.settings.git.copied') : t('projects.settings.git.copy')}
                         </button>
                       </div>
-                      <p style={{ margin: '6px 0 0', fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>
+                      <p style={{ margin: '6px 0 0', fontSize: 12, fontWeight: 600, color: 'var(--accent-text)' }}>
                         {t('projects.settings.git.secretOnce')}
                       </p>
                     </div>
@@ -767,8 +767,8 @@ export default function ProjectSettingsPage() {
                       padding: '9px 20px',
                       fontSize: 13,
                       fontWeight: 600,
-                      background: '#DC2626',
-                      color: '#FFFFFF',
+                      background: 'var(--danger)',
+                      color: 'var(--accent-fg)',
                       border: 'none',
                       borderRadius: 'var(--radius-md)',
                       cursor: deleting || deleteConfirmName !== project?.name ? 'not-allowed' : 'pointer',

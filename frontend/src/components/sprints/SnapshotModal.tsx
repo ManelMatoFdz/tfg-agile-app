@@ -4,7 +4,7 @@ import type { SprintTaskSnapshot, TaskPriority, BoardColumn } from '../../types'
 import { getStatusLabel, getStatusColor } from '../../hooks/useBoardColumns';
 
 const PRIORITY_STYLE: Record<TaskPriority, { color: string; bg: string }> = {
-  CRITICAL: { color: 'var(--danger)', bg: 'var(--danger-bg)' },
+  CRITICAL: { color: 'var(--danger-text)', bg: 'var(--danger-bg)' },
   HIGH:     { color: 'var(--ochre)', bg: 'var(--warning-bg)' },
   MEDIUM:   { color: 'var(--ink-blue)', bg: 'var(--info-bg)' },
   LOW:      { color: 'var(--text-faint)', bg: 'var(--bg-hover)' },

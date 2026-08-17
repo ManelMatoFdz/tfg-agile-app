@@ -10,9 +10,9 @@
   --border:       #E2E8F0;
   --border-strong: #CBD5E1;
 
-  --text:         #1E293B;
-  --text-muted:   #64748B;
-  --text-faint:   #94A3B8;
+  --text:         #020617;
+  --text-muted:   #334155;
+  --text-faint:   #475569;
 
   --accent:       #2563EB;
   --accent-hover: #1D4ED8;
@@ -39,6 +39,29 @@
   --pink:         #DB2777;
   --pink-soft:    rgba(219, 39, 119, 0.08);
 
+  /* Un mismo color no puede servir de relleno y de texto en los dos temas: el
+     azul que contrasta con blanco detras se apaga sobre un fondo casi negro.
+     Estos tokens son el color en su papel de TEXTO. En claro valen exactamente
+     lo mismo que el color base, asi que el tema claro no cambia ni un pixel. */
+  --accent-text:  var(--accent);
+  --success-text: var(--success);
+  --warning-text: var(--warning);
+  --danger-text:  var(--danger);
+  --info-text:    var(--info);
+  --purple-text:  var(--purple);
+  --green-text:   var(--green);
+  --orange-text:  var(--orange);
+  --pink-text:    var(--pink);
+
+  /* Colores de dominio que estaban repetidos como hex en varios ficheros. */
+  --type-story:   #7C3AED;
+  --type-task:    #2563EB;
+  --type-bug:     #DC2626;
+  --prio-critical: #DC2626;
+  --prio-high:    #D97706;
+  --prio-medium:  #2563EB;
+  --prio-low:     #94A3B8;
+
   --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
@@ -58,6 +81,93 @@
   --duration:     150ms;
   --duration-micro: 150ms;
   --duration-panel: 250ms;
+
+  /* html usa zoom, por lo que 100vh se renderiza mas alto que la pantalla.
+     --vh-screen compensa ese factor: altura real de la ventana. */
+  --app-zoom: 1.08;
+  --vh-screen: calc(100vh / 1.08);
+
+  color-scheme: light;
+}
+
+/* ============================================================
+   Tema oscuro
+   Lo activa themeStore poniendo data-theme="dark" en <html>.
+   Parte de la paleta de la landing, pero con las superficies
+   OPACAS en vez de translucidas: un modal sobre un panel sobre
+   una tarjeta son tres capas, y los blancos al 3.5% se suman
+   hasta que dejan de distinguirse entre si.
+   ============================================================ */
+:root[data-theme="dark"] {
+  --bg:           #05080F;
+  --bg-elevated:  #0C1322;
+  --bg-sunken:    #02050B;
+  --bg-hover:     #172136;
+  --bg-overlay:   rgba(2, 5, 12, 0.72);
+
+  --border:       #1C2740;
+  --border-strong: #2E3C5C;
+
+  --text:         #FFFFFF;
+  --text-muted:   #E2E8F0;
+  --text-faint:   #CBD5E1;
+
+  /* El relleno se mantiene saturado para que el texto blanco encima siga
+     leyendose; lo que se aclara es el hover, porque sobre fondo oscuro
+     "resaltar" es subir de luminosidad, no bajarla. */
+  --accent:       #2563EB;
+  --accent-hover: #3B82F6;
+  --accent-deep:  #1D4ED8;
+  --accent-muted: rgba(59, 130, 246, 0.16);
+  --accent-soft:  rgba(59, 130, 246, 0.24);
+  --accent-fg:    #FFFFFF;
+
+  /* Los fondos tintados suben de alpha: un 8% sobre blanco se ve, sobre
+     #05080F no llega a existir. */
+  --success:      #16A34A;
+  --success-bg:   rgba(52, 211, 153, 0.14);
+  --warning:      #F59E0B;
+  --warning-bg:   rgba(251, 191, 36, 0.14);
+  --danger:       #DC2626;
+  --danger-bg:    rgba(248, 113, 113, 0.14);
+  --info:         #2563EB;
+  --info-bg:      rgba(96, 165, 250, 0.14);
+
+  --purple:       #7C3AED;
+  --purple-soft:  rgba(167, 139, 250, 0.16);
+  --green:        #16A34A;
+  --green-soft:   rgba(52, 211, 153, 0.14);
+  --orange:       #EA580C;
+  --orange-soft:  rgba(251, 146, 60, 0.14);
+  --pink:         #DB2777;
+  --pink-soft:    rgba(244, 114, 182, 0.14);
+
+  --accent-text:  #7FB0FF;
+  --success-text: #34D399;
+  --warning-text: #FBBF24;
+  --danger-text:  #F87171;
+  --info-text:    #60A5FA;
+  --purple-text:  #A78BFA;
+  --green-text:   #34D399;
+  --orange-text:  #FB923C;
+  --pink-text:    #F472B6;
+
+  --type-story:   #A78BFA;
+  --type-task:    #60A5FA;
+  --type-bug:     #F87171;
+  --prio-critical: #F87171;
+  --prio-high:    #FBBF24;
+  --prio-medium:  #60A5FA;
+  --prio-low:     #7183A1;
+
+  /* En oscuro una sombra suave no separa nada: quien marca la elevacion es
+     el borde. Las sombras se quedan solo para los overlays. */
+  --shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md:    0 2px 6px rgba(0, 0, 0, 0.55), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-lg:    0 12px 34px -12px rgba(0, 0, 0, 0.85), 0 2px 8px rgba(0, 0, 0, 0.5);
+  --shadow-card:  0 1px 3px rgba(0, 0, 0, 0.45);
+
+  color-scheme: dark;
 }
 
 @theme {
@@ -71,16 +181,14 @@
 
 html {
   font-size: 16px;
-  zoom: 1.08;
+  zoom: var(--app-zoom);
   -webkit-text-size-adjust: 100%;
-  height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
-  height: 100%;
-  overflow: hidden;
+  min-height: var(--vh-screen);
   background-color: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
@@ -89,6 +197,12 @@ body {
   letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-faint);
+  opacity: 1;
 }
 
 .surface {
@@ -223,7 +337,7 @@ body {
 
 .nav-item-active {
   position: relative;
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-muted);
   font-weight: 600;
 }

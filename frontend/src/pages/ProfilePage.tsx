@@ -7,6 +7,8 @@ import ProfileInfo from '../components/profile/ProfileInfo';
 import AvatarUpload from '../components/profile/AvatarUpload';
 import ChangePassword from '../components/profile/ChangePassword';
 import NotificationPreferences from '../components/profile/NotificationPreferences';
+import LanguagePreference from '../components/profile/LanguagePreference';
+import ThemePreference from '../components/profile/ThemePreference';
 import { buildAvatarSrc } from '../utils/avatarUrl';
 import PageTitle from '../components/motion/PageTitle';
 import TopBar from '../components/ui/TopBar';
@@ -101,6 +103,8 @@ export default function ProfilePage() {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <AvatarUpload />
+          <ThemePreference />
+          <LanguagePreference />
           <NotificationPreferences />
         </div>
       </div>

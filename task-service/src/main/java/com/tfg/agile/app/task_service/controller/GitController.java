@@ -3,7 +3,9 @@ package com.tfg.agile.app.task_service.controller;
 import com.tfg.agile.app.task_service.dto.GitEventDto;
 import com.tfg.agile.app.task_service.dto.GitIntegrationDto;
 import com.tfg.agile.app.task_service.dto.LinkGitEventRequestDto;
+import com.tfg.agile.app.task_service.dto.PagedResponseDto;
 import com.tfg.agile.app.task_service.dto.SetupGitIntegrationRequestDto;
+import com.tfg.agile.app.task_service.entity.GitEventType;
 import com.tfg.agile.app.task_service.service.GitIntegrationService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -45,9 +47,14 @@ public class GitController {
     }
 
     @GetMapping("/projects/{projectId}/git/events")
-    public List<GitEventDto> projectActivity(@PathVariable("projectId") UUID projectId,
-                                             @AuthenticationPrincipal UUID callerId) {
-        return gitIntegrationService.findByProject(projectId, callerId);
+    public PagedResponseDto<GitEventDto> projectActivity(
+            @PathVariable("projectId") UUID projectId,
+            @RequestParam("type") GitEventType type,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false) Integer size,
+            @AuthenticationPrincipal UUID callerId) {
+        return gitIntegrationService.findByProject(projectId, callerId, type, status, page, size);
     }
 
     @GetMapping("/tasks/{taskId}/git-events")

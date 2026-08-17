@@ -1,33 +1,30 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Users, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import { pokerApi } from '../../../api/poker';
-import { tasksApi } from '../../../api/tasks';
-import type { PokerSession, PokerRound, Task, DeckType, SessionStatus, ParticipantRole } from '../../../types';
+import type { PokerSession, PokerRound, DeckType, SessionStatus, ParticipantRole } from '../../../types';
 import CreateSessionModal from '../../../components/poker/CreateSessionModal';
 import JoinSessionModal from '../../../components/poker/JoinSessionModal';
-import TaskModal from '../../../components/kanban/TaskModal';
 import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
 import { useAuthStore } from '../../../store/authStore';
 import { useProjectMember } from '../../../hooks/useProjectMember';
-import { useBoardColumns } from '../../../hooks/useBoardColumns';
 
 const STATUS_STYLE: Record<SessionStatus, { color: string; bg: string }> = {
   LOBBY:    { color: '#2563EB', bg: 'rgba(37,99,235,0.08)' },
   VOTING:   { color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
   REVEALED: { color: '#8B5CF6', bg: 'rgba(139,92,246,0.08)' },
-  CLOSED:   { color: '#94A3B8', bg: '#EDF0F4' },
+  CLOSED:   { color: 'var(--text-faint)', bg: 'var(--bg-hover)' },
 };
 
 export default function PokerPage() {
   const { t } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const user = useAuthStore((s) => s.user);
   const { member, canCreatePokerSession, isScrumMaster, isProductOwner, isAdmin } = useProjectMember(projectId);
-  const columns = useBoardColumns(projectId);
 
   const [sessions, setSessions] = useState<PokerSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,9 +36,6 @@ export default function PokerPage() {
   const [roundsMap, setRoundsMap] = useState<Record<string, PokerRound[]>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loadingRounds, setLoadingRounds] = useState<string | null>(null);
-
-  // Task modal for read-only viewing
-  const [viewTask, setViewTask] = useState<Task | null | undefined>(undefined);
 
   useEffect(() => {
     if (!projectId) return;
@@ -115,12 +109,11 @@ export default function PokerPage() {
     }
   };
 
-  const handleOpenTask = async (taskId: string) => {
-    try {
-      const task = await tasksApi.getById(taskId);
-      setViewTask(task);
-    } catch { /* ignore */ }
-  };
+  // El historial de rondas solo guarda el id de la tarea: navegamos sin sembrar state.task.
+  const handleOpenTask = (taskId: string) =>
+    navigate(`/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}`, {
+      state: { from: location.pathname + location.search },
+    });
 
   const activeSessions = sessions.filter((s) => s.status !== 'CLOSED');
   const closedSessions = sessions.filter((s) => s.status === 'CLOSED');
@@ -132,16 +125,16 @@ export default function PokerPage() {
         @media(min-width:640px){.poker-grid{grid-template-columns:1fr 1fr}}
         @media(min-width:1024px){.poker-grid{grid-template-columns:1fr 1fr 1fr}}
         .poker-session-card{transition:border-color 0.15s,box-shadow 0.15s,transform 0.15s}
-        .poker-session-card:hover{border-color:#2563EB;box-shadow:0 4px 12px rgba(37,99,235,0.08);transform:translateY(-1px)}
+        .poker-session-card:hover{border-color:var(--accent);box-shadow:0 4px 12px rgba(37,99,235,0.08);transform:translateY(-1px)}
         .poker-round-row{transition:background 0.15s}
-        .poker-round-row:hover{background:#F7F8FA}
+        .poker-round-row:hover{background:var(--bg-hover)}
       `}</style>
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <PageTitle as="h2" style={{ fontSize: 22, fontWeight: 700, color: '#1E293B', letterSpacing: '-0.02em' }}>
+          <PageTitle as="h2" style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
             {t('poker.title')}
           </PageTitle>
           {sessions.length > 0 && (
@@ -163,7 +156,7 @@ export default function PokerPage() {
             style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               padding: '8px 16px', fontSize: 13, fontWeight: 600,
-              background: '#2563EB', color: '#FFFFFF',
+              background: 'var(--accent)', color: 'var(--accent-fg)',
               border: 'none', borderRadius: 8,
               cursor: 'pointer', transition: 'background 0.15s',
               boxShadow: '0 1px 3px rgba(37,99,235,0.2)',
@@ -181,7 +174,7 @@ export default function PokerPage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
           <div style={{
             width: 28, height: 28,
-            border: '3px solid #E2E8F0',
+            border: '3px solid var(--border)',
             borderTopColor: '#2563EB',
             borderRadius: '50%',
             animation: 'spin 0.7s linear infinite',
@@ -191,8 +184,8 @@ export default function PokerPage() {
         <div style={{
           textAlign: 'center',
           padding: '64px 24px',
-          background: '#FFFFFF',
-          border: '1px solid #E2E8F0',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
           borderRadius: 12,
           boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
         }}>
@@ -205,8 +198,8 @@ export default function PokerPage() {
           }}>
             <Zap size={24} strokeWidth={1.5} style={{ color: '#2563EB' }} />
           </div>
-          <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#1E293B' }}>{t('poker.noSessions')}</p>
-          <p style={{ margin: '6px 0 0', fontSize: 13, color: '#94A3B8' }}>{t('poker.noSessionsSubtitle')}</p>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t('poker.noSessions')}</p>
+          <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--text-faint)' }}>{t('poker.noSessionsSubtitle')}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
@@ -238,8 +231,8 @@ export default function PokerPage() {
                       style={{
                         width: '100%',
                         textAlign: 'left',
-                        background: '#FFFFFF',
-                        border: '1px solid #E2E8F0',
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border)',
                         borderRadius: 12,
                         padding: '18px 20px',
                         cursor: 'pointer',
@@ -248,7 +241,7 @@ export default function PokerPage() {
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
-                        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {session.name}
                         </h4>
                         <span style={{
@@ -260,12 +253,12 @@ export default function PokerPage() {
                           {t(`poker.status.${session.status}`)}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: '#94A3B8' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 12, color: 'var(--text-faint)' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           <Users size={13} strokeWidth={2} />
                           {session.participants.filter((p) => p.connected).length}
                         </span>
-                        <span style={{ width: 1, height: 12, background: '#E2E8F0' }} />
+                        <span style={{ width: 1, height: 12, background: 'var(--border)' }} />
                         <span>{t(`poker.decks.${session.deck}`)}</span>
                       </div>
                     </button>
@@ -283,13 +276,13 @@ export default function PokerPage() {
                 gap: 6,
                 fontSize: 12,
                 fontWeight: 600,
-                color: '#64748B',
-                background: '#F1F5F9',
+                color: 'var(--text-muted)',
+                background: 'var(--bg-sunken)',
                 borderRadius: 999,
                 padding: '5px 14px',
                 marginBottom: 12,
               }}>
-                <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#94A3B8' }} />
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--text-faint)' }} />
                 {t('poker.closedSessions')}
               </span>
               <div className="poker-grid">
@@ -302,8 +295,8 @@ export default function PokerPage() {
                     <div
                       key={session.id}
                       style={{
-                        background: '#FFFFFF',
-                        border: '1px solid #E2E8F0',
+                        background: 'var(--bg-elevated)',
+                        border: '1px solid var(--border)',
                         borderRadius: 12,
                         overflow: 'hidden',
                         boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
@@ -317,54 +310,54 @@ export default function PokerPage() {
                           transition: 'background 0.15s',
                         }}
                         onClick={() => toggleExpand(session.id)}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = '#F7F8FA')}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg)')}
                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                       >
                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 6 }}>
-                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#64748B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {session.name}
                           </h4>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                             <span style={{
-                              fontSize: 11, fontWeight: 600, color: '#94A3B8',
-                              background: '#EDF0F4',
+                              fontSize: 11, fontWeight: 600, color: 'var(--text-faint)',
+                              background: 'var(--bg-hover)',
                               borderRadius: 999, padding: '3px 10px',
                             }}>
                               {t('poker.status.CLOSED')}
                             </span>
                             {isExpanded
-                              ? <ChevronUp size={14} style={{ color: '#94A3B8' }} />
-                              : <ChevronDown size={14} style={{ color: '#94A3B8' }} />
+                              ? <ChevronUp size={14} style={{ color: 'var(--text-faint)' }} />
+                              : <ChevronDown size={14} style={{ color: 'var(--text-faint)' }} />
                             }
                           </div>
                         </div>
-                        <p style={{ margin: 0, fontSize: 12, color: '#94A3B8' }}>
+                        <p style={{ margin: 0, fontSize: 12, color: 'var(--text-faint)' }}>
                           {t(`poker.decks.${session.deck}`)} · {session.participants.length} {t('poker.room.participants').toLowerCase()}
                         </p>
                       </div>
 
                       {/* Expanded: estimated tasks */}
                       {isExpanded && (
-                        <div style={{ borderTop: '1px solid #E2E8F0' }}>
+                        <div style={{ borderTop: '1px solid var(--border)' }}>
                           {isLoading ? (
                             <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0' }}>
                               <div style={{
                                 width: 20, height: 20,
-                                border: '2px solid #E2E8F0',
+                                border: '2px solid var(--border)',
                                 borderTopColor: '#2563EB',
                                 borderRadius: '50%',
                                 animation: 'spin 0.7s linear infinite',
                               }} />
                             </div>
                           ) : estimatedRounds.length === 0 ? (
-                            <p style={{ margin: 0, padding: '16px 20px', fontSize: 13, color: '#94A3B8', fontStyle: 'italic' }}>
+                            <p style={{ margin: 0, padding: '16px 20px', fontSize: 13, color: 'var(--text-faint)', fontStyle: 'italic' }}>
                               {t('poker.noEstimates')}
                             </p>
                           ) : (
                             <>
                               <div style={{
                                 padding: '8px 20px',
-                                fontSize: 11, fontWeight: 600, color: '#94A3B8',
+                                fontSize: 11, fontWeight: 600, color: 'var(--text-faint)',
                                 letterSpacing: '0.04em',
                               }}>
                                 {estimatedRounds.length} {estimatedRounds.length === 1 ? t('poker.estimatedTask') : t('poker.estimatedTasks')}
@@ -380,14 +373,14 @@ export default function PokerPage() {
                                     gap: 12,
                                     padding: '10px 20px',
                                     cursor: 'pointer',
-                                    borderTop: i === 0 ? '1px solid #F1F5F9' : 'none',
-                                    borderBottom: i < estimatedRounds.length - 1 ? '1px solid #F1F5F9' : 'none',
+                                    borderTop: i === 0 ? '1px solid var(--border)' : 'none',
+                                    borderBottom: i < estimatedRounds.length - 1 ? '1px solid var(--border)' : 'none',
                                   }}
                                   onClick={(e) => { e.stopPropagation(); handleOpenTask(round.taskId); }}
                                 >
                                   <span style={{
                                     fontSize: 13, fontWeight: 500,
-                                    color: '#1E293B',
+                                    color: 'var(--text)',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
                                     whiteSpace: 'nowrap',
@@ -451,16 +444,6 @@ export default function PokerPage() {
           />
         );
       })()}
-
-      {viewTask !== undefined && (
-        <TaskModal
-          task={viewTask}
-          projectId={projectId}
-          columns={columns}
-          readOnly
-          onClose={() => setViewTask(undefined)}
-        />
-      )}
     </div>
   );
 }

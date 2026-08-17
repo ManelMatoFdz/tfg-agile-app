@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { User, LogOut } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../api/auth';
 import { buildAvatarSrc } from '../../utils/avatarUrl';
-import { AgileFlowLogo } from '../auth/AuthLayout';
 import NotificationBell from './NotificationBell';
 
 export default function TopBar() {
@@ -45,20 +44,12 @@ export default function TopBar() {
 
   return (
     <header style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
       padding: '0 24px', height: 52,
       background: 'var(--bg-elevated)',
       borderBottom: '1px solid var(--border)',
       flexShrink: 0,
     }}>
-      {/* Left: Logo */}
-      <Link to="/workspaces" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-        <AgileFlowLogo />
-        <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-          AgileFlow
-        </span>
-      </Link>
-
       {/* Right: actions */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <NotificationBell />
@@ -143,7 +134,7 @@ export default function TopBar() {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10, width: '100%',
                     padding: '8px 12px', fontSize: 13, fontWeight: 500,
-                    color: 'var(--danger)', background: 'transparent',
+                    color: 'var(--danger-text)', background: 'transparent',
                     border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
                     fontFamily: 'var(--font-sans)',
                     opacity: loggingOut ? 0.5 : 1,

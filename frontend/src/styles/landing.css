@@ -1,0 +1,1042 @@
+/* ============================================================
+   Kadenza — landing page
+   Sistema de estilos propio y aislado: todo cuelga de .kdz para
+   no mezclarse con los tokens de la aplicacion. Tiene sus dos
+   temas, y el que manda es el mismo data-theme que el resto.
+   ============================================================ */
+
+.kdz {
+  --k-bg:        #05080F;
+  --k-bg-2:      #0A101E;
+
+  /* Superficies y lineas son el mismo color a distintas opacidades sobre el
+     fondo. Al declararlo una sola vez, invertirlo basta para dar la vuelta a
+     todo el relieve de la pagina sin tocar una regla. */
+  --k-veil:      255, 255, 255;
+  --k-surface:   rgba(var(--k-veil), 0.035);
+  --k-surface-2: rgba(var(--k-veil), 0.06);
+  --k-line:      rgba(var(--k-veil), 0.09);
+  --k-line-2:    rgba(var(--k-veil), 0.16);
+
+  --k-text:      #EAF0FB;
+  --k-muted:     #98A6C0;
+  --k-faint:     #64748B;
+  --k-strong:    #FFFFFF;
+
+  --k-blue:      #2563EB;
+  --k-blue-lt:   #60A5FA;
+  --k-violet:    #7C3AED;
+  --k-cyan:      #22D3EE;
+  --k-green:     #34D399;
+  --k-amber:     #FBBF24;
+
+  /* Acentos en su papel de TEXTO: los pasteles se leen sobre casi negro y
+     desaparecen sobre blanco, asi que cambian con el tema. */
+  --k-c-violet:  #A78BFA;
+  --k-c-cyan:    #22D3EE;
+  --k-c-blue:    #60A5FA;
+  --k-c-amber:   #FBBF24;
+  --k-c-green:   #34D399;
+  --k-c-pink:    #F472B6;
+
+  --k-danger-fg:  #FCA5A5;
+  --k-warn-fg:    #FDBA74;
+  --k-info-fg:    #93C5FD;
+  --k-neutral-fg: #CBD5E1;
+  --k-notice-fg:  #BFDBFE;
+  --k-pts-fg:     #9EC1FF;
+
+  /* Piezas que no son un color plano sino una composicion. */
+  --k-title-grad: linear-gradient(110deg, #60A5FA 0%, #A78BFA 45%, #22D3EE 100%);
+  --k-window-bg:  linear-gradient(180deg, rgba(17, 25, 44, 0.92), rgba(8, 12, 23, 0.94));
+  --k-panel-bg:   linear-gradient(200deg, #0D1526 0%, #070B14 55%);
+  --k-nav-bg:     rgba(5, 8, 15, 0.72);
+  --k-float:      rgba(12, 18, 34, 0.86);
+  --k-band:       rgba(10, 16, 30, 0.85);
+  --k-well:       rgba(0, 0, 0, 0.3);
+  --k-drop:       rgba(0, 0, 0, 0.9);
+
+  --k-r-sm: 8px;
+  --k-r-md: 12px;
+  --k-r-lg: 18px;
+  --k-r-xl: 26px;
+
+  --k-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  min-height: 100dvh;
+  background: var(--k-bg);
+  color: var(--k-text);
+  font-family: var(--font-sans);
+  letter-spacing: -0.011em;
+  overflow-x: clip;
+}
+
+/* El rebote del scroll deja ver el body, que en el resto de la app es claro.
+   Solo se tine mientras la landing esta montada. */
+body:has(.kdz) { background: #05080F; }
+
+.kdz *,
+.kdz *::before,
+.kdz *::after { box-sizing: border-box; }
+
+.kdz ::selection { background: rgba(37, 99, 235, 0.45); color: #fff; }
+
+/* ---------- layout ---------- */
+
+.kdz-shell {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.kdz-section { position: relative; padding: 110px 0; }
+.kdz-section--tight { padding: 76px 0; }
+
+/* ---------- fondos decorativos ---------- */
+
+.kdz-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(var(--k-veil),0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(var(--k-veil),0.045) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+  pointer-events: none;
+}
+
+.kdz-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(110px);
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.kdz-aurora {
+  position: absolute;
+  inset: -20% -10% auto -10%;
+  height: 720px;
+  background:
+    radial-gradient(closest-side, rgba(37,99,235,0.30), transparent 70%) 20% 30% / 60% 70% no-repeat,
+    radial-gradient(closest-side, rgba(124,58,237,0.22), transparent 70%) 78% 18% / 52% 62% no-repeat,
+    radial-gradient(closest-side, rgba(34,211,238,0.12), transparent 70%) 52% 60% / 46% 52% no-repeat;
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+/* ---------- tipografia ---------- */
+
+.kdz-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 8px;
+  border: 1px solid var(--k-line);
+  border-radius: 999px;
+  background: var(--k-surface);
+  backdrop-filter: blur(10px);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--k-muted);
+}
+
+.kdz-eyebrow b {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--k-blue), var(--k-violet));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.kdz-h1 {
+  margin: 26px 0 0;
+  font-size: clamp(40px, 6.4vw, 76px);
+  line-height: 1.02;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  color: var(--k-strong);
+}
+
+.kdz-h1 em {
+  font-style: normal;
+  background: var(--k-title-grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.kdz-h2 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 46px);
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--k-strong);
+}
+
+.kdz-lead {
+  margin: 22px 0 0;
+  max-width: 620px;
+  font-size: clamp(15px, 1.5vw, 18.5px);
+  line-height: 1.62;
+  color: var(--k-muted);
+}
+
+.kdz-label {
+  margin: 0 0 14px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--k-blue-lt);
+}
+
+/* ---------- botones ---------- */
+
+.kdz-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 13px 22px;
+  border: 1px solid transparent;
+  border-radius: var(--k-r-md);
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: transform 0.22s var(--k-ease), box-shadow 0.22s var(--k-ease),
+              background 0.22s var(--k-ease), border-color 0.22s var(--k-ease);
+}
+
+.kdz-btn--primary {
+  background: linear-gradient(180deg, #3B82F6, var(--k-blue));
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.22) inset,
+              0 10px 30px -10px rgba(37,99,235,0.85);
+}
+.kdz-btn--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.28) inset,
+              0 18px 42px -12px rgba(37,99,235,0.95);
+}
+
+.kdz-btn--ghost {
+  background: var(--k-surface);
+  border-color: var(--k-line);
+  color: var(--k-text);
+  backdrop-filter: blur(10px);
+}
+.kdz-btn--ghost:hover {
+  background: var(--k-surface-2);
+  border-color: var(--k-line-2);
+  transform: translateY(-2px);
+}
+
+.kdz-btn--sm { padding: 9px 16px; font-size: 13.5px; }
+
+.kdz-btn:focus-visible {
+  outline: 2px solid var(--k-blue-lt);
+  outline-offset: 3px;
+}
+
+/* ---------- nav ---------- */
+
+.kdz-nav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  transition: background 0.3s var(--k-ease), border-color 0.3s var(--k-ease),
+              backdrop-filter 0.3s var(--k-ease);
+  border-bottom: 1px solid transparent;
+}
+.kdz-nav[data-stuck='true'] {
+  background: var(--k-nav-bg);
+  backdrop-filter: blur(16px) saturate(150%);
+  border-bottom-color: var(--k-line);
+}
+
+.kdz-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  height: 68px;
+}
+
+.kdz-nav-links {
+  display: none;
+  align-items: center;
+  gap: 4px;
+}
+
+.kdz-nav-link {
+  padding: 8px 14px;
+  border-radius: var(--k-r-sm);
+  background: none;
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--k-muted);
+  cursor: pointer;
+  transition: color 0.2s var(--k-ease), background 0.2s var(--k-ease);
+}
+.kdz-nav-link:hover { color: var(--k-text); background: var(--k-surface); }
+
+.kdz-nav-actions { display: flex; align-items: center; gap: 10px; }
+
+@media (min-width: 900px) {
+  .kdz-nav-links { display: flex; }
+}
+
+/* ---------- hero ---------- */
+
+.kdz-hero {
+  position: relative;
+  padding: 148px 0 90px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.kdz-hero-cta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 36px;
+}
+
+/* ---------- mockup del producto ---------- */
+
+.kdz-stage {
+  position: relative;
+  margin-top: 72px;
+  width: 100%;
+  perspective: 1800px;
+}
+
+.kdz-window {
+  position: relative;
+  border: 1px solid var(--k-line);
+  border-radius: var(--k-r-xl);
+  background: var(--k-window-bg);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.07) inset,
+    0 60px 120px -40px var(--k-drop),
+    0 0 90px -30px rgba(37,99,235,0.4);
+  overflow: hidden;
+  transform: rotateX(9deg) scale(0.985);
+  transform-origin: 50% 0%;
+}
+
+.kdz-window-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--k-line);
+  background: rgba(var(--k-veil), 0.02);
+}
+
+.kdz-dots { display: flex; gap: 7px; }
+.kdz-dots i {
+  width: 11px; height: 11px;
+  border-radius: 50%;
+  background: rgba(var(--k-veil), 0.14);
+}
+.kdz-dots i:nth-child(1) { background: #FF5F57; }
+.kdz-dots i:nth-child(2) { background: #FEBC2E; }
+.kdz-dots i:nth-child(3) { background: #28C840; }
+
+.kdz-window-title {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--k-faint);
+}
+
+.kdz-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  padding: 20px;
+  text-align: left;
+}
+
+.kdz-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--k-faint);
+}
+
+.kdz-col-count {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--k-surface-2);
+  font-size: 10.5px;
+  letter-spacing: 0;
+  color: var(--k-muted);
+}
+
+.kdz-card {
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--k-line);
+  border-radius: var(--k-r-md);
+  background: linear-gradient(180deg, rgba(var(--k-veil),0.05), rgba(var(--k-veil),0.02));
+  box-shadow: 0 6px 18px -12px var(--k-drop);
+}
+
+.kdz-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 9px;
+}
+
+.kdz-tag {
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.kdz-card-title {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--k-text);
+}
+
+.kdz-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 11px;
+}
+
+.kdz-pts {
+  min-width: 21px;
+  height: 21px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: rgba(37,99,235,0.18);
+  border: 1px solid rgba(96,165,250,0.28);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--k-pts-fg);
+}
+
+.kdz-ava {
+  width: 21px; height: 21px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #fff;
+  border: 1.5px solid var(--k-bg);
+}
+
+/* cartas de poker flotantes sobre el tablero */
+.kdz-poker {
+  position: absolute;
+  right: -16px;
+  bottom: -34px;
+  display: flex;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--k-line-2);
+  border-radius: var(--k-r-lg);
+  background: var(--k-float);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 30px 70px -28px var(--k-drop);
+}
+
+.kdz-chip {
+  width: 46px;
+  height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--k-line-2);
+  border-radius: 10px;
+  background: linear-gradient(170deg, rgba(var(--k-veil),0.09), rgba(var(--k-veil),0.02));
+  font-family: var(--font-mono);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--k-muted);
+}
+
+.kdz-chip[data-on='true'] {
+  border-color: rgba(96,165,250,0.7);
+  background: linear-gradient(170deg, rgba(37,99,235,0.55), rgba(37,99,235,0.18));
+  color: #fff;
+  box-shadow: 0 0 0 1px rgba(96,165,250,0.28), 0 14px 30px -12px rgba(37,99,235,0.9);
+}
+
+@media (max-width: 860px) {
+  .kdz-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kdz-poker { display: none; }
+  .kdz-window { transform: none; }
+}
+
+/* ---------- tira de metricas ---------- */
+
+.kdz-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1px;
+  border: 1px solid var(--k-line);
+  border-radius: var(--k-r-lg);
+  background: var(--k-line);
+  overflow: hidden;
+}
+
+.kdz-stat {
+  padding: 26px 24px;
+  background: var(--k-bg-2);
+}
+
+/* Deliberadamente no es tamano de cifra: son capacidades del producto, y a
+   30px se leerian como metricas de uso que no existen. */
+.kdz-stat b {
+  display: block;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--k-strong);
+}
+
+.kdz-stat span {
+  display: block;
+  margin-top: 7px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--k-muted);
+}
+
+/* ---------- bento de features ---------- */
+
+.kdz-bento {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
+  margin-top: 56px;
+}
+
+.kdz-tile {
+  position: relative;
+  grid-column: span 6;
+  padding: 28px;
+  border: 1px solid var(--k-line);
+  border-radius: var(--k-r-lg);
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(var(--k-veil),0.055), transparent 60%),
+    var(--k-bg-2);
+  overflow: hidden;
+  transition: transform 0.3s var(--k-ease), border-color 0.3s var(--k-ease);
+}
+.kdz-tile:hover {
+  transform: translateY(-4px);
+  border-color: var(--k-line-2);
+}
+
+.kdz-tile-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px; height: 42px;
+  border-radius: var(--k-r-md);
+  border: 1px solid var(--k-line-2);
+  background: var(--k-surface-2);
+  margin-bottom: 18px;
+}
+
+.kdz-tile h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--k-strong);
+}
+
+.kdz-tile p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--k-muted);
+}
+
+/* Todas las tarjetas pesan igual: 2 por fila y luego 3, de forma que las filas
+   cierran exactas. Antes habia tarjetas anchas mezcladas y la rejilla dejaba
+   huecos a media altura. */
+@media (min-width: 760px) {
+  .kdz-tile { grid-column: span 3; }
+}
+@media (min-width: 1040px) {
+  .kdz-tile { grid-column: span 2; }
+}
+
+/* ---------- pasos del flujo ---------- */
+
+.kdz-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 28px;
+  margin-top: 56px;
+}
+
+.kdz-step { position: relative; padding-top: 26px; }
+
+.kdz-step::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--k-blue), transparent);
+  border-radius: 2px;
+}
+
+.kdz-step b {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--k-blue-lt);
+  margin-bottom: 10px;
+}
+
+.kdz-step h3 {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--k-strong);
+}
+
+.kdz-step p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--k-muted);
+}
+
+/* ---------- CTA final ---------- */
+
+.kdz-cta {
+  position: relative;
+  padding: 68px 40px;
+  text-align: center;
+  border: 1px solid var(--k-line-2);
+  border-radius: var(--k-r-xl);
+  background:
+    radial-gradient(120% 140% at 50% 0%, rgba(37,99,235,0.30), transparent 62%),
+    var(--k-bg-2);
+  overflow: hidden;
+}
+
+/* ---------- footer ---------- */
+
+.kdz-footer {
+  border-top: 1px solid var(--k-line);
+  padding: 44px 0;
+}
+
+.kdz-footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.kdz-footer p { margin: 0; font-size: 13px; color: var(--k-faint); }
+
+/* ============================================================
+   Panel de autenticacion deslizante
+   ============================================================ */
+
+.kdz-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(3, 6, 12, 0.62);
+  backdrop-filter: blur(6px);
+}
+
+.kdz-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 100;
+  width: min(468px, 100vw);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--k-line-2);
+  background: var(--k-panel-bg);
+  box-shadow: -40px 0 90px -30px var(--k-drop);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.kdz-panel-glow {
+  position: absolute;
+  top: -180px; right: -120px;
+  width: 420px; height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(37,99,235,0.40), transparent 70%);
+  filter: blur(50px);
+  pointer-events: none;
+}
+
+.kdz-panel-body {
+  position: relative;
+  padding: 26px 34px 40px;
+}
+
+.kdz-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+}
+
+.kdz-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px; height: 34px;
+  border: 1px solid var(--k-line);
+  border-radius: var(--k-r-sm);
+  background: var(--k-surface);
+  color: var(--k-muted);
+  cursor: pointer;
+  transition: background 0.2s var(--k-ease), color 0.2s var(--k-ease);
+}
+.kdz-x:hover { background: var(--k-surface-2); color: var(--k-strong); }
+
+.kdz-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 28px;
+  border: 1px solid var(--k-line);
+  border-radius: var(--k-r-md);
+  background: var(--k-well);
+}
+
+.kdz-tab {
+  position: relative;
+  padding: 9px 0;
+  border: none;
+  border-radius: var(--k-r-sm);
+  background: none;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--k-muted);
+  cursor: pointer;
+  transition: color 0.2s var(--k-ease);
+}
+.kdz-tab[data-on='true'] { color: #fff; }
+
+.kdz-tab-pill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: var(--k-r-sm);
+  background: linear-gradient(180deg, #3B82F6, var(--k-blue));
+  box-shadow: 0 6px 18px -8px rgba(37,99,235,0.9);
+}
+
+.kdz-field { margin-bottom: 15px; }
+
+.kdz-field label {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--k-text);
+}
+
+.kdz-input-wrap { position: relative; display: flex; align-items: center; }
+
+.kdz-input-wrap > svg:first-child {
+  position: absolute;
+  left: 13px;
+  color: var(--k-faint);
+  pointer-events: none;
+}
+
+.kdz-input {
+  width: 100%;
+  padding: 12px 14px 12px 40px;
+  border: 1px solid var(--k-line);
+  border-radius: var(--k-r-md);
+  background: var(--k-well);
+  color: var(--k-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s var(--k-ease), box-shadow 0.2s var(--k-ease);
+}
+.kdz-input::placeholder { color: var(--k-faint); }
+.kdz-input:focus {
+  border-color: var(--k-blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.22);
+}
+.kdz-input--eye { padding-right: 42px; }
+
+.kdz-eye {
+  position: absolute;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px; height: 30px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--k-faint);
+  cursor: pointer;
+  transition: color 0.2s var(--k-ease);
+}
+.kdz-eye:hover { color: var(--k-text); }
+
+.kdz-submit {
+  width: 100%;
+  padding: 13px;
+  margin-top: 8px;
+  border: none;
+  border-radius: var(--k-r-md);
+  background: linear-gradient(180deg, #3B82F6, var(--k-blue));
+  color: #fff;
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  box-shadow: 0 10px 30px -12px rgba(37, 99, 235, 0.95);
+  transition: filter 0.2s var(--k-ease), transform 0.2s var(--k-ease);
+}
+.kdz-submit:hover:not(:disabled) { filter: brightness(1.08); transform: translateY(-1px); }
+.kdz-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.kdz-spin {
+  width: 15px; height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: kdz-spin 0.7s linear infinite;
+}
+@keyframes kdz-spin { to { transform: rotate(360deg); } }
+
+.kdz-error,
+.kdz-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 11px 13px;
+  margin-bottom: 18px;
+  border-radius: var(--k-r-md);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.kdz-error {
+  border: 1px solid rgba(248, 113, 113, 0.32);
+  background: rgba(220, 38, 38, 0.13);
+  color: var(--k-danger-fg);
+}
+
+.kdz-notice {
+  border: 1px solid rgba(96, 165, 250, 0.32);
+  background: rgba(37, 99, 235, 0.13);
+  color: var(--k-notice-fg);
+}
+
+/* ---------- acceso con Google ---------- */
+
+.kdz-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--k-faint);
+}
+
+.kdz-divider::before,
+.kdz-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--k-line);
+}
+
+.kdz-google {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 18px;
+  border: 1px solid var(--k-line-2);
+  border-radius: var(--k-r-md);
+  background: var(--k-surface-2);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--k-text);
+  cursor: pointer;
+  transition: background 0.18s var(--k-ease), border-color 0.18s var(--k-ease);
+}
+
+.kdz-google:hover {
+  background: rgba(var(--k-veil), 0.10);
+  border-color: rgba(var(--k-veil), 0.24);
+}
+
+.kdz-google:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.kdz-meter { display: flex; gap: 4px; margin-top: 9px; }
+.kdz-meter i {
+  height: 3px;
+  flex: 1;
+  border-radius: 2px;
+  background: var(--k-surface-2);
+  transition: background 0.3s var(--k-ease);
+}
+
+.kdz-hint {
+  margin: 7px 0 0;
+  font-size: 11.5px;
+  color: var(--k-faint);
+}
+
+.kdz-alt {
+  margin: 22px 0 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--k-muted);
+}
+
+.kdz-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--k-blue-lt);
+  cursor: pointer;
+  text-decoration: none;
+}
+.kdz-link:hover { text-decoration: underline; }
+
+.kdz-legal {
+  margin: 26px 0 0;
+  text-align: center;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--k-faint);
+}
+
+/* ============================================================
+   Tema claro
+   Se define como excepcion porque la landing nace oscura: asi el
+   bloque de arriba se lee entero como un tema coherente y aqui
+   solo esta lo que de verdad cambia de papel al invertir el fondo.
+   ============================================================ */
+
+:root:not([data-theme='dark']) .kdz {
+  --k-bg:        #FFFFFF;
+  --k-bg-2:      #F7F8FA;
+
+  /* Invertir el velo da la vuelta de golpe a superficies, lineas y rejilla. */
+  --k-veil:      15, 23, 42;
+
+  --k-text:      #1E293B;
+  --k-muted:     #64748B;
+  --k-faint:     #94A3B8;
+  --k-strong:    #0B1220;
+
+  /* El azul claro solo funciona como texto sobre fondo oscuro. */
+  --k-blue-lt:   #2563EB;
+
+  --k-c-violet:  #7C3AED;
+  --k-c-cyan:    #0891B2;
+  --k-c-blue:    #2563EB;
+  --k-c-amber:   #B45309;
+  --k-c-green:   #059669;
+  --k-c-pink:    #DB2777;
+
+  --k-danger-fg:  #B91C1C;
+  --k-warn-fg:    #C2410C;
+  --k-info-fg:    #1D4ED8;
+  --k-neutral-fg: #475569;
+  --k-notice-fg:  #1D4ED8;
+  --k-pts-fg:     #1D4ED8;
+
+  --k-title-grad: linear-gradient(110deg, #2563EB 0%, #7C3AED 45%, #0891B2 100%);
+  --k-window-bg:  linear-gradient(180deg, #FFFFFF, #F7F8FA);
+  --k-panel-bg:   linear-gradient(200deg, #FFFFFF 0%, #F7F8FA 55%);
+  --k-nav-bg:     rgba(255, 255, 255, 0.78);
+  --k-float:      rgba(255, 255, 255, 0.9);
+  --k-band:       rgba(241, 245, 249, 0.9);
+  --k-well:       rgba(15, 23, 42, 0.04);
+
+  /* Sobre blanco una sombra al 90% es una mancha; lo que separa aqui es una
+     sombra corta y el borde, no la profundidad. */
+  --k-drop:       rgba(15, 23, 42, 0.16);
+}
+
+/* Los halos estan calculados para sumar luz sobre casi negro. Sobre blanco
+   saturan, asi que se bajan en vez de recolorearlos uno a uno. */
+:root:not([data-theme='dark']) .kdz-aurora { opacity: 0.5; }
+:root:not([data-theme='dark']) .kdz-glow { opacity: 0.28; }
+:root:not([data-theme='dark']) .kdz-panel-glow { opacity: 0.5; }
+
+/* El scrim y el brillo interior de los botones azules siguen siendo oscuros y
+   blancos respectivamente en los dos temas: van encima de un relleno de color,
+   no del fondo de la pagina. */
+:root:not([data-theme='dark']) body:has(.kdz) { background: #FFFFFF; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kdz *, .kdz *::before, .kdz *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

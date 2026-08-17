@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronLeft, ChevronRight, ChevronDown, Zap, Filter as FilterIcon,
@@ -9,9 +9,7 @@ import type { Sprint, Task, TaskPriority, TaskType, UserSummary, Label } from '.
 import { sprintsApi } from '../../../api/sprints';
 import { tasksApi } from '../../../api/tasks';
 import { labelsApi } from '../../../api/labels';
-import type { CreateTaskDto, UpdateTaskDto } from '../../../api/tasks';
-import { AssigneeAvatar } from '../../../components/kanban/TaskModal';
-import TaskModal from '../../../components/kanban/TaskModal';
+import { AssigneeAvatar } from '../../../components/kanban/AssigneePicker';
 import SubtaskModal from '../../../components/kanban/SubtaskModal';
 import TaskFilterBar, { type TaskFilters, EMPTY_FILTERS, hasActiveFilters } from '../../../components/kanban/TaskFilterBar';
 import Alert from '../../../components/ui/Alert';
@@ -30,7 +28,7 @@ const PRIORITY_CONFIG: Record<TaskPriority, { color: string }> = {
   CRITICAL: { color: '#DC2626' },
   HIGH:     { color: '#D97706' },
   MEDIUM:   { color: '#2563EB' },
-  LOW:      { color: '#94A3B8' },
+  LOW:      { color: 'var(--text-faint)' },
 };
 
 
@@ -59,8 +57,9 @@ export default function SprintBacklogPage() {
     sprintId: string;
   }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const { canEditSprintTask, canMoveTask, canDeleteSprintTask, canAddToActiveSprint } = useProjectMember(projectId);
+  const { canAddToActiveSprint } = useProjectMember(projectId);
   const { members, userMap } = useProjectMembers(projectId);
   const columns = useBoardColumns(projectId);
 
@@ -68,7 +67,6 @@ export default function SprintBacklogPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editTask, setEditTask] = useState<Task | null | undefined>(undefined);
   const [subtaskModalTask, setSubtaskModalTask] = useState<Task | null>(null);
 
   const [labels, setLabels] = useState<Label[]>([]);
@@ -148,23 +146,11 @@ export default function SprintBacklogPage() {
     [sprintId, filters.search, fetchData],
   );
 
-  const handleSaveTask = async (dto: CreateTaskDto | UpdateTaskDto) => {
-    if (!editTask) return;
-    await tasksApi.update(editTask.id, dto as UpdateTaskDto);
-    fetchData(filters);
-  };
-
-  const handleMoveTask = async (status: string) => {
-    if (!editTask) return;
-    await tasksApi.move(editTask.id, { status, position: 0 });
-    fetchData(filters);
-  };
-
-  const handleDeleteTask = async () => {
-    if (!editTask) return;
-    await tasksApi.delete(editTask.id);
-    fetchData(filters);
-  };
+  const openTask = (task: Task) =>
+    navigate(
+      `/workspaces/${workspaceId}/projects/${task.projectId ?? projectId}/tasks/${task.id}`,
+      { state: { from: location.pathname + location.search, task } },
+    );
 
   // ── Add from backlog handlers ──────────────────────────────────────────────
 
@@ -271,14 +257,14 @@ export default function SprintBacklogPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <PageTitle as="h2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <ListChecks size={22} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                <ListChecks size={22} strokeWidth={2} style={{ color: 'var(--accent-text)' }} />
                 {t('projects.sprints.sprintBacklog.title')}: {sprint?.name}
               </span>
             </PageTitle>
             {sprint?.status && (
               <span style={{
                 fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                color: isActive ? 'var(--accent)' : isCompleted ? 'var(--success)' : 'var(--text-faint)',
+                color: isActive ? 'var(--accent-text)' : isCompleted ? 'var(--success-text)' : 'var(--text-faint)',
                 background: isActive ? 'var(--accent-muted)' : isCompleted ? 'var(--success-bg, rgba(34,197,94,0.1))' : 'var(--bg-hover)',
                 padding: '4px 10px', borderRadius: 'var(--radius-sm)',
               }}>
@@ -332,9 +318,9 @@ export default function SprintBacklogPage() {
           background: 'var(--accent-muted)', border: '1px solid var(--accent)',
           borderRadius: 'var(--radius-md)', padding: '12px 16px',
         }}>
-          <Zap size={14} strokeWidth={2} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }} />
+          <Zap size={14} strokeWidth={2} style={{ color: 'var(--accent-text)', flexShrink: 0, marginTop: 1 }} />
           <div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-text)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {t('projects.sprints.planning.goal')}
             </span>
             <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text)' }}>
@@ -359,7 +345,7 @@ export default function SprintBacklogPage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
           <div style={{
             width: 28, height: 28,
-            border: '3px solid var(--border)', borderTopColor: 'var(--accent)',
+            border: '3px solid var(--border)', borderTopColor: 'var(--accent-text)',
             borderRadius: '50%', animation: 'spin 0.7s linear infinite',
           }} />
         </div>
@@ -380,8 +366,8 @@ export default function SprintBacklogPage() {
             margin: '0 auto 16px',
           }}>
             {hasActiveFilters(filters)
-              ? <FilterIcon size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
-              : <ListChecks size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+              ? <FilterIcon size={24} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
+              : <ListChecks size={24} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
             }
           </div>
           <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
@@ -427,7 +413,6 @@ export default function SprintBacklogPage() {
               const isStory = task.subtaskCount > 0;
               const isExpanded = expandedStories.has(task.id);
               const assignee = task.assigneeId ? userMap[task.assigneeId] : undefined;
-              const canClick = canEditSprintTask || isCompleted;
 
               return (
                 <div
@@ -442,7 +427,7 @@ export default function SprintBacklogPage() {
                   }}
                 >
                   <button
-                    onClick={() => setEditTask(task)}
+                    onClick={() => openTask(task)}
                     style={{
                       width: '100%',
                       textAlign: 'left',
@@ -561,7 +546,7 @@ export default function SprintBacklogPage() {
                       {task.storyPoints != null ? (
                         <span style={{
                           fontWeight: 700,
-                          color: 'var(--accent)',
+                          color: 'var(--accent-text)',
                           background: 'var(--accent-muted)',
                           borderRadius: 'var(--radius-pill)',
                           width: 26,
@@ -633,8 +618,8 @@ export default function SprintBacklogPage() {
                         {/* Checkbox indicator */}
                         <span style={{
                           width: 16, height: 16, borderRadius: 4, flexShrink: 0,
-                          border: subDone ? 'none' : '2px solid #CBD5E1',
-                          background: subDone ? '#3B82F6' : '#fff',
+                          border: subDone ? 'none' : '2px solid var(--border-strong)',
+                          background: subDone ? '#3B82F6' : 'var(--bg-elevated)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                         }}>
                           {subDone && (
@@ -722,7 +707,7 @@ export default function SprintBacklogPage() {
                 }}>
                   {t('projects.sprints.sprintBacklog.completed')}
                 </span>
-                <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
+                <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--accent-text)', fontFamily: 'var(--font-mono)' }}>
                   {doneCount}/{tasks.length}
                 </span>
               </div>
@@ -775,24 +760,6 @@ export default function SprintBacklogPage() {
           </div>
         </div>
       )}
-
-      {/* Task modal */}
-      {editTask !== undefined && (() => {
-        const readOnly = isCompleted || (isActive && !canEditSprintTask);
-        return (
-          <TaskModal
-            task={editTask}
-            projectId={projectId}
-            columns={columns}
-            defaultStatus="TODO"
-            readOnly={readOnly}
-            onClose={() => setEditTask(undefined)}
-            onSave={!isCompleted && canEditSprintTask ? handleSaveTask : undefined}
-            onMove={editTask && isActive && canMoveTask ? handleMoveTask : undefined}
-            onDelete={editTask && !isCompleted && canDeleteSprintTask ? handleDeleteTask : undefined}
-          />
-        );
-      })()}
 
       {/* Add from backlog modal */}
       {showAddModal && (
@@ -866,7 +833,7 @@ export default function SprintBacklogPage() {
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
                   <div style={{
                     width: 24, height: 24,
-                    border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
+                    border: '2px solid var(--border)', borderTopColor: 'var(--accent-text)',
                     borderRadius: '50%', animation: 'spin 0.7s linear infinite',
                   }} />
                 </div>
@@ -940,7 +907,7 @@ export default function SprintBacklogPage() {
                         {task.storyPoints != null && (
                           <span style={{
                             fontWeight: 700,
-                            color: 'var(--accent)',
+                            color: 'var(--accent-text)',
                             background: 'var(--accent-muted)',
                             borderRadius: 'var(--radius-pill)',
                             width: 22,

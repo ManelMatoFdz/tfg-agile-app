@@ -1,5 +1,7 @@
 {
   "common": {
+    "back": "Back",
+    "discard": "Discard",
     "cancel": "Cancel",
     "save": "Save",
     "delete": "Delete",
@@ -83,7 +85,7 @@
       }
     },
     "layout": {
-      "headline": "Master Your Workflow with AgileFlow",
+      "headline": "Master Your Workflow with Kadenza",
       "description": "The all-in-one platform to plan, track, and deliver high-quality projects with speed and precision."
     }
   },
@@ -370,7 +372,7 @@
       },
       "scrumRole": "Scrum Role",
       "scrumRoleNone": "No role",
-"leaveTeam": "Leave team",
+      "leaveTeam": "Leave team",
       "confirmLeave": {
         "title": "Leave team",
         "message": "Are you sure you want to leave <strong>{{name}}</strong>?",
@@ -390,7 +392,8 @@
       "repository": "Repository",
       "metrics": "Metrics",
       "settings": "Settings",
-      "boardSettings": "Board"
+      "boardSettings": "Board",
+      "task": "Task"
     },
     "repository": {
       "title": "Repository",
@@ -406,6 +409,7 @@
       "noCommits": "No commits yet",
       "noBranches": "No linked branches",
       "unlinked": "No linked task",
+      "loadMore": "Load more",
       "loadError": "Failed to load repository activity."
     },
     "epics": {
@@ -626,7 +630,10 @@
       "viewBoard": "View board",
       "viewReport": "View report",
       "activate": "Activate",
-      "activateConfirm": "Activate this sprint?",
+      "activateConfirm": {
+        "title": "Activate sprint",
+        "message": "Are you sure you want to activate this sprint? Only one sprint can be active at a time per project."
+      },
       "activateError": "Error activating the sprint.",
       "activateEndDateRequired": "You must set an end date before activating the sprint.",
       "complete": "Complete",
@@ -634,12 +641,6 @@
       "completeError": "Error completing the sprint.",
       "deleteConfirm": "Delete this sprint?",
       "deleteError": "Error deleting the sprint.",
-      "activate": "Activate",
-      "activateError": "Error activating the sprint.",
-      "activateConfirm": {
-        "title": "Activate sprint",
-        "message": "Are you sure you want to activate this sprint? Only one sprint can be active at a time per project."
-      },
       "activeSprint": "Active Sprint",
       "plannedSprints": "Planned Sprints",
       "completedSprints": "Completed Sprints",
@@ -817,9 +818,28 @@
       "IN_REVIEW": "In review",
       "DONE": "Done"
     },
+    "detail": {
+      "notFound": "Task not found",
+      "notFoundHint": "It may have been deleted, or the link may be incorrect.",
+      "forbidden": "You don't have access to this task",
+      "loadError": "Could not load the task",
+      "retry": "Retry",
+      "inBacklog": "Backlog",
+      "inSprint": "Sprint",
+      "unsavedBadge": "Unsaved",
+      "unsavedTitle": "You have unsaved changes",
+      "unsavedBody": "If you leave now, any changes you haven't saved will be lost.",
+      "unsavedDiscard": "Leave without saving",
+      "unsavedStay": "Keep editing",
+      "saved": "Changes saved",
+      "readOnlyCompleted": "This sprint is completed: the task is read-only.",
+      "readOnlyPermission": "Your role doesn't allow editing this task."
+    },
+    "createModal": {
+      "createdHint": "Task created. You can create another one."
+    },
     "modal": {
       "titleCreate": "New task",
-      "titleEdit": "Edit task",
       "titleView": "Task details",
       "titleField": "Title",
       "titlePlaceholder": "Task name",
@@ -880,6 +900,10 @@
       "overdue": "Overdue",
       "blocked": "Blocked",
       "blockedWarning": "This task is blocked by another task that is not yet completed",
+      "blockedMoveTitle": "Blocked task",
+      "blockedMoveBody": "This task is blocked by {{count}} task(s) that are not yet completed. Do you want to move it anyway?",
+      "blockedMoveConfirm": "Move anyway",
+      "blockedMoveCancel": "Cancel",
       "gitEvents": "Git activity"
     },
     "activity": {
@@ -978,7 +1002,16 @@
     "markRead": "Mark as read",
     "empty": "No notifications",
     "emptySubtitle": "When you have activity, it will appear here",
+    "emptyUnread": "You're all caught up",
+    "emptyUnreadSubtitle": "There's nothing left to read",
     "loadError": "Error loading notifications.",
+    "loadMore": "Load more",
+    "loadingMore": "Loading...",
+    "pageOf": "{{current}} of {{total}}",
+    "groups": {
+      "today": "Today",
+      "yesterday": "Yesterday"
+    },
     "timeAgo": {
       "now": "just now",
       "minutes": "{{count}} min ago",
@@ -1025,6 +1058,10 @@
       "fileTypes": "JPG, PNG or GIF. Max 5 MB",
       "successMessage": "Avatar updated."
     },
+    "language": {
+      "title": "Language",
+      "subtitle": "Choose the interface language"
+    },
     "notificationSettings": {
       "title": "Notifications",
       "subtitle": "Configure how you want to receive them",
@@ -1048,6 +1085,16 @@
     "es": "Español",
     "en": "English",
     "gl": "Galego"
+  },
+  "theme": {
+    "title": "Appearance",
+    "subtitle": "Choose how the app looks",
+    "light": "Light",
+    "dark": "Dark",
+    "switchTo": {
+      "light": "Switch to light theme",
+      "dark": "Switch to dark theme"
+    }
   },
   "poker": {
     "title": "Planning Poker",
@@ -1245,5 +1292,122 @@
     "STORY_STATUS_IS_DERIVED": "Story status is automatically derived.",
     "SUBTASKS_FOLLOW_PARENT": "Subtasks are automatically assigned with their parent story.",
     "SUBTASK_NOT_ESTIMABLE": "Subtasks cannot have story points."
+  },
+  "landing": {
+    "nav": {
+      "product": "Product",
+      "flow": "How it works"
+    },
+    "hero": {
+      "badgeTag": "Scrum",
+      "badge": "With Planning Poker and your repository built in",
+      "titleA": "From sprint planning to the retrospective, all in one",
+      "titleEm": "project",
+      "lead": "The Product Owner prioritises the backlog, the team estimates it in Planning Poker, the sprint moves on the board and closes with metrics and a retrospective."
+    },
+    "cta": {
+      "primary": "Create account",
+      "secondary": "See how it works"
+    },
+    "stats": {
+      "cycle": {
+        "value": "The whole Scrum cycle",
+        "label": "Planning, estimation, sprint, review and retrospective in a single project."
+      },
+      "realtime": {
+        "value": "Real-time estimation",
+        "label": "Planning Poker rooms stay in sync across every participant."
+      },
+      "git": {
+        "value": "Repository connected",
+        "label": "Branches, commits and pull requests linked to their story."
+      }
+    },
+    "features": {
+      "label": "Product",
+      "title": "Every ceremony, in the same tool",
+      "lead": "When planning lives in one tool, estimation in another and the code in a third, context leaks at every jump. Kadenza puts them together.",
+      "backlog": {
+        "title": "Backlog and planning",
+        "body": "Prioritise the product backlog, group it by epic and pull stories into the sprint straight from the planning session."
+      },
+      "poker": {
+        "title": "Planning Poker without bias",
+        "body": "Cards stay hidden until the reveal, so nobody nudges their vote towards everyone else's. The agreed value writes itself onto the story."
+      },
+      "board": {
+        "title": "The sprint board",
+        "body": "Drag a story between columns and status, assignee, points and subtasks move with it. When the sprint grows, filter by priority, label or person."
+      },
+      "review": {
+        "title": "Review backed by data",
+        "body": "Velocity, the closing report and the burndown come from the sprint's real work."
+      },
+      "retro": {
+        "title": "Guided retrospective",
+        "body": "Start / Stop / Continue, 4Ls or Mad / Sad / Glad. The team picks the technique and the conclusions stay stored next to the sprint."
+      },
+      "git": {
+        "title": "From user story to commit",
+        "body": "Connect the repository and every branch, commit and pull request stays linked to its story."
+      }
+    },
+    "flow": {
+      "label": "How it works",
+      "title": "The sprint, from start to finish",
+      "lead": "Kadenza doesn't ask you to change methodology: it follows the ceremonies you already run.",
+      "plan": {
+        "title": "Plan",
+        "body": "The Product Owner orders the backlog and the team decides which stories enter the iteration."
+      },
+      "estimate": {
+        "title": "Estimate",
+        "body": "In the Planning Poker room the team votes blind and the agreement is saved onto the story."
+      },
+      "track": {
+        "title": "Track the sprint",
+        "body": "The board reflects the real state and the burndown warns you in time if the iteration slips."
+      },
+      "improve": {
+        "title": "Improve",
+        "body": "On closing, the report captures velocity and the retrospective captures the team's conclusions."
+      }
+    },
+    "final": {
+      "title": "Start your next sprint in Kadenza",
+      "lead": "Create a workspace, invite your team and plan the first iteration."
+    },
+    "footer": {
+      "copyright": "© {{year}} Kadenza. All rights reserved.",
+      "tfg": "Final Degree Project · Computer Engineering"
+    },
+    "auth": {
+      "legal": "By creating an account you accept Kadenza's terms of use and privacy policy."
+    },
+    "mock": {
+      "board": "Board",
+      "col": {
+        "todo": "To do",
+        "progress": "In progress",
+        "review": "In review",
+        "done": "Done"
+      },
+      "prio": {
+        "critical": "Critical",
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+      },
+      "task": {
+        "a1": "Password recovery by email",
+        "a2": "Export the report to CSV",
+        "a3": "Paginate the customer list",
+        "b1": "Sign in with Google",
+        "b2": "Email notifications",
+        "c1": "Migrate the payment gateway",
+        "d1": "Profile picture upload",
+        "d2": "Fix the date format"
+      }
+    }
   }
 }

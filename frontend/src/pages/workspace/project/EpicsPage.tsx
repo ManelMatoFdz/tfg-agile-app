@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Target, Plus, Pencil, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react';
 import type { Epic, EpicStatus, Task, TaskPriority } from '../../../types';
@@ -9,19 +9,16 @@ import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
 import { useProjectMember } from '../../../hooks/useProjectMember';
 import { useBoardColumns, getStatusColor } from '../../../hooks/useBoardColumns';
-import TaskModal from '../../../components/kanban/TaskModal';
-import { tasksApi } from '../../../api/tasks';
-import type { CreateTaskDto, UpdateTaskDto } from '../../../api/tasks';
 
 const PRIORITY_COLOR: Record<TaskPriority, string> = {
-  LOW: '#6B7280',
+  LOW: 'var(--text-muted)',
   MEDIUM: '#2563EB',
   HIGH: '#D97706',
   CRITICAL: '#DC2626',
 };
 
 const STATUS_COLORS: Record<EpicStatus, string> = {
-  OPEN: '#6B7280',
+  OPEN: 'var(--text-muted)',
   IN_PROGRESS: '#2563EB',
   DONE: '#16A34A',
 };
@@ -57,7 +54,9 @@ const labelStyle: React.CSSProperties = {
 
 export default function EpicsPage() {
   const { t } = useTranslation();
-  const { projectId } = useParams<{ projectId: string }>();
+  const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { canCreateTask } = useProjectMember(projectId);
   const columns = useBoardColumns(projectId);
 
@@ -72,7 +71,6 @@ export default function EpicsPage() {
   const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
   const [epicTasksMap, setEpicTasksMap] = useState<Record<string, Task[]>>({});
   const [loadingTasks, setLoadingTasks] = useState<Set<string>>(new Set());
-  const [modalTask, setModalTask] = useState<Task | null | undefined>(undefined);
 
   // Form state
   const [name, setName] = useState('');
@@ -94,29 +92,11 @@ export default function EpicsPage() {
 
   useEffect(() => { fetchEpics(); }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleModalSave = async (dto: CreateTaskDto | UpdateTaskDto) => {
-    if (!modalTask) return;
-    await tasksApi.update(modalTask.id, dto as UpdateTaskDto);
-    // Refresh tasks for the affected epic
-    if (modalTask.epicId && projectId) {
-      const refreshed = await epicsApi.getTasks(projectId, modalTask.epicId);
-      setEpicTasksMap(prev => ({ ...prev, [modalTask.epicId!]: refreshed }));
-    }
-    fetchEpics();
-  };
-
-  const handleModalDelete = async () => {
-    if (!modalTask || !projectId) return;
-    await tasksApi.delete(modalTask.id);
-    if (modalTask.epicId) {
-      setEpicTasksMap(prev => ({
-        ...prev,
-        [modalTask.epicId!]: (prev[modalTask.epicId!] ?? []).filter(t => t.id !== modalTask.id),
-      }));
-    }
-    setModalTask(undefined);
-    fetchEpics();
-  };
+  const openTask = (task: Task) =>
+    navigate(
+      `/workspaces/${workspaceId}/projects/${task.projectId ?? projectId}/tasks/${task.id}`,
+      { state: { from: location.pathname + location.search, task } },
+    );
 
   const toggleEpicTasks = async (epicId: string) => {
     if (expandedEpics.has(epicId)) {
@@ -442,7 +422,7 @@ export default function EpicsPage() {
           <div style={{
             width: 28, height: 28,
             border: '3px solid var(--border)',
-            borderTopColor: 'var(--accent)',
+            borderTopColor: 'var(--accent-text)',
             borderRadius: '50%',
             animation: 'spin 0.7s linear infinite',
           }} />
@@ -463,7 +443,7 @@ export default function EpicsPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 16px',
           }}>
-            <Target size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+            <Target size={24} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
           </div>
           <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
             {t('projects.epics.noEpics')}
@@ -613,7 +593,7 @@ export default function EpicsPage() {
                   <div style={{
                     flex: 1,
                     height: 6,
-                    background: '#E5E7EB',
+                    background: 'var(--border)',
                     borderRadius: 3,
                     overflow: 'hidden',
                   }}>
@@ -693,7 +673,7 @@ export default function EpicsPage() {
                         <div style={{
                           width: 16, height: 16,
                           border: '2px solid var(--border)',
-                          borderTopColor: 'var(--accent)',
+                          borderTopColor: 'var(--accent-text)',
                           borderRadius: '50%',
                           animation: 'spin 0.7s linear infinite',
                         }} />
@@ -709,7 +689,7 @@ export default function EpicsPage() {
                           return (
                             <div
                               key={task.id}
-                              onClick={() => setModalTask(task)}
+                              onClick={() => openTask(task)}
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -763,19 +743,6 @@ export default function EpicsPage() {
             );
           })}
         </div>
-      )}
-
-      {modalTask !== undefined && (
-        <TaskModal
-          task={modalTask}
-          projectId={projectId}
-          columns={columns}
-          defaultStatus="TODO"
-          onClose={() => setModalTask(undefined)}
-          onSave={handleModalSave}
-          onMove={undefined}
-          onDelete={canCreateTask && modalTask ? handleModalDelete : undefined}
-        />
       )}
     </div>
   );

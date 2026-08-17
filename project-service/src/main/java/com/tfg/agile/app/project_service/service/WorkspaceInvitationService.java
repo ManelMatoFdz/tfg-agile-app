@@ -92,7 +92,8 @@ public class WorkspaceInvitationService {
                 "Has sido invitado al workspace «" + workspace.getName() + "»",
                 "WORKSPACE_INVITATION",
                 "/workspaces",
-                data
+                data,
+                callerId
         );
 
         return WorkspaceInvitationResponseDto.from(invitation);

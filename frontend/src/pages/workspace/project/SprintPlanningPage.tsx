@@ -1,17 +1,13 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, Zap, ClipboardList, ArrowRight, ListChecks, TrendingUp } from 'lucide-react';
 import type { Sprint, Task, TaskType } from '../../../types';
 import { sprintsApi, type VelocityDto } from '../../../api/sprints';
 import TaskCard from '../../../components/kanban/TaskCard';
-import TaskModal from '../../../components/kanban/TaskModal';
-import type { CreateTaskDto, UpdateTaskDto } from '../../../api/tasks';
-import { tasksApi } from '../../../api/tasks';
 import Alert from '../../../components/ui/Alert';
 import { useProjectMember } from '../../../hooks/useProjectMember';
 import { useProjectMembers } from '../../../hooks/useProjectMembers';
-import { useBoardColumns } from '../../../hooks/useBoardColumns';
 
 const TYPE_COLOR: Record<TaskType, string> = {
   STORY: '#7C3AED',
@@ -27,9 +23,9 @@ export default function SprintPlanningPage() {
     sprintId: string;
   }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const { canPlanSprint } = useProjectMember(projectId);
-  const columns = useBoardColumns(projectId);
   const { userMap } = useProjectMembers(projectId);
 
   const [sprint, setSprint] = useState<Sprint | null>(null);
@@ -38,7 +34,6 @@ export default function SprintPlanningPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [moving, setMoving] = useState<string | null>(null);
-  const [editTask, setEditTask] = useState<Task | null | undefined>(undefined);
   const [velocity, setVelocity] = useState<VelocityDto | null>(null);
 
   // Drag & drop state
@@ -138,17 +133,11 @@ export default function SprintPlanningPage() {
     handleDragEnd();
   };
 
-  const handleSaveTask = async (dto: CreateTaskDto | UpdateTaskDto) => {
-    if (!editTask) return;
-    await tasksApi.update(editTask.id, dto as UpdateTaskDto);
-    fetchData();
-  };
-
-  const handleDeleteTask = async () => {
-    if (!editTask) return;
-    await tasksApi.delete(editTask.id);
-    fetchData();
-  };
+  const openTask = (task: Task) =>
+    navigate(
+      `/workspaces/${workspaceId}/projects/${task.projectId ?? projectId}/tasks/${task.id}`,
+      { state: { from: location.pathname + location.search, task } },
+    );
 
   const totalCommitted = sprintTasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
   const totalBacklog = backlog.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
@@ -158,7 +147,7 @@ export default function SprintPlanningPage() {
       <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
         <div style={{
           width: 28, height: 28,
-          border: '3px solid var(--border)', borderTopColor: 'var(--accent)',
+          border: '3px solid var(--border)', borderTopColor: 'var(--accent-text)',
           borderRadius: '50%', animation: 'spin 0.7s linear infinite',
         }} />
       </div>
@@ -283,9 +272,9 @@ export default function SprintPlanningPage() {
           background: 'var(--accent-muted)', border: '1px solid var(--accent)',
           borderRadius: 'var(--radius-md)', padding: '12px 16px',
         }}>
-          <Zap size={14} strokeWidth={2} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }} />
+          <Zap size={14} strokeWidth={2} style={{ color: 'var(--accent-text)', flexShrink: 0, marginTop: 1 }} />
           <div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-text)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {t('projects.sprints.planning.goal')}
             </span>
             <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text)' }}>
@@ -360,7 +349,7 @@ export default function SprintPlanningPage() {
                     task={task}
                     assignee={task.assigneeId ? userMap[task.assigneeId] : undefined}
                     columnColor={TYPE_COLOR[task.type ?? 'TASK']}
-                    onClick={() => { if (!dragRef.current) setEditTask(task); }}
+                    onClick={() => { if (!dragRef.current) openTask(task); }}
                   />
                 </div>
               ))
@@ -371,7 +360,7 @@ export default function SprintPlanningPage() {
         {/* Right: Sprint Backlog */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Zap size={18} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+            <Zap size={18} strokeWidth={2} style={{ color: 'var(--accent-text)' }} />
             <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>
               {sprint?.name} {t('projects.sprints.planning.backlog')}
             </h3>
@@ -430,7 +419,7 @@ export default function SprintPlanningPage() {
                     task={task}
                     assignee={task.assigneeId ? userMap[task.assigneeId] : undefined}
                     columnColor={TYPE_COLOR[task.type ?? 'TASK']}
-                    onClick={() => { if (!dragRef.current) setEditTask(task); }}
+                    onClick={() => { if (!dragRef.current) openTask(task); }}
                   />
                 </div>
               ))
@@ -438,20 +427,6 @@ export default function SprintPlanningPage() {
           </div>
         </div>
       </div>
-
-      {/* Task modal */}
-      {editTask !== undefined && (
-        <TaskModal
-          task={editTask}
-          projectId={projectId}
-          columns={columns}
-          defaultStatus="TODO"
-          readOnly={!canPlanSprint}
-          onClose={() => { setEditTask(undefined); }}
-          onSave={canPlanSprint ? handleSaveTask : undefined}
-          onDelete={canPlanSprint ? handleDeleteTask : undefined}
-        />
-      )}
     </div>
   );
 }

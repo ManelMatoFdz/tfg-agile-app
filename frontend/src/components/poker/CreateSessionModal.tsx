@@ -42,7 +42,7 @@ export default function CreateSessionModal({ onClose, onCreate }: Props) {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(15,23,42,0.4)',
+        background: 'var(--bg-overlay)',
         backdropFilter: 'blur(6px)',
         WebkitBackdropFilter: 'blur(6px)',
         animation: 'fade-in 200ms ease both',
@@ -54,8 +54,8 @@ export default function CreateSessionModal({ onClose, onCreate }: Props) {
           width: '100%',
           maxWidth: 440,
           margin: '0 16px',
-          background: '#FFFFFF',
-          border: '1px solid #E2E8F0',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
           borderRadius: 12,
           boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
           overflow: 'hidden',
@@ -64,9 +64,9 @@ export default function CreateSessionModal({ onClose, onCreate }: Props) {
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '18px 24px', borderBottom: '1px solid #E2E8F0',
+          padding: '18px 24px', borderBottom: '1px solid var(--border)',
         }}>
-          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#1E293B' }}>
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
             {t('poker.create.title')}
           </h2>
           <button
@@ -74,11 +74,11 @@ export default function CreateSessionModal({ onClose, onCreate }: Props) {
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: 32, height: 32, border: 'none', background: 'transparent',
-              borderRadius: 8, cursor: 'pointer', color: '#94A3B8',
+              borderRadius: 8, cursor: 'pointer', color: 'var(--text-faint)',
               transition: 'background 0.15s, color 0.15s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#EDF0F4'; e.currentTarget.style.color = '#1E293B'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94A3B8'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-faint)'; }}
           >
             <X size={16} />
           </button>
@@ -87,7 +87,7 @@ export default function CreateSessionModal({ onClose, onCreate }: Props) {
         <form onSubmit={handleSubmit} style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div>
             <label style={{
-              display: 'block', fontSize: 13, fontWeight: 600, color: '#1E293B', marginBottom: 6,
+              display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6,
             }}>
               {t('poker.create.name')}
             </label>
@@ -98,21 +98,21 @@ export default function CreateSessionModal({ onClose, onCreate }: Props) {
               placeholder={t('poker.create.namePlaceholder')}
               style={{
                 width: '100%', padding: '10px 14px', fontSize: 14,
-                color: '#1E293B', background: '#F7F8FA',
-                border: '1px solid #E2E8F0', borderRadius: 8,
+                color: 'var(--text)', background: 'var(--bg)',
+                border: '1px solid var(--border)', borderRadius: 8,
                 outline: 'none', boxSizing: 'border-box',
                 transition: 'border-color 0.15s, box-shadow 0.15s',
                 fontFamily: 'inherit',
               }}
               onFocus={e => { e.currentTarget.style.borderColor = '#2563EB'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(37,99,235,0.1)'; }}
-              onBlur={e => { e.currentTarget.style.borderColor = '#E2E8F0'; e.currentTarget.style.boxShadow = 'none'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
               autoFocus
             />
           </div>
 
           <div>
             <label style={{
-              display: 'block', fontSize: 13, fontWeight: 600, color: '#1E293B', marginBottom: 6,
+              display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6,
             }}>
               {t('poker.create.deck')}
             </label>
@@ -121,14 +121,14 @@ export default function CreateSessionModal({ onClose, onCreate }: Props) {
               onChange={(e) => setDeck(e.target.value as DeckType)}
               style={{
                 width: '100%', padding: '10px 14px', fontSize: 14,
-                color: '#1E293B', background: '#F7F8FA',
-                border: '1px solid #E2E8F0', borderRadius: 8,
+                color: 'var(--text)', background: 'var(--bg)',
+                border: '1px solid var(--border)', borderRadius: 8,
                 outline: 'none', boxSizing: 'border-box',
                 transition: 'border-color 0.15s',
                 fontFamily: 'inherit', cursor: 'pointer',
               }}
               onFocus={e => { e.currentTarget.style.borderColor = '#2563EB'; }}
-              onBlur={e => { e.currentTarget.style.borderColor = '#E2E8F0'; }}
+              onBlur={e => { e.currentTarget.style.borderColor = 'var(--border)'; }}
             >
               {DECKS.map((d) => (
                 <option key={d} value={d}>{t(`poker.decks.${d}`)}</option>
@@ -146,13 +146,13 @@ export default function CreateSessionModal({ onClose, onCreate }: Props) {
               onClick={onClose}
               style={{
                 padding: '9px 18px', fontSize: 13, fontWeight: 500,
-                color: '#64748B', background: 'transparent',
-                border: '1px solid #E2E8F0', borderRadius: 8,
+                color: 'var(--text-muted)', background: 'transparent',
+                border: '1px solid var(--border)', borderRadius: 8,
                 cursor: 'pointer', fontFamily: 'inherit',
                 transition: 'background 0.15s, color 0.15s',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#EDF0F4'; e.currentTarget.style.color = '#1E293B'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
             >
               {t('common.cancel')}
             </button>
@@ -161,7 +161,7 @@ export default function CreateSessionModal({ onClose, onCreate }: Props) {
               disabled={loading || !name.trim()}
               style={{
                 padding: '9px 20px', fontSize: 13, fontWeight: 600,
-                background: '#2563EB', color: '#FFFFFF',
+                background: 'var(--accent)', color: 'var(--accent-fg)',
                 border: 'none', borderRadius: 8,
                 cursor: loading || !name.trim() ? 'not-allowed' : 'pointer',
                 opacity: loading || !name.trim() ? 0.5 : 1,

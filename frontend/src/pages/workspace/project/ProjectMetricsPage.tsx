@@ -17,14 +17,12 @@ import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
 import CountUp from '../../../components/motion/CountUp';
 import { useBoardColumns, getStatusLabel, getStatusColor } from '../../../hooks/useBoardColumns';
-import { AssigneeAvatar } from '../../../components/kanban/TaskModal';
+import { AssigneeAvatar } from '../../../components/kanban/AssigneePicker';
+import { useChartColors } from '../../../utils/chartColors';
 
-const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  CRITICAL: '#DC2626',
-  HIGH:     '#D97706',
-  MEDIUM:   '#2563EB',
-  LOW:      '#94A3B8',
-};
+const PRIORITY_KEY = {
+  CRITICAL: 'critical', HIGH: 'high', MEDIUM: 'medium', LOW: 'low',
+} as const satisfies Record<TaskPriority, string>;
 
 // ── Card wrapper ──────────────────────────────────────────────────────────────
 
@@ -38,7 +36,7 @@ const card: React.CSSProperties = {
 // ── Stat card ─────────────────────────────────────────────────────────────────
 
 function StatCard({
-  label, value, sub, color = 'var(--accent)', icon, suffix,
+  label, value, sub, color = 'var(--accent-text)', icon, suffix,
 }: {
   label: string;
   value: number;
@@ -71,6 +69,7 @@ function StatCard({
 export default function ProjectMetricsPage() {
   const { t } = useTranslation();
   const { projectId } = useParams<{ projectId: string }>();
+  const chart = useChartColors();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sprints, setSprints] = useState<Sprint[]>([]);
@@ -114,7 +113,7 @@ export default function ProjectMetricsPage() {
     <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
       <div style={{
         width: 28, height: 28,
-        border: '3px solid var(--border)', borderTopColor: 'var(--accent)',
+        border: '3px solid var(--border)', borderTopColor: 'var(--accent-text)',
         borderRadius: '50%', animation: 'spin 0.7s linear infinite',
       }} />
     </div>
@@ -150,7 +149,7 @@ export default function ProjectMetricsPage() {
     name: t(`tasks.priority.${p}`),
     total: rootTasks.filter((t) => t.priority === p).length,
     done: rootTasks.filter((t) => t.priority === p && t.status === 'DONE').length,
-    color: PRIORITY_COLORS[p],
+    color: chart[PRIORITY_KEY[p]],
   })).filter((d) => d.total > 0);
 
   const velocityData = sprints
@@ -213,28 +212,28 @@ export default function ProjectMetricsPage() {
           label={t('projects.metrics.totalTasks')}
           value={total}
           sub={t('projects.metrics.donePct', { pct: donePct })}
-          color="#2563EB"
+          color="var(--accent-text)"
           icon={<ClipboardList size={16} strokeWidth={1.75} />}
         />
         <StatCard
           label={t('projects.metrics.storyPointsDone')}
           value={doneSP}
           sub={`${totalSP} ${t('projects.metrics.total')}`}
-          color="#16A34A"
+          color="var(--success-text)"
           icon={<Zap size={16} strokeWidth={1.75} />}
         />
         <StatCard
           label={t('projects.metrics.sprints')}
           value={sprints.length}
           sub={t('projects.metrics.completedSprints', { n: completedSprints })}
-          color="#D97706"
+          color="var(--warning-text)"
           icon={<RefreshCw size={16} strokeWidth={1.75} />}
         />
         <StatCard
           label={t('projects.metrics.members')}
           value={members.length}
           sub={activeSprint ? t('projects.metrics.activeSprint', { name: activeSprint.name }) : t('projects.metrics.noActiveSprint')}
-          color="#7C3AED"
+          color="var(--purple-text)"
           icon={<Users size={16} strokeWidth={1.75} />}
         />
         {velocity && velocity.completedSprints > 0 ? (
@@ -243,7 +242,7 @@ export default function ProjectMetricsPage() {
             value={Math.round(velocity.averageVelocity)}
             suffix="pts"
             sub={t('projects.metrics.avgVelocitySub', { n: velocity.completedSprints })}
-            color="#0891B2"
+            color="var(--info-text)"
             icon={<TrendingUp size={16} strokeWidth={1.75} />}
           />
         ) : (
@@ -252,7 +251,7 @@ export default function ProjectMetricsPage() {
             value={0}
             suffix="pts"
             sub={t('projects.metrics.noCompletedSprints')}
-            color="#94A3B8"
+            color="var(--text-faint)"
             icon={<TrendingUp size={16} strokeWidth={1.75} />}
           />
         )}
@@ -265,7 +264,7 @@ export default function ProjectMetricsPage() {
             <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
               {t('projects.metrics.overallProgress')}
             </p>
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-text)', fontFamily: 'var(--font-mono)' }}>
               {donePct}%
             </span>
           </div>
@@ -354,7 +353,7 @@ export default function ProjectMetricsPage() {
                 {t('projects.metrics.tasksSectionLabel')}
               </p>
               {[
-                { label: t('projects.metrics.inSprints'), count: sprintedTasks.length, color: 'var(--accent)' },
+                { label: t('projects.metrics.inSprints'), count: sprintedTasks.length, color: 'var(--accent-text)' },
                 { label: t('projects.metrics.inBacklog'), count: backlogTasks.length, color: 'var(--ochre)' },
                 ...(unassigned > 0 ? [{ label: t('projects.metrics.unassigned'), count: unassigned, color: 'var(--border)' }] : []),
               ].map((row) => (
@@ -371,7 +370,7 @@ export default function ProjectMetricsPage() {
 
               {/* Sprint ratio */}
               <div style={{ marginTop: 8, paddingTop: 12, borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
+                <span style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent-text)', fontFamily: 'var(--font-mono)' }}>
                   {total > 0 ? Math.round((sprintedTasks.length / total) * 100) : 0}%
                 </span>
                 <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
@@ -396,9 +395,9 @@ export default function ProjectMetricsPage() {
             </h3>
             <ResponsiveContainer width="100%" height={170}>
               <BarChart data={priorityData} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
-                <XAxis type="number" tick={{ fontSize: 10, fill: '#94A3B8' }} allowDecimals={false} />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#64748B' }} width={60} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={false} />
+                <XAxis type="number" tick={{ fontSize: 10, fill: chart.axis }} allowDecimals={false} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: chart.axisText }} width={60} />
                 <Tooltip
                   formatter={(value, name) => {
                     const v = typeof value === 'number' ? value : 0;
@@ -408,8 +407,8 @@ export default function ProjectMetricsPage() {
                   contentStyle={tooltipStyle}
                 />
                 <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-                <Bar dataKey="done" name={t('tasks.status.DONE')} radius={[0, 4, 4, 0]} fill="#16A34A" />
-                <Bar dataKey="total" name={t('projects.metrics.total')} radius={[0, 4, 4, 0]} fill="#94A3B8" />
+                <Bar dataKey="done" name={t('tasks.status.DONE')} radius={[0, 4, 4, 0]} fill={chart.success} />
+                <Bar dataKey="total" name={t('projects.metrics.total')} radius={[0, 4, 4, 0]} fill={chart.muted} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -423,7 +422,7 @@ export default function ProjectMetricsPage() {
               </h3>
               {velocity && velocity.completedSprints > 0 && (
                 <span style={{
-                  fontSize: 10, fontWeight: 700, color: 'var(--success)',
+                  fontSize: 10, fontWeight: 700, color: 'var(--success-text)',
                   background: 'var(--success-bg, rgba(34,197,94,0.1))',
                   padding: '3px 10px', borderRadius: 'var(--radius-pill)',
                   fontFamily: 'var(--font-mono)',
@@ -434,9 +433,9 @@ export default function ProjectMetricsPage() {
             </div>
             <ResponsiveContainer width="100%" height={170}>
               <BarChart data={velocityData} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94A3B8' }} />
-                <YAxis tick={{ fontSize: 10, fill: '#94A3B8' }} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: chart.axis }} />
+                <YAxis tick={{ fontSize: 10, fill: chart.axis }} allowDecimals={false} />
                 <Tooltip
                   formatter={(value) => {
                     const v = typeof value === 'number' ? value : 0;
@@ -444,7 +443,7 @@ export default function ProjectMetricsPage() {
                   }}
                   contentStyle={tooltipStyle}
                 />
-                <Bar dataKey="sp" name="Story Points" fill="#2563EB" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="sp" name="Story Points" fill={chart.accent} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -509,7 +508,7 @@ export default function ProjectMetricsPage() {
 
                 {/* Tasks count */}
                 <div style={{ textAlign: 'center' }}>
-                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--success)', fontFamily: 'var(--font-mono)' }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--success-text)', fontFamily: 'var(--font-mono)' }}>
                     {d.done}
                   </span>
                   <span style={{ fontSize: 12, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
@@ -521,7 +520,7 @@ export default function ProjectMetricsPage() {
                 <div style={{ textAlign: 'center' }}>
                   {d.sp > 0 ? (
                     <>
-                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--accent-text)', fontFamily: 'var(--font-mono)' }}>
                         {d.doneSP}
                       </span>
                       <span style={{ fontSize: 12, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>

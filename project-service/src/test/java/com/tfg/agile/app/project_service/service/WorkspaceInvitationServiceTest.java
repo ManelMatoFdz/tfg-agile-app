@@ -117,7 +117,15 @@ class WorkspaceInvitationServiceTest {
         assertThat(result.status()).isEqualTo("PENDING");
         assertThat(result.invitedUserId()).isEqualTo(invitedUserId);
         verify(invitationRepository).save(any(WorkspaceInvitation.class));
-        verify(userServiceClient).sendNotification(eq(invitedUserId), anyString(), anyString(), eq("WORKSPACE_INVITATION"), anyString(), anyString());
+        verify(userServiceClient).sendNotification(
+                eq(invitedUserId),
+                anyString(),
+                anyString(),
+                eq("WORKSPACE_INVITATION"),
+                anyString(),
+                anyString(),
+                eq(callerId)
+        );
     }
 
     @Test

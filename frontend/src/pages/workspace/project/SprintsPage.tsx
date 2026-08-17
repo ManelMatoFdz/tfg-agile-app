@@ -14,8 +14,6 @@ const TYPE_ICON_MAP: Record<TaskType, { icon: typeof BookOpen; color: string }> 
   BUG:   { icon: Bug, color: '#DC2626' },
 };
 import { sprintsApi, type CreateSprintDto } from '../../../api/sprints';
-import { tasksApi, type UpdateTaskDto, type CreateTaskDto } from '../../../api/tasks';
-import TaskModal from '../../../components/kanban/TaskModal';
 import SnapshotModal from '../../../components/sprints/SnapshotModal';
 import RetrospectiveModal from '../../../components/sprints/RetrospectiveModal';
 import Alert from '../../../components/ui/Alert';
@@ -173,7 +171,7 @@ function CreateSprintModal({ projectId, onClose, onCreate }: CreateSprintModalPr
 
         <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && (
-            <div style={{ fontSize: 12, color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
+            <div style={{ fontSize: 12, color: 'var(--danger-text)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
               {error}
             </div>
           )}
@@ -278,7 +276,7 @@ function EditSprintModal({ sprint, onClose, onUpdate }: EditSprintModalProps) {
 
         <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {error && (
-            <div style={{ fontSize: 12, color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
+            <div style={{ fontSize: 12, color: 'var(--danger-text)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
               {error}
             </div>
           )}
@@ -359,7 +357,7 @@ export default function SprintsPage() {
   const { t } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
 
-  const { canManageSprint, canPlanSprint, canAddToActiveSprint, canEditSprintTask, canMoveTask, canDeleteSprintTask } = useProjectMember(projectId);
+  const { canManageSprint, canPlanSprint, canAddToActiveSprint } = useProjectMember(projectId);
   const columns = useBoardColumns(projectId);
 
   const [sprints, setSprints] = useState<Sprint[]>([]);
@@ -371,8 +369,6 @@ export default function SprintsPage() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [sprintTasks, setSprintTasks] = useState<Record<string, Task[]>>({});
   const [sprintSnapshots, setSprintSnapshots] = useState<Record<string, SprintTaskSnapshot[]>>({});
-  const [editTask, setEditTask] = useState<Task | null | undefined>(undefined);
-  const [editTaskSprintId, setEditTaskSprintId] = useState<string | null>(null);
   const [selectedSnapshot, setSelectedSnapshot] = useState<SprintTaskSnapshot | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmActivate, setConfirmActivate] = useState<string | null>(null);
@@ -438,39 +434,6 @@ export default function SprintsPage() {
     }
   };
 
-  const handleSaveTask = async (dto: CreateTaskDto | UpdateTaskDto) => {
-    if (!editTask) return;
-    const updated = await tasksApi.update(editTask.id, dto as UpdateTaskDto);
-    if (editTaskSprintId) {
-      setSprintTasks((prev) => ({
-        ...prev,
-        [editTaskSprintId]: (prev[editTaskSprintId] ?? []).map((t) => (t.id === updated.id ? updated : t)),
-      }));
-    }
-  };
-
-  const handleMoveTask = async (status: string) => {
-    if (!editTask) return;
-    const updated = await tasksApi.move(editTask.id, { status, position: 0 });
-    if (editTaskSprintId) {
-      setSprintTasks((prev) => ({
-        ...prev,
-        [editTaskSprintId]: (prev[editTaskSprintId] ?? []).map((t) => (t.id === updated.id ? updated : t)),
-      }));
-    }
-  };
-
-  const handleDeleteTask = async () => {
-    if (!editTask) return;
-    await tasksApi.delete(editTask.id);
-    if (editTaskSprintId) {
-      setSprintTasks((prev) => ({
-        ...prev,
-        [editTaskSprintId]: (prev[editTaskSprintId] ?? []).filter((t) => t.id !== editTask.id),
-      }));
-    }
-  };
-
   // Categorize sprints
   const plannedSprints = sprints.filter((s) => s.status === 'PLANNING');
   const completedSprints = sprints.filter((s) => s.status === 'COMPLETED');
@@ -505,7 +468,7 @@ export default function SprintsPage() {
       {/* Content */}
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-          <div style={{ width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+          <div style={{ width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent-text)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
         </div>
       ) : sprints.length === 0 ? (
         <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', padding: '56px 24px', textAlign: 'center' }}>
@@ -519,7 +482,7 @@ export default function SprintsPage() {
         <>
           {/* ── Active Sprint ── */}
           <div>
-            <SectionHeader icon={PlayCircle} color="var(--accent)" title={t('projects.sprints.activeSprint')} />
+            <SectionHeader icon={PlayCircle} color="var(--accent-text)" title={t('projects.sprints.activeSprint')} />
 
             {activeSprint ? (() => {
               const tasks = sprintTasks[activeSprint.id] ?? [];
@@ -541,7 +504,7 @@ export default function SprintsPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                         <span style={{
                           fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-                          color: 'var(--accent)', background: 'var(--accent-muted)',
+                          color: 'var(--accent-text)', background: 'var(--accent-muted)',
                           padding: '2px 8px', borderRadius: 'var(--radius-sm)',
                         }}>
                           {t('projects.sprints.current')}
@@ -704,7 +667,7 @@ export default function SprintsPage() {
                             <button
                               onClick={() => handleDeleteSprint(sprint.id)}
                               disabled={actionLoading}
-                              style={{ fontSize: 12, fontWeight: 600, color: 'var(--danger)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
+                              style={{ fontSize: 12, fontWeight: 600, color: 'var(--danger-text)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
                             >
                               {t('common.delete')}
                             </button>
@@ -719,7 +682,7 @@ export default function SprintsPage() {
                           <>
                             <Link
                               to={`/workspaces/${workspaceId}/projects/${projectId}/sprints/${sprint.id}/planning`}
-                              style={{ ...btnOutline, color: 'var(--accent)', borderColor: 'var(--accent)', textDecoration: 'none' }}
+                              style={{ ...btnOutline, color: 'var(--accent-text)', borderColor: 'var(--accent)', textDecoration: 'none' }}
                               onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-muted)')}
                               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
                             >
@@ -729,7 +692,7 @@ export default function SprintsPage() {
                             {sprint.startDate && new Date(sprint.startDate) <= new Date(new Date().toDateString()) && (
                               <button
                                 onClick={() => setConfirmActivate(sprint.id)}
-                                style={{ ...btnOutline, color: 'var(--success)', borderColor: 'var(--success)' }}
+                                style={{ ...btnOutline, color: 'var(--success-text)', borderColor: 'var(--success)' }}
                                 title={t('projects.sprints.activate')}
                                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--success-bg, rgba(34,197,94,0.1))')}
                                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
@@ -749,7 +712,7 @@ export default function SprintsPage() {
                             </button>
                             <button
                               onClick={() => setConfirmDelete(sprint.id)}
-                              style={{ ...btnOutline, color: 'var(--danger)', borderColor: 'var(--danger)' }}
+                              style={{ ...btnOutline, color: 'var(--danger-text)', borderColor: 'var(--danger)' }}
                               title={t('common.delete')}
                               onMouseEnter={e => (e.currentTarget.style.background = 'var(--danger-bg)')}
                               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
@@ -768,7 +731,7 @@ export default function SprintsPage() {
 
           {/* ── Completed Sprints ── */}
           <div>
-            <SectionHeader icon={CheckCircle2} color="var(--success)" title={t('projects.sprints.completedSprints')} />
+            <SectionHeader icon={CheckCircle2} color="var(--success-text)" title={t('projects.sprints.completedSprints')} />
 
             {completedSprints.length === 0 ? (
               <p style={{ marginTop: 10, fontSize: 13, color: 'var(--text-faint)', fontStyle: 'italic' }}>
@@ -802,7 +765,7 @@ export default function SprintsPage() {
                       onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                        <CheckCircle2 size={14} strokeWidth={2} style={{ color: 'var(--success)' }} />
+                        <CheckCircle2 size={14} strokeWidth={2} style={{ color: 'var(--success-text)' }} />
                         <h4 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.01em' }}>
                           {sprint.name}
                         </h4>
@@ -831,13 +794,13 @@ export default function SprintsPage() {
                           style={{
                             display: 'flex', alignItems: 'center', gap: 5,
                             marginTop: 10, padding: '6px 10px', fontSize: 11, fontWeight: 500,
-                            background: 'var(--accent-muted)', color: 'var(--accent)',
+                            background: 'var(--accent-muted)', color: 'var(--accent-text)',
                             border: '1px solid var(--accent)',
                             borderRadius: 'var(--radius-sm)', cursor: 'pointer',
                             width: '100%', justifyContent: 'center',
                           }}
                           onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent-fg)'; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent-muted)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--accent-muted)'; e.currentTarget.style.color = 'var(--accent-text)'; }}
                         >
                           <ClipboardList size={12} strokeWidth={2} />
                           {t('projects.sprints.retrospective.createButton')}
@@ -871,25 +834,6 @@ export default function SprintsPage() {
           }}
         />
       )}
-
-      {editTask !== undefined && (() => {
-        const taskSprint = sprints.find((s) => s.id === editTaskSprintId);
-        const isCompleted = taskSprint?.status === 'COMPLETED';
-        const isActive = taskSprint?.status === 'ACTIVE';
-        return (
-          <TaskModal
-            task={editTask}
-            projectId={projectId}
-            columns={columns}
-            defaultStatus="TODO"
-            readOnly={isCompleted || (isActive && !canEditSprintTask)}
-            onClose={() => { setEditTask(undefined); setEditTaskSprintId(null); }}
-            onSave={!isCompleted && canEditSprintTask ? handleSaveTask : undefined}
-            onMove={editTask && isActive && canMoveTask ? handleMoveTask : undefined}
-            onDelete={editTask && !isCompleted && canDeleteSprintTask ? handleDeleteTask : undefined}
-          />
-        );
-      })()}
 
       {confirmActivate && (
         <ModalOverlay onClose={() => setConfirmActivate(null)}>

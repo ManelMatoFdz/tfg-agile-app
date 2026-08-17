@@ -1,5 +1,7 @@
 {
   "common": {
+    "back": "Volver",
+    "discard": "Descartar",
     "cancel": "Cancelar",
     "save": "Guardar",
     "delete": "Eliminar",
@@ -83,7 +85,7 @@
       }
     },
     "layout": {
-      "headline": "Domina tu flujo de trabajo con AgileFlow",
+      "headline": "Domina tu flujo de trabajo con Kadenza",
       "description": "La plataforma todo en uno para planificar, gestionar y entregar proyectos de calidad con rapidez y precisión."
     }
   },
@@ -370,7 +372,7 @@
       },
       "scrumRole": "Rol Scrum",
       "scrumRoleNone": "Sin rol",
-"leaveTeam": "Salir del equipo",
+      "leaveTeam": "Salir del equipo",
       "confirmLeave": {
         "title": "Salir del equipo",
         "message": "¿Seguro que quieres salir de <strong>{{name}}</strong>?",
@@ -390,7 +392,8 @@
       "repository": "Repositorio",
       "metrics": "Métricas",
       "settings": "Configuración",
-      "boardSettings": "Tablero"
+      "boardSettings": "Tablero",
+      "task": "Tarea"
     },
     "repository": {
       "title": "Repositorio",
@@ -406,6 +409,7 @@
       "noCommits": "No hay commits todavía",
       "noBranches": "No hay ramas vinculadas",
       "unlinked": "Sin tarea vinculada",
+      "loadMore": "Cargar más",
       "loadError": "Error al cargar la actividad del repositorio."
     },
     "epics": {
@@ -626,7 +630,10 @@
       "viewBoard": "Ver tablero",
       "viewReport": "Ver informe",
       "activate": "Activar",
-      "activateConfirm": "¿Activar este sprint?",
+      "activateConfirm": {
+        "title": "Activar sprint",
+        "message": "¿Seguro que quieres activar este sprint? Solo puede haber un sprint activo a la vez por proyecto."
+      },
       "activateError": "Error al activar el sprint.",
       "activateEndDateRequired": "Debes establecer una fecha de fin antes de activar el sprint.",
       "complete": "Completar",
@@ -634,12 +641,6 @@
       "completeError": "Error al completar el sprint.",
       "deleteConfirm": "¿Eliminar este sprint?",
       "deleteError": "Error al eliminar el sprint.",
-      "activate": "Activar",
-      "activateError": "Error al activar el sprint.",
-      "activateConfirm": {
-        "title": "Activar sprint",
-        "message": "¿Seguro que quieres activar este sprint? Solo puede haber un sprint activo a la vez por proyecto."
-      },
       "loadError": "Error al cargar los sprints.",
       "activeSprint": "Sprint activo",
       "plannedSprints": "Sprints planificados",
@@ -758,7 +759,7 @@
       },
       "planning": {
         "title": "Sprint Planning",
-        "subtitle": "Selecciona tareas del backlog para añadir a este sprint. El equipo se compromete con las tareas que puede completar en el sprint.",
+        "subtitle": "Selecciona tareas del backlog para añadir a este sprint.",
         "noBacklog": "No hay tareas en el backlog",
         "selected": "seleccionadas",
         "addSelected": "Añadir al sprint",
@@ -817,9 +818,28 @@
       "IN_REVIEW": "En revisión",
       "DONE": "Hecho"
     },
+    "detail": {
+      "notFound": "Tarea no encontrada",
+      "notFoundHint": "Puede que se haya eliminado o que el enlace sea incorrecto.",
+      "forbidden": "No tienes acceso a esta tarea",
+      "loadError": "No se pudo cargar la tarea",
+      "retry": "Reintentar",
+      "inBacklog": "Backlog",
+      "inSprint": "Sprint",
+      "unsavedBadge": "Sin guardar",
+      "unsavedTitle": "Tienes cambios sin guardar",
+      "unsavedBody": "Si sales ahora se perderán los cambios que no hayas guardado.",
+      "unsavedDiscard": "Salir sin guardar",
+      "unsavedStay": "Seguir editando",
+      "saved": "Cambios guardados",
+      "readOnlyCompleted": "Este sprint está completado: la tarea es de solo lectura.",
+      "readOnlyPermission": "Tu rol no permite editar esta tarea."
+    },
+    "createModal": {
+      "createdHint": "Tarea creada. Puedes crear otra."
+    },
     "modal": {
       "titleCreate": "Nueva tarea",
-      "titleEdit": "Editar tarea",
       "titleView": "Detalle de tarea",
       "titleField": "Título",
       "titlePlaceholder": "Nombre de la tarea",
@@ -880,6 +900,10 @@
       "overdue": "Vencida",
       "blocked": "Bloqueada",
       "blockedWarning": "Esta tarea está bloqueada por otra tarea que aún no está completada",
+      "blockedMoveTitle": "Tarea bloqueada",
+      "blockedMoveBody": "Esta tarea está bloqueada por {{count}} tarea(s) que aún no están completadas. ¿Quieres moverla igualmente?",
+      "blockedMoveConfirm": "Mover igualmente",
+      "blockedMoveCancel": "Cancelar",
       "gitEvents": "Actividad git"
     },
     "activity": {
@@ -978,7 +1002,16 @@
     "markRead": "Marcar leída",
     "empty": "Sin notificaciones",
     "emptySubtitle": "Cuando tengas actividad, aparecerá aquí",
+    "emptyUnread": "Todo al día",
+    "emptyUnreadSubtitle": "No te queda ninguna notificación por leer",
     "loadError": "Error al cargar notificaciones.",
+    "loadMore": "Cargar más",
+    "loadingMore": "Cargando...",
+    "pageOf": "{{current}} de {{total}}",
+    "groups": {
+      "today": "Hoy",
+      "yesterday": "Ayer"
+    },
     "timeAgo": {
       "now": "ahora",
       "minutes": "hace {{count}} min",
@@ -1025,6 +1058,10 @@
       "fileTypes": "JPG, PNG o GIF. Máx 5 MB",
       "successMessage": "Avatar actualizado."
     },
+    "language": {
+      "title": "Idioma",
+      "subtitle": "Elige el idioma de la interfaz"
+    },
     "notificationSettings": {
       "title": "Notificaciones",
       "subtitle": "Configura cómo quieres recibirlas",
@@ -1048,6 +1085,16 @@
     "es": "Español",
     "en": "English",
     "gl": "Galego"
+  },
+  "theme": {
+    "title": "Apariencia",
+    "subtitle": "Elige cómo se ve la aplicación",
+    "light": "Claro",
+    "dark": "Oscuro",
+    "switchTo": {
+      "light": "Cambiar a tema claro",
+      "dark": "Cambiar a tema oscuro"
+    }
   },
   "poker": {
     "title": "Planning Poker",
@@ -1245,5 +1292,122 @@
     "STORY_STATUS_IS_DERIVED": "El estado de las historias se calcula automáticamente.",
     "SUBTASKS_FOLLOW_PARENT": "Las subtareas se asignan automáticamente con su historia padre.",
     "SUBTASK_NOT_ESTIMABLE": "Las subtareas no pueden tener story points."
+  },
+  "landing": {
+    "nav": {
+      "product": "Producto",
+      "flow": "Cómo funciona"
+    },
+    "hero": {
+      "badgeTag": "Scrum",
+      "badge": "Con Planning Poker y repositorio integrados",
+      "titleA": "Del sprint planning a la retrospectiva, todo en el mismo",
+      "titleEm": "proyecto",
+      "lead": "El Product Owner prioriza el backlog, el equipo lo estima en Planning Poker, el sprint avanza en el tablero y se cierra con métricas y retrospectiva."
+    },
+    "cta": {
+      "primary": "Crear cuenta",
+      "secondary": "Ver cómo funciona"
+    },
+    "stats": {
+      "cycle": {
+        "value": "El ciclo entero de Scrum",
+        "label": "Planificación, estimación, sprint, review y retrospectiva en un mismo proyecto."
+      },
+      "realtime": {
+        "value": "Estimación en tiempo real",
+        "label": "Las salas de Planning Poker se sincronizan entre todos los participantes."
+      },
+      "git": {
+        "value": "Repositorio conectado",
+        "label": "Ramas, commits y pull requests enlazados con su historia."
+      }
+    },
+    "features": {
+      "label": "Producto",
+      "title": "Todas las ceremonias, en la misma herramienta",
+      "lead": "Cuando la planificación vive en una herramienta, la estimación en otra y el código en una tercera, el contexto se pierde en cada salto. Kadenza los junta.",
+      "backlog": {
+        "title": "Backlog y planificación",
+        "body": "Prioriza el product backlog, agrúpalo por épicas y baja historias al sprint desde la propia sesión de planificación."
+      },
+      "poker": {
+        "title": "Planning Poker sin sesgo",
+        "body": "Las cartas siguen ocultas hasta el reveal, así nadie ajusta su voto al del resto. El valor acordado se escribe solo en la historia."
+      },
+      "board": {
+        "title": "El tablero del sprint",
+        "body": "Arrastra una historia entre columnas y con ella se actualizan estado, responsable, puntos y subtareas. Cuando el sprint crece, filtra por prioridad, etiqueta o persona."
+      },
+      "review": {
+        "title": "Review con datos",
+        "body": "Velocidad, informe de cierre y burndown salen del trabajo real del sprint."
+      },
+      "retro": {
+        "title": "Retrospectiva guiada",
+        "body": "Start / Stop / Continue, 4Ls o Mad / Sad / Glad. El equipo elige la técnica y las conclusiones quedan guardadas junto al sprint."
+      },
+      "git": {
+        "title": "De la historia al commit",
+        "body": "Conecta el repositorio y cada rama, commit y pull request queda enlazado con su historia."
+      }
+    },
+    "flow": {
+      "label": "Cómo funciona",
+      "title": "El sprint, de principio a fin",
+      "lead": "Kadenza no te pide cambiar de metodología: acompaña las ceremonias que ya haces.",
+      "plan": {
+        "title": "Planifica",
+        "body": "El Product Owner ordena el backlog y el equipo decide qué historias entran en la iteración."
+      },
+      "estimate": {
+        "title": "Estima",
+        "body": "En la sala de Planning Poker el equipo vota en oculto y el acuerdo se guarda en la historia."
+      },
+      "track": {
+        "title": "Sigue el sprint",
+        "body": "El tablero refleja el estado real y el burndown avisa a tiempo si la iteración se tuerce."
+      },
+      "improve": {
+        "title": "Mejora",
+        "body": "Al cerrar, el informe recoge la velocidad y la retrospectiva las conclusiones del equipo."
+      }
+    },
+    "final": {
+      "title": "Empieza tu próximo sprint en Kadenza",
+      "lead": "Crea un workspace, invita a tu equipo y planifica la primera iteración."
+    },
+    "footer": {
+      "copyright": "© {{year}} Kadenza. Todos los derechos reservados.",
+      "tfg": "Trabajo de Fin de Grado · Ingeniería Informática"
+    },
+    "auth": {
+      "legal": "Al crear una cuenta aceptas las condiciones de uso y la política de privacidad de Kadenza."
+    },
+    "mock": {
+      "board": "Tablero",
+      "col": {
+        "todo": "Por hacer",
+        "progress": "En progreso",
+        "review": "En revisión",
+        "done": "Hecho"
+      },
+      "prio": {
+        "critical": "Crítica",
+        "high": "Alta",
+        "medium": "Media",
+        "low": "Baja"
+      },
+      "task": {
+        "a1": "Recuperar contraseña por email",
+        "a2": "Exportar el informe a CSV",
+        "a3": "Paginar el listado de clientes",
+        "b1": "Inicio de sesión con Google",
+        "b2": "Notificaciones por email",
+        "c1": "Migrar la pasarela de pago",
+        "d1": "Subida de foto de perfil",
+        "d2": "Corregir el formato de fechas"
+      }
+    }
   }
 }

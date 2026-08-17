@@ -54,7 +54,7 @@ export default function Toggle({ label, description, checked, onChange, disabled
             width: 16,
             height: 16,
             borderRadius: 'var(--radius-pill)',
-            background: '#fff',
+            background: 'var(--bg-elevated)',
             boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
             transform: checked ? 'translateX(20px)' : 'translateX(3px)',
             marginTop: 3,

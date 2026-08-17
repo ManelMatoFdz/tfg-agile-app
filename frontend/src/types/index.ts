@@ -210,6 +210,16 @@ export interface GitEvent {
   receivedAt: string;
 }
 
+/** Respuesta paginada del backend (`PagedResponseDto`). */
+export interface PagedResponse<T> {
+  items: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+}
+
 export interface GitIntegration {
   id: string;
   projectId: string;

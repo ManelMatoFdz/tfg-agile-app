@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { BookOpen, CheckSquare, Bug, Lock, GitBranch } from 'lucide-react';
 import type { Task, TaskPriority, TaskType } from '../../types';
 import type { UserSummary } from '../../types';
-import { AssigneeAvatar } from './TaskModal';
+import { AssigneeAvatar } from './AssigneePicker';
 
 const TYPE_ICON: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
   STORY: { icon: BookOpen, color: '#7C3AED' },
@@ -14,7 +14,7 @@ const PRIORITY_CONFIG: Record<TaskPriority, { color: string; border: string }> =
   CRITICAL: { color: '#DC2626', border: '#DC2626' },
   HIGH:     { color: '#D97706', border: '#D97706' },
   MEDIUM:   { color: '#2563EB', border: '#2563EB' },
-  LOW:      { color: '#94A3B8', border: '#CBD5E1' },
+  LOW:      { color: 'var(--text-faint)', border: 'var(--border-strong)' },
 };
 
 interface Props {
@@ -87,7 +87,7 @@ export default function TaskCard({ task, assignee, columnColor, onClick }: Props
             fontFamily: 'var(--font-mono)',
             fontSize: 10,
             fontWeight: 700,
-            color: 'var(--accent)',
+            color: 'var(--accent-text)',
             background: 'var(--accent-muted)',
             borderRadius: 'var(--radius-pill)',
             width: 24,
@@ -206,7 +206,7 @@ export default function TaskCard({ task, assignee, columnColor, onClick }: Props
             <div style={{
               flex: 1,
               height: 4,
-              background: '#E5E7EB',
+              background: 'var(--border)',
               borderRadius: 2,
               overflow: 'hidden',
             }}>

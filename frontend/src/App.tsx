@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useLenis } from './hooks/useLenis';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
+import LandingPage from './pages/LandingPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProfilePage from './pages/ProfilePage';
@@ -26,6 +25,7 @@ import PokerRoomPage from './pages/workspace/project/PokerRoomPage';
 import ProjectMetricsPage from './pages/workspace/project/ProjectMetricsPage';
 import EpicsPage from './pages/workspace/project/EpicsPage';
 import RepositoryPage from './pages/workspace/project/RepositoryPage';
+import TaskDetailPage from './pages/workspace/project/TaskDetailPage';
 import MyTasksPage from './pages/MyTasksPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import WorkspaceLayout from './components/ui/WorkspaceLayout';
@@ -37,9 +37,12 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        {/* Public routes. El alta y el acceso viven en el drawer de la landing;
+            /login y /register se mantienen porque son el destino de los logout,
+            de ProtectedRoute y de enlaces ya repartidos. */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Navigate to="/?auth=login" replace />} />
+        <Route path="/register" element={<Navigate to="/?auth=register" replace />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
 
@@ -68,6 +71,7 @@ export default function App() {
               <Route path="repository" element={<RepositoryPage />} />
               <Route path="metrics" element={<ProjectMetricsPage />} />
               <Route path="board-settings" element={<BoardSettingsPage />} />
+              <Route path="tasks/:taskId" element={<TaskDetailPage />} />
               <Route path="settings" element={<ProjectSettingsPage />} />
               <Route path="poker/:sessionId" element={<PokerRoomPage />} />
             </Route>

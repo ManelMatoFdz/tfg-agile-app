@@ -1,5 +1,8 @@
 package com.tfg.agile.app.user_service.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.tfg.agile.app.user_service.entity.Notification;
 import com.tfg.agile.app.user_service.entity.NotificationSettings;
 import com.tfg.agile.app.user_service.entity.User;
@@ -21,19 +24,23 @@ public class NotificationProcessingService {
     private static final String TYPE_PROJECT_UPDATE = "PROJECT_UPDATE";
     private static final String TYPE_TASK_REMINDER = "TASK_REMINDER";
     private static final String TYPE_POKER_INVITATION = "POKER_INVITATION";
+    private static final int MAX_DATA_LENGTH = 2000;
 
     private final UserRepository userRepository;
     private final NotificationSettingsRepository notificationSettingsRepository;
     private final NotificationRepository notificationRepository;
+    private final ObjectMapper objectMapper;
 
     public NotificationProcessingService(
             UserRepository userRepository,
             NotificationSettingsRepository notificationSettingsRepository,
-            NotificationRepository notificationRepository
+            NotificationRepository notificationRepository,
+            ObjectMapper objectMapper
     ) {
         this.userRepository = userRepository;
         this.notificationSettingsRepository = notificationSettingsRepository;
         this.notificationRepository = notificationRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional
@@ -59,7 +66,7 @@ public class NotificationProcessingService {
                     .isRead(false)
                     .createdAt(now)
                     .link(normalizeLink(message.getLink()))
-                    .data(message.getData())
+                    .data(mergeData(message.getData(), message.getActorUserId()))
                     .build();
             notificationRepository.save(notification);
         }
@@ -117,5 +124,33 @@ public class NotificationProcessingService {
             return "You have a new notification.";
         }
         return message.trim();
+    }
+
+    private String mergeData(String rawData, java.util.UUID actorUserId) {
+        if (actorUserId == null) {
+            return rawData;
+        }
+
+        ObjectNode merged = objectMapper.createObjectNode();
+        if (rawData != null && !rawData.isBlank()) {
+            try {
+                JsonNode existing = objectMapper.readTree(rawData);
+                if (existing.isObject()) {
+                    merged.setAll((ObjectNode) existing);
+                } else {
+                    log.warn("Notification data ignored because it is not a JSON object");
+                }
+            } catch (Exception ex) {
+                log.warn("Notification data ignored because it is not valid JSON: {}", ex.getMessage());
+            }
+        }
+
+        merged.put("actorUserId", actorUserId.toString());
+        String serialized = merged.toString();
+        if (serialized.length() > MAX_DATA_LENGTH) {
+            log.warn("Notification actor omitted because merged data exceeds {} characters", MAX_DATA_LENGTH);
+            return rawData;
+        }
+        return serialized;
     }
 }
