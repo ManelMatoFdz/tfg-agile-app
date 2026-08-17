@@ -1,477 +1,407 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import type { TFunction } from 'i18next';
-import { CheckCircle2, Bell, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Check, CheckCheck, Inbox } from 'lucide-react';
 import Alert from '../components/ui/Alert';
+import NotificationSource from '../components/ui/NotificationSource';
 import PageTitle from '../components/motion/PageTitle';
 import { notificationsApi } from '../api/notifications';
 import { invitationsApi } from '../api/invitations';
 import { useApiAction } from '../hooks/useApiAction';
+import { useNotificationActors } from '../hooks/useNotificationActors';
+import {
+  normalizeNotification,
+  notificationActorId,
+  parseNotificationData,
+  timeAgo,
+} from '../utils/notificationMeta';
 import type { Notification, NotificationPage } from '../types';
 
-type NotificationApiItem = Partial<Notification> & { isRead?: boolean };
+const PAGE_SIZE = 10;
 
-function normalizeNotification(item: NotificationApiItem): Notification {
-  return {
-    id: item.id ?? crypto.randomUUID(),
-    userId: item.userId ?? '',
-    title: item.title ?? '',
-    message: item.message ?? '',
-    type: item.type ?? 'DEFAULT',
-    read: typeof item.read === 'boolean' ? item.read : Boolean(item.isRead),
-    createdAt: item.createdAt ?? new Date().toISOString(),
-    link: item.link,
-    data: item.data,
-  };
+const CSS = `
+.nfy-page{width:100%;max-width:1120px;display:flex;flex-direction:column;gap:20px}
+.nfy-header{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.nfy-mark-all{height:38px;display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:0 14px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--bg-elevated);color:var(--text-muted);font:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background var(--duration),color var(--duration),border-color var(--duration)}
+.nfy-mark-all:hover:not(:disabled){background:var(--bg-hover);color:var(--text);border-color:var(--border-strong)}
+.nfy-mark-all:disabled{cursor:not-allowed;opacity:.48}
+.nfy-panel{overflow:hidden;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow-card)}
+.nfy-tabs{height:52px;display:flex;align-items:stretch;padding:0 12px;border-bottom:1px solid var(--border)}
+.nfy-tab{position:relative;display:inline-flex;align-items:center;gap:7px;padding:0 14px;border:0;background:transparent;color:var(--text-faint);font:inherit;font-size:13px;font-weight:600;letter-spacing:0;cursor:pointer;transition:color var(--duration),background var(--duration)}
+.nfy-tab:hover{color:var(--text);background:var(--bg-hover)}
+.nfy-tab[data-active='true']{color:var(--accent-text)}
+.nfy-tab[data-active='true']::after{content:'';position:absolute;left:12px;right:12px;bottom:-1px;height:3px;border-radius:3px 3px 0 0;background:var(--accent)}
+.nfy-tab-count{min-width:19px;height:19px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--radius-pill);background:var(--accent-muted);color:var(--accent-text);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums}
+.nfy-list{min-height:120px}
+.nfy-row{position:relative;display:flex;align-items:flex-start;gap:14px;padding:17px 18px 17px 20px;background:transparent;transition:background var(--duration)}
+.nfy-row+.nfy-row{box-shadow:inset 0 1px 0 var(--border)}
+.nfy-row:hover{background:var(--bg-hover)}
+.nfy-row[data-clickable='true']{cursor:pointer}
+.nfy-row[data-unread='true']{background:var(--accent-muted)}
+.nfy-row[data-unread='true']:hover{background:var(--accent-muted)}
+.nfy-row[data-unread='true']::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent)}
+.nfy-content{flex:1;min-width:0;padding-top:1px}
+.nfy-content-head{display:flex;align-items:baseline;gap:14px}
+.nfy-title{flex:1;min-width:0;margin:0;color:var(--text);font-size:14px;font-weight:600;line-height:1.45;letter-spacing:0}
+.nfy-row[data-unread='false'] .nfy-title{color:var(--text-muted);font-weight:500}
+.nfy-time{flex-shrink:0;color:var(--text-faint);font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.nfy-message{margin:3px 0 0;color:var(--text-faint);font-size:13px;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.nfy-mark{width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:0;border-radius:var(--radius-sm);background:transparent;color:var(--text-faint);opacity:0;cursor:pointer;transition:opacity var(--duration),background var(--duration),color var(--duration)}
+.nfy-row:hover .nfy-mark,.nfy-mark:focus-visible{opacity:1}
+.nfy-mark:hover{background:var(--bg-elevated);color:var(--accent-text)}
+.nfy-actions{display:flex;align-items:center;gap:8px;margin-top:11px}
+.nfy-action{height:32px;padding:0 14px;border-radius:var(--radius-sm);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.nfy-action:disabled{cursor:not-allowed;opacity:.5}
+.nfy-action-primary{border:1px solid var(--success);background:var(--success);color:#fff}
+.nfy-action-secondary{border:1px solid var(--border);background:var(--bg-elevated);color:var(--text-muted)}
+.nfy-footer{display:flex;align-items:center;justify-content:center;padding:15px;border-top:1px solid var(--border)}
+.nfy-load-more{height:34px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 18px;border:0;border-radius:var(--radius-sm);background:transparent;color:var(--accent-text);font:inherit;font-size:13px;font-weight:700;cursor:pointer;transition:background var(--duration)}
+.nfy-load-more:hover:not(:disabled){background:var(--accent-muted)}
+.nfy-load-more:disabled{cursor:wait;opacity:.65}
+.nfy-spinner{width:15px;height:15px;border:2px solid var(--border);border-top-color:var(--accent-text);border-radius:50%;animation:spin .7s linear infinite}
+@media (hover:none){.nfy-mark{opacity:1}}
+@media (max-width:640px){
+  .nfy-header{align-items:stretch}
+  .nfy-header-copy{width:100%}
+  .nfy-mark-all{width:100%}
+  .nfy-tabs{padding:0 6px}
+  .nfy-tab{padding:0 11px}
+  .nfy-row{gap:11px;padding:14px 12px 14px 15px}
+  .nfy-content-head{display:block}
+  .nfy-time{display:block;margin-top:4px}
+  .nfy-mark{opacity:1}
+}
+`;
+
+function pageItems(data: NotificationPage): Notification[] {
+  const items = Array.isArray(data.content)
+    ? data.content
+    : Array.isArray(data.items)
+      ? data.items
+      : [];
+  return items.map((item) => normalizeNotification(item));
 }
 
-function timeAgo(dateStr: string, t: TFunction): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return t('notifications.timeAgo.now');
-  if (mins < 60) return t('notifications.timeAgo.minutes', { count: mins });
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return t('notifications.timeAgo.hours', { count: hours });
-  const days = Math.floor(hours / 24);
-  return t('notifications.timeAgo.days', { count: days });
+function pageHasNext(data: NotificationPage, page: number): boolean {
+  if (typeof data.hasNext === 'boolean') return data.hasNext;
+  return Number.isFinite(data.totalPages) && page + 1 < data.totalPages;
 }
-
-const typeConfig: Record<string, { iconPath: string; color: string; bg: string }> = {
-  PROJECT_UPDATE: {
-    iconPath: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2',
-    color: 'var(--ink-blue)',
-    bg: 'var(--ink-blue-soft)',
-  },
-  TASK_REMINDER: {
-    iconPath: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z',
-    color: 'var(--ochre)',
-    bg: 'var(--ochre-soft)',
-  },
-  WORKSPACE_INVITATION: {
-    iconPath: 'M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z',
-    color: 'var(--success)',
-    bg: 'var(--success-bg)',
-  },
-  POKER_INVITATION: {
-    iconPath: 'M3 10h18M3 6h18M3 14h18M3 18h18',
-    color: 'var(--violet, #8b5cf6)',
-    bg: 'var(--violet-soft, rgba(139,92,246,0.1))',
-  },
-  DEFAULT: {
-    iconPath: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9',
-    color: 'var(--accent)',
-    bg: 'var(--accent-muted)',
-  },
-};
 
 export default function NotificationsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const requestVersion = useRef(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [page, setPage] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [invitationActingId, setInvitationActingId] = useState<string | null>(null);
   const markAllAction = useApiAction();
 
-  const fetchNotifications = useCallback(async () => {
-    setLoadingList(true);
-    setLoadError('');
-    try {
-      const res = await notificationsApi.list({ unreadOnly, page, size: 10 });
-      const data: NotificationPage = res.data;
-      const list = Array.isArray(data.content)
-        ? data.content
-        : Array.isArray(data.items)
-          ? data.items
-          : [];
-      setNotifications(list.map((item) => normalizeNotification(item)));
-      setTotalPages(Number.isFinite(data.totalPages) ? data.totalPages : 0);
-    } catch {
-      setLoadError(t('notifications.loadError'));
-    } finally {
-      setLoadingList(false);
-    }
-  }, [unreadOnly, page, t]);
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: async () => (await notificationsApi.list({ unreadOnly: true, size: 1 })).data.totalElements,
+  });
 
   useEffect(() => {
-    fetchNotifications();
-  }, [fetchNotifications]);
+    const version = ++requestVersion.current;
+    setLoadingList(true);
+    setLoadError('');
+    setNotifications([]);
+    setPage(0);
+
+    notificationsApi.list({ unreadOnly, page: 0, size: PAGE_SIZE })
+      .then((res) => {
+        if (requestVersion.current !== version) return;
+        setNotifications(pageItems(res.data));
+        setHasNext(pageHasNext(res.data, 0));
+      })
+      .catch(() => {
+        if (requestVersion.current === version) setLoadError(t('notifications.loadError'));
+      })
+      .finally(() => {
+        if (requestVersion.current === version) setLoadingList(false);
+      });
+  }, [t, unreadOnly]);
+
+  const actorsById = useNotificationActors(notifications);
+
+  const invalidateUnreadCount = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+  }, [queryClient]);
+
+  const markLocallyRead = useCallback((id: string) => {
+    setNotifications((current) => unreadOnly
+      ? current.filter((notification) => notification.id !== id)
+      : current.map((notification) => notification.id === id
+        ? { ...notification, read: true }
+        : notification));
+  }, [unreadOnly]);
+
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasNext) return;
+    const version = requestVersion.current;
+    const nextPage = page + 1;
+    setLoadingMore(true);
+    setLoadError('');
+    try {
+      const res = await notificationsApi.list({ unreadOnly, page: nextPage, size: PAGE_SIZE });
+      if (requestVersion.current !== version) return;
+      const incoming = pageItems(res.data);
+      setNotifications((current) => {
+        const knownIds = new Set(current.map((notification) => notification.id));
+        return [...current, ...incoming.filter((notification) => !knownIds.has(notification.id))];
+      });
+      setPage(nextPage);
+      setHasNext(pageHasNext(res.data, nextPage));
+    } catch {
+      if (requestVersion.current === version) setLoadError(t('notifications.loadError'));
+    } finally {
+      if (requestVersion.current === version) setLoadingMore(false);
+    }
+  };
 
   const handleMarkRead = async (id: string) => {
     await notificationsApi.markRead(id);
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
-    );
+    markLocallyRead(id);
+    invalidateUnreadCount();
   };
 
   const handleMarkAll = async () => {
-    await markAllAction.run(notificationsApi.markAllRead());
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    const result = await markAllAction.run(notificationsApi.markAllRead());
+    if (result === null) return;
+    setNotifications((current) => unreadOnly ? [] : current.map((notification) => ({ ...notification, read: true })));
+    invalidateUnreadCount();
   };
 
-  const handleInvitationAction = async (notificationId: string, invitationId: string, action: 'accept' | 'reject') => {
+  const handleInvitationAction = async (
+    notificationId: string,
+    invitationId: string,
+    action: 'accept' | 'reject',
+  ) => {
     setInvitationActingId(notificationId);
+    setLoadError('');
     try {
-      if (action === 'accept') {
-        await invitationsApi.accept(invitationId);
-      } else {
-        await invitationsApi.reject(invitationId);
-      }
+      if (action === 'accept') await invitationsApi.accept(invitationId);
+      else await invitationsApi.reject(invitationId);
       await notificationsApi.markRead(notificationId);
-      setNotifications((prev) =>
-        prev.map((n) => n.id === notificationId ? { ...n, read: true } : n)
-      );
+      markLocallyRead(notificationId);
+      invalidateUnreadCount();
+    } catch {
+      setLoadError(t('notifications.loadError'));
     } finally {
       setInvitationActingId(null);
     }
   };
 
-  const handleClick = async (n: Notification) => {
-    if (n.type === 'WORKSPACE_INVITATION' && !n.read) return;
-    if (!n.read) {
-      await notificationsApi.markRead(n.id).catch(() => {});
-      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read: true } : x)));
+  const isPendingInvitation = (notification: Notification) => (
+    notification.type === 'WORKSPACE_INVITATION'
+    && !notification.read
+    && typeof parseNotificationData(notification.data).invitationId === 'string'
+  );
+
+  const handleClick = async (notification: Notification) => {
+    if (isPendingInvitation(notification)) return;
+    if (!notification.read) {
+      await notificationsApi.markRead(notification.id).catch(() => null);
+      markLocallyRead(notification.id);
+      invalidateUnreadCount();
     }
-    if (n.link) {
-      navigate(n.link);
-    }
+    if (notification.link) navigate(notification.link);
   };
 
-  const tabBtn = (active: boolean): React.CSSProperties => ({
-    padding: '0.3125rem 0.75rem',
-    fontSize: '0.75rem',
-    fontWeight: 500,
-    border: 'none',
-    borderRadius: 'var(--radius-sm)',
-    cursor: 'pointer',
-    background: active ? 'var(--bg-elevated)' : 'transparent',
-    color: active ? (unreadOnly ? 'var(--accent)' : 'var(--text)') : 'var(--text-faint)',
-    boxShadow: active ? '0 0.0625rem 0.1875rem rgba(0,0,0,0.06)' : 'none',
-    transition: `background var(--duration), color var(--duration)`,
-  });
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-      <style>{`.notif-mark-label{display:none}@media(min-width:640px){.notif-mark-label{display:inline}}`}</style>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
-        <div>
-          <PageTitle>
-            {t('notifications.title')}
-          </PageTitle>
-          <p style={{ margin: '0.125rem 0 0', fontSize: '0.75rem', color: 'var(--text-faint)' }}>
+    <div className="nfy-page">
+      <style>{CSS}</style>
+
+      <header className="nfy-header">
+        <div className="nfy-header-copy">
+          <PageTitle>{t('notifications.title')}</PageTitle>
+          <p style={{ margin: '4px 0 0', color: 'var(--text-faint)', fontSize: 13 }}>
             {t('notifications.subtitle')}
           </p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          {/* Filter tabs */}
-          <div style={{
-            display: 'flex',
-            background: 'var(--bg-hover)',
-            borderRadius: 'var(--radius-md)',
-            padding: '0.1875rem',
-            border: '0.0625rem solid var(--border)',
-          }}>
-            <button
-              type="button"
-              onClick={() => { setUnreadOnly(false); setPage(0); }}
-              style={tabBtn(!unreadOnly)}
-            >
-              {t('notifications.all')}
-            </button>
-            <button
-              type="button"
-              onClick={() => { setUnreadOnly(true); setPage(0); }}
-              style={tabBtn(unreadOnly)}
-            >
-              {t('notifications.unread')}
-            </button>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleMarkAll}
-            disabled={markAllAction.loading}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.3125rem',
-              padding: '0.3125rem 0.625rem', fontSize: '0.75rem', fontWeight: 500,
-              background: 'var(--bg-elevated)',
-              color: 'var(--text-muted)',
-              border: '0.0625rem solid var(--border)',
-              borderRadius: 'var(--radius-md)',
-              cursor: markAllAction.loading ? 'not-allowed' : 'pointer',
-              opacity: markAllAction.loading ? 0.6 : 1,
-              transition: `background var(--duration)`,
-            }}
-            onMouseEnter={(e) => { if (!markAllAction.loading) e.currentTarget.style.background = 'var(--bg-hover)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; }}
-          >
-            {markAllAction.loading ? (
-              <div style={{
-                width: '0.75rem', height: '0.75rem',
-                border: '0.125rem solid var(--border)',
-                borderTopColor: 'var(--accent)',
-                borderRadius: '50%',
-                animation: 'spin 0.7s linear infinite',
-              }} />
-            ) : (
-              <CheckCircle2 size={12} strokeWidth={2} />
-            )}
-            <span className="notif-mark-label">{t('notifications.markAll')}</span>
-          </button>
-        </div>
-      </div>
+        <button
+          type="button"
+          className="nfy-mark-all"
+          onClick={handleMarkAll}
+          disabled={markAllAction.loading || unreadCount === 0}
+        >
+          {markAllAction.loading ? <span className="nfy-spinner" /> : <CheckCheck size={16} strokeWidth={2} />}
+          {t('notifications.markAll')}
+        </button>
+      </header>
 
       {loadError && <Alert type="error" message={loadError} />}
       {markAllAction.error && <Alert type="error" message={markAllAction.error} />}
 
-      {/* Notification list */}
-      <div style={{
-        background: 'var(--bg-elevated)',
-        border: '0.0625rem solid var(--border)',
-        borderRadius: 'var(--radius-md)',
-        overflow: 'hidden',
-      }}>
-        {loadingList ? (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} style={{
-                display: 'flex', gap: '0.75rem', padding: '0.875rem 1rem',
-                borderBottom: i < 5 ? '0.0625rem solid var(--border)' : 'none',
-              }}>
-                <div style={{
-                  width: '2.25rem', height: '2.25rem',
-                  background: 'var(--bg-hover)',
-                  borderRadius: 'var(--radius-sm)',
-                  flexShrink: 0,
-                  animation: 'pulse 1.5s ease-in-out infinite',
-                }} />
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                  <div style={{ height: '0.75rem', width: '70%', background: 'var(--bg-hover)', borderRadius: '0.25rem', animation: 'pulse 1.5s ease-in-out infinite' }} />
-                  <div style={{ height: '0.625rem', width: '45%', background: 'var(--bg-hover)', borderRadius: '0.25rem', animation: 'pulse 1.5s ease-in-out infinite' }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : notifications.length === 0 ? (
-          <div style={{ padding: '3.75rem 1.5rem', textAlign: 'center' }}>
-            <div style={{
-              width: '3rem', height: '3rem',
-              background: 'var(--bg-hover)',
-              border: '0.0625rem solid var(--border)',
-              borderRadius: 'var(--radius-md)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              margin: '0 auto 0.75rem',
-            }}>
-              <Bell size={22} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
-            </div>
-            <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-muted)' }}>{t('notifications.empty')}</p>
-            <p style={{ margin: '0.1875rem 0 0', fontSize: '0.75rem', color: 'var(--text-faint)' }}>{t('notifications.emptySubtitle')}</p>
-          </div>
-        ) : (
-          <div>
-            {notifications.map((n, idx) => {
-              const cfg = typeConfig[n.type] ?? typeConfig.DEFAULT;
-              return (
-                <div
-                  key={n.id}
-                  onClick={() => handleClick(n)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '0.75rem',
-                    padding: '0.75rem 1rem',
-                    borderTop: idx > 0 ? '0.0625rem solid var(--border)' : 'none',
-                    background: !n.read ? 'var(--accent-muted)' : 'transparent',
-                    transition: `background var(--duration)`,
-                    cursor: n.link && !(n.type === 'WORKSPACE_INVITATION' && !n.read) ? 'pointer' : 'default',
-                  }}
-                  onMouseEnter={(e) => { if (n.read) e.currentTarget.style.background = 'var(--bg-hover)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = !n.read ? 'var(--accent-muted)' : 'transparent'; }}
-                >
-                  {/* Type icon */}
-                  <div style={{
-                    width: '2.125rem', height: '2.125rem',
-                    borderRadius: 'var(--radius-sm)',
-                    background: !n.read ? cfg.bg : 'var(--bg-hover)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0,
-                  }}>
-                    <svg width={16} height={16} fill="none" stroke={!n.read ? cfg.color : 'var(--text-faint)'} viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-                      <path d={cfg.iconPath} />
-                    </svg>
-                  </div>
-
-                  {/* Content */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-                        <p style={{
-                          margin: 0, fontSize: '0.75rem',
-                          fontWeight: !n.read ? 600 : 400,
-                          color: !n.read ? 'var(--text)' : 'var(--text-muted)',
-                        }}>
-                          {n.title}
-                        </p>
-                        {!n.read && (
-                          <span style={{
-                            width: '0.375rem', height: '0.375rem',
-                            background: 'var(--accent)',
-                            borderRadius: '50%',
-                            flexShrink: 0,
-                            display: 'inline-block',
-                          }} />
-                        )}
-                      </div>
-                      <span style={{
-                        fontSize: '0.625rem',
-                        color: 'var(--text-faint)',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0,
-                        fontFamily: 'var(--font-mono)',
-                      }}>
-                        {timeAgo(n.createdAt, t)}
-                      </span>
-                    </div>
-                    <p style={{ margin: '0.125rem 0 0', fontSize: '0.6875rem', color: 'var(--text-faint)', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                      {n.message}
-                    </p>
-
-                    {/* Invitation actions */}
-                    {n.type === 'WORKSPACE_INVITATION' && !n.read && (() => {
-                      let invitationId: string | null = null;
-                      try {
-                        const parsed = JSON.parse(n.data ?? '{}');
-                        invitationId = parsed.invitationId ?? null;
-                      } catch { /* ignore */ }
-                      if (!invitationId) return null;
-                      const isActing = invitationActingId === n.id;
-                      return (
-                        <div style={{ display: 'flex', gap: '0.375rem', marginTop: '0.5rem' }}>
-                          <button
-                            type="button"
-                            disabled={isActing}
-                            onClick={() => handleInvitationAction(n.id, invitationId!, 'accept')}
-                            style={{
-                              padding: '0.25rem 0.625rem', fontSize: '0.6875rem', fontWeight: 500,
-                              color: 'var(--accent-fg)', background: 'var(--success)',
-                              border: 'none', borderRadius: 'var(--radius-sm)',
-                              cursor: isActing ? 'not-allowed' : 'pointer',
-                              opacity: isActing ? 0.5 : 1,
-                            }}
-                          >
-                            {t('workspace.members.invite.accept')}
-                          </button>
-                          <button
-                            type="button"
-                            disabled={isActing}
-                            onClick={() => handleInvitationAction(n.id, invitationId!, 'reject')}
-                            style={{
-                              padding: '0.25rem 0.625rem', fontSize: '0.6875rem', fontWeight: 500,
-                              color: 'var(--text-muted)', background: 'var(--bg-hover)',
-                              border: '0.0625rem solid var(--border)', borderRadius: 'var(--radius-sm)',
-                              cursor: isActing ? 'not-allowed' : 'pointer',
-                              opacity: isActing ? 0.5 : 1,
-                            }}
-                          >
-                            {t('workspace.members.invite.reject')}
-                          </button>
-                        </div>
-                      );
-                    })()}
-                  </div>
-
-                  {/* Mark read */}
-                  {!n.read && (
-                    <button
-                      onClick={() => handleMarkRead(n.id)}
-                      title={t('notifications.markRead')}
-                      style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        width: '1.625rem', height: '1.625rem', flexShrink: 0,
-                        background: 'none', border: 'none',
-                        borderRadius: 'var(--radius-sm)',
-                        color: 'var(--text-faint)',
-                        cursor: 'pointer',
-                        transition: `background var(--duration), color var(--duration)`,
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-muted)'; e.currentTarget.style.color = 'var(--accent)'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-faint)'; }}
-                    >
-                      <CheckCircle2 size={14} strokeWidth={2} />
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem' }}>
+      <section className="nfy-panel" aria-label={t('notifications.title')}>
+        <div className="nfy-tabs" role="tablist" aria-label={t('notifications.title')}>
           <button
             type="button"
-            disabled={page === 0}
-            onClick={() => setPage((p) => p - 1)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.25rem',
-              padding: '0.3125rem 0.625rem', fontSize: '0.75rem', fontWeight: 500,
-              background: 'var(--bg-elevated)', color: 'var(--text-muted)',
-              border: '0.0625rem solid var(--border)', borderRadius: 'var(--radius-md)',
-              cursor: page === 0 ? 'not-allowed' : 'pointer',
-              opacity: page === 0 ? 0.4 : 1,
-            }}
+            role="tab"
+            aria-selected={!unreadOnly}
+            className="nfy-tab"
+            data-active={!unreadOnly}
+            onClick={() => setUnreadOnly(false)}
           >
-            <ChevronLeft size={12} strokeWidth={2} />
-            {t('common.previous')}
+            {t('notifications.all')}
           </button>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-            {Array.from({ length: totalPages }, (_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setPage(i)}
-                style={{
-                  width: '1.75rem', height: '1.75rem', fontSize: '0.6875rem', fontWeight: 500,
-                  borderRadius: 'var(--radius-sm)',
-                  border: 'none',
-                  background: i === page ? 'var(--accent)' : 'transparent',
-                  color: i === page ? 'var(--accent-fg)' : 'var(--text-muted)',
-                  cursor: 'pointer',
-                  transition: `background var(--duration), color var(--duration)`,
-                }}
-                onMouseEnter={(e) => { if (i !== page) e.currentTarget.style.background = 'var(--bg-hover)'; }}
-                onMouseLeave={(e) => { if (i !== page) e.currentTarget.style.background = 'transparent'; }}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-
           <button
             type="button"
-            disabled={page >= totalPages - 1}
-            onClick={() => setPage((p) => p + 1)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: '0.25rem',
-              padding: '0.3125rem 0.625rem', fontSize: '0.75rem', fontWeight: 500,
-              background: 'var(--bg-elevated)', color: 'var(--text-muted)',
-              border: '0.0625rem solid var(--border)', borderRadius: 'var(--radius-md)',
-              cursor: page >= totalPages - 1 ? 'not-allowed' : 'pointer',
-              opacity: page >= totalPages - 1 ? 0.4 : 1,
-            }}
+            role="tab"
+            aria-selected={unreadOnly}
+            className="nfy-tab"
+            data-active={unreadOnly}
+            onClick={() => setUnreadOnly(true)}
           >
-            {t('common.next')}
-            <ChevronRight size={12} strokeWidth={2} />
+            {t('notifications.unread')}
+            {unreadCount > 0 && (
+              <span className="nfy-tab-count">{unreadCount > 99 ? '99+' : unreadCount}</span>
+            )}
           </button>
         </div>
-      )}
+
+        <div className="nfy-list" role="tabpanel">
+          {loadingList ? (
+            <NotificationSkeleton />
+          ) : notifications.length === 0 ? (
+            <EmptyState unreadOnly={unreadOnly} t={t} />
+          ) : (
+            notifications.map((notification) => {
+              const actorId = notificationActorId(notification);
+              const actor = actorId ? actorsById[actorId] : undefined;
+              const pending = isPendingInvitation(notification);
+              const clickable = !pending && (Boolean(notification.link) || !notification.read);
+              return (
+                <article
+                  key={notification.id}
+                  className="nfy-row"
+                  data-unread={!notification.read}
+                  data-clickable={clickable}
+                  onClick={() => { if (clickable) void handleClick(notification); }}
+                >
+                  <NotificationSource notification={notification} actor={actor} />
+
+                  <div className="nfy-content">
+                    <div className="nfy-content-head">
+                      <p className="nfy-title">{notification.title}</p>
+                      <time className="nfy-time" dateTime={notification.createdAt}>
+                        {timeAgo(notification.createdAt, t)}
+                      </time>
+                    </div>
+                    {notification.message && <p className="nfy-message">{notification.message}</p>}
+                    {pending && (
+                      <InvitationActions
+                        notification={notification}
+                        acting={invitationActingId === notification.id}
+                        onAction={handleInvitationAction}
+                        t={t}
+                      />
+                    )}
+                  </div>
+
+                  {!notification.read && !pending && (
+                    <button
+                      type="button"
+                      className="nfy-mark"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void handleMarkRead(notification.id);
+                      }}
+                      title={t('notifications.markRead')}
+                      aria-label={t('notifications.markRead')}
+                    >
+                      <Check size={16} strokeWidth={2.25} />
+                    </button>
+                  )}
+                </article>
+              );
+            })
+          )}
+        </div>
+
+        {!loadingList && notifications.length > 0 && hasNext && (
+          <div className="nfy-footer">
+            <button type="button" className="nfy-load-more" onClick={handleLoadMore} disabled={loadingMore}>
+              {loadingMore && <span className="nfy-spinner" />}
+              {loadingMore ? t('notifications.loadingMore') : t('notifications.loadMore')}
+            </button>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function NotificationSkeleton() {
+  return (
+    <div aria-hidden="true">
+      {[0, 1, 2, 3].map((item) => (
+        <div key={item} className="nfy-row">
+          <span style={{ width: 40, height: 40, flexShrink: 0, borderRadius: '50%', background: 'var(--bg-hover)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+          <span style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 5 }}>
+            <span style={{ width: `${68 - item * 7}%`, height: 10, borderRadius: 4, background: 'var(--bg-hover)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+            <span style={{ width: `${48 - item * 4}%`, height: 8, borderRadius: 4, background: 'var(--bg-hover)', animation: 'pulse 1.5s ease-in-out infinite' }} />
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function EmptyState({ unreadOnly, t }: { unreadOnly: boolean; t: (key: string) => string }) {
+  return (
+    <div style={{ padding: '70px 24px', textAlign: 'center' }}>
+      <div style={{
+        width: 54, height: 54, margin: '0 auto 14px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', background: 'var(--bg-hover)',
+      }}>
+        <Inbox size={24} strokeWidth={1.5} style={{ color: 'var(--text-faint)' }} />
+      </div>
+      <p style={{ margin: 0, color: 'var(--text)', fontSize: 15, fontWeight: 700 }}>
+        {unreadOnly ? t('notifications.emptyUnread') : t('notifications.empty')}
+      </p>
+      <p style={{ margin: '4px 0 0', color: 'var(--text-faint)', fontSize: 13 }}>
+        {unreadOnly ? t('notifications.emptyUnreadSubtitle') : t('notifications.emptySubtitle')}
+      </p>
+    </div>
+  );
+}
+
+function InvitationActions({ notification, acting, onAction, t }: {
+  notification: Notification;
+  acting: boolean;
+  onAction: (notificationId: string, invitationId: string, action: 'accept' | 'reject') => void;
+  t: (key: string) => string;
+}) {
+  const invitationId = parseNotificationData(notification.data).invitationId;
+  if (typeof invitationId !== 'string' || !invitationId) return null;
+
+  return (
+    <div className="nfy-actions" onClick={(event) => event.stopPropagation()}>
+      <button
+        type="button"
+        className="nfy-action nfy-action-primary"
+        disabled={acting}
+        onClick={() => onAction(notification.id, invitationId, 'accept')}
+      >
+        {t('workspace.members.invite.accept')}
+      </button>
+      <button
+        type="button"
+        className="nfy-action nfy-action-secondary"
+        disabled={acting}
+        onClick={() => onAction(notification.id, invitationId, 'reject')}
+      >
+        {t('workspace.members.invite.reject')}
+      </button>
     </div>
   );
 }

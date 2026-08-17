@@ -1,5 +1,7 @@
 {
   "common": {
+    "back": "Volver",
+    "discard": "Descartar",
     "cancel": "Cancelar",
     "save": "Gardar",
     "delete": "Eliminar",
@@ -83,7 +85,7 @@
       }
     },
     "layout": {
-      "headline": "Domina o teu fluxo de traballo con AgileFlow",
+      "headline": "Domina o teu fluxo de traballo con Kadenza",
       "description": "A plataforma todo en un para planificar, xestionar e entregar proxectos de calidade con rapidez e precisión."
     }
   },
@@ -370,7 +372,7 @@
       },
       "scrumRole": "Rol Scrum",
       "scrumRoleNone": "Sen rol",
-"leaveTeam": "Saír do equipo",
+      "leaveTeam": "Saír do equipo",
       "confirmLeave": {
         "title": "Saír do equipo",
         "message": "Seguro que queres saír de <strong>{{name}}</strong>?",
@@ -387,9 +389,28 @@
       "members": "Membros",
       "poker": "Poker",
       "epics": "Epics",
+      "repository": "Repositorio",
       "metrics": "Métricas",
       "settings": "Configuración",
-      "boardSettings": "Taboleiro"
+      "boardSettings": "Taboleiro",
+      "task": "Tarefa"
+    },
+    "repository": {
+      "title": "Repositorio",
+      "subtitle": "Actividade de código vinculada ás tarefas do proxecto.",
+      "notConnected": "Non hai ningún repositorio conectado",
+      "notConnectedSubtitle": "Conéctao dende a configuración do proxecto para ver commits, ramas e pull requests aquí.",
+      "goToSettings": "Ir á configuración",
+      "connectedTo": "Conectado a",
+      "openPullRequests": "Pull requests abertas",
+      "recentCommits": "Commits recentes",
+      "branches": "Ramas",
+      "noPullRequests": "Non hai pull requests abertas",
+      "noCommits": "Aínda non hai commits",
+      "noBranches": "Non hai ramas vinculadas",
+      "unlinked": "Sen tarefa vinculada",
+      "loadMore": "Cargar máis",
+      "loadError": "Erro ao cargar a actividade do repositorio."
     },
     "epics": {
       "title": "Epics",
@@ -515,6 +536,25 @@
         "namePlaceholder": "Nome da etiqueta",
         "add": "Engadir",
         "empty": "Non hai etiquetas definidas para este proxecto."
+      },
+      "git": {
+        "title": "Integración con Git",
+        "subtitle": "Vincula un repositorio de GitHub para ver commits e pull requests nas tarefas.",
+        "repositoryUrl": "URL do repositorio",
+        "repositoryUrlPlaceholder": "https://github.com/organizacion/repositorio",
+        "connect": "Conectar repositorio",
+        "regenerate": "Rexerar segredo",
+        "disconnect": "Desconectar",
+        "disconnectConfirm": "Desconectar o repositorio? Eliminarase toda a actividade git rexistrada.",
+        "webhookUrl": "URL do webhook",
+        "webhookSecret": "Segredo do webhook",
+        "secretOnce": "Garda este segredo agora: non se volverá amosar.",
+        "instructions": "En GitHub: Settings → Webhooks → Add webhook. Pega a URL e o segredo, escolle content type application/json e subscríbete aos eventos Push, Pull requests e Branch or tag creation.",
+        "copy": "Copiar",
+        "copied": "Copiado",
+        "connected": "Repositorio conectado.",
+        "disconnected": "Repositorio desconectado.",
+        "saveError": "Erro ao gardar a integración git."
       }
     },
     "metrics": {
@@ -590,7 +630,10 @@
       "viewBoard": "Ver taboleiro",
       "viewReport": "Ver informe",
       "activate": "Activar",
-      "activateConfirm": "Activar este sprint?",
+      "activateConfirm": {
+        "title": "Activar sprint",
+        "message": "Seguro que queres activar este sprint? Só pode haber un sprint activo á vez por proxecto."
+      },
       "activateError": "Erro ao activar o sprint.",
       "activateEndDateRequired": "Debes establecer unha data de fin antes de activar o sprint.",
       "complete": "Completar",
@@ -598,12 +641,6 @@
       "completeError": "Erro ao completar o sprint.",
       "deleteConfirm": "Eliminar este sprint?",
       "deleteError": "Erro ao eliminar o sprint.",
-      "activate": "Activar",
-      "activateError": "Erro ao activar o sprint.",
-      "activateConfirm": {
-        "title": "Activar sprint",
-        "message": "Seguro que queres activar este sprint? Só pode haber un sprint activo á vez por proxecto."
-      },
       "activeSprint": "Sprint activo",
       "plannedSprints": "Sprints planificados",
       "completedSprints": "Sprints completados",
@@ -781,9 +818,28 @@
       "IN_REVIEW": "En revisión",
       "DONE": "Feito"
     },
+    "detail": {
+      "notFound": "Tarefa non atopada",
+      "notFoundHint": "Pode que fose eliminada ou que a ligazón sexa incorrecta.",
+      "forbidden": "Non tes acceso a esta tarefa",
+      "loadError": "Non se puido cargar a tarefa",
+      "retry": "Reintentar",
+      "inBacklog": "Backlog",
+      "inSprint": "Sprint",
+      "unsavedBadge": "Sen gardar",
+      "unsavedTitle": "Tes cambios sen gardar",
+      "unsavedBody": "Se saes agora perderanse os cambios que non gardaches.",
+      "unsavedDiscard": "Saír sen gardar",
+      "unsavedStay": "Seguir editando",
+      "saved": "Cambios gardados",
+      "readOnlyCompleted": "Este sprint está completado: a tarefa é de só lectura.",
+      "readOnlyPermission": "O teu rol non permite editar esta tarefa."
+    },
+    "createModal": {
+      "createdHint": "Tarefa creada. Podes crear outra."
+    },
     "modal": {
       "titleCreate": "Nova tarefa",
-      "titleEdit": "Editar tarefa",
       "titleView": "Detalle da tarefa",
       "titleField": "Título",
       "titlePlaceholder": "Nome da tarefa",
@@ -819,6 +875,20 @@
       "noEpic": "Sen epic",
       "definitionOfDone": "Definition of Done",
       "dodPlaceholder": "Criterios de aceptación para considerar a tarefa completada...",
+      "dependencies": "Dependencias",
+      "blockedBy": "Bloqueada por",
+      "blocks": "Bloquea a",
+      "addDependency": "Engadir dependencia",
+      "searchTask": "Buscar tarefa...",
+      "noDependencies": "Sen dependencias",
+      "blockedWarning": "Esta tarefa está bloqueada por «{{title}}» ({{status}})",
+      "dependencyError": "Erro ao xestionar dependencia",
+      "gitActivity": "Actividade Git",
+      "noGitActivity": "Sen actividade git",
+      "gitRef": "Referencia para commits e ramas",
+      "linkManually": "Vincular manualmente",
+      "gitUrlPlaceholder": "URL do commit ou da pull request",
+      "gitLinkError": "Non se recoñece a URL. Debe ser un commit ou unha pull request de GitHub.",
       "loadError": "Erro ao gardar a tarefa."
     },
     "subtaskModal": {
@@ -827,7 +897,14 @@
       "markNotDone": "Marcar como pendente"
     },
     "card": {
-      "overdue": "Vencida"
+      "overdue": "Vencida",
+      "blocked": "Bloqueada",
+      "blockedWarning": "Esta tarefa está bloqueada por outra tarefa que aínda non está completada",
+      "blockedMoveTitle": "Tarefa bloqueada",
+      "blockedMoveBody": "Esta tarefa está bloqueada por {{count}} tarefa(s) que aínda non están completadas. Queres movela igualmente?",
+      "blockedMoveConfirm": "Mover igualmente",
+      "blockedMoveCancel": "Cancelar",
+      "gitEvents": "Actividade git"
     },
     "activity": {
       "title": "Actividade",
@@ -872,7 +949,13 @@
       "EPIC_SET": "asignou ao epic {{newValue}}",
       "EPIC_SET_impersonal": "Asignada ao epic {{newValue}}",
       "EPIC_UNSET": "quitou do epic {{oldValue}}",
-      "EPIC_UNSET_impersonal": "Quitada do epic {{oldValue}}"
+      "EPIC_UNSET_impersonal": "Quitada do epic {{oldValue}}",
+      "DEPENDENCY_ADDED": "engadiu dependencia con «{{newValue}}»",
+      "DEPENDENCY_ADDED_impersonal": "Dependencia engadida con «{{newValue}}»",
+      "DEPENDENCY_ADDED_blocking": "engadiu dependencia: bloquea a «{{newValue}}»",
+      "DEPENDENCY_ADDED_blocked": "engadiu dependencia: bloqueada por «{{oldValue}}»",
+      "DEPENDENCY_REMOVED": "eliminou dependencia con «{{oldValue}}»",
+      "DEPENDENCY_REMOVED_impersonal": "Dependencia eliminada con «{{oldValue}}»"
     },
     "comments": {
       "title": "Comentarios",
@@ -919,7 +1002,16 @@
     "markRead": "Marcar lida",
     "empty": "Sen notificacións",
     "emptySubtitle": "Cando teñas actividade, aparecerá aquí",
+    "emptyUnread": "Todo ao día",
+    "emptyUnreadSubtitle": "Non che queda ningunha notificación por ler",
     "loadError": "Erro ao cargar notificacións.",
+    "loadMore": "Cargar máis",
+    "loadingMore": "Cargando...",
+    "pageOf": "{{current}} de {{total}}",
+    "groups": {
+      "today": "Hoxe",
+      "yesterday": "Onte"
+    },
     "timeAgo": {
       "now": "agora",
       "minutes": "hai {{count}} min",
@@ -966,6 +1058,10 @@
       "fileTypes": "JPG, PNG ou GIF. Máx 5 MB",
       "successMessage": "Avatar actualizado."
     },
+    "language": {
+      "title": "Idioma",
+      "subtitle": "Escolle o idioma da interface"
+    },
     "notificationSettings": {
       "title": "Notificacións",
       "subtitle": "Configura como queres recibilas",
@@ -989,6 +1085,16 @@
     "es": "Español",
     "en": "English",
     "gl": "Galego"
+  },
+  "theme": {
+    "title": "Aparencia",
+    "subtitle": "Escolle como se ve a aplicación",
+    "light": "Claro",
+    "dark": "Escuro",
+    "switchTo": {
+      "light": "Cambiar a tema claro",
+      "dark": "Cambiar a tema escuro"
+    }
   },
   "poker": {
     "title": "Planning Poker",
@@ -1186,5 +1292,122 @@
     "STORY_STATUS_IS_DERIVED": "O estado das historias calcúlase automaticamente.",
     "SUBTASKS_FOLLOW_PARENT": "As subtarefas asígnanse automaticamente coa súa historia pai.",
     "SUBTASK_NOT_ESTIMABLE": "As subtarefas non poden ter story points."
+  },
+  "landing": {
+    "nav": {
+      "product": "Produto",
+      "flow": "Como funciona"
+    },
+    "hero": {
+      "badgeTag": "Scrum",
+      "badge": "Con Planning Poker e repositorio integrados",
+      "titleA": "Do sprint planning á retrospectiva, todo no mesmo",
+      "titleEm": "proxecto",
+      "lead": "O Product Owner prioriza o backlog, o equipo estímao en Planning Poker, o sprint avanza no taboleiro e péchase con métricas e retrospectiva."
+    },
+    "cta": {
+      "primary": "Crear conta",
+      "secondary": "Ver como funciona"
+    },
+    "stats": {
+      "cycle": {
+        "value": "O ciclo enteiro de Scrum",
+        "label": "Planificación, estimación, sprint, review e retrospectiva nun mesmo proxecto."
+      },
+      "realtime": {
+        "value": "Estimación en tempo real",
+        "label": "As salas de Planning Poker sincronízanse entre todos os participantes."
+      },
+      "git": {
+        "value": "Repositorio conectado",
+        "label": "Ramas, commits e pull requests enlazados coa súa historia."
+      }
+    },
+    "features": {
+      "label": "Produto",
+      "title": "Todas as cerimonias, na mesma ferramenta",
+      "lead": "Cando a planificación vive nunha ferramenta, a estimación noutra e o código nunha terceira, o contexto pérdese en cada salto. Kadenza xúntaos.",
+      "backlog": {
+        "title": "Backlog e planificación",
+        "body": "Prioriza o product backlog, agrúpao por épicas e baixa historias ao sprint desde a propia sesión de planificación."
+      },
+      "poker": {
+        "title": "Planning Poker sen nesgo",
+        "body": "As cartas seguen ocultas ata o reveal, así ninguén axusta o seu voto ao do resto. O valor acordado escríbese só na historia."
+      },
+      "board": {
+        "title": "O taboleiro do sprint",
+        "body": "Arrastra unha historia entre columnas e con ela actualízanse estado, responsable, puntos e subtarefas. Cando o sprint medra, filtra por prioridade, etiqueta ou persoa."
+      },
+      "review": {
+        "title": "Review con datos",
+        "body": "Velocidade, informe de peche e burndown saen do traballo real do sprint."
+      },
+      "retro": {
+        "title": "Retrospectiva guiada",
+        "body": "Start / Stop / Continue, 4Ls ou Mad / Sad / Glad. O equipo elixe a técnica e as conclusións quedan gardadas xunto ao sprint."
+      },
+      "git": {
+        "title": "Da historia ao commit",
+        "body": "Conecta o repositorio e cada rama, commit e pull request queda enlazado coa súa historia."
+      }
+    },
+    "flow": {
+      "label": "Como funciona",
+      "title": "O sprint, de principio a fin",
+      "lead": "Kadenza non che pide cambiar de metodoloxía: acompaña as cerimonias que xa fas.",
+      "plan": {
+        "title": "Planifica",
+        "body": "O Product Owner ordena o backlog e o equipo decide que historias entran na iteración."
+      },
+      "estimate": {
+        "title": "Estima",
+        "body": "Na sala de Planning Poker o equipo vota en oculto e o acordo gárdase na historia."
+      },
+      "track": {
+        "title": "Segue o sprint",
+        "body": "O taboleiro reflicte o estado real e o burndown avisa a tempo se a iteración se torce."
+      },
+      "improve": {
+        "title": "Mellora",
+        "body": "Ao pechar, o informe recolle a velocidade e a retrospectiva as conclusións do equipo."
+      }
+    },
+    "final": {
+      "title": "Comeza o teu próximo sprint en Kadenza",
+      "lead": "Crea un workspace, convida o teu equipo e planifica a primeira iteración."
+    },
+    "footer": {
+      "copyright": "© {{year}} Kadenza. Todos os dereitos reservados.",
+      "tfg": "Traballo de Fin de Grao · Enxeñaría Informática"
+    },
+    "auth": {
+      "legal": "Ao crear unha conta aceptas as condicións de uso e a política de privacidade de Kadenza."
+    },
+    "mock": {
+      "board": "Taboleiro",
+      "col": {
+        "todo": "Por facer",
+        "progress": "En progreso",
+        "review": "En revisión",
+        "done": "Feito"
+      },
+      "prio": {
+        "critical": "Crítica",
+        "high": "Alta",
+        "medium": "Media",
+        "low": "Baixa"
+      },
+      "task": {
+        "a1": "Recuperar contrasinal por email",
+        "a2": "Exportar o informe a CSV",
+        "a3": "Paxinar a listaxe de clientes",
+        "b1": "Inicio de sesión con Google",
+        "b2": "Notificacións por email",
+        "c1": "Migrar a pasarela de pago",
+        "d1": "Subida de foto de perfil",
+        "d2": "Corrixir o formato de datas"
+      }
+    }
   }
 }

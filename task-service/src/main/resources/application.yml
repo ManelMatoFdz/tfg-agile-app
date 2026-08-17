@@ -27,6 +27,9 @@ app:
     url: ${PROJECT_SERVICE_URL:http://localhost:8082}
   user-service:
     url: ${USER_SERVICE_URL:http://localhost:8081}
+  git:
+    # URL publica desde la que GitHub alcanza este servicio
+    webhook-base-url: ${GIT_WEBHOOK_BASE_URL:http://localhost:8083}
 
 security:
   jwt:

@@ -14,8 +14,8 @@ export default function RoundHistory({ rounds }: Props) {
 
   return (
     <div style={{
-      background: '#FFFFFF',
-      border: '1px solid #E2E8F0',
+      background: 'var(--bg-elevated)',
+      border: '1px solid var(--border)',
       borderRadius: 12,
       boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
       overflow: 'hidden',
@@ -23,15 +23,15 @@ export default function RoundHistory({ rounds }: Props) {
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
-        padding: '14px 18px', borderBottom: '1px solid #E2E8F0',
+        padding: '14px 18px', borderBottom: '1px solid var(--border)',
       }}>
-        <History size={15} strokeWidth={2} style={{ color: '#64748B' }} />
-        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1E293B' }}>
+        <History size={15} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+        <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
           {t('poker.room.history')}
         </h3>
         <span style={{
-          fontSize: 12, fontWeight: 600, color: '#64748B',
-          background: '#EDF0F4', borderRadius: 999, padding: '2px 8px',
+          fontSize: 12, fontWeight: 600, color: 'var(--text-muted)',
+          background: 'var(--bg-hover)', borderRadius: 999, padding: '2px 8px',
           marginLeft: 'auto',
         }}>
           {completedRounds.length}
@@ -46,15 +46,15 @@ export default function RoundHistory({ rounds }: Props) {
             justifyContent: 'space-between',
             gap: 12,
             padding: '10px 18px',
-            borderBottom: i < completedRounds.length - 1 ? '1px solid #E2E8F0' : 'none',
+            borderBottom: i < completedRounds.length - 1 ? '1px solid var(--border)' : 'none',
             transition: 'background 0.15s',
           }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#F7F8FA'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
           >
             <span style={{
               fontSize: 13, fontWeight: 500,
-              color: '#1E293B',
+              color: 'var(--text)',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
@@ -76,7 +76,7 @@ export default function RoundHistory({ rounds }: Props) {
             ) : (
               <span style={{
                 fontSize: 12, fontWeight: 500,
-                color: '#94A3B8',
+                color: 'var(--text-faint)',
                 fontStyle: 'italic',
               }}>
                 {t('poker.room.skipped')}

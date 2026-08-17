@@ -39,6 +39,8 @@ public class SecurityConfig {
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/internal/**").hasRole("INTERNAL")
+                // GitHub no puede enviar JWT: la peticion se valida por firma HMAC
+                .requestMatchers("/webhooks/**").permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex

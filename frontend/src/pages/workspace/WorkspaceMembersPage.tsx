@@ -365,7 +365,7 @@ export default function WorkspaceMembersPage() {
       {listAction.loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
           <div style={{
-            width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
+            width: 24, height: 24, border: '2px solid var(--border)', borderTopColor: 'var(--accent-text)',
             borderRadius: '50%', animation: 'spin 0.7s linear infinite',
           }} />
         </div>
@@ -502,7 +502,7 @@ export default function WorkspaceMembersPage() {
                                   color: 'var(--text-faint)', opacity: isUpdating || isRemoving ? 0.4 : 1,
                                   transition: 'background 150ms, color 150ms',
                                 }}
-                                onMouseEnter={e => { e.currentTarget.style.background = 'var(--danger-bg)'; e.currentTarget.style.color = 'var(--danger)'; }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'var(--danger-bg)'; e.currentTarget.style.color = 'var(--danger-text)'; }}
                                 onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-faint)'; }}
                               >
                                 <UserMinus size={15} strokeWidth={2} />
@@ -553,7 +553,7 @@ export default function WorkspaceMembersPage() {
                           border: i === safePage ? '1px solid var(--accent)' : '1px solid var(--border)',
                           borderRadius: 'var(--radius-sm)',
                           background: i === safePage ? 'var(--accent-muted)' : 'var(--bg-elevated)',
-                          color: i === safePage ? 'var(--accent)' : 'var(--text-muted)',
+                          color: i === safePage ? 'var(--accent-text)' : 'var(--text-muted)',
                           cursor: 'pointer',
                         }}
                       >
@@ -595,7 +595,7 @@ export default function WorkspaceMembersPage() {
                   width: 36, height: 36, borderRadius: 'var(--radius-md)',
                   background: 'var(--accent-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <UserPlus size={18} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                  <UserPlus size={18} strokeWidth={2} style={{ color: 'var(--accent-text)' }} />
                 </div>
                 <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
                   {t('workspace.members.invite.title')}
@@ -637,7 +637,7 @@ export default function WorkspaceMembersPage() {
                 </div>
               </div>
 
-              {lookupError && <p style={{ margin: 0, fontSize: 12, color: 'var(--danger)' }}>{lookupError}</p>}
+              {lookupError && <p style={{ margin: 0, fontSize: 12, color: 'var(--danger-text)' }}>{lookupError}</p>}
 
               {lookedUpUser && (
                 <div style={{
@@ -699,7 +699,7 @@ export default function WorkspaceMembersPage() {
                 width: 40, height: 40, background: 'var(--accent-muted)', borderRadius: 'var(--radius-md)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
-                <ArrowLeftRight size={18} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                <ArrowLeftRight size={18} strokeWidth={2} style={{ color: 'var(--accent-text)' }} />
               </div>
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                 {t('workspace.members.confirmRoleChange.title')}
@@ -739,7 +739,7 @@ export default function WorkspaceMembersPage() {
                 width: 40, height: 40, background: 'var(--danger-bg)', borderRadius: 'var(--radius-md)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
-                <UserMinus size={18} strokeWidth={2} style={{ color: 'var(--danger)' }} />
+                <UserMinus size={18} strokeWidth={2} style={{ color: 'var(--danger-text)' }} />
               </div>
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                 {t('workspace.members.confirmRemove.title')}

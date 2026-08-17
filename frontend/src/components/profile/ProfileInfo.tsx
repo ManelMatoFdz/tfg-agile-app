@@ -80,7 +80,7 @@ export default function ProfileInfo() {
           justifyContent: 'center',
           flexShrink: 0,
         }}>
-          <UserIcon size={18} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
+          <UserIcon size={18} strokeWidth={1.75} style={{ color: 'var(--accent-text)' }} />
         </div>
         <div>
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.02em' }}>

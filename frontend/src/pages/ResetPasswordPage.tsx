@@ -105,7 +105,7 @@ export default function ResetPasswordPage() {
           borderRadius: 'var(--radius-md)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <ShieldCheck size={24} strokeWidth={1.6} style={{ color: 'var(--success)' }} />
+          <ShieldCheck size={24} strokeWidth={1.6} style={{ color: 'var(--success-text)' }} />
         </div>
 
         {/* Header */}
@@ -133,7 +133,7 @@ export default function ResetPasswordPage() {
               background: 'rgba(22, 163, 74, 0.06)',
               border: '1px solid rgba(22, 163, 74, 0.2)',
               borderRadius: 'var(--radius-md)',
-              color: 'var(--success)',
+              color: 'var(--success-text)',
               fontSize: 13,
               lineHeight: 1.5,
             }}>

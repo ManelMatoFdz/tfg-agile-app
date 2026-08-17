@@ -234,7 +234,7 @@ export default function WorkspaceSelectorPage() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
             <div style={{
               width: 28, height: 28,
-              border: '3px solid var(--border)', borderTopColor: 'var(--accent)',
+              border: '3px solid var(--border)', borderTopColor: 'var(--accent-text)',
               borderRadius: '50%', animation: 'spin 0.7s linear infinite',
             }} />
           </div>
@@ -283,7 +283,7 @@ export default function WorkspaceSelectorPage() {
                             fontSize: 11, fontWeight: 600, letterSpacing: '0.03em',
                             padding: '1px 8px', borderRadius: 'var(--radius-pill)',
                             background: workspaceMeta[ws.id].myRole === 'ADMIN' ? 'var(--accent-muted)' : 'var(--bg-hover)',
-                            color: workspaceMeta[ws.id].myRole === 'ADMIN' ? 'var(--accent)' : 'var(--text-muted)',
+                            color: workspaceMeta[ws.id].myRole === 'ADMIN' ? 'var(--accent-text)' : 'var(--text-muted)',
                           }}>
                             {workspaceMeta[ws.id].myRole === 'ADMIN'
                               ? t('workspace.selector.roleAdmin', { defaultValue: 'Admin' })
@@ -337,7 +337,7 @@ export default function WorkspaceSelectorPage() {
                 background: 'var(--accent-muted)', borderRadius: 'var(--radius-lg)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <LayoutGrid size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+                <LayoutGrid size={24} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
               </div>
               <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
                 {t('workspace.selector.noWorkspaces')}

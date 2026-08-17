@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Layers, Plus, Pencil, Trash2, X } from 'lucide-react';
-import type { Epic, EpicStatus } from '../../../types';
+import { Target, Plus, Pencil, Trash2, X, ChevronDown, ChevronRight } from 'lucide-react';
+import type { Epic, EpicStatus, Task, TaskPriority } from '../../../types';
 import { epicsApi } from '../../../api/epics';
 import type { CreateEpicDto, UpdateEpicDto } from '../../../api/epics';
 import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
 import { useProjectMember } from '../../../hooks/useProjectMember';
+import { useBoardColumns, getStatusColor } from '../../../hooks/useBoardColumns';
+
+const PRIORITY_COLOR: Record<TaskPriority, string> = {
+  LOW: 'var(--text-muted)',
+  MEDIUM: '#2563EB',
+  HIGH: '#D97706',
+  CRITICAL: '#DC2626',
+};
 
 const STATUS_COLORS: Record<EpicStatus, string> = {
-  OPEN: '#6B7280',
+  OPEN: 'var(--text-muted)',
   IN_PROGRESS: '#2563EB',
   DONE: '#16A34A',
 };
@@ -46,8 +54,11 @@ const labelStyle: React.CSSProperties = {
 
 export default function EpicsPage() {
   const { t } = useTranslation();
-  const { projectId } = useParams<{ projectId: string }>();
+  const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { canCreateTask } = useProjectMember(projectId);
+  const columns = useBoardColumns(projectId);
 
   const [epics, setEpics] = useState<Epic[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,6 +67,10 @@ export default function EpicsPage() {
   const [editingEpic, setEditingEpic] = useState<Epic | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<EpicStatus | 'ALL'>('ALL');
+
+  const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
+  const [epicTasksMap, setEpicTasksMap] = useState<Record<string, Task[]>>({});
+  const [loadingTasks, setLoadingTasks] = useState<Set<string>>(new Set());
 
   // Form state
   const [name, setName] = useState('');
@@ -76,6 +91,30 @@ export default function EpicsPage() {
   };
 
   useEffect(() => { fetchEpics(); }, [projectId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openTask = (task: Task) =>
+    navigate(
+      `/workspaces/${workspaceId}/projects/${task.projectId ?? projectId}/tasks/${task.id}`,
+      { state: { from: location.pathname + location.search, task } },
+    );
+
+  const toggleEpicTasks = async (epicId: string) => {
+    if (expandedEpics.has(epicId)) {
+      setExpandedEpics(prev => { const s = new Set(prev); s.delete(epicId); return s; });
+      return;
+    }
+    setExpandedEpics(prev => new Set(prev).add(epicId));
+    if (epicTasksMap[epicId] !== undefined || !projectId) return;
+    setLoadingTasks(prev => new Set(prev).add(epicId));
+    try {
+      const tasks = await epicsApi.getTasks(projectId, epicId);
+      setEpicTasksMap(prev => ({ ...prev, [epicId]: tasks }));
+    } catch {
+      setEpicTasksMap(prev => ({ ...prev, [epicId]: [] }));
+    } finally {
+      setLoadingTasks(prev => { const s = new Set(prev); s.delete(epicId); return s; });
+    }
+  };
 
   const resetForm = () => {
     setName('');
@@ -160,7 +199,7 @@ export default function EpicsPage() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Layers size={22} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+            <Target size={22} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
             <PageTitle as="h2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
               {t('projects.epics.title')}
             </PageTitle>
@@ -383,7 +422,7 @@ export default function EpicsPage() {
           <div style={{
             width: 28, height: 28,
             border: '3px solid var(--border)',
-            borderTopColor: 'var(--accent)',
+            borderTopColor: 'var(--accent-text)',
             borderRadius: '50%',
             animation: 'spin 0.7s linear infinite',
           }} />
@@ -404,7 +443,7 @@ export default function EpicsPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 16px',
           }}>
-            <Layers size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+            <Target size={24} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
           </div>
           <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
             {t('projects.epics.noEpics')}
@@ -549,12 +588,12 @@ export default function EpicsPage() {
                   </p>
                 )}
 
-                {/* Progress bar */}
+                {/* Progress bar + task toggle */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{
                     flex: 1,
                     height: 6,
-                    background: '#E5E7EB',
+                    background: 'var(--border)',
                     borderRadius: 3,
                     overflow: 'hidden',
                   }}>
@@ -576,13 +615,32 @@ export default function EpicsPage() {
                   }}>
                     {pct}%
                   </span>
-                  <span style={{
-                    fontSize: 11,
-                    color: 'var(--text-faint)',
-                    whiteSpace: 'nowrap',
-                  }}>
+                  <button
+                    onClick={() => toggleEpicTasks(epic.id)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: 11,
+                      color: 'var(--text-muted)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                      borderRadius: 'var(--radius-sm)',
+                      whiteSpace: 'nowrap',
+                      fontFamily: 'var(--font-sans)',
+                      transition: 'color 150ms, background 150ms',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'none'; }}
+                  >
+                    {expandedEpics.has(epic.id)
+                      ? <ChevronDown size={12} strokeWidth={2} />
+                      : <ChevronRight size={12} strokeWidth={2} />
+                    }
                     {epic.doneTasks}/{epic.totalTasks} {t('projects.epics.tasks')}
-                  </span>
+                  </button>
                 </div>
 
                 {/* Dates */}
@@ -599,6 +657,85 @@ export default function EpicsPage() {
                     )}
                     {epic.targetDate && (
                       <span>{t('projects.epics.targetDate')}: {epic.targetDate}</span>
+                    )}
+                  </div>
+                )}
+
+                {/* Task list (collapsible) */}
+                {expandedEpics.has(epic.id) && (
+                  <div style={{
+                    marginTop: 14,
+                    borderTop: '1px solid var(--border)',
+                    paddingTop: 12,
+                  }}>
+                    {loadingTasks.has(epic.id) ? (
+                      <div style={{ display: 'flex', justifyContent: 'center', padding: '12px 0' }}>
+                        <div style={{
+                          width: 16, height: 16,
+                          border: '2px solid var(--border)',
+                          borderTopColor: 'var(--accent-text)',
+                          borderRadius: '50%',
+                          animation: 'spin 0.7s linear infinite',
+                        }} />
+                      </div>
+                    ) : !epicTasksMap[epic.id] || epicTasksMap[epic.id].length === 0 ? (
+                      <p style={{ margin: 0, fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic', textAlign: 'center', padding: '8px 0' }}>
+                        {t('projects.epics.noTasks')}
+                      </p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {epicTasksMap[epic.id].map(task => {
+                          const statusColor = getStatusColor(task.status, columns);
+                          return (
+                            <div
+                              key={task.id}
+                              onClick={() => openTask(task)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                padding: '5px 8px',
+                                borderRadius: 'var(--radius-sm)',
+                                background: 'var(--bg)',
+                                border: '1px solid var(--border)',
+                                cursor: 'pointer',
+                                transition: 'border-color 150ms, background 150ms',
+                              }}
+                              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.background = 'var(--bg-hover)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg)'; }}
+                            >
+                              <span style={{
+                                width: 8, height: 8, borderRadius: '50%',
+                                background: statusColor, flexShrink: 0,
+                              }} />
+                              <span style={{
+                                fontSize: 12,
+                                color: 'var(--text)',
+                                overflow: 'hidden',
+                                whiteSpace: 'nowrap',
+                                textOverflow: 'ellipsis',
+                                minWidth: 0,
+                              }}>
+                                {task.title}
+                              </span>
+                              <span style={{
+                                fontSize: 10,
+                                fontWeight: 700,
+                                color: PRIORITY_COLOR[task.priority],
+                                background: `${PRIORITY_COLOR[task.priority]}14`,
+                                padding: '1px 6px',
+                                borderRadius: 'var(--radius-sm)',
+                                flexShrink: 0,
+                                letterSpacing: '0.04em',
+                                marginLeft: 8,
+                              }}>
+                                {task.priority}
+                              </span>
+                              <span style={{ flex: 1 }} />
+                            </div>
+                          );
+                        })}
+                      </div>
                     )}
                   </div>
                 )}

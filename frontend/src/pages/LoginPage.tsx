@@ -86,7 +86,7 @@ export default function LoginPage() {
 
   return (
     <AuthLayout>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <div className="auth-compact" style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* Header */}
         <div>
           <PageTitle as="h2" style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
@@ -167,7 +167,7 @@ export default function LoginPage() {
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Link
               to="/forgot-password"
-              style={{ fontSize: 13, fontWeight: 500, color: 'var(--accent)', textDecoration: 'none' }}
+              style={{ fontSize: 13, fontWeight: 500, color: 'var(--accent-text)', textDecoration: 'none' }}
               onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
               onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
             >
@@ -230,7 +230,7 @@ export default function LoginPage() {
           {t('auth.login.noAccount')}{' '}
           <Link
             to="/register"
-            style={{ fontWeight: 600, color: 'var(--accent)', textDecoration: 'none' }}
+            style={{ fontWeight: 600, color: 'var(--accent-text)', textDecoration: 'none' }}
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
             onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
           >

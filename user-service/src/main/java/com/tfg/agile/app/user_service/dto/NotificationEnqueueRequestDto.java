@@ -34,4 +34,6 @@ public class NotificationEnqueueRequestDto {
 
     @Size(max = 2000)
     private String data;
+
+    private UUID actorUserId;
 }

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useParams } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronRight, LayoutDashboard, ListChecks, RefreshCw,
-  Users, Layers, BarChart2, Settings, Target,
+  Users, Layers, BarChart2, Settings, Target, GitBranch,
 } from 'lucide-react';
 import { projectsApi } from '../../api/projects';
 import type { Project } from '../../types';
@@ -15,6 +15,7 @@ const TABS = [
   { key: 'sprints',  path: 'sprints',  Icon: RefreshCw       },
   { key: 'members',  path: 'members',  Icon: Users           },
   { key: 'poker',    path: 'poker',    Icon: Layers          },
+  { key: 'repository', path: 'repository', Icon: GitBranch     },
   { key: 'metrics',        path: 'metrics',        Icon: BarChart2 },
   { key: 'settings',       path: 'settings',       Icon: Settings },
 ] as const;
@@ -22,6 +23,7 @@ const TABS = [
 export default function ProjectLayout() {
   const { t } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
+  const { pathname } = useLocation();
   const [project, setProject] = useState<Project | null>(null);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function ProjectLayout() {
   }, [projectId]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div>
       {/* Breadcrumb */}
       <nav style={{
         display: 'flex',
@@ -42,14 +44,14 @@ export default function ProjectLayout() {
         <Link
           to={`/workspaces/${workspaceId}`}
           style={{
-            color: 'var(--accent)',
+            color: 'var(--accent-text)',
             textDecoration: 'none',
             fontWeight: 500,
           }}
           onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
           onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
         >
-          AgileFlow
+          Kadenza
         </Link>
         <ChevronRight size={13} style={{ color: 'var(--text-faint)', flexShrink: 0 }} strokeWidth={1.75} />
         <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>
@@ -57,7 +59,7 @@ export default function ProjectLayout() {
         </span>
         <ChevronRight size={13} style={{ color: 'var(--text-faint)', flexShrink: 0 }} strokeWidth={1.75} />
         <span style={{ fontWeight: 600, color: 'var(--text)', textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.02em' }}>
-          {getCurrentTabLabel(t)}
+          {getCurrentTabLabel(t, pathname)}
         </span>
       </nav>
 
@@ -104,10 +106,9 @@ export default function ProjectLayout() {
         </div>
       </div>
 
-      {/* Tab navigation - horizontal like mockup board view */}
+      {/* Tab navigation */}
       <div style={{
         marginBottom: 24,
-        overflowX: 'auto',
         borderBottom: '1px solid var(--border)',
       }}>
         <nav style={{ display: 'flex', gap: 0 }}>
@@ -123,7 +124,7 @@ export default function ProjectLayout() {
                 fontSize: 13,
                 fontWeight: isActive ? 600 : 500,
                 whiteSpace: 'nowrap',
-                color: isActive ? 'var(--accent)' : 'var(--text-muted)',
+                color: isActive ? 'var(--accent-text)' : 'var(--text-muted)',
                 borderBottom: `2px solid ${isActive ? 'var(--accent)' : 'transparent'}`,
                 marginBottom: -1,
                 textDecoration: 'none',
@@ -155,18 +156,18 @@ export default function ProjectLayout() {
         </nav>
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <div>
         <Outlet />
       </div>
     </div>
   );
 }
 
-function getCurrentTabLabel(t: (key: string) => string): string {
-  const path = window.location.pathname;
+function getCurrentTabLabel(t: (key: string) => string, path: string): string {
   const segments = path.split('/');
   const last = segments[segments.length - 1];
   if (last === 'board-settings') return t('projects.tabs.boardSettings');
+  if (segments[segments.length - 2] === 'tasks') return t('projects.tabs.task');
   const tabKeys = ['board', 'backlog', 'epics', 'sprints', 'members', 'poker', 'metrics', 'settings'];
   if (tabKeys.includes(last)) {
     return t(`projects.tabs.${last}`);

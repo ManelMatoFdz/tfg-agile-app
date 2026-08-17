@@ -8,7 +8,7 @@ const PRIORITY_COLOR: Record<TaskPriority, { color: string; bg: string }> = {
   CRITICAL: { color: '#DC2626', bg: 'rgba(220,38,38,0.08)' },
   HIGH: { color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
   MEDIUM: { color: '#2563EB', bg: 'rgba(37,99,235,0.08)' },
-  LOW: { color: '#94A3B8', bg: '#EDF0F4' },
+  LOW: { color: 'var(--text-faint)', bg: 'var(--bg-hover)' },
 };
 
 interface Props {
@@ -52,7 +52,7 @@ export default function SelectTaskModal({ projectId, onClose, onSelect }: Props)
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(15,23,42,0.4)',
+        background: 'var(--bg-overlay)',
         backdropFilter: 'blur(6px)',
         WebkitBackdropFilter: 'blur(6px)',
         animation: 'fade-in 200ms ease both',
@@ -67,8 +67,8 @@ export default function SelectTaskModal({ projectId, onClose, onSelect }: Props)
           maxHeight: '80vh',
           display: 'flex',
           flexDirection: 'column',
-          background: '#FFFFFF',
-          border: '1px solid #E2E8F0',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
           borderRadius: 12,
           boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
           overflow: 'hidden',
@@ -77,12 +77,12 @@ export default function SelectTaskModal({ projectId, onClose, onSelect }: Props)
         {/* Header */}
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '18px 24px', borderBottom: '1px solid #E2E8F0',
+          padding: '18px 24px', borderBottom: '1px solid var(--border)',
           flexShrink: 0,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <Search size={16} style={{ color: '#2563EB' }} />
-            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: '#1E293B' }}>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>
               {t('poker.room.selectTask')}
             </h2>
           </div>
@@ -91,11 +91,11 @@ export default function SelectTaskModal({ projectId, onClose, onSelect }: Props)
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: 32, height: 32, border: 'none', background: 'transparent',
-              borderRadius: 8, cursor: 'pointer', color: '#94A3B8',
+              borderRadius: 8, cursor: 'pointer', color: 'var(--text-faint)',
               transition: 'background 0.15s, color 0.15s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#EDF0F4'; e.currentTarget.style.color = '#1E293B'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#94A3B8'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-faint)'; }}
           >
             <X size={16} />
           </button>
@@ -107,14 +107,14 @@ export default function SelectTaskModal({ projectId, onClose, onSelect }: Props)
             <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
               <div style={{
                 width: 28, height: 28,
-                border: '3px solid #E2E8F0',
+                border: '3px solid var(--border)',
                 borderTopColor: '#2563EB',
                 borderRadius: '50%',
                 animation: 'spin 0.7s linear infinite',
               }} />
             </div>
           ) : tasks.length === 0 ? (
-            <p style={{ fontSize: 14, color: '#94A3B8', padding: '40px 0', textAlign: 'center' }}>
+            <p style={{ fontSize: 14, color: 'var(--text-faint)', padding: '40px 0', textAlign: 'center' }}>
               {t('poker.room.noTasks')}
             </p>
           ) : (
@@ -130,8 +130,8 @@ export default function SelectTaskModal({ projectId, onClose, onSelect }: Props)
                       width: '100%',
                       textAlign: 'left',
                       padding: '12px 14px',
-                      background: '#FFFFFF',
-                      border: '1px solid #E2E8F0',
+                      background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border)',
                       borderRadius: 8,
                       cursor: submitting ? 'not-allowed' : 'pointer',
                       opacity: submitting ? 0.5 : 1,
@@ -146,13 +146,13 @@ export default function SelectTaskModal({ projectId, onClose, onSelect }: Props)
                       }
                     }}
                     onMouseLeave={e => {
-                      e.currentTarget.style.borderColor = '#E2E8F0';
+                      e.currentTarget.style.borderColor = 'var(--border)';
                       e.currentTarget.style.boxShadow = 'none';
                       e.currentTarget.style.transform = 'translateY(0)';
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {task.title}
                       </span>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
@@ -188,20 +188,20 @@ export default function SelectTaskModal({ projectId, onClose, onSelect }: Props)
         {/* Footer */}
         <div style={{
           display: 'flex', justifyContent: 'flex-end',
-          padding: '14px 24px', borderTop: '1px solid #E2E8F0',
+          padding: '14px 24px', borderTop: '1px solid var(--border)',
           flexShrink: 0,
         }}>
           <button
             onClick={onClose}
             style={{
               padding: '9px 18px', fontSize: 13, fontWeight: 500,
-              color: '#64748B', background: 'transparent',
-              border: '1px solid #E2E8F0', borderRadius: 8,
+              color: 'var(--text-muted)', background: 'transparent',
+              border: '1px solid var(--border)', borderRadius: 8,
               cursor: 'pointer', fontFamily: 'inherit',
               transition: 'background 0.15s, color 0.15s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#EDF0F4'; e.currentTarget.style.color = '#1E293B'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
           >
             {t('common.cancel')}
           </button>

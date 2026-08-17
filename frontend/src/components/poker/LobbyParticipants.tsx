@@ -70,10 +70,10 @@ export default function LobbyParticipants({ participants, currentUserId, voteSta
         alignItems: 'center',
         justifyContent: 'center',
         padding: '24px 40px',
-        background: isVoting ? 'rgba(245,158,11,0.04)' : '#FFFFFF',
+        background: isVoting ? 'var(--warning-bg)' : 'var(--bg-elevated)',
         borderRadius: 24,
         minWidth: 240,
-        border: `1px solid ${isVoting ? 'rgba(245,158,11,0.2)' : '#E2E8F0'}`,
+        border: `1px solid ${isVoting ? 'rgba(245,158,11,0.35)' : 'var(--border)'}`,
         boxShadow: isVoting ? 'none' : '0 2px 12px rgba(0,0,0,0.04)',
       }}>
         {isVoting ? (
@@ -84,7 +84,7 @@ export default function LobbyParticipants({ participants, currentUserId, voteSta
             }}>
               {votedCount}/{voterCount}
             </p>
-            <p style={{ margin: '6px 0 0', fontSize: 13, color: '#94A3B8' }}>
+            <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--text-faint)' }}>
               {t('poker.room.votedProgress', { voted: votedCount, total: voterCount })}
             </p>
           </>
@@ -92,12 +92,12 @@ export default function LobbyParticipants({ participants, currentUserId, voteSta
           <>
             <p style={{
               margin: 0, fontSize: 18, fontWeight: 700,
-              letterSpacing: '0.06em', color: '#CBD5E1',
+              letterSpacing: '0.06em', color: 'var(--text-faint)',
               textTransform: 'uppercase',
             }}>
               {t('poker.room.planningPoker')}
             </p>
-            <p style={{ margin: '8px 0 0', fontSize: 13, color: '#94A3B8', fontWeight: 500 }}>
+            <p style={{ margin: '8px 0 0', fontSize: 13, color: 'var(--text-faint)', fontWeight: 500 }}>
               {t('poker.room.waitingForModerator')}
             </p>
           </>
@@ -163,7 +163,7 @@ function ParticipantAvatar({
               height: 48,
               borderRadius: '50%',
               objectFit: 'cover',
-              border: isCurrentUser ? '3px solid #2563EB' : '2px solid #FFFFFF',
+              border: isCurrentUser ? '3px solid #2563EB' : '2px solid var(--bg-elevated)',
               boxShadow: isCurrentUser
                 ? '0 0 0 2px #2563EB, 0 2px 8px rgba(37,99,235,0.2)'
                 : '0 2px 8px rgba(0,0,0,0.08)',
@@ -182,7 +182,7 @@ function ParticipantAvatar({
             fontSize: 16,
             fontWeight: 700,
             color: '#FFFFFF',
-            border: isCurrentUser ? '3px solid #2563EB' : '2px solid #FFFFFF',
+            border: isCurrentUser ? '3px solid #2563EB' : '2px solid var(--bg-elevated)',
             boxShadow: isCurrentUser
               ? '0 0 0 2px #2563EB, 0 2px 8px rgba(37,99,235,0.2)'
               : '0 2px 8px rgba(0,0,0,0.08)',
@@ -197,7 +197,7 @@ function ParticipantAvatar({
           <span style={{
             position: 'absolute', bottom: 0, right: 0,
             width: 16, height: 16, borderRadius: '50%',
-            background: '#16A34A', border: '2px solid #FFFFFF',
+            background: '#16A34A', border: '2px solid var(--bg-elevated)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
             <Check size={10} color="#FFFFFF" strokeWidth={3} />
@@ -212,7 +212,7 @@ function ParticipantAvatar({
             height: 12,
             borderRadius: '50%',
             background: '#16A34A',
-            border: '2px solid #FFFFFF',
+            border: '2px solid var(--bg-elevated)',
           }} />
         )}
 
@@ -239,7 +239,7 @@ function ParticipantAvatar({
       <span style={{
         fontSize: 12,
         fontWeight: 600,
-        color: p.connected ? '#1E293B' : '#94A3B8',
+        color: p.connected ? 'var(--text)' : 'var(--text-faint)',
         textAlign: 'center',
         maxWidth: 90,
         overflow: 'hidden',
@@ -253,7 +253,7 @@ function ParticipantAvatar({
       <span style={{
         fontSize: 10,
         fontWeight: 500,
-        color: p.role === 'MODERATOR' ? '#2563EB' : '#94A3B8',
+        color: p.role === 'MODERATOR' ? 'var(--accent-text)' : 'var(--text-faint)',
         textTransform: 'uppercase',
         letterSpacing: '0.04em',
       }}>

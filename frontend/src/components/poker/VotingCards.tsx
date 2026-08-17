@@ -24,8 +24,8 @@ export default function VotingCards({ deck, selectedValue, onVote, disabled, loc
 
   return (
     <div style={{
-      background: '#FFFFFF',
-      border: '1px solid #E2E8F0',
+      background: 'var(--bg-elevated)',
+      border: '1px solid var(--border)',
       borderRadius: 12,
       padding: '14px 24px',
       boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
@@ -33,7 +33,7 @@ export default function VotingCards({ deck, selectedValue, onVote, disabled, loc
       <p style={{
         fontSize: 13, fontWeight: 600, marginBottom: 10,
         textTransform: 'uppercase', letterSpacing: '0.05em',
-        color: lockedMessage ? '#94A3B8' : '#64748B',
+        color: lockedMessage ? 'var(--text-faint)' : 'var(--text-muted)',
         display: 'flex', alignItems: 'center', gap: 6,
         justifyContent: lockedMessage ? 'center' : undefined,
       }}>
@@ -59,9 +59,9 @@ export default function VotingCards({ deck, selectedValue, onVote, disabled, loc
                 minWidth: 0,
                 height: 88,
                 borderRadius: 10,
-                border: `2px solid ${isSelected ? '#2563EB' : isHovered && !disabled ? '#93C5FD' : '#E2E8F0'}`,
-                background: isSelected ? '#2563EB' : '#FFFFFF',
-                color: isSelected ? '#FFFFFF' : '#1E293B',
+                border: `2px solid ${isSelected ? 'var(--accent)' : isHovered && !disabled ? '#93C5FD' : 'var(--border)'}`,
+                background: isSelected ? 'var(--accent)' : 'var(--bg-elevated)',
+                color: isSelected ? 'var(--accent-fg)' : 'var(--text)',
                 fontSize: 20,
                 fontWeight: 700,
                 fontFamily: 'inherit',

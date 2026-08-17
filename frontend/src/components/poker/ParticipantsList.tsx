@@ -16,8 +16,8 @@ export default function ParticipantsList({ participants, voteStatus, currentUser
 
   return (
     <div style={{
-      background: '#FFFFFF',
-      border: '1px solid #E2E8F0',
+      background: 'var(--bg-elevated)',
+      border: '1px solid var(--border)',
       borderRadius: 12,
       boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
       overflow: 'hidden',
@@ -25,11 +25,11 @@ export default function ParticipantsList({ participants, voteStatus, currentUser
       {/* Header */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '14px 18px', borderBottom: '1px solid #E2E8F0',
+        padding: '14px 18px', borderBottom: '1px solid var(--border)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <Users size={15} strokeWidth={2} style={{ color: '#2563EB' }} />
-          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: '#1E293B' }}>
+          <h3 style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
             {t('poker.room.participants')}
           </h3>
         </div>
@@ -47,7 +47,7 @@ export default function ParticipantsList({ participants, voteStatus, currentUser
           <div style={{ marginBottom: observers.length > 0 ? 16 : 0 }}>
             <p style={{
               fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
-              textTransform: 'uppercase', color: '#94A3B8', marginBottom: 8,
+              textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8,
             }}>
               {t('poker.roles.VOTER')}s
             </p>
@@ -61,14 +61,14 @@ export default function ParticipantsList({ participants, voteStatus, currentUser
                   <div style={{
                     width: 8, height: 8,
                     borderRadius: 999, flexShrink: 0,
-                    background: p.connected ? '#16A34A' : '#CBD5E1',
+                    background: p.connected ? 'var(--success)' : 'var(--border-strong)',
                     boxShadow: p.connected ? '0 0 6px rgba(22,163,74,0.3)' : 'none',
                   }} />
                   <span style={{
                     fontSize: 13, fontWeight: p.userId === currentUserId ? 600 : 400,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     flex: 1,
-                    color: p.connected ? '#1E293B' : '#94A3B8',
+                    color: p.connected ? 'var(--text)' : 'var(--text-faint)',
                   }}>
                     {p.displayName}
                     {p.userId === currentUserId && (
@@ -97,7 +97,7 @@ export default function ParticipantsList({ participants, voteStatus, currentUser
           <div>
             <p style={{
               fontSize: 10, fontWeight: 700, letterSpacing: '0.08em',
-              textTransform: 'uppercase', color: '#94A3B8', marginBottom: 8,
+              textTransform: 'uppercase', color: 'var(--text-faint)', marginBottom: 8,
             }}>
               {t('poker.roles.OBSERVER')}s
             </p>
@@ -110,12 +110,12 @@ export default function ParticipantsList({ participants, voteStatus, currentUser
                   <div style={{
                     width: 8, height: 8,
                     borderRadius: 999, flexShrink: 0,
-                    background: p.connected ? '#16A34A' : '#CBD5E1',
+                    background: p.connected ? 'var(--success)' : 'var(--border-strong)',
                   }} />
                   <span style={{
                     fontSize: 13,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    color: p.connected ? '#64748B' : '#94A3B8',
+                    color: p.connected ? 'var(--text-muted)' : 'var(--text-faint)',
                   }}>
                     {p.displayName}
                   </span>

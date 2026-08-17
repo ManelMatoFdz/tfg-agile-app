@@ -47,6 +47,7 @@ class TaskControllerTest {
                 TaskType.TASK, null,
                 callerId, null, null, 5, false, 0, List.of(),
                 0, 0, null, null,
+                0, 0, 0,
                 now, now
         );
 

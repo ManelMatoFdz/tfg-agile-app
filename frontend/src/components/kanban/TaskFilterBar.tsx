@@ -59,7 +59,7 @@ const PRIORITY_COLORS: Record<TaskPriority, string> = {
   CRITICAL: '#DC2626',
   HIGH: '#D97706',
   MEDIUM: '#2563EB',
-  LOW: '#94A3B8',
+  LOW: 'var(--prio-low)',
 };
 
 // ── Dropdown multi-select ────────────────────────────────────────────────
@@ -99,7 +99,7 @@ function MultiSelectDropdown({
           padding: '5px 10px',
           fontSize: 12,
           fontWeight: 600,
-          color: selected.length > 0 ? 'var(--accent)' : 'var(--text-muted)',
+          color: selected.length > 0 ? 'var(--accent-text)' : 'var(--text-muted)',
           background: selected.length > 0 ? 'var(--accent-muted)' : 'var(--bg-elevated)',
           border: `1px solid ${selected.length > 0 ? 'var(--accent)' : 'var(--border)'}`,
           borderRadius: 'var(--radius-md)',
@@ -217,7 +217,7 @@ function MultiSelectDropdown({
                       height: 18,
                       borderRadius: '50%',
                       background: 'var(--accent-muted)',
-                      color: 'var(--accent)',
+                      color: 'var(--accent-text)',
                       fontSize: 9,
                       fontWeight: 700,
                       display: 'flex',
@@ -254,7 +254,7 @@ function FilterChip({ label, color, onRemove }: { label: string; color?: string;
         padding: '2px 8px',
         fontSize: 11,
         fontWeight: 600,
-        color: 'var(--accent)',
+        color: 'var(--accent-text)',
         background: 'var(--accent-muted)',
         borderRadius: 'var(--radius-pill)',
         whiteSpace: 'nowrap',
@@ -273,7 +273,7 @@ function FilterChip({ label, color, onRemove }: { label: string; color?: string;
           border: 'none',
           background: 'none',
           cursor: 'pointer',
-          color: 'var(--accent)',
+          color: 'var(--accent-text)',
           opacity: 0.7,
         }}
       >

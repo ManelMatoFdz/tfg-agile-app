@@ -9,7 +9,7 @@ import { useAuthStore } from '../../../store/authStore';
 import { usePokerSocket } from '../../../hooks/usePokerSocket';
 import { useProjectMember } from '../../../hooks/useProjectMember';
 import { useProjectMembers } from '../../../hooks/useProjectMembers';
-import { AssigneeAvatar } from '../../../components/kanban/TaskModal';
+import { AssigneeAvatar } from '../../../components/kanban/AssigneePicker';
 import type { PokerSession, PokerRound, ParticipantRole, Task } from '../../../types';
 import VotingCards from '../../../components/poker/VotingCards';
 
@@ -27,14 +27,14 @@ const STATUS_STYLE: Record<string, { color: string; bg: string }> = {
   LOBBY:    { color: '#2563EB', bg: 'rgba(37,99,235,0.08)' },
   VOTING:   { color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
   REVEALED: { color: '#8B5CF6', bg: 'rgba(139,92,246,0.08)' },
-  CLOSED:   { color: '#94A3B8', bg: '#EDF0F4' },
+  CLOSED:   { color: 'var(--text-faint)', bg: 'var(--bg-hover)' },
 };
 
 const PRIORITY_STYLE: Record<string, { color: string; bg: string }> = {
   CRITICAL: { color: '#DC2626', bg: 'rgba(220,38,38,0.08)' },
   HIGH:     { color: '#F59E0B', bg: 'rgba(245,158,11,0.08)' },
   MEDIUM:   { color: '#2563EB', bg: 'rgba(37,99,235,0.08)' },
-  LOW:      { color: '#94A3B8', bg: '#EDF0F4' },
+  LOW:      { color: 'var(--text-faint)', bg: 'var(--bg-hover)' },
 };
 
 const TYPE_ICON: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
@@ -412,7 +412,7 @@ export default function PokerRoomPage() {
       <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
         <div style={{
           width: 28, height: 28,
-          border: '3px solid #E2E8F0',
+          border: '3px solid var(--border)',
           borderTopColor: '#2563EB',
           borderRadius: '50%',
           animation: 'spin 0.7s linear infinite',
@@ -429,12 +429,18 @@ export default function PokerRoomPage() {
   const statusStyle = STATUS_STYLE[session.status] ?? STATUS_STYLE.CLOSED;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 20,
+    }}>
       <style>{`
         .poker-lobby-layout{display:grid;gap:20px;grid-template-columns:1fr}
         @media(min-width:1024px){.poker-lobby-layout{grid-template-columns:2fr 3fr}}
-        .poker-lobby-full{display:grid;grid-template-columns:1fr;flex:1;min-height:0;background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+        .poker-lobby-full{display:grid;grid-template-columns:1fr;min-height:max(520px, calc(100vh - 310px));background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
         @media(min-width:1024px){.poker-lobby-full{grid-template-columns:2fr 3fr}}
+        @media(min-width:1440px){.poker-lobby-full{min-height:max(520px, calc(100vh - 350px))}}
+        @media(min-width:1440px) and (max-height:1080px){.poker-lobby-full{min-height:max(520px, calc(100vh - 310px))}}
         .poker-room-grid{display:grid;gap:20px;grid-template-columns:1fr}
         @media(min-width:1024px){.poker-room-grid{grid-template-columns:3fr 1fr}.poker-room-main{grid-column:1}}
       `}</style>
@@ -469,8 +475,8 @@ export default function PokerRoomPage() {
       {/* Header card — only for CLOSED state */}
       {isClosed && (
         <div style={{
-          background: '#FFFFFF',
-          border: '1px solid #E2E8F0',
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
           borderRadius: 12,
           padding: '16px 20px',
           boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
@@ -478,7 +484,7 @@ export default function PokerRoomPage() {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
               <div style={{ minWidth: 0 }}>
-                <PageTitle as="h2" style={{ fontSize: 18, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#1E293B' }}>
+                <PageTitle as="h2" style={{ fontSize: 18, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--text)' }}>
                   {session.name}
                 </PageTitle>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
@@ -489,7 +495,7 @@ export default function PokerRoomPage() {
                   }}>
                     {t(`poker.status.${session.status}`)}
                   </span>
-                  <span style={{ fontSize: 12, color: '#94A3B8' }}>{t(`poker.decks.${session.deck}`)}</span>
+                  <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{t(`poker.decks.${session.deck}`)}</span>
                   {connected && (
                     <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, color: '#16A34A', fontWeight: 500 }}>
                       <span style={{ width: 7, height: 7, borderRadius: 999, background: '#16A34A', display: 'inline-block', boxShadow: '0 0 6px rgba(22,163,74,0.3)' }} />
@@ -507,13 +513,13 @@ export default function PokerRoomPage() {
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 5,
                     padding: '7px 14px', fontSize: 12, fontWeight: 500,
-                    color: '#64748B', background: '#FFFFFF',
-                    border: '1px solid #E2E8F0', borderRadius: 8,
+                    color: 'var(--text-muted)', background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border)', borderRadius: 8,
                     cursor: 'pointer', transition: 'background 0.15s, color 0.15s',
                     fontFamily: 'inherit',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = '#EDF0F4'; e.currentTarget.style.color = '#1E293B'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#64748B'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
                 >
                   <LogOut size={13} />
                   {t('poker.room.leave')}
@@ -526,7 +532,7 @@ export default function PokerRoomPage() {
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 5,
                     padding: '7px 14px', fontSize: 12, fontWeight: 500,
-                    color: '#DC2626', background: '#FFFFFF',
+                    color: '#DC2626', background: 'var(--bg-elevated)',
                     border: '1px solid rgba(220,38,38,0.3)', borderRadius: 8,
                     cursor: closing ? 'not-allowed' : 'pointer',
                     opacity: closing ? 0.5 : 1,
@@ -534,7 +540,7 @@ export default function PokerRoomPage() {
                     fontFamily: 'inherit',
                   }}
                   onMouseEnter={(e) => { if (!closing) e.currentTarget.style.background = 'rgba(220,38,38,0.04)'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; }}
                 >
                   <X size={13} />
                   {t('poker.room.closeSession')}
@@ -550,10 +556,10 @@ export default function PokerRoomPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{
             textAlign: 'center', padding: '40px 0',
-            background: '#FFFFFF', border: '1px solid #E2E8F0',
+            background: 'var(--bg-elevated)', border: '1px solid var(--border)',
             borderRadius: 12, boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           }}>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#64748B' }}>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text-muted)' }}>
               {t('poker.room.sessionClosed')}
             </p>
           </div>
@@ -566,7 +572,7 @@ export default function PokerRoomPage() {
         <div className="poker-lobby-full">
           {/* Left sidebar: Task info */}
           <div style={{
-            borderRight: '1px solid #E2E8F0',
+            borderRight: '1px solid var(--border)',
             padding: '24px',
             display: 'flex',
             flexDirection: 'column',
@@ -579,12 +585,12 @@ export default function PokerRoomPage() {
               const TypeIcon = tc.icon;
               return (
                 <>
-                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#1E293B', lineHeight: 1.3 }}>
+                  <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3 }}>
                     {pendingTask.title}
                   </h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
                     <div>
-                      <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                      <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                         {t('tasks.modal.type')}
                       </p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -595,7 +601,7 @@ export default function PokerRoomPage() {
                       </div>
                     </div>
                     <div>
-                      <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                      <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                         {t('tasks.modal.priority')}
                       </p>
                       <span style={{
@@ -608,7 +614,7 @@ export default function PokerRoomPage() {
                     </div>
                     {pendingTask.storyPoints != null && (
                       <div>
-                        <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                        <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                           Story Points
                         </p>
                         <span style={{
@@ -622,27 +628,27 @@ export default function PokerRoomPage() {
                     )}
                     {pendingTask.description && (
                       <div>
-                        <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                        <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                           {t('tasks.modal.description')}
                         </p>
-                        <p style={{ margin: 0, fontSize: 13, color: '#1F2937', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                        <p style={{ margin: 0, fontSize: 13, color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                           {pendingTask.description}
                         </p>
                       </div>
                     )}
                     {pendingTask.definitionOfDone && (
                       <div>
-                        <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                        <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                           {t('tasks.modal.definitionOfDone')}
                         </p>
-                        <p style={{ margin: 0, fontSize: 13, color: '#1F2937', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                        <p style={{ margin: 0, fontSize: 13, color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                           {pendingTask.definitionOfDone}
                         </p>
                       </div>
                     )}
                     {(pendingTask.labels?.length ?? 0) > 0 && (
                       <div>
-                        <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                        <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                           {t('tasks.modal.labels')}
                         </p>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -660,7 +666,7 @@ export default function PokerRoomPage() {
                     )}
                     {pendingSubtasks.length > 0 && (
                       <div>
-                        <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                        <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                           {t('tasks.modal.subtasks')}
                         </p>
                         <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -669,12 +675,12 @@ export default function PokerRoomPage() {
                             return (
                               <div key={st.id} style={{
                                 display: 'flex', alignItems: 'center', gap: 8,
-                                padding: '6px 0', borderBottom: '1px solid #F1F5F9',
+                                padding: '6px 0', borderBottom: '1px solid var(--border)',
                               }}>
                                 <div style={{
                                   width: 18, height: 18, borderRadius: 4,
-                                  border: isDone ? 'none' : '2px solid #CBD5E1',
-                                  background: isDone ? '#3B82F6' : '#fff',
+                                  border: isDone ? 'none' : '2px solid var(--border-strong)',
+                                  background: isDone ? '#3B82F6' : 'var(--bg-elevated)',
                                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                                   flexShrink: 0,
                                 }}>
@@ -686,7 +692,7 @@ export default function PokerRoomPage() {
                                 </div>
                                 <span style={{
                                   fontSize: 13, fontWeight: 400,
-                                  color: isDone ? '#94A3B8' : '#1F2937',
+                                  color: isDone ? 'var(--text-faint)' : 'var(--text)',
                                   textDecoration: isDone ? 'line-through' : 'none',
                                   overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
                                 }}>
@@ -700,7 +706,7 @@ export default function PokerRoomPage() {
                     )}
                     {pendingTask.assigneeId && userMap[pendingTask.assigneeId] && (
                       <div>
-                        <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                        <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                           {t('tasks.modal.assignee')}
                         </p>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -709,7 +715,7 @@ export default function PokerRoomPage() {
                             avatarUrl={userMap[pendingTask.assigneeId].avatarUrl}
                             size={24}
                           />
-                          <span style={{ fontSize: 13, fontWeight: 500, color: '#1E293B' }}>
+                          <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
                             {userMap[pendingTask.assigneeId].fullName ?? userMap[pendingTask.assigneeId].username}
                           </span>
                         </div>
@@ -722,13 +728,13 @@ export default function PokerRoomPage() {
                       style={{
                         alignSelf: 'flex-start',
                         padding: '7px 14px', fontSize: 12, fontWeight: 500,
-                        color: '#64748B', background: 'transparent',
-                        border: '1px solid #E2E8F0', borderRadius: 8,
+                        color: 'var(--text-muted)', background: 'transparent',
+                        border: '1px solid var(--border)', borderRadius: 8,
                         cursor: 'pointer', fontFamily: 'inherit',
                         transition: 'background 0.15s, color 0.15s',
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#EDF0F4'; e.currentTarget.style.color = '#1E293B'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#64748B'; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-muted)'; }}
                     >
                       {t('poker.room.changeTask')}
                     </button>
@@ -750,10 +756,10 @@ export default function PokerRoomPage() {
                 }}>
                   <FileText size={22} strokeWidth={1.5} style={{ color: '#2563EB' }} />
                 </div>
-                <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#1E293B' }}>
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                   {t('poker.room.noTaskSelected')}
                 </p>
-                <p style={{ margin: '6px 0 18px', fontSize: 13, color: '#94A3B8', maxWidth: 280 }}>
+                <p style={{ margin: '6px 0 18px', fontSize: 13, color: 'var(--text-faint)', maxWidth: 280 }}>
                   {t('poker.room.noTaskSelectedSubtitle')}
                 </p>
                 {isFacilitator && (
@@ -761,7 +767,7 @@ export default function PokerRoomPage() {
                     onClick={() => setShowTaskModal(true)}
                     style={{
                       padding: '10px 24px', fontSize: 14, fontWeight: 600,
-                      background: '#2563EB', color: '#FFFFFF',
+                      background: 'var(--accent)', color: 'var(--accent-fg)',
                       border: 'none', borderRadius: 8,
                       cursor: 'pointer', transition: 'background 0.15s',
                       boxShadow: '0 2px 8px rgba(37,99,235,0.2)',
@@ -778,12 +784,12 @@ export default function PokerRoomPage() {
           </div>
 
           {/* Right: Controls + Participants + Cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', background: '#F8FAFC', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg-sunken)', overflow: 'hidden' }}>
             {/* Top bar with session controls */}
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '14px 20px', borderBottom: '1px solid #E2E8F0',
-              background: '#FFFFFF', flexShrink: 0,
+              padding: '14px 20px', borderBottom: '1px solid var(--border)',
+              background: 'var(--bg-elevated)', flexShrink: 0,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{
@@ -797,7 +803,7 @@ export default function PokerRoomPage() {
                 </span>
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', gap: 5,
-                  fontSize: 12, fontWeight: 500, color: '#94A3B8',
+                  fontSize: 12, fontWeight: 500, color: 'var(--text-faint)',
                 }}>
                   <Clock size={13} />
                   {isFacilitator ? (
@@ -805,8 +811,8 @@ export default function PokerRoomPage() {
                       value={session.timerSeconds ?? ''}
                       onChange={(e) => handleTimerChange(e.target.value ? Number(e.target.value) : null)}
                       style={{
-                        fontSize: 12, fontWeight: 500, color: '#64748B',
-                        background: '#FFFFFF', border: '1px solid #E2E8F0',
+                        fontSize: 12, fontWeight: 500, color: 'var(--text-muted)',
+                        background: 'var(--bg-elevated)', border: '1px solid var(--border)',
                         borderRadius: 6, padding: '3px 6px',
                         cursor: 'pointer', fontFamily: 'inherit',
                       }}
@@ -830,13 +836,13 @@ export default function PokerRoomPage() {
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: 5,
                     padding: '7px 14px', fontSize: 12, fontWeight: 500,
-                    color: '#64748B', background: '#FFFFFF',
-                    border: '1px solid #E2E8F0', borderRadius: 8,
+                    color: 'var(--text-muted)', background: 'var(--bg-elevated)',
+                    border: '1px solid var(--border)', borderRadius: 8,
                     cursor: 'pointer', transition: 'background 0.15s, color 0.15s',
                     fontFamily: 'inherit',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = '#EDF0F4'; e.currentTarget.style.color = '#1E293B'; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#64748B'; }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
                 >
                   <LogOut size={13} />
                   {t('poker.room.leave')}
@@ -848,14 +854,14 @@ export default function PokerRoomPage() {
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 5,
                       padding: '7px 14px', fontSize: 12, fontWeight: 500,
-                      color: '#DC2626', background: '#FFFFFF',
+                      color: '#DC2626', background: 'var(--bg-elevated)',
                       border: '1px solid rgba(220,38,38,0.3)', borderRadius: 8,
                       cursor: closing ? 'not-allowed' : 'pointer',
                       opacity: closing ? 0.5 : 1,
                       transition: 'background 0.15s', fontFamily: 'inherit',
                     }}
                     onMouseEnter={(e) => { if (!closing) e.currentTarget.style.background = 'rgba(220,38,38,0.04)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; }}
                   >
                     <X size={13} />
                     {t('poker.room.closeSession')}
@@ -867,7 +873,7 @@ export default function PokerRoomPage() {
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 6,
                       padding: '8px 18px', fontSize: 13, fontWeight: 600,
-                      background: '#2563EB', color: '#FFFFFF',
+                      background: 'var(--accent)', color: 'var(--accent-fg)',
                       border: 'none', borderRadius: 8,
                       cursor: 'pointer', transition: 'background 0.15s',
                       boxShadow: '0 2px 8px rgba(37,99,235,0.2)',
@@ -927,10 +933,10 @@ export default function PokerRoomPage() {
       {!isClosed && !(session.status === 'REVEALED' || currentRound?.status === 'REVEALED') &&
        (session.status !== 'LOBBY' || currentRound) && (
         <>
-          <div className="poker-lobby-full" style={{ minHeight: '70vh' }}>
+          <div className="poker-lobby-full">
             {/* Left sidebar: Task info */}
             <div style={{
-              borderRight: '1px solid #E2E8F0',
+              borderRight: '1px solid var(--border)',
               padding: '24px',
               display: 'flex',
               flexDirection: 'column',
@@ -944,13 +950,13 @@ export default function PokerRoomPage() {
                 const TypeIcon = tc?.icon;
                 return (
                   <>
-                    <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#1E293B', lineHeight: 1.3 }}>
+                    <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3 }}>
                       {currentRound.taskTitle}
                     </h3>
                     {task && TypeIcon && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
                         <div>
-                          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                             {t('tasks.modal.type')}
                           </p>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -961,7 +967,7 @@ export default function PokerRoomPage() {
                           </div>
                         </div>
                         <div>
-                          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                          <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                             {t('tasks.modal.priority')}
                           </p>
                           <span style={{
@@ -974,7 +980,7 @@ export default function PokerRoomPage() {
                         </div>
                         {task.storyPoints != null && (
                           <div>
-                            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                               Story Points
                             </p>
                             <span style={{
@@ -988,27 +994,27 @@ export default function PokerRoomPage() {
                         )}
                         {task.description && (
                           <div>
-                            <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                            <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                               {t('tasks.modal.description')}
                             </p>
-                            <p style={{ margin: 0, fontSize: 13, color: '#1F2937', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                            <p style={{ margin: 0, fontSize: 13, color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                               {task.description}
                             </p>
                           </div>
                         )}
                         {task.definitionOfDone && (
                           <div>
-                            <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                            <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                               {t('tasks.modal.definitionOfDone')}
                             </p>
-                            <p style={{ margin: 0, fontSize: 13, color: '#1F2937', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+                            <p style={{ margin: 0, fontSize: 13, color: 'var(--text)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
                               {task.definitionOfDone}
                             </p>
                           </div>
                         )}
                         {(task.labels?.length ?? 0) > 0 && (
                           <div>
-                            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                               {t('tasks.modal.labels')}
                             </p>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -1026,7 +1032,7 @@ export default function PokerRoomPage() {
                         )}
                         {votingSubtasks.length > 0 && (
                           <div>
-                            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                               {t('tasks.modal.subtasks')}
                             </p>
                             <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -1035,12 +1041,12 @@ export default function PokerRoomPage() {
                                 return (
                                   <div key={st.id} style={{
                                     display: 'flex', alignItems: 'center', gap: 8,
-                                    padding: '6px 0', borderBottom: '1px solid #F1F5F9',
+                                    padding: '6px 0', borderBottom: '1px solid var(--border)',
                                   }}>
                                     <div style={{
                                       width: 18, height: 18, borderRadius: 4,
-                                      border: isDone ? 'none' : '2px solid #CBD5E1',
-                                      background: isDone ? '#3B82F6' : '#fff',
+                                      border: isDone ? 'none' : '2px solid var(--border-strong)',
+                                      background: isDone ? '#3B82F6' : 'var(--bg-elevated)',
                                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                                       flexShrink: 0,
                                     }}>
@@ -1052,7 +1058,7 @@ export default function PokerRoomPage() {
                                     </div>
                                     <span style={{
                                       fontSize: 13, fontWeight: 400,
-                                      color: isDone ? '#94A3B8' : '#1F2937',
+                                      color: isDone ? 'var(--text-faint)' : 'var(--text)',
                                       textDecoration: isDone ? 'line-through' : 'none',
                                       overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
                                     }}>
@@ -1066,7 +1072,7 @@ export default function PokerRoomPage() {
                         )}
                         {task.assigneeId && userMap[task.assigneeId] && (
                           <div>
-                            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94A3B8' }}>
+                            <p style={{ margin: '0 0 6px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
                               {t('tasks.modal.assignee')}
                             </p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1075,7 +1081,7 @@ export default function PokerRoomPage() {
                                 avatarUrl={userMap[task.assigneeId].avatarUrl}
                                 size={24}
                               />
-                              <span style={{ fontSize: 13, fontWeight: 500, color: '#1E293B' }}>
+                              <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
                                 {userMap[task.assigneeId].fullName ?? userMap[task.assigneeId].username}
                               </span>
                             </div>
@@ -1089,12 +1095,12 @@ export default function PokerRoomPage() {
             </div>
 
             {/* Right: Controls + Participants + Cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', background: '#F8FAFC', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg-sunken)', overflow: 'hidden' }}>
               {/* Top bar */}
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '14px 20px', borderBottom: '1px solid #E2E8F0',
-                background: '#FFFFFF', flexShrink: 0,
+                padding: '14px 20px', borderBottom: '1px solid var(--border)',
+                background: 'var(--bg-elevated)', flexShrink: 0,
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{
@@ -1110,7 +1116,7 @@ export default function PokerRoomPage() {
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 5,
                       fontSize: 13, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
-                      color: timerExpired ? '#DC2626' : timerRemaining <= 10 ? '#F59E0B' : '#64748B',
+                      color: timerExpired ? 'var(--danger-text)' : timerRemaining <= 10 ? 'var(--warning-text)' : 'var(--text-muted)',
                     }}>
                       <Clock size={13} />
                       {formatTimer(timerRemaining)}
@@ -1123,13 +1129,13 @@ export default function PokerRoomPage() {
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 5,
                       padding: '7px 14px', fontSize: 12, fontWeight: 500,
-                      color: '#64748B', background: '#FFFFFF',
-                      border: '1px solid #E2E8F0', borderRadius: 8,
+                      color: 'var(--text-muted)', background: 'var(--bg-elevated)',
+                      border: '1px solid var(--border)', borderRadius: 8,
                       cursor: 'pointer', transition: 'background 0.15s, color 0.15s',
                       fontFamily: 'inherit',
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#EDF0F4'; e.currentTarget.style.color = '#1E293B'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; e.currentTarget.style.color = '#64748B'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-elevated)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
                   >
                     <LogOut size={13} />
                     {t('poker.room.leave')}
@@ -1140,7 +1146,7 @@ export default function PokerRoomPage() {
                       style={{
                         display: 'inline-flex', alignItems: 'center', gap: 6,
                         padding: '8px 18px', fontSize: 13, fontWeight: 600,
-                        background: '#8B5CF6', color: '#FFFFFF',
+                        background: 'var(--purple)', color: 'var(--accent-fg)',
                         border: 'none', borderRadius: 8,
                         cursor: 'pointer', transition: 'background 0.15s',
                         boxShadow: '0 2px 8px rgba(139,92,246,0.2)',
@@ -1179,7 +1185,7 @@ export default function PokerRoomPage() {
                 ) : !isFacilitator ? (
                   <div style={{ padding: '16px 20px', textAlign: 'center' }}>
                     <p style={{
-                      margin: 0, fontSize: 13, color: '#94A3B8', fontWeight: 500,
+                      margin: 0, fontSize: 13, color: 'var(--text-faint)', fontWeight: 500,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     }}>
                       <Zap size={14} />

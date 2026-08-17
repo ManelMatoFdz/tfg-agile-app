@@ -1,5 +1,6 @@
 package com.tfg.agile.app.user_service.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tfg.agile.app.user_service.entity.Notification;
 import com.tfg.agile.app.user_service.entity.NotificationSettings;
 import com.tfg.agile.app.user_service.entity.User;
@@ -39,7 +40,8 @@ class NotificationProcessingServiceTest {
         service = new NotificationProcessingService(
                 userRepository,
                 notificationSettingsRepository,
-                notificationRepository
+                notificationRepository,
+                new ObjectMapper()
         );
     }
 
@@ -129,5 +131,32 @@ class NotificationProcessingServiceTest {
         assertThat(notification.getTitle()).isEqualTo("Notification");
         assertThat(notification.getMessage()).isEqualTo("You have a new notification.");
         assertThat(notification.getLink()).isNull();
+    }
+
+    @Test
+    void process_mergesActorIntoExistingData() {
+        User user = TestDataFactory.user();
+        NotificationSettings settings = TestDataFactory.notificationSettings(user);
+        java.util.UUID actorUserId = java.util.UUID.randomUUID();
+        NotificationQueueMessage message = new NotificationQueueMessage(
+                user.getId(),
+                "Invitation",
+                "You were invited",
+                "WORKSPACE_INVITATION",
+                "/workspaces",
+                "{\"invitationId\":\"invite-1\"}",
+                actorUserId
+        );
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(notificationSettingsRepository.findByUserId(user.getId())).thenReturn(Optional.of(settings));
+
+        service.process(message);
+
+        ArgumentCaptor<Notification> notificationCaptor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).save(notificationCaptor.capture());
+        assertThat(notificationCaptor.getValue().getData())
+                .contains("\"invitationId\":\"invite-1\"")
+                .contains("\"actorUserId\":\"" + actorUserId + "\"");
     }
 }

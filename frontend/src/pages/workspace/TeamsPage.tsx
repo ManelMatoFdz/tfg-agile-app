@@ -168,7 +168,7 @@ export default function TeamsPage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
           <div style={{
             width: 24, height: 24,
-            border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
+            border: '2px solid var(--border)', borderTopColor: 'var(--accent-text)',
             borderRadius: '50%', animation: 'spin 0.7s linear infinite',
           }} />
         </div>
@@ -598,7 +598,7 @@ function TeamRow({ team, memberCount, memberIds, members, color, to }: {
         <Link
           to={to}
           style={{
-            fontSize: 12, fontWeight: 500, color: 'var(--accent)',
+            fontSize: 12, fontWeight: 500, color: 'var(--accent-text)',
             textDecoration: 'none',
           }}
           onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}

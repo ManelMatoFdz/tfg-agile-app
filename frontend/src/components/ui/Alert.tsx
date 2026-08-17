@@ -8,9 +8,9 @@ interface Props {
 }
 
 const palette = {
-  error:   { color: 'var(--danger)',  bg: 'var(--danger-bg)',  border: 'var(--danger)',  Icon: AlertCircle },
-  success: { color: 'var(--success)', bg: 'var(--success-bg)', border: 'var(--success)', Icon: CheckCircle2 },
-  info:    { color: 'var(--info)',    bg: 'var(--info-bg)',    border: 'var(--info)',    Icon: Info },
+  error:   { color: 'var(--danger-text)',  bg: 'var(--danger-bg)',  border: 'var(--danger)',  Icon: AlertCircle },
+  success: { color: 'var(--success-text)', bg: 'var(--success-bg)', border: 'var(--success)', Icon: CheckCircle2 },
+  info:    { color: 'var(--info-text)',    bg: 'var(--info-bg)',    border: 'var(--info)',    Icon: Info },
 };
 
 export default function Alert({ type, message, onClose }: Props) {

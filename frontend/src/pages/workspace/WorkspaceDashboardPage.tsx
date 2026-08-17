@@ -417,7 +417,7 @@ export default function WorkspaceDashboardPage() {
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
           <div style={{
-            width: 28, height: 28, border: '3px solid var(--border)', borderTopColor: 'var(--accent)',
+            width: 28, height: 28, border: '3px solid var(--border)', borderTopColor: 'var(--accent-text)',
             borderRadius: '50%', animation: 'spin 0.7s linear infinite',
           }} />
         </div>
@@ -432,7 +432,7 @@ export default function WorkspaceDashboardPage() {
             background: 'var(--accent-muted)', borderRadius: 'var(--radius-lg)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <LayoutGrid size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+            <LayoutGrid size={24} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
           </div>
           <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
             {t('workspace.dashboard.noProjects')}
@@ -567,7 +567,7 @@ export default function WorkspaceDashboardPage() {
               <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {createAction.error && (
                   <div style={{
-                    fontSize: 13, color: 'var(--danger)',
+                    fontSize: 13, color: 'var(--danger-text)',
                     background: 'var(--danger-bg)',
                     borderRadius: 'var(--radius-sm)', padding: '8px 12px',
                   }}>
@@ -665,7 +665,7 @@ export default function WorkspaceDashboardPage() {
                     </label>
                     {!showInlineCatForm ? (
                       <button type="button" onClick={() => setShowInlineCatForm(true)} style={{
-                        fontSize: 13, fontWeight: 500, color: 'var(--accent)',
+                        fontSize: 13, fontWeight: 500, color: 'var(--accent-text)',
                         background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                       }}>
                         + {t('workspace.dashboard.modal.newCategory')}
@@ -695,7 +695,7 @@ export default function WorkspaceDashboardPage() {
                       background: 'var(--bg-hover)',
                       display: 'flex', flexDirection: 'column', gap: 8,
                     }}>
-                      {inlineCatError && <p style={{ margin: 0, fontSize: 13, color: 'var(--danger)' }}>{inlineCatError}</p>}
+                      {inlineCatError && <p style={{ margin: 0, fontSize: 13, color: 'var(--danger-text)' }}>{inlineCatError}</p>}
                       <div style={{ display: 'flex', gap: 8 }}>
                         <input
                           type="text"
@@ -752,7 +752,7 @@ export default function WorkspaceDashboardPage() {
                       >
                         <p style={{
                           margin: 0, fontSize: 13, fontWeight: 600,
-                          color: projectVisibility === v ? 'var(--accent)' : 'var(--text-muted)',
+                          color: projectVisibility === v ? 'var(--accent-text)' : 'var(--text-muted)',
                         }}>
                           {t(`projects.settings.visibility.${v}`)}
                         </p>

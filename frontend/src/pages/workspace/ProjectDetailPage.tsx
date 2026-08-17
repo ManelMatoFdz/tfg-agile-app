@@ -10,8 +10,8 @@ import PageTitle from '../../components/motion/PageTitle';
 import type { Project, TeamMember, TeamRole } from '../../types';
 
 const ROLE_STYLE: Record<TeamRole, { color: string; bg: string }> = {
-  ADMIN:  { color: 'var(--accent)',  bg: 'var(--accent-muted)' },
-  MEMBER: { color: 'var(--success)',  bg: 'var(--success-bg)' },
+  ADMIN:  { color: 'var(--accent-text)',  bg: 'var(--accent-muted)' },
+  MEMBER: { color: 'var(--success-text)',  bg: 'var(--success-bg)' },
 };
 
 function MemberRow({ member, displayName, avatarUrl }: { member: TeamMember; displayName: string; avatarUrl?: string }) {
@@ -85,7 +85,7 @@ export default function ProjectDetailPage() {
         <Link
           to={`/workspaces/${workspaceId}`}
           style={{ color: 'var(--text-faint)', textDecoration: 'none', transition: `color var(--duration)` }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent)')}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--accent-text)')}
           onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
         >
           {t('projects.breadcrumb')}
@@ -106,7 +106,7 @@ export default function ProjectDetailPage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
           <div style={{
             width: 24, height: 24,
-            border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
+            border: '2px solid var(--border)', borderTopColor: 'var(--accent-text)',
             borderRadius: '50%', animation: 'spin 0.7s linear infinite',
           }} />
         </div>
@@ -188,7 +188,7 @@ export default function ProjectDetailPage() {
 
             {membersAction.loading ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
-                <div style={{ width: 18, height: 18, border: '2px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                <div style={{ width: 18, height: 18, border: '2px solid var(--border)', borderTopColor: 'var(--accent-text)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
               </div>
             ) : members.length === 0 ? (
               <p style={{ margin: 0, fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', padding: '24px 0' }}>

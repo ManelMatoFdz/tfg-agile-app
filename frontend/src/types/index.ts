@@ -187,8 +187,60 @@ export interface Task {
   completedSubtaskCount: number;
   parentTitle?: string | null;
   definitionOfDone?: string | null;
+  blockedByCount: number;
+  blocksCount: number;
+  gitEventCount: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export type GitEventType = 'COMMIT' | 'BRANCH' | 'PULL_REQUEST';
+
+export interface GitEvent {
+  id: string;
+  taskId?: string | null;
+  taskTitle?: string | null;
+  projectId: string;
+  type: GitEventType;
+  externalId: string;
+  externalUrl: string;
+  title: string;
+  author: string;
+  status?: string | null;
+  receivedAt: string;
+}
+
+/** Respuesta paginada del backend (`PagedResponseDto`). */
+export interface PagedResponse<T> {
+  items: T[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+}
+
+export interface GitIntegration {
+  id: string;
+  projectId: string;
+  provider: 'GITHUB' | 'GITLAB';
+  repositoryUrl: string;
+  webhookUrl: string;
+  /** Solo llega en la respuesta del setup; despues siempre null. */
+  webhookSecret?: string | null;
+  createdAt: string;
+}
+
+export interface TaskDependency {
+  id: string;
+  blockingTaskId: string;
+  blockingTaskTitle?: string | null;
+  blockingTaskStatus?: string | null;
+  blockedTaskId: string;
+  blockedTaskTitle?: string | null;
+  blockedTaskStatus?: string | null;
+  createdBy: string;
+  createdAt: string;
 }
 
 export interface Sprint {
@@ -250,7 +302,9 @@ export type TaskActivityType =
   | 'DESCRIPTION_CHANGED'
   | 'STORY_POINTS_CHANGED'
   | 'READY_CHANGED'
-  | 'EPIC_CHANGED';
+  | 'EPIC_CHANGED'
+  | 'DEPENDENCY_ADDED'
+  | 'DEPENDENCY_REMOVED';
 
 export interface TaskActivity {
   id: string;

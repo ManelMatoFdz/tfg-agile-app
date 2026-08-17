@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { CheckSquare, ExternalLink, BookOpen, Bug, Filter, CornerDownRight } from 'lucide-react';
 import type { Task, TaskPriority, TaskType, Project } from '../types';
@@ -7,7 +7,6 @@ import { tasksApi } from '../api/tasks';
 import { projectsApi } from '../api/projects';
 import Alert from '../components/ui/Alert';
 import PageTitle from '../components/motion/PageTitle';
-import TaskModal from '../components/kanban/TaskModal';
 import SubtaskModal from '../components/kanban/SubtaskModal';
 import { getStatusLabel, getStatusColor, useBoardColumns } from '../hooks/useBoardColumns';
 
@@ -16,7 +15,7 @@ const STATUS_ORDER: string[] = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
 const PRIORITY_ORDER: Record<TaskPriority, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; bg: string }> = {
-  CRITICAL: { color: 'var(--danger)',     bg: 'var(--danger-bg)' },
+  CRITICAL: { color: 'var(--danger-text)',     bg: 'var(--danger-bg)' },
   HIGH:     { color: 'var(--ochre)',      bg: 'var(--warning-bg)' },
   MEDIUM:   { color: 'var(--ink-blue)',   bg: 'var(--info-bg)' },
   LOW:      { color: 'var(--text-faint)', bg: 'var(--bg-hover)' },
@@ -32,6 +31,7 @@ export default function MyTasksPage() {
   const { t } = useTranslation();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -44,10 +44,6 @@ export default function MyTasksPage() {
 
   // Active tab
   const [activeTab, setActiveTab] = useState<string>('TODO');
-
-  // Task modal (regular task)
-  const [viewTask, setViewTask] = useState<Task | null | undefined>(undefined);
-  const viewTaskColumns = useBoardColumns(viewTask?.projectId);
 
   // Subtask modal
   const [viewSubtask, setViewSubtask] = useState<Task | null>(null);
@@ -118,21 +114,21 @@ export default function MyTasksPage() {
   // Unique project ids in tasks (for filter)
   const taskProjectIds = useMemo(() => [...new Set(tasks.map((t) => t.projectId))], [tasks]);
 
+  // Esta pagina es multi-proyecto: el destino se construye con task.projectId,
+  // no con un parametro de ruta.
   const handleOpenTask = async (task: Task) => {
+    if (!task.parentId) {
+      navigate(`/workspaces/${workspaceId}/projects/${task.projectId}/tasks/${task.id}`, {
+        state: { from: location.pathname + location.search, task },
+      });
+      return;
+    }
     try {
       const fresh = await tasksApi.getById(task.id);
-      if (task.parentId) {
-        if (!fresh.parentId) fresh.parentId = task.parentId;
-        setViewSubtask(fresh);
-      } else {
-        setViewTask(fresh);
-      }
+      if (!fresh.parentId) fresh.parentId = task.parentId;
+      setViewSubtask(fresh);
     } catch {
-      if (task.parentId) {
-        setViewSubtask(task);
-      } else {
-        setViewTask(task);
-      }
+      setViewSubtask(task);
     }
   };
 
@@ -203,7 +199,7 @@ export default function MyTasksPage() {
           <div style={{
             width: 24, height: 24,
             border: '2px solid var(--border)',
-            borderTopColor: 'var(--accent)',
+            borderTopColor: 'var(--accent-text)',
             borderRadius: '50%',
             animation: 'spin 0.7s linear infinite',
           }} />
@@ -223,7 +219,7 @@ export default function MyTasksPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 12px',
           }}>
-            <CheckSquare size={20} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+            <CheckSquare size={20} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
           </div>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>{t('myTasks.empty')}</p>
           <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>{t('myTasks.emptySubtitle')}</p>
@@ -437,7 +433,7 @@ export default function MyTasksPage() {
                       <span style={{
                         flexShrink: 0,
                         fontWeight: 700,
-                        color: 'var(--accent)',
+                        color: 'var(--accent-text)',
                         background: 'var(--accent-muted)',
                         borderRadius: 'var(--radius-pill)',
                         width: 26,
@@ -474,7 +470,7 @@ export default function MyTasksPage() {
                         transition: 'color 150ms, border-color 150ms, background 150ms',
                       }}
                       onMouseEnter={(e) => {
-                        e.currentTarget.style.color = 'var(--accent)';
+                        e.currentTarget.style.color = 'var(--accent-text)';
                         e.currentTarget.style.borderColor = 'var(--accent)';
                         e.currentTarget.style.background = 'var(--accent-muted)';
                       }}
@@ -492,17 +488,6 @@ export default function MyTasksPage() {
             )}
           </div>
         </>
-      )}
-
-      {/* Task modal (read-only) */}
-      {viewTask !== undefined && (
-        <TaskModal
-          task={viewTask}
-          projectId={viewTask?.projectId}
-          columns={viewTaskColumns}
-          readOnly
-          onClose={() => setViewTask(undefined)}
-        />
       )}
 
       {/* Subtask modal (read-only) */}

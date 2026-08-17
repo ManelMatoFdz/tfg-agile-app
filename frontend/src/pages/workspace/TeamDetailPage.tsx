@@ -144,7 +144,7 @@ function RoleBadge({ role }: { role: TeamRole }) {
     <span style={{
       fontSize: 11,
       fontWeight: 600,
-      color: isAdmin ? 'var(--accent)' : 'var(--text-faint)',
+      color: isAdmin ? 'var(--accent-text)' : 'var(--text-faint)',
       background: isAdmin ? 'var(--accent-muted)' : 'var(--bg-hover)',
       border: `1px solid ${isAdmin ? 'var(--accent)' : 'var(--border)'}`,
       borderRadius: 'var(--radius-sm)',
@@ -355,7 +355,7 @@ export default function TeamDetailPage() {
         <Link
           to={`/workspaces/${workspaceId}/teams`}
           style={{ fontSize: 13, color: 'var(--text-faint)', textDecoration: 'none', transition: `color var(--duration)` }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent)')}
+          onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent-text)')}
           onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-faint)')}
         >
           {t('teams.detail.breadcrumb')}
@@ -375,7 +375,7 @@ export default function TeamDetailPage() {
           <div style={{
             width: 24, height: 24,
             border: '2px solid var(--border)',
-            borderTopColor: 'var(--accent)',
+            borderTopColor: 'var(--accent-text)',
             borderRadius: '50%',
             animation: 'spin 0.7s linear infinite',
           }} />
@@ -449,7 +449,7 @@ export default function TeamDetailPage() {
                       cursor: 'pointer',
                       transition: `background var(--duration), color var(--duration)`,
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--warning-bg)'; e.currentTarget.style.color = 'var(--warning)'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--warning-bg)'; e.currentTarget.style.color = 'var(--warning-text)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-faint)'; }}
                   >
                     <LogOut size={14} strokeWidth={2} />
@@ -467,7 +467,7 @@ export default function TeamDetailPage() {
                       cursor: 'pointer',
                       transition: `background var(--duration), color var(--duration)`,
                     }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger-bg)'; e.currentTarget.style.color = 'var(--danger)'; }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger-bg)'; e.currentTarget.style.color = 'var(--danger-text)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-faint)'; }}
                   >
                     <Trash2 size={14} strokeWidth={2} />
@@ -494,14 +494,14 @@ export default function TeamDetailPage() {
                     icon: <Users size={18} strokeWidth={2} />,
                     label: t('teams.detail.totalMembers'),
                     value: members.length,
-                    color: 'var(--accent)',
+                    color: 'var(--accent-text)',
                     bg: 'var(--accent-muted)',
                   },
                   {
                     icon: <FolderOpen size={18} strokeWidth={2} />,
                     label: t('teams.detail.activeProjects'),
                     value: activeProjectsCount,
-                    color: 'var(--purple)',
+                    color: 'var(--purple-text)',
                     bg: 'var(--purple-soft)',
                   },
                   {
@@ -509,7 +509,7 @@ export default function TeamDetailPage() {
                     label: t('teams.detail.avgVelocity'),
                     value: avgVelocity,
                     suffix: ' SP',
-                    color: 'var(--green)',
+                    color: 'var(--green-text)',
                     bg: 'var(--green-soft)',
                   },
                 ].map((stat) => (
@@ -613,7 +613,7 @@ export default function TeamDetailPage() {
                     <div style={{ display: 'flex', justifyContent: 'center', padding: '16px 0' }}>
                       <div style={{
                         width: 16, height: 16,
-                        border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
+                        border: '2px solid var(--border)', borderTopColor: 'var(--accent-text)',
                         borderRadius: '50%', animation: 'spin 0.7s linear infinite',
                       }} />
                     </div>
@@ -654,7 +654,7 @@ export default function TeamDetailPage() {
               <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
                 <div style={{
                   width: 20, height: 20,
-                  border: '2px solid var(--border)', borderTopColor: 'var(--accent)',
+                  border: '2px solid var(--border)', borderTopColor: 'var(--accent-text)',
                   borderRadius: '50%', animation: 'spin 0.7s linear infinite',
                 }} />
               </div>
@@ -666,7 +666,7 @@ export default function TeamDetailPage() {
                   <button
                     onClick={() => setShowAddMember(true)}
                     style={{
-                      marginTop: 12, fontSize: 12, fontWeight: 500, color: 'var(--accent)',
+                      marginTop: 12, fontSize: 12, fontWeight: 500, color: 'var(--accent-text)',
                       background: 'none', border: 'none', cursor: 'pointer',
                     }}
                   >
@@ -840,7 +840,7 @@ export default function TeamDetailPage() {
                 borderRadius: 'var(--radius-md)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
-                <LogOut size={18} strokeWidth={2} style={{ color: 'var(--warning)' }} />
+                <LogOut size={18} strokeWidth={2} style={{ color: 'var(--warning-text)' }} />
               </div>
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                 {t('teams.detail.confirmLeave.title')}
@@ -882,7 +882,7 @@ export default function TeamDetailPage() {
                 borderRadius: 'var(--radius-md)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
-                <Trash2 size={18} strokeWidth={2} style={{ color: 'var(--danger)' }} />
+                <Trash2 size={18} strokeWidth={2} style={{ color: 'var(--danger-text)' }} />
               </div>
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                 {t('teams.detail.deleteConfirm.title')}
@@ -924,7 +924,7 @@ export default function TeamDetailPage() {
                 borderRadius: 'var(--radius-md)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
-                <UserMinus size={18} strokeWidth={2} style={{ color: 'var(--danger)' }} />
+                <UserMinus size={18} strokeWidth={2} style={{ color: 'var(--danger-text)' }} />
               </div>
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                 {t('teams.detail.confirmRemove.title')}
@@ -960,7 +960,7 @@ export default function TeamDetailPage() {
                 borderRadius: 'var(--radius-md)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
-                <ArrowLeftRight size={18} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                <ArrowLeftRight size={18} strokeWidth={2} style={{ color: 'var(--accent-text)' }} />
               </div>
               <h2 style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                 {t('teams.detail.confirmRoleChange.title')}
@@ -1134,7 +1134,7 @@ function MemberTableRow({ member, user, displayName, isSelf, canManage, removing
                 cursor: removing ? 'not-allowed' : 'pointer',
                 transition: 'background var(--duration), color var(--duration), border-color var(--duration)',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-muted)'; e.currentTarget.style.color = 'var(--accent)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--accent-muted)'; e.currentTarget.style.color = 'var(--accent-text)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg)'; e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
             >
               <ArrowLeftRight size={13} strokeWidth={2} />
@@ -1151,13 +1151,13 @@ function MemberTableRow({ member, user, displayName, isSelf, canManage, removing
                   cursor: removing ? 'not-allowed' : 'pointer',
                   transition: 'background var(--duration), color var(--duration), border-color var(--duration)',
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger-bg)'; e.currentTarget.style.color = 'var(--danger)'; e.currentTarget.style.borderColor = 'var(--danger)'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--danger-bg)'; e.currentTarget.style.color = 'var(--danger-text)'; e.currentTarget.style.borderColor = 'var(--danger)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--bg)'; e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
               >
                 {removing ? (
                   <div style={{
                     width: 11, height: 11,
-                    border: '2px solid var(--border)', borderTopColor: 'var(--danger)',
+                    border: '2px solid var(--border)', borderTopColor: 'var(--danger-text)',
                     borderRadius: '50%', animation: 'spin 0.7s linear infinite',
                   }} />
                 ) : (

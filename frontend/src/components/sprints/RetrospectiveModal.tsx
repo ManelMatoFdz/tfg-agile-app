@@ -215,7 +215,7 @@ export default function RetrospectiveModal({ sprint, onClose, onSaved }: Retrosp
           /* ── Step 2: Fill in answers ── */
           <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
             {error && (
-              <div style={{ fontSize: 12, color: 'var(--danger)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
+              <div style={{ fontSize: 12, color: 'var(--danger-text)', background: 'var(--danger-bg)', borderRadius: 'var(--radius-sm)', padding: '8px 12px' }}>
                 {error}
               </div>
             )}

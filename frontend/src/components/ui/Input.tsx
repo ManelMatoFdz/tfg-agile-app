@@ -33,7 +33,7 @@ export default function Input({ label, error, hint, icon, id, onFocus, onBlur, s
             left: 12,
             top: '50%',
             transform: 'translateY(-50%)',
-            color: focused ? 'var(--accent)' : 'var(--text-faint)',
+            color: focused ? 'var(--accent-text)' : 'var(--text-faint)',
             transition: 'color var(--duration) var(--ease-in-out)',
             display: 'flex',
             alignItems: 'center',
@@ -68,7 +68,7 @@ export default function Input({ label, error, hint, icon, id, onFocus, onBlur, s
         <p style={{
           margin: 0,
           fontSize: 12,
-          color: 'var(--danger)',
+          color: 'var(--danger-text)',
           display: 'flex',
           alignItems: 'center',
           gap: 4,

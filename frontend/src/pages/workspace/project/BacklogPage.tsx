@@ -1,11 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, ClipboardList, Filter as FilterIcon, BookOpen, CheckSquare, Bug, ChevronRight, ChevronDown, ChevronLeft, Target } from 'lucide-react';
+import { ClipboardList, Filter as FilterIcon, BookOpen, CheckSquare, Bug, ChevronRight, ChevronDown, ChevronLeft, Target, Lock } from 'lucide-react';
 import type { Task, TaskPriority, TaskType, UserSummary } from '../../../types';
 import { sprintsApi } from '../../../api/sprints';
 import { tasksApi } from '../../../api/tasks';
-import type { CreateTaskDto, UpdateTaskDto } from '../../../api/tasks';
 
 const TYPE_ICON: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
   STORY: { icon: BookOpen, color: '#7C3AED' },
@@ -14,8 +13,8 @@ const TYPE_ICON: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
 };
 import { labelsApi } from '../../../api/labels';
 import { epicsApi } from '../../../api/epics';
-import { AssigneeAvatar } from '../../../components/kanban/TaskModal';
-import TaskModal from '../../../components/kanban/TaskModal';
+import { AssigneeAvatar } from '../../../components/kanban/AssigneePicker';
+import CreateTaskModal from '../../../components/kanban/CreateTaskModal';
 import SubtaskModal from '../../../components/kanban/SubtaskModal';
 import TaskFilterBar, { type TaskFilters, EMPTY_FILTERS, hasActiveFilters } from '../../../components/kanban/TaskFilterBar';
 import Alert from '../../../components/ui/Alert';
@@ -29,7 +28,7 @@ const PRIORITY_CONFIG: Record<TaskPriority, { color: string; bg: string; border:
   CRITICAL: { color: '#DC2626', bg: 'rgba(220,38,38,0.06)', border: '#DC2626' },
   HIGH:     { color: '#D97706', bg: 'rgba(217,119,6,0.06)', border: '#D97706' },
   MEDIUM:   { color: '#2563EB', bg: 'rgba(37,99,235,0.06)', border: '#2563EB' },
-  LOW:      { color: '#94A3B8', bg: 'var(--bg-hover)',       border: '#CBD5E1' },
+  LOW:      { color: 'var(--text-faint)', bg: 'var(--bg-hover)',       border: 'var(--border-strong)' },
 };
 
 const READY_CONFIG = {
@@ -51,16 +50,18 @@ function loadFilters(projectId: string): TaskFilters {
 
 export default function BacklogPage() {
   const { t } = useTranslation();
-  const { projectId } = useParams<{ projectId: string }>();
+  const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const { canCreateTask, canEditBacklogTask, canDeleteBacklogTask } = useProjectMember(projectId);
+  const { canCreateTask, canEditBacklogTask } = useProjectMember(projectId);
   const { members, userMap } = useProjectMembers(projectId);
   const columns = useBoardColumns(projectId);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [modalTask, setModalTask] = useState<Task | null | undefined>(undefined);
+  const [creating, setCreating] = useState(false);
   const [subtaskModalTask, setSubtaskModalTask] = useState<Task | null>(null);
 
   const [labels, setLabels] = useState<Label[]>([]);
@@ -201,26 +202,17 @@ export default function BacklogPage() {
     // Tasks without epic
     const noEpicTasks = byEpic.get(null);
     if (noEpicTasks && noEpicTasks.length > 0) {
-      groups.push({ epicId: null, epicName: t('tasks.modal.noEpic'), epicColor: '#9CA3AF', tasks: noEpicTasks });
+      groups.push({ epicId: null, epicName: t('tasks.modal.noEpic'), epicColor: 'var(--text-faint)', tasks: noEpicTasks });
     }
 
     return groups;
   })() : [];
 
-  const handleSave = async (dto: CreateTaskDto | UpdateTaskDto) => {
-    if (modalTask) {
-      await tasksApi.update(modalTask.id, dto as UpdateTaskDto);
-    } else {
-      await tasksApi.create(projectId!, dto as CreateTaskDto);
-    }
-    fetchTasks(filters);
-  };
-
-  const handleDelete = async () => {
-    if (!modalTask) return;
-    await tasksApi.delete(modalTask.id);
-    fetchTasks(filters);
-  };
+  const openTask = (task: Task) =>
+    navigate(
+      `/workspaces/${workspaceId}/projects/${task.projectId ?? projectId}/tasks/${task.id}`,
+      { state: { from: location.pathname + location.search, task } },
+    );
 
   const renderTaskRow = (task: Task) => {
     const typeConf = TYPE_ICON[task.type ?? 'TASK'];
@@ -244,7 +236,7 @@ export default function BacklogPage() {
         }}
       >
         <button
-          onClick={() => canEditBacklogTask && setModalTask(task)}
+          onClick={() => openTask(task)}
           style={{
             width: '100%',
             textAlign: 'left',
@@ -255,10 +247,10 @@ export default function BacklogPage() {
             padding: '18px 24px',
             background: 'transparent',
             border: 'none',
-            cursor: canEditBacklogTask ? 'pointer' : 'default',
+            cursor: 'pointer',
             transition: 'background 150ms',
           }}
-          onMouseEnter={e => canEditBacklogTask && (e.currentTarget.style.background = 'var(--bg-hover)')}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
         >
           {/* Type icon + expand toggle */}
@@ -282,6 +274,11 @@ export default function BacklogPage() {
           {/* Summary */}
           <div style={{ minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {task.blockedByCount > 0 && (
+                <span title={t('tasks.card.blocked')} style={{ display: 'flex', alignItems: 'center', flexShrink: 0, color: '#DC2626' }}>
+                  <Lock size={13} strokeWidth={2} />
+                </span>
+              )}
               <p style={{
                 margin: 0, fontSize: 14, fontWeight: 500, color: 'var(--text)',
                 overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
@@ -355,7 +352,7 @@ export default function BacklogPage() {
           <div style={{ textAlign: 'center' }}>
             {task.storyPoints != null ? (
               <span style={{
-                fontWeight: 700, color: 'var(--accent)', background: 'var(--accent-muted)',
+                fontWeight: 700, color: 'var(--accent-text)', background: 'var(--accent-muted)',
                 borderRadius: 'var(--radius-pill)', width: 26, height: 26,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                 fontSize: 12, fontFamily: 'var(--font-mono)',
@@ -410,8 +407,8 @@ export default function BacklogPage() {
             >
               <span style={{
                 width: 16, height: 16, borderRadius: 4, flexShrink: 0,
-                border: subDone ? 'none' : '2px solid #CBD5E1',
-                background: subDone ? '#3B82F6' : '#fff',
+                border: subDone ? 'none' : '2px solid var(--border-strong)',
+                background: subDone ? '#3B82F6' : 'var(--bg-elevated)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 {subDone && (
@@ -477,7 +474,7 @@ export default function BacklogPage() {
               return (
                 <button
                   key={item.type}
-                  onClick={() => { setCreateType(item.type); setModalTask(null); }}
+                  onClick={() => { setCreateType(item.type); setCreating(true); }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -529,7 +526,7 @@ export default function BacklogPage() {
               fontSize: 12,
               fontWeight: 600,
               whiteSpace: 'nowrap',
-              color: groupByEpic ? 'var(--accent)' : 'var(--text-muted)',
+              color: groupByEpic ? 'var(--accent-text)' : 'var(--text-muted)',
               background: groupByEpic ? 'var(--accent-muted)' : 'var(--bg-elevated)',
               border: `1.5px solid ${groupByEpic ? 'var(--accent)' : 'var(--border)'}`,
               borderRadius: 'var(--radius-md)',
@@ -551,7 +548,7 @@ export default function BacklogPage() {
             width: 28,
             height: 28,
             border: '3px solid var(--border)',
-            borderTopColor: 'var(--accent)',
+            borderTopColor: 'var(--accent-text)',
             borderRadius: '50%',
             animation: 'spin 0.7s linear infinite',
           }} />
@@ -576,8 +573,8 @@ export default function BacklogPage() {
             margin: '0 auto 16px',
           }}>
             {hasActiveFilters(filters)
-              ? <FilterIcon size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
-              : <ClipboardList size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+              ? <FilterIcon size={24} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
+              : <ClipboardList size={24} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
             }
           </div>
           <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
@@ -763,7 +760,7 @@ export default function BacklogPage() {
                 }}>
                   {t('projects.backlog.readyForSprint')}
                 </span>
-                <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
+                <span style={{ fontSize: 22, fontWeight: 700, color: 'var(--accent-text)', fontFamily: 'var(--font-mono)' }}>
                   {readyCount}
                 </span>
               </div>
@@ -826,18 +823,13 @@ export default function BacklogPage() {
         </div>
       )}
 
-      {/* Task modal */}
-      {modalTask !== undefined && (
-        <TaskModal
-          task={modalTask}
-          projectId={projectId}
-          columns={columns}
-          defaultStatus="TODO"
+      {/* Create task modal */}
+      {creating && (
+        <CreateTaskModal
+          projectId={projectId!}
           defaultType={createType}
-          onClose={() => setModalTask(undefined)}
-          onSave={handleSave}
-          onMove={undefined}
-          onDelete={modalTask && canDeleteBacklogTask ? handleDelete : undefined}
+          onCreated={() => fetchTasks(filters)}
+          onClose={() => setCreating(false)}
         />
       )}
 
@@ -902,7 +894,7 @@ function EpicLoadMore({
       <div style={{
         width: 16, height: 16,
         border: '2px solid var(--border)',
-        borderTopColor: 'var(--accent)',
+        borderTopColor: 'var(--accent-text)',
         borderRadius: '50%',
         animation: 'spin 0.7s linear infinite',
       }} />

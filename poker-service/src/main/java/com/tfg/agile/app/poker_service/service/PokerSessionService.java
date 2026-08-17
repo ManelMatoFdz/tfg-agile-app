@@ -82,7 +82,8 @@ public class PokerSessionService {
                     "Se ha creado la sesión «" + session.getName() + "»",
                     "POKER_INVITATION",
                     link,
-                    null
+                    null,
+                    creatorId
             );
         }
     }

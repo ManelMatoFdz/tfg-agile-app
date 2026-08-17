@@ -3,6 +3,13 @@ import Lenis from 'lenis';
 
 let lenisInstance: Lenis | null = null;
 
+/* El scroll suave es global, asi que cualquier vista que quiera hacer scroll
+   programatico o bloquearlo tiene que hablar con esta instancia: el
+   `overflow: hidden` del body y `scrollIntoView` no la detienen. */
+export function getLenis() {
+  return lenisInstance;
+}
+
 export function useLenis() {
   useEffect(() => {
     if (lenisInstance) return;

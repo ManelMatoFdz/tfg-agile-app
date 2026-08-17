@@ -197,7 +197,7 @@ export default function AppLayout() {
                 transition: `color var(--duration-micro) var(--ease-micro), background var(--duration-micro) var(--ease-micro)`,
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.color = 'var(--danger)';
+                e.currentTarget.style.color = 'var(--danger-text)';
                 e.currentTarget.style.background = 'var(--danger-bg)';
               }}
               onMouseLeave={e => {
@@ -261,7 +261,7 @@ export default function AppLayout() {
                     borderRadius: 'var(--radius-md)',
                     fontSize: 13,
                     fontWeight: active ? 600 : 500,
-                    color: active ? 'var(--accent)' : 'var(--text-muted)',
+                    color: active ? 'var(--accent-text)' : 'var(--text-muted)',
                     background: active ? 'var(--accent-muted)' : 'transparent',
                     textDecoration: 'none',
                     transition: `background var(--duration-micro) var(--ease-micro)`,
@@ -283,7 +283,7 @@ export default function AppLayout() {
                 borderRadius: 'var(--radius-md)',
                 fontSize: 13,
                 fontWeight: 500,
-                color: 'var(--danger)',
+                color: 'var(--danger-text)',
                 background: 'transparent',
                 border: 'none',
                 cursor: 'pointer',

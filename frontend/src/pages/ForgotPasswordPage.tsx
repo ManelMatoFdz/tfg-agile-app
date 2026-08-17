@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
           borderRadius: 'var(--radius-md)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-          <KeyRound size={24} strokeWidth={1.6} style={{ color: 'var(--accent)' }} />
+          <KeyRound size={24} strokeWidth={1.6} style={{ color: 'var(--accent-text)' }} />
         </div>
 
         {/* Header */}
@@ -71,7 +71,7 @@ export default function ForgotPasswordPage() {
             background: 'rgba(22, 163, 74, 0.06)',
             border: '1px solid rgba(22, 163, 74, 0.2)',
             borderRadius: 'var(--radius-md)',
-            color: 'var(--success)',
+            color: 'var(--success-text)',
             fontSize: 13,
             lineHeight: 1.5,
           }}>
@@ -151,7 +151,7 @@ export default function ForgotPasswordPage() {
               gap: 6,
               fontSize: 13,
               fontWeight: 500,
-              color: 'var(--accent)',
+              color: 'var(--accent-text)',
               textDecoration: 'none',
             }}
             onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}

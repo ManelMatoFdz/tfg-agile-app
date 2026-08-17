@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { LayoutDashboard, AlertTriangle, Settings, Filter as FilterIcon, Calendar, Zap } from 'lucide-react';
+import { LayoutDashboard, AlertTriangle, Settings, Filter as FilterIcon, Calendar } from 'lucide-react';
 import { sprintsApi } from '../../../api/sprints';
 import { boardColumnsApi } from '../../../api/boardColumns';
 import { labelsApi } from '../../../api/labels';
@@ -27,7 +27,7 @@ export default function KanbanPage() {
   const navigate = useNavigate();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
 
-  const { canMoveTask, canDeleteSprintTask, isAdmin, isScrumMaster } = useProjectMember(projectId);
+  const { canMoveTask, isAdmin, isScrumMaster } = useProjectMember(projectId);
   const { members, userMap } = useProjectMembers(projectId);
 
   const [activeSprint, setActiveSprint] = useState<Sprint | null>(null);
@@ -147,7 +147,7 @@ export default function KanbanPage() {
             width: 28,
             height: 28,
             border: '3px solid var(--border)',
-            borderTopColor: 'var(--accent)',
+            borderTopColor: 'var(--accent-text)',
             borderRadius: '50%',
             animation: 'spin 0.7s linear infinite',
           }} />
@@ -171,7 +171,7 @@ export default function KanbanPage() {
             justifyContent: 'center',
             margin: '0 auto 16px',
           }}>
-            <LayoutDashboard size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+            <LayoutDashboard size={24} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
           </div>
           <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
             {t('projects.kanban.noActiveSprint')}
@@ -181,7 +181,7 @@ export default function KanbanPage() {
             {workspaceId && projectId && (
               <Link
                 to={`/workspaces/${workspaceId}/projects/${projectId}/sprints`}
-                style={{ color: 'var(--accent)', textDecoration: 'none', fontWeight: 600 }}
+                style={{ color: 'var(--accent-text)', textDecoration: 'none', fontWeight: 600 }}
                 onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                 onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
               >
@@ -198,12 +198,12 @@ export default function KanbanPage() {
             alignItems: 'flex-start',
             justifyContent: 'space-between',
             gap: 12,
-            marginBottom: activeSprint.goal ? 12 : 16,
+            marginBottom: 16,
             flexWrap: 'wrap',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <h2 style={{ margin: 0, fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <LayoutDashboard size={20} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                <LayoutDashboard size={20} strokeWidth={2} style={{ color: 'var(--accent-text)' }} />
                 {t('projects.tabs.board')}: {activeSprint.name}
               </h2>
               <span style={{
@@ -214,7 +214,7 @@ export default function KanbanPage() {
                 padding: '4px 10px',
                 borderRadius: 'var(--radius-sm)',
                 background: 'var(--accent-muted)',
-                color: 'var(--accent)',
+                color: 'var(--accent-text)',
               }}>
                 {t('projects.sprints.status.ACTIVE')}
               </span>
@@ -225,7 +225,7 @@ export default function KanbanPage() {
                 <span style={{
                   fontSize: 12,
                   fontWeight: 600,
-                  color: daysRemaining <= 3 ? 'var(--warning)' : 'var(--text-muted)',
+                  color: daysRemaining <= 3 ? 'var(--warning-text)' : 'var(--text-muted)',
                   padding: '4px 10px',
                   background: daysRemaining <= 3 ? 'var(--warning-bg)' : 'var(--bg-hover)',
                   borderRadius: 'var(--radius-sm)',
@@ -287,26 +287,6 @@ export default function KanbanPage() {
             </div>
           </div>
 
-          {/* Sprint Goal */}
-          {activeSprint.goal && (
-            <div style={{
-              display: 'flex', alignItems: 'flex-start', gap: 8,
-              background: 'var(--accent-muted)', border: '1px solid var(--accent)',
-              borderRadius: 'var(--radius-md)', padding: '12px 16px',
-              marginBottom: 16,
-            }}>
-              <Zap size={14} strokeWidth={2} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }} />
-              <div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                  {t('projects.sprints.planning.goal')}
-                </span>
-                <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text)' }}>
-                  {activeSprint.goal}
-                </p>
-              </div>
-            </div>
-          )}
-
           {sprintOverdueDays > 0 && (
             <div style={{
               display: 'flex', alignItems: 'center', gap: 10,
@@ -315,8 +295,8 @@ export default function KanbanPage() {
               border: '1px solid var(--warning)',
               borderRadius: 'var(--radius-md)',
             }}>
-              <AlertTriangle size={16} strokeWidth={2} style={{ color: 'var(--warning)', flexShrink: 0 }} />
-              <p style={{ margin: 0, fontSize: 13, color: 'var(--warning)', fontWeight: 500 }}>
+              <AlertTriangle size={16} strokeWidth={2} style={{ color: 'var(--warning-text)', flexShrink: 0 }} />
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--warning-text)', fontWeight: 500 }}>
                 {t('projects.kanban.overdueBanner', { days: sprintOverdueDays, pending: tasks.filter((tt) => !columns.some((c) => c.doneEquivalent && c.name === tt.status)).length })}
               </p>
             </div>
@@ -349,7 +329,7 @@ export default function KanbanPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 margin: '0 auto 16px',
               }}>
-                <FilterIcon size={24} strokeWidth={1.5} style={{ color: 'var(--accent)' }} />
+                <FilterIcon size={24} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
               </div>
               <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>
                 {t('tasks.filters.noResults')}
@@ -368,8 +348,6 @@ export default function KanbanPage() {
               onError={setError}
               disableCreate={true}
               canMove={canMoveTask}
-              canDelete={canDeleteSprintTask}
-              readOnly={!canMoveTask}
             />
           )}
         </>

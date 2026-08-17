@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   ChevronLeft, ChevronRight, ChevronDown, CheckCircle2, TrendingUp,
@@ -16,24 +16,21 @@ import { tasksApi } from '../../../api/tasks';
 import Alert from '../../../components/ui/Alert';
 import SnapshotModal from '../../../components/sprints/SnapshotModal';
 import RetrospectiveModal, { parseRetrospective } from '../../../components/sprints/RetrospectiveModal';
-import TaskModal from '../../../components/kanban/TaskModal';
 import SubtaskModal from '../../../components/kanban/SubtaskModal';
 import PageTitle from '../../../components/motion/PageTitle';
 import CountUp from '../../../components/motion/CountUp';
 import { useBoardColumns, getStatusLabel, getStatusColor } from '../../../hooks/useBoardColumns';
 import { useProjectMember } from '../../../hooks/useProjectMember';
+import { useChartColors } from '../../../utils/chartColors';
 
-const PRIORITY_COLOR: Record<TaskPriority, string> = {
-  CRITICAL: '#DC2626',
-  HIGH:     '#D97706',
-  MEDIUM:   '#2563EB',
-  LOW:      '#94A3B8',
-};
+const PRIORITY_KEY = {
+  CRITICAL: 'critical', HIGH: 'high', MEDIUM: 'medium', LOW: 'low',
+} as const satisfies Record<TaskPriority, string>;
 
 const TYPE_ICON: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
-  STORY: { icon: BookOpen, color: '#7C3AED' },
-  TASK:  { icon: CheckSquare, color: '#2563EB' },
-  BUG:   { icon: Bug, color: '#DC2626' },
+  STORY: { icon: BookOpen, color: 'var(--type-story)' },
+  TASK:  { icon: CheckSquare, color: 'var(--type-task)' },
+  BUG:   { icon: Bug, color: 'var(--type-bug)' },
 };
 
 // ── Health score ──────────────────────────────────────────────────────────────
@@ -48,22 +45,22 @@ function getHealth(donePct: number): HealthLevel {
 }
 
 const HEALTH_CONFIG: Record<HealthLevel, { accent: string; bg: string; textColor: string }> = {
-  excellent: { accent: 'var(--success)', bg: 'var(--success-bg)',  textColor: 'var(--success)' },
+  excellent: { accent: 'var(--success)', bg: 'var(--success-bg)',  textColor: 'var(--success-text)' },
   good:      { accent: 'var(--ink-blue)', bg: 'var(--info-bg)',   textColor: 'var(--ink-blue)' },
   acceptable:{ accent: 'var(--ochre)', bg: 'var(--warning-bg)',   textColor: 'var(--ochre)' },
-  poor:      { accent: 'var(--danger)', bg: 'var(--danger-bg)',   textColor: 'var(--danger)' },
+  poor:      { accent: 'var(--danger)', bg: 'var(--danger-bg)',   textColor: 'var(--danger-text)' },
 };
 
 // ── Circular progress ring ────────────────────────────────────────────────────
 
-function CircularProgress({ pct, color, size = 80 }: { pct: number; color: string; size?: number }) {
+function CircularProgress({ pct, color, track, size = 80 }: { pct: number; color: string; track: string; size?: number }) {
   const r = size / 2 - 6;
   const circ = 2 * Math.PI * r;
   const [animated, setAnimated] = useState(false);
   useEffect(() => { requestAnimationFrame(() => setAnimated(true)); }, []);
   return (
     <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#E2E8F0" strokeWidth={5} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track} strokeWidth={5} />
       <circle
         cx={size / 2} cy={size / 2} r={r}
         fill="none" stroke={color} strokeWidth={5}
@@ -138,8 +135,10 @@ const card: React.CSSProperties = {
 // ── SprintReportPage ──────────────────────────────────────────────────────────
 
 export default function SprintReportPage() {
+  const chart = useChartColors();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const { workspaceId, projectId, sprintId } = useParams<{ workspaceId: string; projectId: string; sprintId: string }>();
 
   const columns = useBoardColumns(projectId);
@@ -152,10 +151,15 @@ export default function SprintReportPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedSnapshot, setSelectedSnapshot] = useState<SprintTaskSnapshot | null>(null);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [subtaskModalTask, setSubtaskModalTask] = useState<Task | null>(null);
   const [expandedStories, setExpandedStories] = useState<Set<string>>(new Set());
   const [storySubtasks, setStorySubtasks] = useState<Record<string, Task[]>>({});
+
+  const openTask = (task: Task) =>
+    navigate(
+      `/workspaces/${workspaceId}/projects/${task.projectId ?? projectId}/tasks/${task.id}`,
+      { state: { from: location.pathname + location.search, task } },
+    );
 
   useEffect(() => {
     if (!sprintId) return;
@@ -178,7 +182,7 @@ export default function SprintReportPage() {
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-      <div style={{ width: 28, height: 28, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+      <div style={{ width: 28, height: 28, border: '3px solid var(--border)', borderTopColor: 'var(--accent-text)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
     </div>
   );
 
@@ -258,7 +262,7 @@ export default function SprintReportPage() {
     done: hasSnapshots
       ? rootSnapshots.filter((s) => s.priority === p && s.completed).length
       : rootTasks.filter((t) => t.priority === p && t.status === 'DONE').length,
-    color: PRIORITY_COLOR[p],
+    color: chart[PRIORITY_KEY[p]],
   })).filter((d) => d.total > 0);
 
   const burndownResult = buildBurndown(sprint, rootTasks);
@@ -423,13 +427,13 @@ export default function SprintReportPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <PageTitle as="h2" style={{ fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', margin: 0 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <BarChart3 size={22} strokeWidth={2} style={{ color: 'var(--accent)' }} />
+                <BarChart3 size={22} strokeWidth={2} style={{ color: 'var(--accent-text)' }} />
                 {t('projects.sprints.report.pageTitle')}: {sprint.name}
               </span>
             </PageTitle>
             <span style={{
               fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase',
-              color: isCompleted ? 'var(--success)' : isActive ? 'var(--accent)' : 'var(--text-faint)',
+              color: isCompleted ? 'var(--success-text)' : isActive ? 'var(--accent-text)' : 'var(--text-faint)',
               background: isCompleted ? 'var(--success-bg, rgba(34,197,94,0.1))' : isActive ? 'var(--accent-muted)' : 'var(--bg-hover)',
               padding: '4px 10px', borderRadius: 'var(--radius-sm)',
             }}>
@@ -466,9 +470,9 @@ export default function SprintReportPage() {
           background: 'var(--accent-muted)', border: '1px solid var(--accent)',
           borderRadius: 'var(--radius-md)', padding: '12px 16px',
         }}>
-          <Zap size={14} strokeWidth={2} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }} />
+          <Zap size={14} strokeWidth={2} style={{ color: 'var(--accent-text)', flexShrink: 0, marginTop: 1 }} />
           <div>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-text)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
               {t('projects.sprints.planning.goal')}
             </span>
             <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--text)' }}>
@@ -485,7 +489,7 @@ export default function SprintReportPage() {
         display: 'flex', alignItems: 'center', gap: 16,
       }}>
         <div style={{ position: 'relative', flexShrink: 0 }}>
-          <CircularProgress pct={donePct} color={hConf.accent} size={64} />
+          <CircularProgress pct={donePct} color={hConf.accent} track={chart.grid} size={64} />
           <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(90deg)' }}>
             <span style={{ fontSize: 12, fontWeight: 800, color: hConf.accent, fontFamily: 'var(--font-mono)' }}>
               {Math.round(donePct * 100)}%
@@ -535,10 +539,10 @@ export default function SprintReportPage() {
             <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               {t('projects.sprints.report.storyPoints')}
             </p>
-            <TrendingUp size={15} strokeWidth={1.75} style={{ color: 'var(--accent)' }} />
+            <TrendingUp size={15} strokeWidth={1.75} style={{ color: 'var(--accent-text)' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-            <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--accent)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em' }}>
+            <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--accent-text)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em' }}>
               <CountUp value={doneSP} />
             </span>
             <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>/{totalSP} pts</span>
@@ -551,15 +555,15 @@ export default function SprintReportPage() {
         </div>
 
         {/* Duration */}
-        <div style={{ ...card, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '3px solid #D97706' }}>
+        <div style={{ ...card, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '3px solid var(--warning)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               {t('projects.sprints.report.duration')}
             </p>
-            <Calendar size={15} strokeWidth={1.75} style={{ color: '#D97706' }} />
+            <Calendar size={15} strokeWidth={1.75} style={{ color: 'var(--warning-text)' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-            <span style={{ fontSize: 26, fontWeight: 800, color: '#D97706', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em' }}>
+            <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--warning-text)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em' }}>
               {durationDays != null ? <CountUp value={durationDays} /> : '—'}
             </span>
             {durationDays != null && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{t('projects.sprints.report.days')}</span>}
@@ -572,15 +576,15 @@ export default function SprintReportPage() {
         </div>
 
         {/* Avg SP per task */}
-        <div style={{ ...card, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '3px solid #16A34A' }}>
+        <div style={{ ...card, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 8, borderTop: '3px solid var(--success)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <p style={{ margin: 0, fontSize: 10, fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
               {t('projects.sprints.report.avgSPPerTask')}
             </p>
-            <Zap size={15} strokeWidth={1.75} style={{ color: '#16A34A' }} />
+            <Zap size={15} strokeWidth={1.75} style={{ color: 'var(--success-text)' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-            <span style={{ fontSize: 26, fontWeight: 800, color: '#16A34A', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em' }}>
+            <span style={{ fontSize: 26, fontWeight: 800, color: 'var(--success-text)', fontFamily: 'var(--font-mono)', letterSpacing: '-0.02em' }}>
               {avgSPPerTask > 0 ? avgSPPerTask : '—'}
             </span>
             {avgSPPerTask > 0 && <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>pts</span>}
@@ -618,12 +622,12 @@ export default function SprintReportPage() {
             )}
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={burndown} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: '#94A3B8' } as object} interval="preserveStartEnd" />
-                <YAxis tick={{ fontSize: 9, fill: '#94A3B8' } as object} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+                <XAxis dataKey="label" tick={{ fontSize: 9, fill: chart.axis } as object} interval="preserveStartEnd" />
+                <YAxis tick={{ fontSize: 9, fill: chart.axis } as object} allowDecimals={false} />
                 <Tooltip content={<BurndownTooltip unit={burndownUsesTaskCount ? t('projects.sprints.report.tasks') : 'pts'} />} />
-                <Line type="monotone" dataKey="ideal" name={t('projects.sprints.report.ideal')} stroke="#94A3B8" strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
-                <Line type="monotone" dataKey="actual" name={t('projects.sprints.report.actual')} stroke="#2563EB" strokeWidth={2} dot={{ r: 2.5, fill: '#2563EB' } as object} connectNulls={false} />
+                <Line type="monotone" dataKey="ideal" name={t('projects.sprints.report.ideal')} stroke={chart.axis} strokeWidth={1.5} strokeDasharray="5 4" dot={false} />
+                <Line type="monotone" dataKey="actual" name={t('projects.sprints.report.actual')} stroke={chart.accent} strokeWidth={2} dot={{ r: 2.5, fill: chart.accent } as object} connectNulls={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -645,7 +649,7 @@ export default function SprintReportPage() {
                 <PieChart>
                   <Pie data={pieData} cx="50%" cy="50%" innerRadius={52} outerRadius={80} paddingAngle={2} dataKey="value" label={false}>
                     {pieData.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
-                    <text x={90} y={90} textAnchor="middle" dominantBaseline="central" style={{ fill: '#1E293B', fontWeight: 700, fontSize: 18 }}>
+                    <text x={90} y={90} textAnchor="middle" dominantBaseline="central" style={{ fill: 'var(--text)', fontWeight: 700, fontSize: 18 }}>
                       {total}
                     </text>
                   </Pie>
@@ -687,9 +691,9 @@ export default function SprintReportPage() {
           </h3>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={priorityData} layout="vertical" margin={{ top: 0, right: 20, bottom: 0, left: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
-              <XAxis type="number" tick={{ fontSize: 9, fill: '#94A3B8' } as object} allowDecimals={false} />
-              <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#64748B' } as object} width={60} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} horizontal={false} />
+              <XAxis type="number" tick={{ fontSize: 9, fill: chart.axis } as object} allowDecimals={false} />
+              <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: chart.axisText } as object} width={60} />
               <Tooltip
                 formatter={(value, name) => {
                   const v = typeof value === 'number' ? value : 0;
@@ -699,8 +703,8 @@ export default function SprintReportPage() {
                 contentStyle={{ fontSize: 11, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-elevated)' } as object}
               />
               <Legend iconSize={7} iconType="circle" wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
-              <Bar dataKey="done" name={t('tasks.status.DONE')} radius={[0, 3, 3, 0]} fill="#16A34A" />
-              <Bar dataKey="total" name={t('projects.sprints.report.totalTasks')} radius={[0, 3, 3, 0]} fill="#94A3B8" />
+              <Bar dataKey="done" name={t('tasks.status.DONE')} radius={[0, 3, 3, 0]} fill={chart.success} />
+              <Bar dataKey="total" name={t('projects.sprints.report.totalTasks')} radius={[0, 3, 3, 0]} fill={chart.muted} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -755,7 +759,7 @@ export default function SprintReportPage() {
             {paginatedItems.map((item) => {
               const typeConf = TYPE_ICON[item.type ?? 'TASK'];
               const TypeIcon = typeConf?.icon ?? CheckSquare;
-              const typeColor = typeConf?.color ?? '#2563EB';
+              const typeColor = typeConf?.color ?? 'var(--type-task)';
               const isStory = item.subtaskCount > 0;
               const storyKey = item.taskId ?? item.id;
               const isExpanded = expandedStories.has(storyKey);
@@ -767,7 +771,7 @@ export default function SprintReportPage() {
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 4,
                       fontSize: 10, fontWeight: 700,
-                      color: '#D97706', background: 'rgba(217,119,6,0.08)',
+                      color: 'var(--warning-text)', background: 'var(--warning-bg)',
                       border: '1px solid rgba(217,119,6,0.3)',
                       borderRadius: 'var(--radius-sm)', padding: '2px 8px',
                     }}>
@@ -781,7 +785,7 @@ export default function SprintReportPage() {
                     <span style={{
                       display: 'inline-flex', alignItems: 'center', gap: 4,
                       fontSize: 10, fontWeight: 700,
-                      color: '#16A34A', background: 'rgba(22,163,74,0.08)',
+                      color: 'var(--success-text)', background: 'var(--success-bg)',
                       border: '1px solid rgba(22,163,74,0.3)',
                       borderRadius: 'var(--radius-sm)', padding: '2px 8px',
                     }}>
@@ -821,12 +825,12 @@ export default function SprintReportPage() {
                     tabIndex={0}
                     onClick={() => {
                       if (item.isSnapshot) setSelectedSnapshot(item.original as SprintTaskSnapshot);
-                      else setSelectedTask(item.original as Task);
+                      else openTask(item.original as Task);
                     }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         if (item.isSnapshot) setSelectedSnapshot(item.original as SprintTaskSnapshot);
-                        else setSelectedTask(item.original as Task);
+                        else openTask(item.original as Task);
                       }
                     }}
                     className="report-task-header"
@@ -880,7 +884,7 @@ export default function SprintReportPage() {
                           </span>
                         )}
                         {item.completed && !item.returnedToBacklog && item.completedAt && sprint.endDate && new Date(item.completedAt) > new Date(sprint.endDate) && (
-                          <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 600, color: '#DC2626', background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 'var(--radius-sm)', padding: '0 5px', whiteSpace: 'nowrap' }}>
+                          <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 600, color: 'var(--danger-text)', background: 'var(--danger-bg)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 'var(--radius-sm)', padding: '0 5px', whiteSpace: 'nowrap' }}>
                             {t('projects.sprints.report.lateBadge')}
                           </span>
                         )}
@@ -897,8 +901,8 @@ export default function SprintReportPage() {
                       <span style={{
                         display: 'inline-block', fontSize: 10, fontWeight: 700,
                         letterSpacing: '0.06em', textTransform: 'uppercase',
-                        color: PRIORITY_COLOR[item.priority],
-                        background: `${PRIORITY_COLOR[item.priority]}12`,
+                        color: `var(--prio-${PRIORITY_KEY[item.priority]})`,
+                        background: `${chart[PRIORITY_KEY[item.priority]]}1F`,
                         borderRadius: 'var(--radius-pill)', padding: '3px 10px',
                       }}>
                         {t(`tasks.priority.${item.priority}`)}
@@ -1015,8 +1019,8 @@ export default function SprintReportPage() {
                           {/* Checkbox indicator */}
                           <span style={{
                             width: 16, height: 16, borderRadius: 4, flexShrink: 0,
-                            border: subItem.completed ? 'none' : '2px solid #CBD5E1',
-                            background: subItem.completed ? '#3B82F6' : '#fff',
+                            border: subItem.completed ? 'none' : '2px solid var(--border-strong)',
+                            background: subItem.completed ? '#3B82F6' : 'var(--bg-elevated)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                           }}>
                             {subItem.completed && (
@@ -1212,16 +1216,6 @@ export default function SprintReportPage() {
           snapshot={selectedSnapshot}
           onClose={() => setSelectedSnapshot(null)}
           columns={columns}
-        />
-      )}
-
-      {selectedTask && projectId && (
-        <TaskModal
-          task={selectedTask}
-          projectId={projectId}
-          columns={columns}
-          readOnly
-          onClose={() => setSelectedTask(null)}
         />
       )}
 

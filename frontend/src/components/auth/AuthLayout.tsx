@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '../ui/LanguageSwitcher';
+import { useThemeStore } from '../../store/themeStore';
 import authBg from '../../assets/auth-bg.png';
+import wordmark from '../../assets/kadenza-wordmark.png';
+import wordmarkLight from '../../assets/kadenza-wordmark-light.png';
 
 export default function AuthLayout({
   children,
@@ -16,7 +19,7 @@ export default function AuthLayout({
 
   if (variant === 'centered') {
     return (
-      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ minHeight: 'var(--vh-screen)', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
         <header style={{
           display: 'flex',
           alignItems: 'center',
@@ -26,12 +29,7 @@ export default function AuthLayout({
           background: 'var(--bg-elevated)',
           borderBottom: '1px solid var(--border)',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AgileFlowLogo />
-            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-              AgileFlow
-            </span>
-          </div>
+          <KadenzaLogo height={26} />
           {topRight}
         </header>
 
@@ -55,7 +53,7 @@ export default function AuthLayout({
           fontSize: 12,
           color: 'var(--text-faint)',
         }}>
-          {t('auth.layout.copyright', { year: new Date().getFullYear(), defaultValue: `© ${new Date().getFullYear()} AgileFlow Inc. All rights reserved.` })}
+          {t('auth.layout.copyright', { year: new Date().getFullYear(), defaultValue: `© ${new Date().getFullYear()} Kadenza. All rights reserved.` })}
         </footer>
       </div>
     );
@@ -63,7 +61,7 @@ export default function AuthLayout({
 
   // Split layout for login
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: 'var(--vh-screen)', minHeight: 'var(--vh-screen)' }}>
       <div className="auth-left-panel" style={{
         display: 'none',
         width: '50%',
@@ -99,12 +97,7 @@ export default function AuthLayout({
           padding: 48,
         }}>
           {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AgileFlowLogo light />
-            <span style={{ fontSize: 20, fontWeight: 700, color: '#fff', letterSpacing: '-0.02em' }}>
-              AgileFlow
-            </span>
-          </div>
+          <KadenzaLogo light height={34} />
 
           {/* Bottom text */}
           <div style={{ maxWidth: 480 }}>
@@ -116,7 +109,7 @@ export default function AuthLayout({
               color: '#fff',
               letterSpacing: '-0.02em',
             }}>
-              {t('auth.layout.headline', { defaultValue: 'Master Your Workflow with AgileFlow' })}
+              {t('auth.layout.headline', { defaultValue: 'Master Your Workflow with Kadenza' })}
             </h3>
             <p style={{
               margin: 0,
@@ -138,28 +131,25 @@ export default function AuthLayout({
       }}
         className="auth-right-panel"
       >
-        <div style={{
+        <div className="auth-panel-topbar" style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0 32px',
           height: 56,
         }}>
-          <div className="auth-mobile-logo" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <AgileFlowLogo />
-            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-              AgileFlow
-            </span>
+          <div className="auth-mobile-logo">
+            <KadenzaLogo height={26} />
           </div>
         </div>
 
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 32px' }}>
+        <div className="auth-panel-main" style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 32px' }}>
           <div style={{ width: '100%', maxWidth: 400 }}>
             {children}
           </div>
         </div>
 
-        <div style={{ padding: '12px 32px', display: 'flex', justifyContent: 'center' }}>
+        <div className="auth-panel-footer" style={{ padding: '12px 32px', display: 'flex', justifyContent: 'center' }}>
           <LanguageSwitcher compact />
         </div>
       </div>
@@ -168,22 +158,49 @@ export default function AuthLayout({
         @media (min-width:1024px){
           .auth-left-panel{display:flex!important}
           .auth-right-panel{width:50%!important}
-          .auth-mobile-logo{display:none!important}
+          /* En escritorio el logo vive en el panel izquierdo: la barra queda vacia */
+          .auth-panel-topbar{display:none!important}
+        }
+        /* Pantallas bajas: compactar para que el formulario quepa sin scroll */
+        @media (max-height:760px){
+          .auth-panel-main{padding-top:12px!important;padding-bottom:12px!important}
+          .auth-panel-footer{padding-top:6px!important;padding-bottom:6px!important}
+          .auth-compact{gap:16px!important}
+          .auth-compact form{gap:12px!important}
         }
       `}</style>
     </div>
   );
 }
 
-function AgileFlowLogo({ light }: { light?: boolean }) {
-  const color = light ? '#60A5FA' : '#2563EB';
+/* Logotipo completo (isotipo + wordmark) en un unico PNG con transparencia.
+   La variante `light` lleva el texto en blanco para fondos oscuros.
+   El ancho se fija a partir del ratio real del PNG: si se dejara en `auto`,
+   un contenedor flex con `align-items: stretch` deformaria la imagen. */
+const LOGO_RATIO = 780 / 161;
+
+/* Sobre una superficie de la app la variante la decide el tema. `light` solo se
+   pasa a mano donde el fondo es oscuro siempre, como el panel decorativo del
+   login, que no depende del tema elegido. */
+function KadenzaLogo({ light, height = 26 }: { light?: boolean; height?: number }) {
+  const theme = useThemeStore(s => s.theme);
+  const width = Math.round(height * LOGO_RATIO);
   return (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-      <rect width="28" height="28" rx="6" fill={color} fillOpacity={light ? 0.2 : 0.1} />
-      <path d="M8 18C8 18 10 10 14 10C18 10 20 18 20 18" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
-      <path d="M6 14C6 14 10 8 14 8C18 8 22 14 22 14" stroke={color} strokeWidth="2" strokeLinecap="round" opacity="0.5" />
-    </svg>
+    <img
+      src={(light ?? theme === 'dark') ? wordmarkLight : wordmark}
+      alt="Kadenza"
+      width={width}
+      height={height}
+      style={{
+        width, height,
+        flexShrink: 0,
+        objectFit: 'contain',
+        display: 'block',
+        userSelect: 'none',
+      }}
+      draggable={false}
+    />
   );
 }
 
-export { AgileFlowLogo };
+export { KadenzaLogo };

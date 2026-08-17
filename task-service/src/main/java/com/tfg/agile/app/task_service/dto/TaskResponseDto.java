@@ -32,6 +32,9 @@ public record TaskResponseDto(
         int completedSubtaskCount,
         String parentTitle,
         String definitionOfDone,
+        int blockedByCount,
+        int blocksCount,
+        int gitEventCount,
         Instant createdAt,
         Instant updatedAt
 ) {
@@ -44,7 +47,12 @@ public record TaskResponseDto(
         public static final EpicInfo EMPTY = new EpicInfo(null, null);
     }
 
-    public static TaskResponseDto from(Task t, SubtaskInfo info, EpicInfo epicInfo) {
+    public record DependencyInfo(int blockedByCount, int blocksCount) {
+        public static final DependencyInfo EMPTY = new DependencyInfo(0, 0);
+    }
+
+    public static TaskResponseDto from(Task t, SubtaskInfo info, EpicInfo epicInfo, DependencyInfo depInfo,
+                                       int gitEventCount) {
         List<LabelDto> labelDtos = t.getLabels() != null
                 ? t.getLabels().stream().map(LabelDto::from).toList()
                 : List.of();
@@ -57,15 +65,25 @@ public record TaskResponseDto(
                 t.getReporterId(), t.getAssigneeId(),
                 t.getCompletedAt(), t.getStoryPoints(), t.isReady(), t.getPosition(), labelDtos,
                 info.subtaskCount(), info.completedSubtaskCount(), info.parentTitle(),
-                t.getDefinitionOfDone(), t.getCreatedAt(), t.getUpdatedAt()
+                t.getDefinitionOfDone(),
+                depInfo.blockedByCount(), depInfo.blocksCount(), gitEventCount,
+                t.getCreatedAt(), t.getUpdatedAt()
         );
     }
 
+    public static TaskResponseDto from(Task t, SubtaskInfo info, EpicInfo epicInfo, DependencyInfo depInfo) {
+        return from(t, info, epicInfo, depInfo, 0);
+    }
+
+    public static TaskResponseDto from(Task t, SubtaskInfo info, EpicInfo epicInfo) {
+        return from(t, info, epicInfo, DependencyInfo.EMPTY);
+    }
+
     public static TaskResponseDto from(Task t, SubtaskInfo info) {
-        return from(t, info, EpicInfo.EMPTY);
+        return from(t, info, EpicInfo.EMPTY, DependencyInfo.EMPTY);
     }
 
     public static TaskResponseDto from(Task t) {
-        return from(t, SubtaskInfo.EMPTY, EpicInfo.EMPTY);
+        return from(t, SubtaskInfo.EMPTY, EpicInfo.EMPTY, DependencyInfo.EMPTY);
     }
 }
