@@ -1,0 +1,12 @@
+.git
+.idea
+**/target
+**/node_modules
+frontend/dist
+*.log
+.env
+.env.*
+!.env.example
+!.env.*.example
+docs/.env
+CLAUDE.md

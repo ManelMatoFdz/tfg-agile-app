@@ -38,6 +38,7 @@ public class SecurityConfig {
             .addFilterBefore(internalApiKeyAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .requestMatchers("/internal/**").hasRole("INTERNAL")
                 // GitHub no puede enviar JWT: la peticion se valida por firma HMAC
                 .requestMatchers("/webhooks/**").permitAll()

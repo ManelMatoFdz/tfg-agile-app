@@ -71,7 +71,7 @@ export default function SprintBacklogPage() {
 
   const [labels, setLabels] = useState<Label[]>([]);
   const [filters, setFilters] = useState<TaskFilters>(() => sprintId ? loadFilters(sprintId) : { ...EMPTY_FILTERS });
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [expandedStories, setExpandedStories] = useState<Set<string>>(new Set());
   const [storySubtasks, setStorySubtasks] = useState<Record<string, Task[]>>({});
   const [currentPage, setCurrentPage] = useState(1);
@@ -83,7 +83,7 @@ export default function SprintBacklogPage() {
   const [backlogSearch, setBacklogSearch] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [addingTasks, setAddingTasks] = useState(false);
-  const backlogSearchRef = useRef<ReturnType<typeof setTimeout>>();
+  const backlogSearchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const toggleStory = async (taskId: string) => {
     const next = new Set(expandedStories);

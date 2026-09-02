@@ -163,7 +163,7 @@ export default function SprintReportPage() {
 
   useEffect(() => {
     if (!sprintId) return;
-    Promise.all([sprintsApi.getSprint(sprintId), sprintsApi.getSprintTasks(sprintId, undefined, true)])
+    Promise.all([sprintsApi.getSprint(sprintId), sprintsApi.getSprintTasks(sprintId)])
       .then(async ([s, taskList]) => {
         setSprint(s);
         setTasks(taskList);

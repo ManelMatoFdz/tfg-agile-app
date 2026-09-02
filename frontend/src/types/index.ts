@@ -70,6 +70,7 @@ export interface UserSummary {
   id: string;
   username: string;
   fullName?: string;
+  email?: string;
   avatarUrl?: string;
 }
 

@@ -1,0 +1,249 @@
+name: agileflow
+
+services:
+  gateway:
+    build:
+      context: .
+      dockerfile: docker/gateway.Dockerfile
+      args:
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+    restart: unless-stopped
+    environment:
+      APP_HOST: ${APP_HOST:?set APP_HOST}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - user-service
+      - project-service
+      - task-service
+      - poker-service
+
+  user-service:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+      args:
+        SERVICE_NAME: user-service
+    restart: unless-stopped
+    mem_limit: 768m
+    environment:
+      USER_SERVICE_PORT: 8081
+      USER_DB_HOST: user-db
+      USER_DB_PORT: 5432
+      USER_DB_NAME: ${USER_DB_NAME:?set USER_DB_NAME}
+      USER_DB_USER: ${USER_DB_USER:?set USER_DB_USER}
+      USER_DB_PASS: ${USER_DB_PASS:?set USER_DB_PASS}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER:-agileflow-user-service}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-agileflow-api}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?set INTERNAL_API_KEY}
+      RESET_PASSWORD_BASE_URL: ${RESET_PASSWORD_BASE_URL:?set RESET_PASSWORD_BASE_URL}
+      AVATAR_PUBLIC_BASE_URL: ${AVATAR_PUBLIC_BASE_URL:?set AVATAR_PUBLIC_BASE_URL}
+      MAIL_ENABLED: ${MAIL_ENABLED:-false}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@agileflow.local}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_AUTH: ${SMTP_AUTH:-true}
+      SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:?set RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:?set RABBITMQ_PASS}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
+      NOTIFICATIONS_QUEUE_ENABLED: ${NOTIFICATIONS_QUEUE_ENABLED:-true}
+      USER_SERVICE_JPA_DDL_AUTO: ${USER_SERVICE_JPA_DDL_AUTO:-update}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
+    depends_on:
+      user-db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  project-service:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+      args:
+        SERVICE_NAME: project-service
+    restart: unless-stopped
+    mem_limit: 768m
+    environment:
+      PROJECT_SERVICE_PORT: 8082
+      PROJECT_DB_HOST: project-db
+      PROJECT_DB_PORT: 5432
+      PROJECT_DB_NAME: ${PROJECT_DB_NAME:?set PROJECT_DB_NAME}
+      PROJECT_DB_USER: ${PROJECT_DB_USER:?set PROJECT_DB_USER}
+      PROJECT_DB_PASS: ${PROJECT_DB_PASS:?set PROJECT_DB_PASS}
+      USER_SERVICE_URL: http://user-service:8081
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER:-agileflow-user-service}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-agileflow-api}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?set INTERNAL_API_KEY}
+      PROJECT_SERVICE_JPA_DDL_AUTO: ${PROJECT_SERVICE_JPA_DDL_AUTO:-update}
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
+    depends_on:
+      project-db:
+        condition: service_healthy
+      user-service:
+        condition: service_started
+
+  task-service:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+      args:
+        SERVICE_NAME: task-service
+    restart: unless-stopped
+    mem_limit: 768m
+    environment:
+      TASK_SERVICE_PORT: 8083
+      TASK_DB_HOST: task-db
+      TASK_DB_PORT: 5432
+      TASK_DB_NAME: ${TASK_DB_NAME:?set TASK_DB_NAME}
+      TASK_DB_USER: ${TASK_DB_USER:?set TASK_DB_USER}
+      TASK_DB_PASS: ${TASK_DB_PASS:?set TASK_DB_PASS}
+      PROJECT_SERVICE_URL: http://project-service:8082
+      USER_SERVICE_URL: http://user-service:8081
+      GIT_WEBHOOK_BASE_URL: ${GIT_WEBHOOK_BASE_URL:?set GIT_WEBHOOK_BASE_URL}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER:-agileflow-user-service}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-agileflow-api}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?set INTERNAL_API_KEY}
+      TASK_SERVICE_JPA_DDL_AUTO: ${TASK_SERVICE_JPA_DDL_AUTO:-update}
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
+    depends_on:
+      task-db:
+        condition: service_healthy
+      project-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+
+  poker-service:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+      args:
+        SERVICE_NAME: poker-service
+    restart: unless-stopped
+    mem_limit: 768m
+    environment:
+      POKER_SERVICE_PORT: 8084
+      POKER_DB_HOST: poker-db
+      POKER_DB_PORT: 5432
+      POKER_DB_NAME: ${POKER_DB_NAME:?set POKER_DB_NAME}
+      POKER_DB_USER: ${POKER_DB_USER:?set POKER_DB_USER}
+      POKER_DB_PASS: ${POKER_DB_PASS:?set POKER_DB_PASS}
+      TASK_SERVICE_URL: http://task-service:8083
+      PROJECT_SERVICE_URL: http://project-service:8082
+      USER_SERVICE_URL: http://user-service:8081
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_ISSUER: ${JWT_ISSUER:-agileflow-user-service}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-agileflow-api}
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?set INTERNAL_API_KEY}
+      POKER_SERVICE_JPA_DDL_AUTO: ${POKER_SERVICE_JPA_DDL_AUTO:-update}
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
+    depends_on:
+      poker-db:
+        condition: service_healthy
+      task-service:
+        condition: service_started
+      project-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+
+  user-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${USER_DB_USER:?set USER_DB_USER}
+      POSTGRES_PASSWORD: ${USER_DB_PASS:?set USER_DB_PASS}
+      POSTGRES_DB: ${USER_DB_NAME:?set USER_DB_NAME}
+    volumes:
+      - user_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  project-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PROJECT_DB_USER:?set PROJECT_DB_USER}
+      POSTGRES_PASSWORD: ${PROJECT_DB_PASS:?set PROJECT_DB_PASS}
+      POSTGRES_DB: ${PROJECT_DB_NAME:?set PROJECT_DB_NAME}
+    volumes:
+      - project_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  task-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${TASK_DB_USER:?set TASK_DB_USER}
+      POSTGRES_PASSWORD: ${TASK_DB_PASS:?set TASK_DB_PASS}
+      POSTGRES_DB: ${TASK_DB_NAME:?set TASK_DB_NAME}
+    volumes:
+      - task_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  poker-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POKER_DB_USER:?set POKER_DB_USER}
+      POSTGRES_PASSWORD: ${POKER_DB_PASS:?set POKER_DB_PASS}
+      POSTGRES_DB: ${POKER_DB_NAME:?set POKER_DB_NAME}
+    volumes:
+      - poker_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?set RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:?set RABBITMQ_PASS}
+      RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  caddy_data:
+  caddy_config:
+  user_data:
+  project_data:
+  task_data:
+  poker_data:
+  rabbitmq_data:

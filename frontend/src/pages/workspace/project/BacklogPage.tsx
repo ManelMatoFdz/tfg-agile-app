@@ -67,7 +67,7 @@ export default function BacklogPage() {
   const [labels, setLabels] = useState<Label[]>([]);
   const [epics, setEpics] = useState<Epic[]>([]);
   const [filters, setFilters] = useState<TaskFilters>(() => projectId ? loadFilters(projectId) : { ...EMPTY_FILTERS });
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [expandedStories, setExpandedStories] = useState<Set<string>>(new Set());
   const [storySubtasks, setStorySubtasks] = useState<Record<string, Task[]>>({});
   const [createType, setCreateType] = useState<TaskType>('TASK');
