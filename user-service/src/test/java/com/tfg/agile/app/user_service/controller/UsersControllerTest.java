@@ -26,7 +26,7 @@ class UsersControllerTest {
         UsersController controller = new UsersController(userProfileService);
         UUID userId = UUID.randomUUID();
         List<String> requestIds = List.of(userId.toString());
-        List<UserSummaryDto> expected = List.of(new UserSummaryDto(userId, "john", "John Doe", null));
+        List<UserSummaryDto> expected = List.of(new UserSummaryDto(userId, "john", "John Doe", "john@example.com", null));
 
         when(userProfileService.batchLookup(List.of(userId))).thenReturn(expected);
 
@@ -51,4 +51,3 @@ class UsersControllerTest {
         verify(userProfileService).lookupByEmail(email);
     }
 }
-

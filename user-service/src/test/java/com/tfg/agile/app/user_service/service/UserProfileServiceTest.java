@@ -310,6 +310,7 @@ class UserProfileServiceTest {
 
         assertThat(result).hasSize(2);
         assertThat(result.get(0).getId()).isEqualTo(first.getId());
+        assertThat(result.get(0).getEmail()).isEqualTo(first.getEmail());
         assertThat(result.get(1).getUsername()).isEqualTo("mary");
     }
 

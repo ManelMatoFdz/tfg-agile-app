@@ -1,0 +1,43 @@
+{
+	admin off
+}
+
+{$APP_HOST} {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+	}
+
+	@blocked_private {
+		path /actuator* /api/internal* /api/actuator* /project-api/internal* /project-api/actuator* /task-api/internal* /task-api/actuator* /poker-api/internal* /poker-api/actuator*
+	}
+	respond @blocked_private 404
+
+	handle /ws/poker* {
+		reverse_proxy poker-service:8084
+	}
+
+	handle_path /api/* {
+		reverse_proxy user-service:8081
+	}
+
+	handle_path /project-api/* {
+		reverse_proxy project-service:8082
+	}
+
+	handle_path /task-api/* {
+		reverse_proxy task-service:8083
+	}
+
+	handle_path /poker-api/* {
+		reverse_proxy poker-service:8084
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

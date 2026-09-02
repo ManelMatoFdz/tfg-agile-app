@@ -114,8 +114,8 @@ public class TaskService {
             if (!parent.getProjectId().equals(projectId)) {
                 throw new ConflictException("PARENT_WRONG_PROJECT");
             }
-            if (parent.getSprintId() == null) {
-                throw new ConflictException("SUBTASKS_ONLY_IN_SPRINT");
+            if (parent.getType() != TaskType.STORY) {
+                throw new ConflictException("ONLY_STORY_CAN_HAVE_CHILDREN");
             }
             // Subtasks are always TASK type
             type = TaskType.TASK;
@@ -277,6 +277,12 @@ public class TaskService {
         String oldStatus = task.getStatus();
         String newStatus = dto.status();
 
+        if (task.getParentId() == null
+                && task.getType() == TaskType.STORY
+                && taskRepository.countByParentId(task.getId()) > 0) {
+            throw new ForbiddenException("STORY_STATUS_IS_DERIVED");
+        }
+
         // Enforce WIP limit on the target column
         if (!oldStatus.equals(newStatus)) {
             boardColumnService.checkWipLimit(task.getProjectId(), newStatus);
@@ -306,6 +312,8 @@ public class TaskService {
                 notifyUnblockedTasks(saved, perms.workspaceId());
             }
         }
+
+        syncParentStoryStatus(saved, callerId);
 
         projectServiceClient.touchProject(task.getProjectId());
         projectServiceClient.touchMemberActivity(task.getProjectId(), callerId);
@@ -393,6 +401,8 @@ public class TaskService {
             activityService.record(saved.getId(), callerId, TaskActivityType.STATUS_CHANGED, oldStatus, newStatus);
         }
 
+        syncParentStoryStatus(saved, callerId);
+
         return toDto(saved);
     }
 
@@ -460,6 +470,44 @@ public class TaskService {
 
     private boolean isDeveloper(MemberPermissionsDto p) {
         return !isAdmin(p) && !isProductOwner(p) && !isScrumMaster(p);
+    }
+
+    private void syncParentStoryStatus(Task subtask, UUID callerId) {
+        UUID parentId = subtask.getParentId();
+        if (parentId == null) {
+            return;
+        }
+
+        Task parent = taskRepository.findById(parentId).orElse(null);
+        if (parent == null || parent.getType() != TaskType.STORY) {
+            return;
+        }
+
+        List<Task> children = taskRepository.findByParentId(parentId);
+        if (children.isEmpty()) {
+            return;
+        }
+
+        Set<String> doneStatuses = boardColumnService.getDoneEquivalentStatuses(parent.getProjectId());
+        boolean allDone = children.stream().allMatch(child -> doneStatuses.contains(child.getStatus()));
+        boolean parentIsDone = doneStatuses.contains(parent.getStatus());
+
+        String oldStatus = parent.getStatus();
+        if (allDone && !parentIsDone) {
+            String doneStatus = doneStatuses.contains(subtask.getStatus())
+                    ? subtask.getStatus()
+                    : doneStatuses.iterator().next();
+            parent.setStatus(doneStatus);
+            parent.setCompletedAt(Instant.now());
+        } else if (!allDone && parentIsDone) {
+            parent.setStatus(boardColumnService.getFirstColumnName(parent.getProjectId()));
+            parent.setCompletedAt(null);
+        } else {
+            return;
+        }
+
+        Task savedParent = taskRepository.save(parent);
+        activityService.record(savedParent.getId(), callerId, TaskActivityType.STATUS_CHANGED, oldStatus, savedParent.getStatus());
     }
 
     private void notifyTaskAssigned(Task task, UUID workspaceId, UUID actorUserId) {

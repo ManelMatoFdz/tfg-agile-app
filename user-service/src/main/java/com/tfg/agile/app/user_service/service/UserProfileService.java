@@ -213,7 +213,7 @@ public class UserProfileService {
     @Transactional(readOnly = true)
     public List<UserSummaryDto> batchLookup(List<UUID> ids) {
         return userRepository.findAllById(ids).stream()
-                .map(u -> new UserSummaryDto(u.getId(), u.getUsername(), u.getFullName(), u.getAvatarUrl()))
+                .map(u -> new UserSummaryDto(u.getId(), u.getUsername(), u.getFullName(), u.getEmail(), u.getAvatarUrl()))
                 .toList();
     }
 

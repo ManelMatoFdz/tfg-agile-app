@@ -39,7 +39,7 @@ export default function KanbanPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<TaskFilters>(() => projectId ? loadBoardFilters(projectId) : { ...EMPTY_FILTERS });
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const activeSprintRef = useRef<Sprint | null>(null);
 
   // Load labels

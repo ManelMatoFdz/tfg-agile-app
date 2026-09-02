@@ -28,6 +28,9 @@ replay_pid*
 *.iml
 **/target/
 .env
+.env.*
+!.env.example
+!.env.*.example
 docs/.env
 .DS_Store
 

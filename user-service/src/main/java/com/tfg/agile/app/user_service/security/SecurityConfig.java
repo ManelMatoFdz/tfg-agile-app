@@ -42,7 +42,9 @@ public class SecurityConfig {
                                 "/auth/refresh",
                                 "/auth/logout",
                                 "/auth/google/login",
-                                "/assets/avatars/**"
+                                "/assets/avatars/**",
+                                "/actuator/health",
+                                "/actuator/health/**"
                         ).permitAll()
                         .requestMatchers("/internal/**").hasAuthority("ROLE_INTERNAL")
                         .anyRequest().authenticated()
