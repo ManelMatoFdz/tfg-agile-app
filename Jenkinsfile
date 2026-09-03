@@ -8,6 +8,7 @@ pipeline {
   environment {
     SONAR_HOST_URL = 'http://localhost:9000'
     SONAR_TOKEN = credentials('sonar-token')
+    PATH = "/opt/homebrew/bin:/Users/porterodarkoa/.nvm/versions/node/v24.6.0/bin:${env.PATH}"
   }
 
   stages {
