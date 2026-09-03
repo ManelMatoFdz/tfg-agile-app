@@ -8,7 +8,7 @@ pipeline {
   environment {
     SONAR_HOST_URL = 'http://localhost:9000'
     SONAR_TOKEN = credentials('sonar-token')
-    PATH = "/usr/local/bin:/opt/homebrew/bin:/Users/porterodarkoa/.nvm/versions/node/v24.6.0/bin:${env.PATH}"
+    PATH = "${env.HOME}/.nvm/versions/node/v24.6.0/bin:/opt/homebrew/bin:/usr/local/bin:${env.PATH}"
   }
 
   stages {
@@ -61,7 +61,7 @@ pipeline {
       post {
         always {
           sh './scripts/stop-e2e-stack.sh'
-          junit allowEmptyResults: true, testResults: 'frontend/test-results/playwright/*.xml'
+          junit allowEmptyResults: true, testResults: 'frontend/test-results/playwright/results.xml'
           archiveArtifacts artifacts: 'frontend/playwright-report/**', allowEmptyArchive: true
         }
       }

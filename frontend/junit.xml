@@ -1,0 +1,497 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="215" failures="0" errors="0" time="14.719">
+  <testsuite name="WorkspaceMembersPage" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:08" time="4.074" tests="4">
+    <testcase classname="WorkspaceMembersPage renders members, filters by search and team, and paginates results" name="WorkspaceMembersPage renders members, filters by search and team, and paginates results" time="0.248">
+    </testcase>
+    <testcase classname="WorkspaceMembersPage handles invite lookup errors and sends invitations successfully" name="WorkspaceMembersPage handles invite lookup errors and sends invitations successfully" time="1.834">
+    </testcase>
+    <testcase classname="WorkspaceMembersPage changes roles, removes members and surfaces action errors" name="WorkspaceMembersPage changes roles, removes members and surfaces action errors" time="0.17">
+    </testcase>
+    <testcase classname="WorkspaceMembersPage hides admin actions for non-admin members and renders empty/error states" name="WorkspaceMembersPage hides admin actions for non-admin members and renders empty/error states" time="0.011">
+    </testcase>
+  </testsuite>
+  <testsuite name="useProjectMember" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:12" time="0.817" tests="17">
+    <testcase classname="useProjectMember does not fetch permissions without a project id" name="useProjectMember does not fetch permissions without a project id" time="0.008">
+    </testcase>
+    <testcase classname="useProjectMember does not fetch permissions without a authenticated user" name="useProjectMember does not fetch permissions without a authenticated user" time="0.002">
+    </testcase>
+    <testcase classname="useProjectMember keeps loading enabled until both permission requests finish" name="useProjectMember keeps loading enabled until both permission requests finish" time="0.004">
+    </testcase>
+    <testcase classname="useProjectMember returns the expected permissions for a team administrator" name="useProjectMember returns the expected permissions for a team administrator" time="0.053">
+    </testcase>
+    <testcase classname="useProjectMember returns the expected permissions for a workspace administrator outside the team" name="useProjectMember returns the expected permissions for a workspace administrator outside the team" time="0.054">
+    </testcase>
+    <testcase classname="useProjectMember returns the expected permissions for a product owner" name="useProjectMember returns the expected permissions for a product owner" time="0.052">
+    </testcase>
+    <testcase classname="useProjectMember returns the expected permissions for a scrum master" name="useProjectMember returns the expected permissions for a scrum master" time="0.053">
+    </testcase>
+    <testcase classname="useProjectMember returns the expected permissions for a developer" name="useProjectMember returns the expected permissions for a developer" time="0.052">
+    </testcase>
+    <testcase classname="useProjectMember returns the expected permissions for a member without a scrum role" name="useProjectMember returns the expected permissions for a member without a scrum role" time="0.052">
+    </testcase>
+    <testcase classname="useProjectMember returns the expected permissions for a non-member" name="useProjectMember returns the expected permissions for a non-member" time="0.053">
+    </testcase>
+    <testcase classname="useProjectMember skips the workspace request when the route has no workspace id" name="useProjectMember skips the workspace request when the route has no workspace id" time="0.053">
+    </testcase>
+    <testcase classname="useProjectMember returns a safe state when the team request fails" name="useProjectMember returns a safe state when the team request fails" time="0.053">
+    </testcase>
+    <testcase classname="useProjectMember returns a safe state when the workspace request fails" name="useProjectMember returns a safe state when the workspace request fails" time="0.052">
+    </testcase>
+    <testcase classname="useProjectMember clears previous permissions when the project id disappears" name="useProjectMember clears previous permissions when the project id disappears" time="0.055">
+    </testcase>
+    <testcase classname="useProjectMember clears previous permissions when the authenticated user disappears" name="useProjectMember clears previous permissions when the authenticated user disappears" time="0.053">
+    </testcase>
+    <testcase classname="useProjectMember clears old permissions while another project is loading" name="useProjectMember clears old permissions while another project is loading" time="0.054">
+    </testcase>
+    <testcase classname="useProjectMember ignores a stale response after switching projects" name="useProjectMember ignores a stale response after switching projects" time="0.053">
+    </testcase>
+  </testsuite>
+  <testsuite name="authentication pages" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:12" time="0.824" tests="6">
+    <testcase classname="authentication pages logs in, stores the session and navigates to workspaces" name="authentication pages logs in, stores the session and navigates to workspaces" time="0.144">
+    </testcase>
+    <testcase classname="authentication pages validates registration before calling the API" name="authentication pages validates registration before calling the API" time="0.135">
+    </testcase>
+    <testcase classname="authentication pages registers valid credentials and stores the session" name="authentication pages registers valid credentials and stores the session" time="0.171">
+    </testcase>
+    <testcase classname="authentication pages submits a password recovery request and displays success" name="authentication pages submits a password recovery request and displays success" time="0.056">
+    </testcase>
+    <testcase classname="authentication pages rejects password reset without a URL token" name="authentication pages rejects password reset without a URL token" time="0.068">
+    </testcase>
+    <testcase classname="authentication pages resets a password with a valid token" name="authentication pages resets a password with a valid token" time="0.057">
+    </testcase>
+  </testsuite>
+  <testsuite name="kanban modals coverage" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:13" time="0.72" tests="6">
+    <testcase classname="kanban modals coverage creates a root task, trims fields and assigns the selected epic" name="kanban modals coverage creates a root task, trims fields and assigns the selected epic" time="0.306">
+    </testcase>
+    <testcase classname="kanban modals coverage forces TASK type for subtasks and omits root-only fields" name="kanban modals coverage forces TASK type for subtasks and omits root-only fields" time="0.057">
+    </testcase>
+    <testcase classname="kanban modals coverage shows the translated error when task creation fails" name="kanban modals coverage shows the translated error when task creation fails" time="0.063">
+    </testcase>
+    <testcase classname="kanban modals coverage saves subtask edits with trimmed text and nullable assignee" name="kanban modals coverage saves subtask edits with trimmed text and nullable assignee" time="0.138">
+    </testcase>
+    <testcase classname="kanban modals coverage toggles a subtask as done and closes the modal" name="kanban modals coverage toggles a subtask as done and closes the modal" time="0.014">
+    </testcase>
+    <testcase classname="kanban modals coverage confirms and deletes a subtask" name="kanban modals coverage confirms and deletes a subtask" time="0.022">
+    </testcase>
+  </testsuite>
+  <testsuite name="WorkspaceDashboardPage" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:14" time="0.709" tests="3">
+    <testcase classname="WorkspaceDashboardPage renders grouped projects, supports category filters and collapses groups" name="WorkspaceDashboardPage renders grouped projects, supports category filters and collapses groups" time="0.041">
+    </testcase>
+    <testcase classname="WorkspaceDashboardPage creates a new project from the modal and resets the modal state on close" name="WorkspaceDashboardPage creates a new project from the modal and resets the modal state on close" time="0.387">
+    </testcase>
+    <testcase classname="WorkspaceDashboardPage creates an inline category and surfaces category creation errors" name="WorkspaceDashboardPage creates an inline category and surfaces category creation errors" time="0.151">
+    </testcase>
+  </testsuite>
+  <testsuite name="main page loading contracts" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:15" time="2.668" tests="26">
+    <testcase classname="main page loading contracts renders the workspace selector page after its empty response" name="main page loading contracts renders the workspace selector page after its empty response" time="0.012">
+    </testcase>
+    <testcase classname="main page loading contracts renders the workspace dashboard page after its empty response" name="main page loading contracts renders the workspace dashboard page after its empty response" time="0.007">
+    </testcase>
+    <testcase classname="main page loading contracts renders the teams page after its empty response" name="main page loading contracts renders the teams page after its empty response" time="0.005">
+    </testcase>
+    <testcase classname="main page loading contracts renders the my tasks page after its empty response" name="main page loading contracts renders the my tasks page after its empty response" time="0.005">
+    </testcase>
+    <testcase classname="main page loading contracts renders the notifications page after its empty response" name="main page loading contracts renders the notifications page after its empty response" time="0.01">
+    </testcase>
+    <testcase classname="main page loading contracts renders the kanban page after its empty response" name="main page loading contracts renders the kanban page after its empty response" time="0.003">
+    </testcase>
+    <testcase classname="main page loading contracts renders the backlog page after its empty response" name="main page loading contracts renders the backlog page after its empty response" time="0.014">
+    </testcase>
+    <testcase classname="main page loading contracts renders the sprints page after its empty response" name="main page loading contracts renders the sprints page after its empty response" time="0.006">
+    </testcase>
+    <testcase classname="main page loading contracts renders the poker page after its empty response" name="main page loading contracts renders the poker page after its empty response" time="0.005">
+    </testcase>
+    <testcase classname="main page loading contracts renders the epics page after its empty response" name="main page loading contracts renders the epics page after its empty response" time="0.006">
+    </testcase>
+    <testcase classname="main page loading contracts renders the repository page after its empty response" name="main page loading contracts renders the repository page after its empty response" time="0.004">
+    </testcase>
+    <testcase classname="main page loading contracts renders the metrics page after its empty response" name="main page loading contracts renders the metrics page after its empty response" time="0.007">
+    </testcase>
+    <testcase classname="main page loading contracts renders the board settings page after its empty response" name="main page loading contracts renders the board settings page after its empty response" time="0.005">
+    </testcase>
+    <testcase classname="main page loading contracts renders the sprint planning page after its empty response" name="main page loading contracts renders the sprint planning page after its empty response" time="0.005">
+    </testcase>
+    <testcase classname="main page loading contracts renders the sprint backlog page after its empty response" name="main page loading contracts renders the sprint backlog page after its empty response" time="0.008">
+    </testcase>
+    <testcase classname="main page loading contracts renders the project detail page after its empty response" name="main page loading contracts renders the project detail page after its empty response" time="0.005">
+    </testcase>
+    <testcase classname="main page loading contracts renders the team detail page after its empty response" name="main page loading contracts renders the team detail page after its empty response" time="0.006">
+    </testcase>
+    <testcase classname="main page loading contracts renders the workspace members page after its empty response" name="main page loading contracts renders the workspace members page after its empty response" time="0.004">
+    </testcase>
+    <testcase classname="main page loading contracts renders the workspace settings page after its empty response" name="main page loading contracts renders the workspace settings page after its empty response" time="0.007">
+    </testcase>
+    <testcase classname="main page loading contracts renders the project members page after its empty response" name="main page loading contracts renders the project members page after its empty response" time="0.005">
+    </testcase>
+    <testcase classname="main page loading contracts renders the project settings page after its empty response" name="main page loading contracts renders the project settings page after its empty response" time="0.004">
+    </testcase>
+    <testcase classname="main page loading contracts renders the sprint report page after its empty response" name="main page loading contracts renders the sprint report page after its empty response" time="0.008">
+    </testcase>
+    <testcase classname="main page loading contracts renders the task detail not-found state page after its empty response" name="main page loading contracts renders the task detail not-found state page after its empty response" time="0.005">
+    </testcase>
+    <testcase classname="main page loading contracts renders the poker room load error page after its empty response" name="main page loading contracts renders the poker room load error page after its empty response" time="0.004">
+    </testcase>
+    <testcase classname="main page loading contracts renders the landing page without making an API request" name="main page loading contracts renders the landing page without making an API request" time="0.013">
+    </testcase>
+    <testcase classname="main page loading contracts hydrates the profile page from the current-user endpoint" name="main page loading contracts hydrates the profile page from the current-user endpoint" time="0.018">
+    </testcase>
+  </testsuite>
+  <testsuite name="BoardSettingsPage" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:17" time="0.456" tests="3">
+    <testcase classname="BoardSettingsPage validates empty names, missing done columns, duplicates and exceeded WIP" name="BoardSettingsPage validates empty names, missing done columns, duplicates and exceeded WIP" time="0.233">
+    </testcase>
+    <testcase classname="BoardSettingsPage adds a column, reorders it and saves trimmed names with positions" name="BoardSettingsPage adds a column, reorders it and saves trimmed names with positions" time="0.149">
+    </testcase>
+    <testcase classname="BoardSettingsPage parses backend WIP errors and navigates back to the board" name="BoardSettingsPage parses backend WIP errors and navigates back to the board" time="0.036">
+    </testcase>
+  </testsuite>
+  <testsuite name="TeamsPage" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:18" time="0.403" tests="3">
+    <testcase classname="TeamsPage renders teams, pagination and resolved member counts" name="TeamsPage renders teams, pagination and resolved member counts" time="0.037">
+    </testcase>
+    <testcase classname="TeamsPage creates a team from the empty state and resets modal fields when cancelled" name="TeamsPage creates a team from the empty state and resets modal fields when cancelled" time="0.245">
+    </testcase>
+    <testcase classname="TeamsPage surfaces list and create errors" name="TeamsPage surfaces list and create errors" time="0.083">
+    </testcase>
+  </testsuite>
+  <testsuite name="SprintsPage" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:18" time="0.416" tests="5">
+    <testcase classname="SprintsPage shows loading errors and the empty state" name="SprintsPage shows loading errors and the empty state" time="0.018">
+    </testcase>
+    <testcase classname="SprintsPage renders active, planned and completed sprints with progress and links" name="SprintsPage renders active, planned and completed sprints with progress and links" time="0.023">
+    </testcase>
+    <testcase classname="SprintsPage creates a sprint, reports overlapping dates, updates it, activates it and deletes it" name="SprintsPage creates a sprint, reports overlapping dates, updates it, activates it and deletes it" time="0.289">
+    </testcase>
+    <testcase classname="SprintsPage opens the retrospective modal for completed sprints and saves the result" name="SprintsPage opens the retrospective modal for completed sprints and saves the result" time="0.038">
+    </testcase>
+    <testcase classname="SprintsPage hides management actions when the user cannot manage sprints" name="SprintsPage hides management actions when the user cannot manage sprints" time="0.007">
+    </testcase>
+  </testsuite>
+  <testsuite name="profile components" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:19" time="0.365" tests="7">
+    <testcase classname="profile components updates personal information and the auth store" name="profile components updates personal information and the auth store" time="0.106">
+    </testcase>
+    <testcase classname="profile components validates password confirmation without sending a request" name="profile components validates password confirmation without sending a request" time="0.085">
+    </testcase>
+    <testcase classname="profile components changes the password, logs out and stores a flash notice" name="profile components changes the password, logs out and stores a flash notice" time="0.086">
+    </testcase>
+    <testcase classname="profile components uploads image files and ignores non-images" name="profile components uploads image files and ignores non-images" time="0.005">
+    </testcase>
+    <testcase classname="profile components loads and updates notification settings optimistically" name="profile components loads and updates notification settings optimistically" time="0.02">
+    </testcase>
+    <testcase classname="profile components shows an error when notification settings cannot load" name="profile components shows an error when notification settings cannot load" time="0.004">
+    </testcase>
+    <testcase classname="profile components changes theme and language preferences" name="profile components changes theme and language preferences" time="0.022">
+    </testcase>
+  </testsuite>
+  <testsuite name="useProjectMembers" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:19" time="0.323" tests="7">
+    <testcase classname="useProjectMembers loads members and indexes user summaries" name="useProjectMembers loads members and indexes user summaries" time="0.052">
+    </testcase>
+    <testcase classname="useProjectMembers skips the user lookup for an empty team" name="useProjectMembers skips the user lookup for an empty team" time="0.054">
+    </testcase>
+    <testcase classname="useProjectMembers returns empty state without a project or after an error" name="useProjectMembers returns empty state without a project or after an error" time="0.055">
+    </testcase>
+    <testcase classname="useUserMap resolves ids and refreshes when their joined value changes" name="useUserMap resolves ids and refreshes when their joined value changes" time="0.055">
+    </testcase>
+    <testcase classname="useUserMap does nothing for empty ids and keeps fallback state after failure" name="useUserMap does nothing for empty ids and keeps fallback state after failure" time="0.004">
+    </testcase>
+    <testcase classname="useNotificationActors deduplicates, sorts and indexes notification actors" name="useNotificationActors deduplicates, sorts and indexes notification actors" time="0.054">
+    </testcase>
+    <testcase classname="useNotificationActors does not query when notifications have no actor" name="useNotificationActors does not query when notifications have no actor" time="0.002">
+    </testcase>
+  </testsuite>
+  <testsuite name="AuthPanel" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:19" time="0.316" tests="3">
+    <testcase classname="AuthPanel locks body scroll, shows the flash notice and closes on Escape" name="AuthPanel locks body scroll, shows the flash notice and closes on Escape" time="0.012">
+    </testcase>
+    <testcase classname="AuthPanel logs in successfully, stores the session and redirects to workspaces" name="AuthPanel logs in successfully, stores the session and redirects to workspaces" time="0.107">
+    </testcase>
+    <testcase classname="AuthPanel blocks invalid register submissions and lets the user switch back to login" name="AuthPanel blocks invalid register submissions and lets the user switch back to login" time="0.148">
+    </testcase>
+  </testsuite>
+  <testsuite name="VotingCards" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:20" time="0.259" tests="9">
+    <testcase classname="VotingCards renders the selected deck and sends votes" name="VotingCards renders the selected deck and sends votes" time="0.03">
+    </testcase>
+    <testcase classname="VotingCards disables voting and displays the lock reason" name="VotingCards disables voting and displays the lock reason" time="0.01">
+    </testcase>
+    <testcase classname="ParticipantsList separates voters and observers and marks the current user" name="ParticipantsList separates voters and observers and marks the current user" time="0.005">
+    </testcase>
+    <testcase classname="RoundHistory hides when there are no completed estimates" name="RoundHistory hides when there are no completed estimates" time="0.001">
+    </testcase>
+    <testcase classname="RoundHistory renders only consensus rounds with estimates" name="RoundHistory renders only consensus rounds with estimates" time="0.002">
+    </testcase>
+    <testcase classname="planning-poker forms creates a trimmed session with the selected deck and closes the modal" name="planning-poker forms creates a trimmed session with the selected deck and closes the modal" time="0.081">
+    </testcase>
+    <testcase classname="planning-poker forms keeps the create modal open and reports a rejected request" name="planning-poker forms keeps the create modal open and reports a rejected request" time="0.033">
+    </testcase>
+    <testcase classname="planning-poker forms joins with the role selected by the user" name="planning-poker forms joins with the role selected by the user" time="0.022">
+    </testcase>
+    <testcase classname="planning-poker forms reports a failed join and supports closing from cancel" name="planning-poker forms reports a failed join and supports closing from cancel" time="0.021">
+    </testcase>
+  </testsuite>
+  <testsuite name="MyTasksPage" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:20" time="0.193" tests="5">
+    <testcase classname="MyTasksPage renders the empty state when there are no tasks in the workspace" name="MyTasksPage renders the empty state when there are no tasks in the workspace" time="0.007">
+    </testcase>
+    <testcase classname="MyTasksPage renders the translated error when loading fails" name="MyTasksPage renders the translated error when loading fails" time="0.006">
+    </testcase>
+    <testcase classname="MyTasksPage filters tasks by workspace, project and priority and navigates from root tasks" name="MyTasksPage filters tasks by workspace, project and priority and navigates from root tasks" time="0.087">
+    </testcase>
+    <testcase classname="MyTasksPage opens subtasks in read-only modal using the fresh task when available" name="MyTasksPage opens subtasks in read-only modal using the fresh task when available" time="0.026">
+    </testcase>
+    <testcase classname="MyTasksPage falls back to the list data when fetching the subtask fails" name="MyTasksPage falls back to the list data when fetching the subtask fails" time="0.027">
+    </testcase>
+  </testsuite>
+  <testsuite name="TaskComments" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:20" time="0.182" tests="4">
+    <testcase classname="TaskComments renders the empty state and hides the editor in read-only mode" name="TaskComments renders the empty state and hides the editor in read-only mode" time="0.007">
+    </testcase>
+    <testcase classname="TaskComments creates comments from the inline editor" name="TaskComments creates comments from the inline editor" time="0.021">
+    </testcase>
+    <testcase classname="TaskComments renders mentions, forwards task mention clicks, edits comments and cancels edit mode" name="TaskComments renders mentions, forwards task mention clicks, edits comments and cancels edit mode" time="0.051">
+    </testcase>
+    <testcase classname="TaskComments deletes comments and surfaces API errors" name="TaskComments deletes comments and surfaces API errors" time="0.061">
+    </testcase>
+  </testsuite>
+  <testsuite name="PokerRoomPage" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:20" time="0.16" tests="5">
+    <testcase classname="PokerRoomPage shows load errors when the initial fetch fails" name="PokerRoomPage shows load errors when the initial fetch fails" time="0.008">
+    </testcase>
+    <testcase classname="PokerRoomPage opens the join modal for a new participant and joins with the default role" name="PokerRoomPage opens the join modal for a new participant and joins with the default role" time="0.027">
+    </testcase>
+    <testcase classname="PokerRoomPage rejoins disconnected moderators, restores the pending task, updates timer and starts voting" name="PokerRoomPage rejoins disconnected moderators, restores the pending task, updates timer and starts voting" time="0.039">
+    </testcase>
+    <testcase classname="PokerRoomPage renders revealed results and delegates accept, revote, leave and close actions" name="PokerRoomPage renders revealed results and delegates accept, revote, leave and close actions" time="0.022">
+    </testcase>
+    <testcase classname="PokerRoomPage renders the voting state for voters, persists the vote and lets users leave" name="PokerRoomPage renders the voting state for voters, persists the vote and lets users leave" time="0.019">
+    </testcase>
+  </testsuite>
+  <testsuite name="KanbanBoard" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:21" time="0.108" tests="4">
+    <testcase classname="KanbanBoard renders columns and orphaned tasks, opens task details and creates tasks from the modal" name="KanbanBoard renders columns and orphaned tasks, opens task details and creates tasks from the modal" time="0.032">
+    </testcase>
+    <testcase classname="KanbanBoard applies optimistic moves, refreshes on success and rolls back on WIP errors" name="KanbanBoard applies optimistic moves, refreshes on success and rolls back on WIP errors" time="0.007">
+    </testcase>
+    <testcase classname="KanbanBoard opens the blocked-task confirmation modal and only moves after confirmation" name="KanbanBoard opens the blocked-task confirmation modal and only moves after confirmation" time="0.024">
+    </testcase>
+    <testcase classname="KanbanBoard ignores drag end when movement is disabled" name="KanbanBoard ignores drag end when movement is disabled" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="NotificationBell" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:21" time="0.102" tests="3">
+    <testcase classname="NotificationBell loads unread count, opens the list and marks all notifications as read" name="NotificationBell loads unread count, opens the list and marks all notifications as read" time="0.028">
+    </testcase>
+    <testcase classname="NotificationBell marks an unread notification as read and navigates to its link" name="NotificationBell marks an unread notification as read and navigates to its link" time="0.021">
+    </testcase>
+    <testcase classname="NotificationBell renders the empty state when there are no notifications" name="NotificationBell renders the empty state when there are no notifications" time="0.012">
+    </testcase>
+  </testsuite>
+  <testsuite name="VoteResults" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:21" time="0.108" tests="3">
+    <testcase classname="VoteResults renders consensus details and saves the mode by default" name="VoteResults renders consensus details and saves the mode by default" time="0.028">
+    </testcase>
+    <testcase classname="VoteResults highlights extreme voters, accepts a custom estimate and supports moderator actions" name="VoteResults highlights extreme voters, accepts a custom estimate and supports moderator actions" time="0.042">
+    </testcase>
+    <testcase classname="VoteResults keeps moderator controls disabled for non facilitators" name="VoteResults keeps moderator controls disabled for non facilitators" time="0.004">
+    </testcase>
+  </testsuite>
+  <testsuite name="kanban pickers" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:21" time="0.097" tests="4">
+    <testcase classname="kanban pickers renders avatar images or deterministic initials" name="kanban pickers renders avatar images or deterministic initials" time="0.003">
+    </testcase>
+    <testcase classname="kanban pickers selects and clears an assignee" name="kanban pickers selects and clears an assignee" time="0.02">
+    </testcase>
+    <testcase classname="kanban pickers selects an epic and supports the no-epic option" name="kanban pickers selects an epic and supports the no-epic option" time="0.017">
+    </testcase>
+    <testcase classname="kanban pickers renders label chips and toggles multi-selection" name="kanban pickers renders label chips and toggles multi-selection" time="0.016">
+    </testcase>
+  </testsuite>
+  <testsuite name="SelectTaskModal" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:21" time="0.085" tests="3">
+    <testcase classname="SelectTaskModal filters DONE tasks and subtasks, then closes after a successful selection" name="SelectTaskModal filters DONE tasks and subtasks, then closes after a successful selection" time="0.026">
+    </testcase>
+    <testcase classname="SelectTaskModal renders the empty state when there are no selectable tasks" name="SelectTaskModal renders the empty state when there are no selectable tasks" time="0.005">
+    </testcase>
+    <testcase classname="SelectTaskModal keeps the modal open when onSelect fails and supports overlay close" name="SelectTaskModal keeps the modal open when onSelect fails and supports overlay close" time="0.022">
+    </testcase>
+  </testsuite>
+  <testsuite name="useBoardColumns" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:21" time="0.082" tests="4">
+    <testcase classname="useBoardColumns loads columns for a project" name="useBoardColumns loads columns for a project" time="0.054">
+    </testcase>
+    <testcase classname="useBoardColumns does not request without a project and silently handles failures" name="useBoardColumns does not request without a project and silently handles failures" time="0.002">
+    </testcase>
+    <testcase classname="board column helpers uses configured, translated and humanized labels" name="board column helpers uses configured, translated and humanized labels" time="0">
+    </testcase>
+    <testcase classname="board column helpers uses configured colors and a neutral fallback" name="board column helpers uses configured colors and a neutral fallback" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="UI primitives" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:21" time="0.094" tests="10">
+    <testcase classname="UI primitives Button forwards clicks and disables interaction while loading" name="UI primitives Button forwards clicks and disables interaction while loading" time="0.012">
+    </testcase>
+    <testcase classname="UI primitives Input associates its label, shows hints and prioritizes errors" name="UI primitives Input associates its label, shows hints and prioritizes errors" time="0.002">
+    </testcase>
+    <testcase classname="UI primitives Alert renders its message and invokes close" name="UI primitives Alert renders its message and invokes close" time="0.008">
+    </testcase>
+    <testcase classname="UI primitives Toggle exposes switch semantics and changes to the inverse value" name="UI primitives Toggle exposes switch semantics and changes to the inverse value" time="0.008">
+    </testcase>
+    <testcase classname="UI primitives renders known and unknown language flags safely" name="UI primitives renders known and unknown language flags safely" time="0.001">
+    </testcase>
+    <testcase classname="UI primitives switches application language" name="UI primitives switches application language" time="0.008">
+    </testcase>
+    <testcase classname="NotificationSource renders an actor avatar and falls back to initials after an image error" name="NotificationSource renders an actor avatar and falls back to initials after an image error" time="0.001">
+    </testcase>
+    <testcase classname="NotificationSource uses an event icon for git notifications even when an actor exists" name="NotificationSource uses an event icon for git notifications even when an actor exists" time="0.001">
+    </testcase>
+    <testcase classname="ProtectedRoute redirects anonymous users to the login route" name="ProtectedRoute redirects anonymous users to the login route" time="0.001">
+    </testcase>
+    <testcase classname="ProtectedRoute renders protected content with a token" name="ProtectedRoute renders protected content with a token" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="TaskActivityFeed" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:21" time="0.055" tests="3">
+    <testcase classname="TaskActivityFeed renders loading first and then activity rows with resolved values and relative time" name="TaskActivityFeed renders loading first and then activity rows with resolved values and relative time" time="0.014">
+    </testcase>
+    <testcase classname="TaskActivityFeed returns null when the request fails and there are no activities to render" name="TaskActivityFeed returns null when the request fails and there are no activities to render" time="0.004">
+    </testcase>
+    <testcase classname="TaskActivityFeed returns null when there are only comments and no activity entries" name="TaskActivityFeed returns null when there are only comments and no activity entries" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="task filter helpers" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:21" time="0.051" tests="7">
+    <testcase classname="task filter helpers recognizes the canonical empty state" name="task filter helpers recognizes the canonical empty state" time="0">
+    </testcase>
+    <testcase classname="task filter helpers counts each selected value and the search query" name="task filter helpers counts each selected value and the search query" time="0">
+    </testcase>
+    <testcase classname="task filter helpers ignores empty filter categories" name="task filter helpers ignores empty filter categories" time="0">
+    </testcase>
+    <testcase classname="retrospective parsing returns null only for missing or empty notes" name="retrospective parsing returns null only for missing or empty notes" time="0">
+    </testcase>
+    <testcase classname="retrospective parsing keeps legacy plain-text notes intact" name="retrospective parsing keeps legacy plain-text notes intact" time="0">
+    </testcase>
+    <testcase classname="retrospective parsing parses valid structured retrospective data" name="retrospective parsing parses valid structured retrospective data" time="0">
+    </testcase>
+    <testcase classname="retrospective parsing rejects JSON that does not match the retrospective schema" name="retrospective parsing rejects JSON that does not match the retrospective schema" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="API endpoint modules" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:21" time="0.111" tests="6">
+    <testcase classname="API endpoint modules maps authentication, user and notification operations to the user service" name="API endpoint modules maps authentication, user and notification operations to the user service" time="0">
+    </testcase>
+    <testcase classname="API endpoint modules maps workspace, category, invitation, project and team operations to the project service" name="API endpoint modules maps workspace, category, invitation, project and team operations to the project service" time="0">
+    </testcase>
+    <testcase classname="API endpoint modules maps task, dependency, label and epic operations to the task service" name="API endpoint modules maps task, dependency, label and epic operations to the task service" time="0">
+    </testcase>
+    <testcase classname="API endpoint modules maps sprint operations and serializes every active task filter" name="API endpoint modules maps sprint operations and serializes every active task filter" time="0.001">
+    </testcase>
+    <testcase classname="API endpoint modules maps Git and board-column operations and handles an absent Git integration" name="API endpoint modules maps Git and board-column operations and handles an absent Git integration" time="0">
+    </testcase>
+    <testcase classname="API endpoint modules maps every planning-poker operation to the poker service" name="API endpoint modules maps every planning-poker operation to the poker service" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="avatarUrl" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:22" time="0.038" tests="26">
+    <testcase classname="avatarUrl builds an avatar source for undefined" name="avatarUrl builds an avatar source for undefined" time="0">
+    </testcase>
+    <testcase classname="avatarUrl builds an avatar source for /assets/avatars/a.png" name="avatarUrl builds an avatar source for /assets/avatars/a.png" time="0">
+    </testcase>
+    <testcase classname="avatarUrl builds an avatar source for /assets/avatars/a.png?size=2" name="avatarUrl builds an avatar source for /assets/avatars/a.png?size=2" time="0">
+    </testcase>
+    <testcase classname="avatarUrl builds an avatar source for https://old.host/assets/avatars/a.png?x=1" name="avatarUrl builds an avatar source for https://old.host/assets/avatars/a.png?x=1" time="0">
+    </testcase>
+    <testcase classname="avatarUrl builds an avatar source for https://example.com/photo.png" name="avatarUrl builds an avatar source for https://example.com/photo.png" time="0.001">
+    </testcase>
+    <testcase classname="avatarUrl builds an avatar source for not-a-url" name="avatarUrl builds an avatar source for not-a-url" time="0">
+    </testcase>
+    <testcase classname="flash notices stores a message and consumes it only once" name="flash notices stores a message and consumes it only once" time="0">
+    </testcase>
+    <testcase classname="notification metadata normalizes legacy and incomplete notification shapes" name="notification metadata normalizes legacy and incomplete notification shapes" time="0">
+    </testcase>
+    <testcase classname="notification metadata formats notification age for 2026-01-02T11:59:40Z" name="notification metadata formats notification age for 2026-01-02T11:59:40Z" time="0">
+    </testcase>
+    <testcase classname="notification metadata formats notification age for 2026-01-02T11:55:00Z" name="notification metadata formats notification age for 2026-01-02T11:55:00Z" time="0">
+    </testcase>
+    <testcase classname="notification metadata formats notification age for 2026-01-02T10:00:00Z" name="notification metadata formats notification age for 2026-01-02T10:00:00Z" time="0.001">
+    </testcase>
+    <testcase classname="notification metadata formats notification age for 2025-12-31T12:00:00Z" name="notification metadata formats notification age for 2025-12-31T12:00:00Z" time="0">
+    </testcase>
+    <testcase classname="notification metadata uses known metadata and the general fallback" name="notification metadata uses known metadata and the general fallback" time="0">
+    </testcase>
+    <testcase classname="notification metadata detects git notification metadata from Pull request opened" name="notification metadata detects git notification metadata from Pull request opened" time="0">
+    </testcase>
+    <testcase classname="notification metadata detects git notification metadata from Nuevo commit" name="notification metadata detects git notification metadata from Nuevo commit" time="0">
+    </testcase>
+    <testcase classname="notification metadata detects git notification metadata from Rama actualizada" name="notification metadata detects git notification metadata from Rama actualizada" time="0">
+    </testcase>
+    <testcase classname="notification metadata detects git notification metadata from Unrelated event" name="notification metadata detects git notification metadata from Unrelated event" time="0">
+    </testcase>
+    <testcase classname="notification metadata parses valid object data and rejects malformed or non-object data" name="notification metadata parses valid object data and rejects malformed or non-object data" time="0.001">
+    </testcase>
+    <testcase classname="notification metadata extracts only non-empty actor ids" name="notification metadata extracts only non-empty actor ids" time="0">
+    </testcase>
+    <testcase classname="relativeTime formats 2024-01-02T12:00:00Z relative to now" name="relativeTime formats 2024-01-02T12:00:00Z relative to now" time="0.001">
+    </testcase>
+    <testcase classname="relativeTime formats 2025-11-02T12:00:00Z relative to now" name="relativeTime formats 2025-11-02T12:00:00Z relative to now" time="0">
+    </testcase>
+    <testcase classname="relativeTime formats 2025-12-31T12:00:00Z relative to now" name="relativeTime formats 2025-12-31T12:00:00Z relative to now" time="0">
+    </testcase>
+    <testcase classname="relativeTime formats 2026-01-02T10:00:00Z relative to now" name="relativeTime formats 2026-01-02T10:00:00Z relative to now" time="0">
+    </testcase>
+    <testcase classname="relativeTime formats 2026-01-02T11:58:00Z relative to now" name="relativeTime formats 2026-01-02T11:58:00Z relative to now" time="0.001">
+    </testcase>
+    <testcase classname="relativeTime formats 2026-01-02T11:59:55Z relative to now" name="relativeTime formats 2026-01-02T11:59:55Z relative to now" time="0">
+    </testcase>
+    <testcase classname="chart colors returns the palette for the active theme" name="chart colors returns the palette for the active theme" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="useApiAction" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:22" time="0.024" tests="8">
+    <testcase classname="useApiAction exposes loading and resolves successful data" name="useApiAction exposes loading and resolves successful data" time="0.001">
+    </testcase>
+    <testcase classname="useApiAction maps API failures to a translated error" name="useApiAction maps API failures to a translated error" time="0.001">
+    </testcase>
+    <testcase classname="useApiAction maps API failures to a translated error" name="useApiAction maps API failures to a translated error" time="0">
+    </testcase>
+    <testcase classname="useApiAction maps API failures to a translated error" name="useApiAction maps API failures to a translated error" time="0.001">
+    </testcase>
+    <testcase classname="useApiAction maps API failures to a translated error" name="useApiAction maps API failures to a translated error" time="0">
+    </testcase>
+    <testcase classname="useApiAction maps API failures to a translated error" name="useApiAction maps API failures to a translated error" time="0.001">
+    </testcase>
+    <testcase classname="useApiAction maps API failures to a translated error" name="useApiAction maps API failures to a translated error" time="0">
+    </testcase>
+    <testcase classname="useApiAction resets all state fields" name="useApiAction resets all state fields" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="usePokerSocket" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:22" time="0.043" tests="4">
+    <testcase classname="usePokerSocket does not connect without a session or access token" name="usePokerSocket does not connect without a session or access token" time="0.001">
+    </testcase>
+    <testcase classname="usePokerSocket connects, subscribes and consumes all server events" name="usePokerSocket connects, subscribes and consumes all server events" time="0.002">
+    </testcase>
+    <testcase classname="usePokerSocket publishes every supported command" name="usePokerSocket publishes every supported command" time="0">
+    </testcase>
+    <testcase classname="usePokerSocket reports disconnects, stomp errors and reconnect callbacks" name="usePokerSocket reports disconnects, stomp errors and reconnect callbacks" time="0.001">
+    </testcase>
+  </testsuite>
+  <testsuite name="API clients" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:22" time="0.046" tests="9">
+    <testcase classname="API clients user client configures its base URL and authorization header" name="API clients user client configures its base URL and authorization header" time="0.002">
+    </testcase>
+    <testcase classname="API clients project client configures its base URL and authorization header" name="API clients project client configures its base URL and authorization header" time="0.011">
+    </testcase>
+    <testcase classname="API clients task client configures its base URL and authorization header" name="API clients task client configures its base URL and authorization header" time="0">
+    </testcase>
+    <testcase classname="API clients poker client configures its base URL and authorization header" name="API clients poker client configures its base URL and authorization header" time="0.01">
+    </testcase>
+    <testcase classname="API clients leaves authorization absent when there is no access token" name="API clients leaves authorization absent when there is no access token" time="0.001">
+    </testcase>
+    <testcase classname="API clients logs out after a 401 when no refresh token exists" name="API clients logs out after a 401 when no refresh token exists" time="0">
+    </testcase>
+    <testcase classname="API clients refreshes tokens and retries the original request" name="API clients refreshes tokens and retries the original request" time="0.001">
+    </testcase>
+    <testcase classname="API clients rejects and logs out when token refresh fails" name="API clients rejects and logs out when token refresh fails" time="0">
+    </testcase>
+    <testcase classname="API clients passes through non-authentication failures" name="API clients passes through non-authentication failures" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="useLenis" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:22" time="0.028" tests="2">
+    <testcase classname="useLenis creates one global instance and destroys it on unmount" name="useLenis creates one global instance and destroys it on unmount" time="0.001">
+    </testcase>
+    <testcase classname="useLenis does not initialize when reduced motion is preferred" name="useLenis does not initialize when reduced motion is preferred" time="0">
+    </testcase>
+  </testsuite>
+  <testsuite name="authStore" errors="0" failures="0" skipped="0" timestamp="2026-09-03T19:03:22" time="0.021" tests="6">
+    <testcase classname="authStore persists and updates a complete session" name="authStore persists and updates a complete session" time="0">
+    </testcase>
+    <testcase classname="authStore updates tokens and the user independently" name="authStore updates tokens and the user independently" time="0.001">
+    </testcase>
+    <testcase classname="authStore clears state and storage on logout" name="authStore clears state and storage on logout" time="0">
+    </testcase>
+    <testcase classname="themeStore applies explicit themes to the document" name="themeStore applies explicit themes to the document" time="0">
+    </testcase>
+    <testcase classname="themeStore toggles between light and dark" name="themeStore toggles between light and dark" time="0">
+    </testcase>
+    <testcase classname="workspaceStore selects and clears a workspace" name="workspaceStore selects and clears a workspace" time="0">
+    </testcase>
+  </testsuite>
+</testsuites>
