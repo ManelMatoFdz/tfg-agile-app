@@ -4,6 +4,7 @@ import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
@@ -21,6 +22,7 @@ public class ProjectServiceClient {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("X-Internal-Api-Key", apiKey)
+                .requestFactory(new SimpleClientHttpRequestFactory())
                 .build();
     }
 

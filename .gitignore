@@ -33,6 +33,7 @@ replay_pid*
 !.env.*.example
 docs/.env
 .DS_Store
+frontend/coverage/
 
 
 CLAUDE.md

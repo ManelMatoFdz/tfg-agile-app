@@ -1,0 +1,23 @@
+server:
+  port: 0
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+app:
+  internal:
+    api-key: test-internal-key
+  project-service:
+    url: http://localhost:0
+  user-service:
+    url: http://localhost:0
+  git:
+    webhook-base-url: http://localhost:8083
+
+security:
+  jwt:
+    secret: 12345678901234567890123456789012
+    issuer: agileflow-user-service
+    audience: agileflow-api

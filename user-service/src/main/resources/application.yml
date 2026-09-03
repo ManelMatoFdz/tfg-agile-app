@@ -48,7 +48,7 @@ app:
     public-base-url: ${AVATAR_PUBLIC_BASE_URL:http://localhost:8081/assets/avatars}
   notifications:
     queue:
-      enabled: ${NOTIFICATIONS_QUEUE_ENABLED:false}
+      enabled: ${NOTIFICATIONS_QUEUE_ENABLED:true}
       name: ${NOTIFICATIONS_QUEUE_NAME:user-service.notifications}
       exchange: ${NOTIFICATIONS_EXCHANGE:agileflow.notifications}
       routing-key: ${NOTIFICATIONS_ROUTING_KEY:user-service.notification}

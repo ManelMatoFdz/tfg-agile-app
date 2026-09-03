@@ -1,0 +1,43 @@
+server:
+  port: 0
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+  mail:
+    host: localhost
+    port: 2525
+    username: test
+    password: test
+
+app:
+  internal:
+    api-key: test-internal-key
+  mail:
+    enabled: false
+    from: no-reply@test.local
+  avatar:
+    public-base-url: http://localhost:8081/assets/avatars
+  notifications:
+    queue:
+      enabled: true
+      name: user-service.notifications.test
+      exchange: agileflow.notifications.test
+      routing-key: user-service.notification.test
+
+security:
+  jwt:
+    secret: 12345678901234567890123456789012
+    expirationMinutes: 60
+    issuer: agileflow-user-service
+    audience: agileflow-api
+  refresh-token:
+    expirationDays: 7
+  reset-password:
+    expirationMinutes: 15
+    base-url: http://localhost:3000/reset-password
+  google:
+    client-id: ""
+    token-info-url: https://oauth2.googleapis.com/tokeninfo

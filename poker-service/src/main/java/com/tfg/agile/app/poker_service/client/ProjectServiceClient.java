@@ -3,6 +3,7 @@ package com.tfg.agile.app.poker_service.client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -21,6 +22,7 @@ public class ProjectServiceClient {
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .defaultHeader("X-Internal-Api-Key", apiKey)
+                .requestFactory(new SimpleClientHttpRequestFactory())
                 .build();
     }
 

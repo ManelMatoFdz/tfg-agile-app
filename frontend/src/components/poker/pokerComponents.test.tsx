@@ -6,6 +6,7 @@ import RoundHistory from './RoundHistory';
 import CreateSessionModal from './CreateSessionModal';
 import JoinSessionModal from './JoinSessionModal';
 import { renderWithProviders } from '../../test/testUtils';
+import i18n from '../../i18n';
 import type { PokerParticipant, PokerRound } from '../../types';
 
 describe('VotingCards', () => {
@@ -60,11 +61,12 @@ describe('planning-poker forms', () => {
     const onCreate = jest.fn<() => Promise<void>>().mockResolvedValue(undefined);
     const onClose = jest.fn();
     const { user } = renderWithProviders(<CreateSessionModal onClose={onClose} onCreate={onCreate} />);
+    const submitLabel = i18n.t('poker.create.submit');
 
-    expect(screen.getByRole('button', { name: 'Crear sesión' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: submitLabel })).toBeDisabled();
     await user.type(screen.getByRole('textbox'), '  Refinamiento semanal  ');
     await user.selectOptions(screen.getByRole('combobox'), 'T_SHIRT');
-    await user.click(screen.getByRole('button', { name: 'Crear sesión' }));
+    await user.click(screen.getByRole('button', { name: submitLabel }));
 
     expect(onCreate).toHaveBeenCalledWith('Refinamiento semanal', 'T_SHIRT');
     expect(onClose).toHaveBeenCalled();
@@ -74,11 +76,12 @@ describe('planning-poker forms', () => {
     const onCreate = jest.fn<() => Promise<void>>().mockRejectedValue(new Error('network'));
     const onClose = jest.fn();
     const { user } = renderWithProviders(<CreateSessionModal onClose={onClose} onCreate={onCreate} />);
+    const submitLabel = i18n.t('poker.create.submit');
 
     await user.type(screen.getByRole('textbox'), 'Session');
-    await user.click(screen.getByRole('button', { name: 'Crear sesión' }));
+    await user.click(screen.getByRole('button', { name: submitLabel }));
 
-    expect(await screen.findByText('Error al crear la sesión.')).toBeInTheDocument();
+    expect(await screen.findByText(i18n.t('poker.create.error'))).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
   });
 
@@ -94,8 +97,8 @@ describe('planning-poker forms', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Observador' }));
-    await user.click(screen.getByRole('button', { name: 'Unirse' }));
+    await user.click(screen.getByRole('button', { name: i18n.t('poker.roles.OBSERVER') }));
+    await user.click(screen.getByRole('button', { name: i18n.t('poker.join.submit') }));
     expect(onJoin).toHaveBeenCalledWith('OBSERVER');
   });
 
@@ -112,9 +115,9 @@ describe('planning-poker forms', () => {
       />,
     );
 
-    await user.click(screen.getByRole('button', { name: 'Unirse' }));
-    expect(await screen.findByText('Error al unirse a la sesión.')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Cancelar' }));
+    await user.click(screen.getByRole('button', { name: i18n.t('poker.join.submit') }));
+    expect(await screen.findByText(i18n.t('poker.join.error'))).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: i18n.t('common.cancel') }));
     expect(onClose).toHaveBeenCalled();
   });
 });

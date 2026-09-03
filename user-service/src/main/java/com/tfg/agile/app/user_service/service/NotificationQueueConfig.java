@@ -2,6 +2,7 @@ package com.tfg.agile.app.user_service.service;
 
 import org.springframework.amqp.core.Binding;
 import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.MessageDeliveryMode;
 import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.core.TopicExchange;
 import org.springframework.beans.factory.annotation.Value;
@@ -9,11 +10,18 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.amqp.rabbit.annotation.EnableRabbit;
+import org.springframework.amqp.support.converter.JacksonJsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
 
 @Configuration
 @EnableRabbit
 @ConditionalOnProperty(prefix = "app.notifications.queue", name = "enabled", havingValue = "true")
 public class NotificationQueueConfig {
+
+    @Bean
+    public MessageConverter rabbitMessageConverter() {
+        return new JacksonJsonMessageConverter();
+    }
 
     @Bean
     public TopicExchange notificationsExchange(

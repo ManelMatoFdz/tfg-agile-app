@@ -25,8 +25,13 @@
         <spring.boot.version>4.0.3</spring.boot.version>
         <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
         <maven.surefire.plugin.version>3.2.5</maven.surefire.plugin.version>
+        <maven.failsafe.plugin.version>3.2.5</maven.failsafe.plugin.version>
         <mockito.version>5.20.0</mockito.version>
+        <testcontainers.version>1.19.5</testcontainers.version>
         <argLine></argLine>
+        <failsafeArgLine></failsafeArgLine>
+        <skip.unit.tests>false</skip.unit.tests>
+        <sonar.coverage.jacoco.xmlReportPaths>${maven.multiModuleProjectDirectory}/user-service/target/site/jacoco/jacoco.xml,${maven.multiModuleProjectDirectory}/user-service/target/site/jacoco-it/jacoco.xml,${maven.multiModuleProjectDirectory}/project-service/target/site/jacoco/jacoco.xml,${maven.multiModuleProjectDirectory}/project-service/target/site/jacoco-it/jacoco.xml,${maven.multiModuleProjectDirectory}/task-service/target/site/jacoco/jacoco.xml,${maven.multiModuleProjectDirectory}/task-service/target/site/jacoco-it/jacoco.xml,${maven.multiModuleProjectDirectory}/poker-service/target/site/jacoco/jacoco.xml,${maven.multiModuleProjectDirectory}/poker-service/target/site/jacoco-it/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
     <dependencyManagement>
@@ -35,6 +40,13 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
                 <version>${spring.boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.testcontainers</groupId>
+                <artifactId>testcontainers-bom</artifactId>
+                <version>${testcontainers.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -70,7 +82,33 @@
                     <version>${maven.surefire.plugin.version}</version>
                     <configuration>
                         <argLine>@{argLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
+                        <skipTests>${skip.unit.tests}</skipTests>
+                        <excludes>
+                            <exclude>**/*IT.java</exclude>
+                        </excludes>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-failsafe-plugin</artifactId>
+                    <version>${maven.failsafe.plugin.version}</version>
+                    <configuration>
+                        <argLine>@{failsafeArgLine} -javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
+                        <classesDirectory>${project.build.outputDirectory}</classesDirectory>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.sonarsource.scanner.maven</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>5.2.0.4988</version>
                 </plugin>
             </plugins>
         </pluginManagement>
