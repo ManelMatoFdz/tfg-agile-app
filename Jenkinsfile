@@ -39,8 +39,14 @@ pipeline {
         dir('frontend') {
           sh '''
             npm ci
-            npm run test:coverage
+            npm run test:ci
           '''
+        }
+      }
+      post {
+        always {
+          junit allowEmptyResults: true, testResults: 'frontend/junit.xml'
+          archiveArtifacts artifacts: 'frontend/coverage/**', allowEmptyArchive: true
         }
       }
     }
@@ -55,6 +61,7 @@ pipeline {
       post {
         always {
           sh './scripts/stop-e2e-stack.sh'
+          junit allowEmptyResults: true, testResults: 'frontend/test-results/playwright/*.xml'
           archiveArtifacts artifacts: 'frontend/playwright-report/**', allowEmptyArchive: true
         }
       }
