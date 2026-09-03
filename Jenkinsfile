@@ -15,11 +15,21 @@ pipeline {
       steps {
         sh 'mvn -B test'
       }
+      post {
+        always {
+          junit allowEmptyResults: true, testResults: '**/target/surefire-reports/*.xml'
+        }
+      }
     }
 
     stage('Backend · integración') {
       steps {
         sh 'mvn -B verify -Dskip.unit.tests=true'
+      }
+      post {
+        always {
+          junit allowEmptyResults: true, testResults: '**/target/failsafe-reports/*.xml'
+        }
       }
     }
 
@@ -49,11 +59,4 @@ pipeline {
     }
   }
 
-  post {
-    always {
-      node {
-        junit allowEmptyResults: true, testResults: '**/target/*-reports/*.xml'
-      }
-    }
-  }
 }
