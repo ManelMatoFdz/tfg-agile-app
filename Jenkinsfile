@@ -45,6 +45,21 @@ pipeline {
       }
     }
 
+    stage('E2E') {
+      steps {
+        sh './scripts/run-e2e-stack.sh'
+        dir('frontend') {
+          sh 'npx playwright test'
+        }
+      }
+      post {
+        always {
+          sh './scripts/stop-e2e-stack.sh'
+          archiveArtifacts artifacts: 'frontend/playwright-report/**', allowEmptyArchive: true
+        }
+      }
+    }
+
     stage('Análisis · backend') {
       steps {
         sh 'mvn -B sonar:sonar -Dsonar.host.url=$SONAR_HOST_URL -Dsonar.token=$SONAR_TOKEN -Dsonar.projectKey=tfg-agile-app-backend'

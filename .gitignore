@@ -31,9 +31,15 @@ replay_pid*
 .env.*
 !.env.example
 !.env.*.example
+!frontend/.env.e2e
 docs/.env
 .DS_Store
 frontend/coverage/
+
+# E2E / Playwright
+.e2e-pids
+frontend/test-results/
+frontend/playwright-report/
 
 
 CLAUDE.md
