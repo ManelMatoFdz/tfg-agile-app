@@ -8,6 +8,7 @@ COPY user-service/pom.xml user-service/pom.xml
 COPY project-service/pom.xml project-service/pom.xml
 COPY task-service/pom.xml task-service/pom.xml
 COPY poker-service/pom.xml poker-service/pom.xml
+COPY coverage-aggregate/pom.xml coverage-aggregate/pom.xml
 COPY user-service/src user-service/src
 COPY project-service/src project-service/src
 COPY task-service/src task-service/src
