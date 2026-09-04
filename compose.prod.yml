@@ -17,10 +17,14 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - user-service
-      - project-service
-      - task-service
-      - poker-service
+      user-service:
+        condition: service_healthy
+      project-service:
+        condition: service_healthy
+      task-service:
+        condition: service_healthy
+      poker-service:
+        condition: service_healthy
 
   user-service:
     build:
@@ -57,10 +61,16 @@ services:
       RABBITMQ_PASS: ${RABBITMQ_PASS:?set RABBITMQ_PASS}
       RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
       NOTIFICATIONS_QUEUE_ENABLED: ${NOTIFICATIONS_QUEUE_ENABLED:-true}
-      USER_SERVICE_JPA_DDL_AUTO: ${USER_SERVICE_JPA_DDL_AUTO:-update}
+      USER_SERVICE_JPA_DDL_AUTO: ${USER_SERVICE_JPA_DDL_AUTO:-validate}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       SERVER_FORWARD_HEADERS_STRATEGY: framework
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8081/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
     depends_on:
       user-db:
         condition: service_healthy
@@ -87,14 +97,20 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-agileflow-user-service}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-agileflow-api}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?set INTERNAL_API_KEY}
-      PROJECT_SERVICE_JPA_DDL_AUTO: ${PROJECT_SERVICE_JPA_DDL_AUTO:-update}
+      PROJECT_SERVICE_JPA_DDL_AUTO: ${PROJECT_SERVICE_JPA_DDL_AUTO:-validate}
       SERVER_FORWARD_HEADERS_STRATEGY: framework
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8082/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
     depends_on:
       project-db:
         condition: service_healthy
       user-service:
-        condition: service_started
+        condition: service_healthy
 
   task-service:
     build:
@@ -118,16 +134,22 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-agileflow-user-service}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-agileflow-api}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?set INTERNAL_API_KEY}
-      TASK_SERVICE_JPA_DDL_AUTO: ${TASK_SERVICE_JPA_DDL_AUTO:-update}
+      TASK_SERVICE_JPA_DDL_AUTO: ${TASK_SERVICE_JPA_DDL_AUTO:-validate}
       SERVER_FORWARD_HEADERS_STRATEGY: framework
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8083/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
     depends_on:
       task-db:
         condition: service_healthy
       project-service:
-        condition: service_started
+        condition: service_healthy
       user-service:
-        condition: service_started
+        condition: service_healthy
 
   poker-service:
     build:
@@ -151,18 +173,24 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-agileflow-user-service}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-agileflow-api}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?set INTERNAL_API_KEY}
-      POKER_SERVICE_JPA_DDL_AUTO: ${POKER_SERVICE_JPA_DDL_AUTO:-update}
+      POKER_SERVICE_JPA_DDL_AUTO: ${POKER_SERVICE_JPA_DDL_AUTO:-validate}
       SERVER_FORWARD_HEADERS_STRATEGY: framework
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8084/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
     depends_on:
       poker-db:
         condition: service_healthy
       task-service:
-        condition: service_started
+        condition: service_healthy
       project-service:
-        condition: service_started
+        condition: service_healthy
       user-service:
-        condition: service_started
+        condition: service_healthy
 
   user-db:
     image: postgres:16

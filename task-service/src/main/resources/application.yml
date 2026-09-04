@@ -10,10 +10,16 @@ spring:
     username: ${TASK_DB_USER:task}
     password: ${TASK_DB_PASS:task}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${HIKARI_MAX_POOL_SIZE:10}
+      minimum-idle: ${HIKARI_MIN_IDLE:2}
+      idle-timeout: ${HIKARI_IDLE_TIMEOUT:300000}
+      max-lifetime: ${HIKARI_MAX_LIFETIME:600000}
+      connection-timeout: ${HIKARI_CONNECTION_TIMEOUT:30000}
 
   jpa:
     hibernate:
-      ddl-auto: ${TASK_SERVICE_JPA_DDL_AUTO:update}
+      ddl-auto: ${TASK_SERVICE_JPA_DDL_AUTO:validate}
     show-sql: false
     properties:
       hibernate:
@@ -30,6 +36,15 @@ app:
   git:
     # URL publica desde la que GitHub alcanza este servicio
     webhook-base-url: ${GIT_WEBHOOK_BASE_URL:http://localhost:8083}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
 
 security:
   jwt:

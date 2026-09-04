@@ -2,11 +2,13 @@ package com.tfg.agile.app.user_service.repository;
 
 import com.tfg.agile.app.user_service.entity.Notification;
 import com.tfg.agile.app.user_service.entity.User;
+import com.tfg.agile.app.user_service.FlywayMigrationConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -21,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Testcontainers
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@Import(FlywayMigrationConfig.class)
 class NotificationRepositoryIT {
 
     @Container
