@@ -3,7 +3,6 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Users, Search, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { projectsApi } from '../../../api/projects';
-import { teamsApi } from '../../../api/teams';
 import { useApiAction } from '../../../hooks/useApiAction';
 import { useUserMap } from '../../../hooks/useUserMap';
 import { useAuthStore } from '../../../store/authStore';
@@ -11,10 +10,9 @@ import { useProjectMember } from '../../../hooks/useProjectMember';
 import { buildAvatarSrc } from '../../../utils/avatarUrl';
 import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
-import type { TeamMember, TeamRole, ScrumRole, Project } from '../../../types';
+import type { TeamMember, TeamRole, Project } from '../../../types';
 
 const PAGE_SIZE = 8;
-const SCRUM_ROLES: (ScrumRole | null)[] = [null, 'PRODUCT_OWNER', 'SCRUM_MASTER', 'DEVELOPER'];
 
 const TEAM_ROLE_COLOR: Record<TeamRole, { color: string; bg: string }> = {
   ADMIN:  { color: 'var(--accent-text)',   bg: 'var(--accent-muted)' },
@@ -43,17 +41,6 @@ const tdStyle: React.CSSProperties = {
   fontSize: 13,
   color: 'var(--text)',
   borderBottom: '1px solid var(--border)',
-};
-
-const selectStyle: React.CSSProperties = {
-  fontSize: 12, fontWeight: 500,
-  padding: '4px 8px',
-  background: 'var(--bg)',
-  border: '1px solid var(--border)',
-  borderRadius: 'var(--radius-md)',
-  color: 'var(--text-muted)',
-  cursor: 'pointer',
-  outline: 'none',
 };
 
 const inputStyle: React.CSSProperties = {
@@ -111,7 +98,6 @@ export default function ProjectMembersPage() {
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [updatingScrumId, setUpdatingScrumId] = useState<string | null>(null);
 
   const [page, setPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -163,20 +149,6 @@ export default function ProjectMembersPage() {
   const to = Math.min((safePage + 1) * PAGE_SIZE, filtered.length);
 
   useEffect(() => setPage(0), [searchQuery, roleFilter]);
-
-  const handleScrumRoleChange = async (member: TeamMember, scrumRole: ScrumRole | null) => {
-    if (!project?.teamId) return;
-    setUpdatingScrumId(member.userId);
-    setActionError(null);
-    try {
-      const res = await teamsApi.updateScrumRole(project.teamId, member.userId, scrumRole);
-      setMembers((prev) => prev.map((m) => (m.userId === member.userId ? res.data : m)));
-    } catch {
-      setActionError(t('projects.members.errors.changeScrumRole'));
-    } finally {
-      setUpdatingScrumId(null);
-    }
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -317,7 +289,6 @@ export default function ProjectMembersPage() {
                   const isSelf = m.userId === currentUser?.id;
                   const rc = TEAM_ROLE_COLOR[m.role];
                   const scrumConfig = m.scrumRole ? SCRUM_ROLE_COLOR[m.scrumRole] : null;
-                  const isUpdatingScrum = updatingScrumId === m.userId;
 
                   return (
                     <tr

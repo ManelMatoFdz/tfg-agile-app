@@ -30,6 +30,7 @@ pipeline {
       post {
         always {
           junit allowEmptyResults: true, testResults: '**/target/failsafe-reports/*.xml'
+          archiveArtifacts artifacts: 'coverage-aggregate/target/site/jacoco-aggregate/**', allowEmptyArchive: true
         }
       }
     }
