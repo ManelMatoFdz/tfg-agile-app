@@ -73,13 +73,13 @@ class TeamServiceTest {
     // ── create ───────────────────────────────────────────────────────────────
 
     @Test
-    void create_persistsTeamForWorkspaceMember() {
+    void create_persistsTeamForWorkspaceAdmin() {
         UUID callerId = UUID.randomUUID();
         Workspace workspace = TestDataFactory.workspace();
         Team team = TestDataFactory.team(workspace);
 
         when(workspaceRepository.findById(workspace.getId())).thenReturn(Optional.of(workspace));
-        when(workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), callerId)).thenReturn(true);
+        when(workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspace.getId(), callerId, WorkspaceRole.ADMIN)).thenReturn(true);
         when(teamRepository.save(any(Team.class))).thenAnswer(inv -> {
             Team saved = inv.getArgument(0);
             saved.setId(team.getId());
@@ -101,15 +101,16 @@ class TeamServiceTest {
     }
 
     @Test
-    void create_throwsWhenCallerNotWorkspaceMember() {
+    void create_throwsWhenCallerNotWorkspaceAdmin() {
         UUID callerId = UUID.randomUUID();
         Workspace workspace = TestDataFactory.workspace();
 
         when(workspaceRepository.findById(workspace.getId())).thenReturn(Optional.of(workspace));
-        when(workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), callerId)).thenReturn(false);
+        when(workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspace.getId(), callerId, WorkspaceRole.ADMIN)).thenReturn(false);
 
         assertThatThrownBy(() -> service.create(workspace.getId(), new CreateTeamRequestDto("T", null, null), callerId))
-                .isInstanceOf(ForbiddenException.class);
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("WORKSPACE_ADMIN_REQUIRED");
     }
 
     // ── findByWorkspace ───────────────────────────────────────────────────────

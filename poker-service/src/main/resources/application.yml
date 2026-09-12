@@ -5,6 +5,13 @@ spring:
   application:
     name: poker-service
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+
   datasource:
     url: jdbc:postgresql://${POKER_DB_HOST:localhost}:${POKER_DB_PORT:5436}/${POKER_DB_NAME:pokerdb}
     username: ${POKER_DB_USER:poker}
@@ -35,6 +42,9 @@ app:
     url: ${PROJECT_SERVICE_URL:http://localhost:8082}
   user-service:
     url: ${USER_SERVICE_URL:http://localhost:8081}
+  notifications:
+    exchange: ${NOTIFICATIONS_EXCHANGE:agileflow.notifications}
+    routing-key: ${NOTIFICATIONS_ROUTING_KEY:user-service.notification}
 
 management:
   endpoints:

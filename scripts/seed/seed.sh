@@ -3,7 +3,7 @@
 #  AgileFlow — carga de datos de demo en las cuatro bases de datos.
 #
 #  Borra TODOS los datos existentes salvo el usuario `darkoclemente`
-#  (id ca8bb86d-46e6-44ed-9f77-4e841be4de8a) y su sesion activa.
+#  (id a21a40cb-6b69-42a0-b790-b576df0641ec) y su sesion activa.
 #
 #  Uso:  ./scripts/seed/seed.sh
 #  Requisitos: los contenedores de las cuatro bases de datos deben estar en marcha.

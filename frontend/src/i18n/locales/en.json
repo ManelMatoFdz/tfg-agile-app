@@ -105,6 +105,13 @@
         "descriptionPlaceholder": "A brief description",
         "submit": "Create workspace"
       },
+      "searchPlaceholder": "Search workspaces...",
+      "member": "member",
+      "members": "members",
+      "roleAdmin": "Admin",
+      "roleMember": "Member",
+      "launch": "Launch",
+      "noSearchResults": "No workspaces match your search.",
       "pendingInvitations": "Pending invitations",
       "invitedToJoin": "You have been invited to join"
     },
@@ -635,10 +642,14 @@
         "message": "Are you sure you want to activate this sprint? Only one sprint can be active at a time per project."
       },
       "activateError": "Error activating the sprint.",
+      "completeSprint": "Complete sprint",
+      "completeConfirm": {
+        "title": "Complete sprint",
+        "message": "Are you sure you want to complete this sprint? Unfinished tasks will be returned to the backlog automatically."
+      },
+      "completeError": "Error completing the sprint.",
       "activateEndDateRequired": "You must set an end date before activating the sprint.",
       "complete": "Complete",
-      "completeConfirm": "Complete? Unfinished tasks will return to the backlog.",
-      "completeError": "Error completing the sprint.",
       "deleteConfirm": "Delete this sprint?",
       "deleteError": "Error deleting the sprint.",
       "activeSprint": "Active Sprint",
@@ -1098,6 +1109,7 @@
   },
   "poker": {
     "title": "Planning Poker",
+    "subtitle": "Estimate user stories as a team through simultaneous, bias-free voting.",
     "session": "session",
     "sessions": "sessions",
     "newSession": "New session",
@@ -1217,7 +1229,10 @@
     "subtask": "Subtask",
     "empty": "No tasks assigned to you",
     "emptySubtitle": "When tasks are assigned to you in a project, they will appear here",
-    "loadError": "Error loading tasks."
+    "loadError": "Error loading tasks.",
+    "pending": "To do",
+    "done": "Done",
+    "subtasks": "subtasks"
   },
   "errors": {
     "FORBIDDEN": "You do not have permission to perform this action.",
@@ -1261,8 +1276,15 @@
     "CANNOT_ADD_TASKS_COMPLETED_SPRINT": "Cannot add tasks to a completed sprint.",
     "TASK_WRONG_PROJECT": "Task does not belong to this project.",
     "TASK_NOT_IN_SPRINT": "Task is not in this sprint.",
-    "SCRUM_MASTER_OR_ADMIN_REQUIRED": "Scrum Master or Admin role required.",
-    "PO_SM_OR_ADMIN_REQUIRED": "Product Owner, Scrum Master, or Admin role required.",
+    "ONLY_PO_CAN_CREATE_TASKS": "Only the Product Owner can create tasks.",
+    "ONLY_PO_CAN_EDIT_BACKLOG_TASKS": "Only the Product Owner can edit backlog tasks.",
+    "ONLY_DEVELOPERS_CAN_EDIT_SPRINT_TASKS": "Only Developers can edit sprint tasks.",
+    "ONLY_DEVELOPERS_CAN_MOVE_TASKS": "Only Developers can move tasks.",
+    "ONLY_PO_CAN_DELETE_BACKLOG_TASKS": "Only the Product Owner can delete backlog tasks.",
+    "ONLY_DEVELOPERS_CAN_DELETE_SPRINT_TASKS": "Only Developers can delete sprint tasks.",
+    "ONLY_PO_CAN_MANAGE_EPICS": "Only the Product Owner can manage epics.",
+    "SCRUM_MASTER_REQUIRED": "Scrum Master role required.",
+    "PO_OR_SM_REQUIRED": "Product Owner or Scrum Master role required.",
     "ALREADY_WORKSPACE_MEMBER": "User is already a member of this workspace.",
     "ALREADY_TEAM_MEMBER": "User is already a member of this team.",
     "LAST_TEAM_ADMIN": "You are the only admin of this team. Assign another admin before performing this action.",

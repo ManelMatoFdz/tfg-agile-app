@@ -140,7 +140,7 @@ class SprintServiceTest {
     }
 
     @Test
-    void createSprint_requiresScrumMasterOrAdmin() {
+    void createSprint_requiresScrumMaster() {
         UUID projectId = UUID.randomUUID();
         UUID callerId = UUID.randomUUID();
 
@@ -150,7 +150,7 @@ class SprintServiceTest {
                 new CreateSprintRequestDto("Sprint", "Goal", LocalDate.now(), LocalDate.now().plusDays(14)),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("SCRUM_MASTER_OR_ADMIN_REQUIRED");
+                .hasMessage("SCRUM_MASTER_REQUIRED");
     }
 
     @Test
@@ -177,7 +177,7 @@ class SprintServiceTest {
         sprint.setStatus(SprintStatus.COMPLETED);
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
 
         assertThatThrownBy(() -> service.updateSprint(sprint.getId(),
                 new UpdateSprintRequestDto("Name", "Goal", LocalDate.now(), LocalDate.now().plusDays(7), null),
@@ -194,7 +194,7 @@ class SprintServiceTest {
         sprint.setStatus(SprintStatus.ACTIVE);
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
 
         assertThatThrownBy(() -> service.activateSprint(sprint.getId(), callerId))
                 .isInstanceOf(ConflictException.class)
@@ -209,7 +209,7 @@ class SprintServiceTest {
         sprint.setEndDate(null);
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
 
         assertThatThrownBy(() -> service.activateSprint(sprint.getId(), callerId))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -224,7 +224,7 @@ class SprintServiceTest {
         sprint.setEndDate(LocalDate.now().minusDays(1));
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
 
         assertThatThrownBy(() -> service.activateSprint(sprint.getId(), callerId))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -238,7 +238,7 @@ class SprintServiceTest {
         Sprint sprint = TestDataFactory.sprint(projectId);
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
         when(sprintRepository.existsByProjectIdAndStatus(projectId, SprintStatus.ACTIVE)).thenReturn(true);
 
         assertThatThrownBy(() -> service.activateSprint(sprint.getId(), callerId))
@@ -301,7 +301,7 @@ class SprintServiceTest {
 
         assertThatThrownBy(() -> service.activateSprint(sprint.getId(), callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("SCRUM_MASTER_OR_ADMIN_REQUIRED");
+                .hasMessage("SCRUM_MASTER_REQUIRED");
     }
 
     @Test
@@ -315,7 +315,7 @@ class SprintServiceTest {
 
         assertThatThrownBy(() -> service.deleteSprint(sprint.getId(), callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("SCRUM_MASTER_OR_ADMIN_REQUIRED");
+                .hasMessage("SCRUM_MASTER_REQUIRED");
     }
 
     @Test
@@ -395,7 +395,7 @@ class SprintServiceTest {
                 new AssignTaskToSprintRequestDto(List.of(UUID.randomUUID())),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("DEVELOPER_OR_PO_OR_ADMIN_REQUIRED");
+                .hasMessage("DEVELOPER_OR_PO_REQUIRED");
     }
 
     @Test
@@ -430,7 +430,7 @@ class SprintServiceTest {
                 new AssignTaskToSprintRequestDto(List.of(UUID.randomUUID())),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("DEVELOPER_OR_ADMIN_REQUIRED");
+                .hasMessage("DEVELOPER_REQUIRED");
     }
 
     @Test
@@ -448,7 +448,7 @@ class SprintServiceTest {
 
         assertThatThrownBy(() -> service.removeTaskFromSprint(sprint.getId(), task.getId(), callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("DEVELOPER_OR_ADMIN_REQUIRED");
+                .hasMessage("DEVELOPER_REQUIRED");
     }
 
     @Test
@@ -479,7 +479,7 @@ class SprintServiceTest {
         Task secondTask = TestDataFactory.task(projectId, UUID.randomUUID());
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
         when(taskRepository.findById(firstTask.getId())).thenReturn(Optional.of(firstTask));
         when(taskRepository.findById(secondTask.getId())).thenReturn(Optional.of(secondTask));
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));

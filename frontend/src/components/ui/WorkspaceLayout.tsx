@@ -372,7 +372,7 @@ export default function WorkspaceLayout() {
           </button>
         </div>
 
-        <main style={{ padding: '24px 28px' }}>
+        <main style={{ padding: '24px 28px', '--page-px': '28px', '--page-pt': '24px' } as React.CSSProperties}>
           <Outlet />
         </main>
       </div>

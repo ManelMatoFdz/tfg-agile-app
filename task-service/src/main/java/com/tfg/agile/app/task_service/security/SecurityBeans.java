@@ -14,8 +14,8 @@ public class SecurityBeans {
     }
 
     @Bean
-    public JwtAuthFilter jwtAuthFilter(JwtService jwtService) {
-        return new JwtAuthFilter(jwtService);
+    public JwtAuthFilter jwtAuthFilter(JwtService jwtService, TokenVersionClient tokenVersionClient) {
+        return new JwtAuthFilter(jwtService, tokenVersionClient);
     }
 
     @Bean

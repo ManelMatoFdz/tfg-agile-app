@@ -1214,7 +1214,7 @@ export default function PokerRoomPage() {
           (p) => p.role === 'MODERATOR' && p.connected
         );
         const scrumRole = member?.scrumRole;
-        const canModerate = scrumRole === 'SCRUM_MASTER' || scrumRole === 'PRODUCT_OWNER' || member?.role === 'ADMIN';
+        const canModerate = scrumRole === 'SCRUM_MASTER' || scrumRole === 'PRODUCT_OWNER';
         let roles: ParticipantRole[];
         let defRole: ParticipantRole;
         if (canModerate) {

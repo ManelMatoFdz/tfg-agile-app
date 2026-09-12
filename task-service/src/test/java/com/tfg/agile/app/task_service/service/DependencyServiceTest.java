@@ -97,7 +97,7 @@ class DependencyServiceTest {
 
         when(taskRepository.findById(blockingTask.getId())).thenReturn(Optional.of(blockingTask));
         when(taskRepository.findById(blockedTask.getId())).thenReturn(Optional.of(blockedTask));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.teamAdminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
         when(dependencyRepository.findByBlockingTaskIdOrBlockedTaskId(blockingTask.getId(), blockingTask.getId()))
                 .thenReturn(List.of());
         when(dependencyRepository.findByBlockingTaskId(blockedTask.getId())).thenReturn(List.of());
@@ -139,7 +139,7 @@ class DependencyServiceTest {
         Task task = taskWithTitle(projectId, "Same task", null);
 
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
 
         assertThatThrownBy(() -> service.create(task.getId(), new CreateDependencyRequestDto(task.getId()), callerId))
                 .isInstanceOf(ConflictException.class)
@@ -158,7 +158,7 @@ class DependencyServiceTest {
 
         when(taskRepository.findById(blockingTask.getId())).thenReturn(Optional.of(blockingTask));
         when(taskRepository.findById(blockedTask.getId())).thenReturn(Optional.of(blockedTask));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
         when(dependencyRepository.findByBlockingTaskIdOrBlockedTaskId(blockingTask.getId(), blockingTask.getId()))
                 .thenReturn(List.of(existingDependency));
 
@@ -177,7 +177,7 @@ class DependencyServiceTest {
 
         when(taskRepository.findById(blockingTask.getId())).thenReturn(Optional.of(blockingTask));
         when(taskRepository.findById(blockedTask.getId())).thenReturn(Optional.of(blockedTask));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.teamAdminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
         when(dependencyRepository.findByBlockingTaskIdOrBlockedTaskId(blockingTask.getId(), blockingTask.getId()))
                 .thenReturn(List.of());
         when(dependencyRepository.findByBlockingTaskId(blockedTask.getId())).thenReturn(List.of(reverseDependency));
@@ -200,7 +200,7 @@ class DependencyServiceTest {
 
         assertThatThrownBy(() -> service.create(backlogTask.getId(), new CreateDependencyRequestDto(blockedTask.getId()), callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("ONLY_PO_OR_ADMIN_CAN_EDIT_BACKLOG_TASKS");
+                .hasMessage("ONLY_PO_CAN_EDIT_BACKLOG_TASKS");
     }
 
     @Test
@@ -229,7 +229,7 @@ class DependencyServiceTest {
 
         when(taskRepository.findById(blockingTask.getId())).thenReturn(Optional.of(blockingTask));
         when(taskRepository.findById(blockedTask.getId())).thenReturn(Optional.of(blockedTask));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
         when(dependencyRepository.findById(dependency.getId())).thenReturn(Optional.of(dependency));
 
         service.delete(blockingTask.getId(), dependency.getId(), callerId);
@@ -248,7 +248,7 @@ class DependencyServiceTest {
         TaskDependency dependency = dependency(UUID.randomUUID(), UUID.randomUUID(), callerId);
 
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.teamAdminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
         when(dependencyRepository.findById(dependency.getId())).thenReturn(Optional.of(dependency));
 
         assertThatThrownBy(() -> service.delete(task.getId(), dependency.getId(), callerId))
@@ -264,7 +264,7 @@ class DependencyServiceTest {
         TaskDependency dependency = dependency(task.getId(), UUID.randomUUID(), callerId);
 
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
         when(dependencyRepository.findById(dependency.getId())).thenReturn(Optional.of(dependency));
         when(taskRepository.findById(dependency.getBlockedTaskId())).thenReturn(Optional.empty());
 

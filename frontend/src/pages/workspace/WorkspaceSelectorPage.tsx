@@ -147,7 +147,7 @@ export default function WorkspaceSelectorPage() {
           }} />
           <input
             type="text"
-            placeholder={t('workspace.selector.searchPlaceholder', { defaultValue: 'Search workspaces...' })}
+            placeholder={t('workspace.selector.searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -276,8 +276,8 @@ export default function WorkspaceSelectorPage() {
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)' }}>
                             <Users size={12} strokeWidth={2} />
                             {workspaceMeta[ws.id].memberCount} {workspaceMeta[ws.id].memberCount === 1
-                              ? t('workspace.selector.member', { defaultValue: 'member' })
-                              : t('workspace.selector.members', { defaultValue: 'members' })}
+                              ? t('workspace.selector.member')
+                              : t('workspace.selector.members')}
                           </span>
                           <span style={{
                             fontSize: 11, fontWeight: 600, letterSpacing: '0.03em',
@@ -286,8 +286,8 @@ export default function WorkspaceSelectorPage() {
                             color: workspaceMeta[ws.id].myRole === 'ADMIN' ? 'var(--accent-text)' : 'var(--text-muted)',
                           }}>
                             {workspaceMeta[ws.id].myRole === 'ADMIN'
-                              ? t('workspace.selector.roleAdmin', { defaultValue: 'Admin' })
-                              : t('workspace.selector.roleMember', { defaultValue: 'Member' })}
+                              ? t('workspace.selector.roleAdmin')
+                              : t('workspace.selector.roleMember')}
                           </span>
                         </>
                       )}
@@ -308,7 +308,7 @@ export default function WorkspaceSelectorPage() {
                     onMouseEnter={e => { e.stopPropagation(); (e.currentTarget.style.background = 'var(--accent-hover)'); }}
                     onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
                   >
-                    {t('workspace.selector.launch', { defaultValue: 'Launch' })}
+                    {t('workspace.selector.launch')}
                     <ArrowRight size={14} strokeWidth={2.5} />
                   </button>
                 </div>
@@ -322,7 +322,7 @@ export default function WorkspaceSelectorPage() {
             borderRadius: 'var(--radius-card)',
           }}>
             <p style={{ margin: 0, fontSize: 14, color: 'var(--text-muted)' }}>
-              {t('workspace.selector.noSearchResults', { defaultValue: 'No workspaces match your search.' })}
+              {t('workspace.selector.noSearchResults')}
             </p>
           </div>
         ) : (

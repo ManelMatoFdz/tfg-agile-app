@@ -186,17 +186,13 @@ public class DependencyService {
     }
 
     private void requireCanEditTask(Task task, MemberPermissionsDto perms) {
-        boolean isAdmin = perms.workspaceAdmin() || perms.teamAdmin();
-        if (isAdmin) return;
-
         boolean isPo = "PRODUCT_OWNER".equals(perms.scrumRole());
-        boolean isDev = !isPo && !"SCRUM_MASTER".equals(perms.scrumRole());
+        boolean isScrumMaster = "SCRUM_MASTER".equals(perms.scrumRole());
+        boolean isDev = perms.projectMember() && !isPo && !isScrumMaster;
 
         if (task.getSprintId() == null) {
-            // Backlog task — PO or Admin
-            if (!isPo) throw new ForbiddenException("ONLY_PO_OR_ADMIN_CAN_EDIT_BACKLOG_TASKS");
+            if (!isPo) throw new ForbiddenException("ONLY_PO_CAN_EDIT_BACKLOG_TASKS");
         } else {
-            // Sprint task — Developer or Admin
             if (!isDev) throw new ForbiddenException("ONLY_DEVELOPERS_CAN_EDIT_SPRINT_TASKS");
         }
     }

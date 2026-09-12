@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import TeamsPage from './TeamsPage';
 import { renderWithProviders } from '../../test/testUtils';
 import { teamsApi } from '../../api/teams';
+import { workspacesApi } from '../../api/workspaces';
 import { useUserMap } from '../../hooks/useUserMap';
-import { userSummaryFixture, teamMemberFixture } from '../../test/fixtures';
+import { userFixture, userSummaryFixture, teamMemberFixture } from '../../test/fixtures';
+import { useAuthStore } from '../../store/authStore';
 import type { Team } from '../../types';
 import i18n from '../../i18n';
 
@@ -15,11 +17,13 @@ jest.mock('../../api/teams', () => ({
     create: jest.fn(),
   },
 }));
+jest.mock('../../api/workspaces', () => ({ workspacesApi: { getMembers: jest.fn() } }));
 jest.mock('../../hooks/useUserMap', () => ({ useUserMap: jest.fn() }));
 
 const mockTeamList = jest.mocked(teamsApi.list);
 const mockGetMembers = jest.mocked(teamsApi.getMembers);
 const mockCreate = jest.mocked(teamsApi.create);
+const mockWorkspaceMembers = jest.mocked(workspacesApi.getMembers);
 const mockUseUserMap = jest.mocked(useUserMap);
 
 function teamFixture(overrides: Partial<Team> = {}): Team {
@@ -38,6 +42,8 @@ describe('TeamsPage', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
     await i18n.changeLanguage('en');
+    useAuthStore.setState({ user: userFixture({ id: 'user-1', fullName: 'Ada Lovelace' }) });
+    mockWorkspaceMembers.mockResolvedValue({ data: [{ id: 'wm-1', workspaceId: 'workspace-1', userId: 'user-1', role: 'ADMIN', joinedAt: '2026-01-01' }] } as never);
     mockUseUserMap.mockReturnValue(new Map([
       ['user-1', userSummaryFixture({ id: 'user-1', username: 'ada', fullName: 'Ada Lovelace' })],
       ['user-2', userSummaryFixture({ id: 'user-2', username: 'grace', fullName: 'Grace Hopper' })],

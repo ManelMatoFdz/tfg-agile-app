@@ -38,4 +38,6 @@ public interface SprintRepository extends JpaRepository<Sprint, UUID> {
                               @Param("excludeId") UUID excludeId,
                               @Param("startDate") LocalDate startDate,
                               @Param("endDate") LocalDate endDate);
+
+    void deleteByProjectId(UUID projectId);
 }

@@ -100,11 +100,11 @@ export default function ProfilePage() {
         <div className="profile-main" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <ProfileInfo />
           <ChangePassword />
+          <ThemePreference />
+          <LanguagePreference />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <AvatarUpload />
-          <ThemePreference />
-          <LanguagePreference />
           <NotificationPreferences />
         </div>
       </div>

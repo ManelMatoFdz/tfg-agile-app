@@ -16,6 +16,13 @@ spring:
       max-lifetime: ${HIKARI_MAX_LIFETIME:600000}
       connection-timeout: ${HIKARI_CONNECTION_TIMEOUT:30000}
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+
   jpa:
     hibernate:
       ddl-auto: ${PROJECT_SERVICE_JPA_DDL_AUTO:validate}
@@ -25,6 +32,13 @@ app:
     api-key: ${INTERNAL_API_KEY:dev-internal-key}
   user-service:
     url: ${USER_SERVICE_URL:http://localhost:8081}
+  task-service:
+    url: ${TASK_SERVICE_URL:http://localhost:8083}
+  poker-service:
+    url: ${POKER_SERVICE_URL:http://localhost:8084}
+  notifications:
+    exchange: ${NOTIFICATIONS_EXCHANGE:agileflow.notifications}
+    routing-key: ${NOTIFICATIONS_ROUTING_KEY:user-service.notification}
 
 management:
   endpoints:

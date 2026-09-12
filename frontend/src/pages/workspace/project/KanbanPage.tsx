@@ -206,18 +206,6 @@ export default function KanbanPage() {
                 <LayoutDashboard size={20} strokeWidth={2} style={{ color: 'var(--accent-text)' }} />
                 {t('projects.tabs.board')}: {activeSprint.name}
               </h2>
-              <span style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.08em',
-                textTransform: 'uppercase',
-                padding: '4px 10px',
-                borderRadius: 'var(--radius-sm)',
-                background: 'var(--accent-muted)',
-                color: 'var(--accent-text)',
-              }}>
-                {t('projects.sprints.status.ACTIVE')}
-              </span>
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
@@ -243,10 +231,10 @@ export default function KanbanPage() {
                 }}>
                   <Calendar size={13} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
                   <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-muted)' }}>
-                    {new Date(activeSprint.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                    {new Date(activeSprint.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
                     {' - '}
                     {activeSprint.endDate
-                      ? new Date(activeSprint.endDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+                      ? new Date(activeSprint.endDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
                       : '—'}
                   </span>
                 </div>

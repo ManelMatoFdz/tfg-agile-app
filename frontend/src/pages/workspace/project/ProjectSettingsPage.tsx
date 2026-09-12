@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle, Plus, Trash2, Tag, GitBranch, Copy, Check } from 'lucide-react';
+import { AlertTriangle, Plus, Trash2, Tag, GitBranch, Copy, Check, Settings } from 'lucide-react';
 import { projectsApi } from '../../../api/projects';
 import { categoriesApi } from '../../../api/categories';
 import { labelsApi } from '../../../api/labels';
@@ -211,9 +211,12 @@ export default function ProjectSettingsPage() {
       {success && <Alert type="success" message={success} onClose={() => setSuccess(null)} />}
 
       <div>
-        <PageTitle style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
-          {t('projects.settings.title')}
-        </PageTitle>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Settings size={22} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+          <PageTitle style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
+            {t('projects.settings.title')}
+          </PageTitle>
+        </div>
         <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>
           {t('projects.settings.subtitle')}
         </p>

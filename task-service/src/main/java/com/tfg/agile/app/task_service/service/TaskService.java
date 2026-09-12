@@ -90,8 +90,8 @@ public class TaskService {
     @Transactional
     public TaskResponseDto create(UUID projectId, CreateTaskRequestDto dto, UUID callerId) {
         MemberPermissionsDto perms = requireMember(projectId, callerId);
-        if (!isAdmin(perms) && !isProductOwner(perms)) {
-            throw new ForbiddenException("ONLY_PO_OR_ADMIN_CAN_CREATE_TASKS");
+        if (!isProductOwner(perms)) {
+            throw new ForbiddenException("ONLY_PO_CAN_CREATE_TASKS");
         }
 
         TaskPriority priority = dto.priority() != null
@@ -175,12 +175,12 @@ public class TaskService {
 
         if (task.getSprintId() == null) {
             // Backlog task: owned by the PO
-            if (!isAdmin(perms) && !isProductOwner(perms)) {
-                throw new ForbiddenException("ONLY_PO_OR_ADMIN_CAN_EDIT_BACKLOG_TASKS");
+            if (!isProductOwner(perms)) {
+                throw new ForbiddenException("ONLY_PO_CAN_EDIT_BACKLOG_TASKS");
             }
         } else {
             // Sprint task: owned by the Development Team
-            if (!isAdmin(perms) && !isDeveloper(perms)) {
+            if (!isDeveloper(perms)) {
                 throw new ForbiddenException("ONLY_DEVELOPERS_CAN_EDIT_SPRINT_TASKS");
             }
         }
@@ -270,7 +270,7 @@ public class TaskService {
         MemberPermissionsDto perms = requireMember(task.getProjectId(), callerId);
 
         // Moving tasks on the Kanban board is a Developer responsibility
-        if (!isAdmin(perms) && !isDeveloper(perms)) {
+        if (!isDeveloper(perms)) {
             throw new ForbiddenException("ONLY_DEVELOPERS_CAN_MOVE_TASKS");
         }
 
@@ -326,11 +326,11 @@ public class TaskService {
         MemberPermissionsDto perms = requireMember(task.getProjectId(), callerId);
 
         if (task.getSprintId() == null) {
-            if (!isAdmin(perms) && !isProductOwner(perms)) {
-                throw new ForbiddenException("ONLY_PO_OR_ADMIN_CAN_DELETE_BACKLOG_TASKS");
+            if (!isProductOwner(perms)) {
+                throw new ForbiddenException("ONLY_PO_CAN_DELETE_BACKLOG_TASKS");
             }
         } else {
-            if (!isAdmin(perms) && !isDeveloper(perms)) {
+            if (!isDeveloper(perms)) {
                 throw new ForbiddenException("ONLY_DEVELOPERS_CAN_DELETE_SPRINT_TASKS");
             }
         }
@@ -456,10 +456,6 @@ public class TaskService {
         return projectServiceClient.getMemberPermissions(projectId, userId);
     }
 
-    private boolean isAdmin(MemberPermissionsDto p) {
-        return p.workspaceAdmin() || p.teamAdmin();
-    }
-
     private boolean isProductOwner(MemberPermissionsDto p) {
         return "PRODUCT_OWNER".equals(p.scrumRole());
     }
@@ -469,7 +465,7 @@ public class TaskService {
     }
 
     private boolean isDeveloper(MemberPermissionsDto p) {
-        return !isAdmin(p) && !isProductOwner(p) && !isScrumMaster(p);
+        return p.projectMember() && !isProductOwner(p) && !isScrumMaster(p);
     }
 
     private void syncParentStoryStatus(Task subtask, UUID callerId) {

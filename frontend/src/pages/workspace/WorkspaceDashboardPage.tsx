@@ -5,14 +5,15 @@ import { Plus, ChevronDown, ChevronRight, LayoutGrid, X, Filter, Lock, MoreHoriz
 import { projectsApi } from '../../api/projects';
 import { categoriesApi } from '../../api/categories';
 import { teamsApi } from '../../api/teams';
+import { workspacesApi } from '../../api/workspaces';
 import { useApiAction } from '../../hooks/useApiAction';
 import { useAuthStore } from '../../store/authStore';
 import { useUserMap } from '../../hooks/useUserMap';
 import { buildAvatarSrc } from '../../utils/avatarUrl';
 import Button from '../../components/ui/Button';
 import Alert from '../../components/ui/Alert';
-import PageTitle from '../../components/motion/PageTitle';
 import type { Project, Category, ProjectVisibility, TeamMember, Team } from '../../types';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 interface ProjectGroup {
   category: Category | null;
@@ -71,37 +72,37 @@ function MemberAvatars({ members, userMap }: { members: TeamMember[]; userMap: M
   const extra = members.length - maxShow;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center' }}>
-      {shown.map((m, i) => {
-        const u = userMap.get(m.userId);
-        const name = u?.fullName || u?.username || '?';
-        const src = buildAvatarSrc(u?.avatarUrl);
-        return (
-          <div key={m.id} style={{
-            width: 26, height: 26, borderRadius: '50%', overflow: 'hidden',
-            border: '2px solid var(--bg-elevated)',
-            marginLeft: i > 0 ? -8 : 0, flexShrink: 0,
-          }}>
-            {src ? (
-              <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
-            ) : (
-              <div style={{
-                width: '100%', height: '100%', background: 'var(--accent)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--accent-fg)', fontSize: 10, fontWeight: 700,
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        {shown.map((m, i) => {
+          const u = userMap.get(m.userId);
+          const name = u?.fullName || u?.username || '?';
+          const src = buildAvatarSrc(u?.avatarUrl);
+          return (
+              <div key={m.id} style={{
+                width: 26, height: 26, borderRadius: '50%', overflow: 'hidden',
+                border: '2px solid var(--bg-elevated)',
+                marginLeft: i > 0 ? -8 : 0, flexShrink: 0,
               }}>
-                {name.charAt(0).toUpperCase()}
+                {src ? (
+                    <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} referrerPolicy="no-referrer" />
+                ) : (
+                    <div style={{
+                      width: '100%', height: '100%', background: 'var(--accent)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'var(--accent-fg)', fontSize: 10, fontWeight: 700,
+                    }}>
+                      {name.charAt(0).toUpperCase()}
+                    </div>
+                )}
               </div>
-            )}
-          </div>
-        );
-      })}
-      {extra > 0 && (
-        <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 600, color: 'var(--text-faint)' }}>
+          );
+        })}
+        {extra > 0 && (
+            <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 600, color: 'var(--text-faint)' }}>
           +{extra}
         </span>
-      )}
-    </div>
+        )}
+      </div>
   );
 }
 
@@ -116,77 +117,77 @@ function ProjectCard({ project, to, colorIdx, myRole, members, userMap }: {
   const isPrivate = project.visibility === 'PRIVATE';
 
   return (
-    <Link
-      to={to}
-      style={{
-        display: 'flex', flexDirection: 'column',
-        background: 'var(--bg-elevated)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--radius-card)',
-        padding: '20px',
-        textDecoration: 'none',
-        transition: 'border-color 150ms, box-shadow 150ms',
-        minHeight: 170,
-      }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
-    >
-      {/* Top row: icon + role badge + visibility */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
-        <div style={{
-          width: 40, height: 40, flexShrink: 0,
-          background: bgColor, borderRadius: 'var(--radius-md)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: '#fff', fontSize: 17, fontWeight: 700,
-        }}>
-          {project.name.charAt(0).toUpperCase()}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {roleStyle && myRole && (
-            <span style={{
-              display: 'inline-block', padding: '2px 10px',
-              fontSize: 11, fontWeight: 600,
-              color: roleStyle.color, background: roleStyle.bg,
-              border: `1px solid ${roleStyle.border}`,
-              borderRadius: 'var(--radius-pill)',
-            }}>
+      <Link
+          to={to}
+          style={{
+            display: 'flex', flexDirection: 'column',
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-card)',
+            padding: '20px',
+            textDecoration: 'none',
+            transition: 'border-color 150ms, box-shadow 150ms',
+            minHeight: 170,
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-strong)'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.boxShadow = 'none'; }}
+      >
+        {/* Top row: icon + role badge + visibility */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div style={{
+            width: 40, height: 40, flexShrink: 0,
+            background: bgColor, borderRadius: 'var(--radius-md)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontSize: 17, fontWeight: 700,
+          }}>
+            {project.name.charAt(0).toUpperCase()}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {roleStyle && myRole && (
+                <span style={{
+                  display: 'inline-block', padding: '2px 10px',
+                  fontSize: 11, fontWeight: 600,
+                  color: roleStyle.color, background: roleStyle.bg,
+                  border: `1px solid ${roleStyle.border}`,
+                  borderRadius: 'var(--radius-pill)',
+                }}>
               {t(`workspace.dashboard.roles.${myRole}`)}
             </span>
-          )}
-          {isPrivate && (
-            <Lock size={14} strokeWidth={2} style={{ color: 'var(--text-faint)' }} />
+            )}
+            {isPrivate && (
+                <Lock size={14} strokeWidth={2} style={{ color: 'var(--text-faint)' }} />
+            )}
+          </div>
+        </div>
+
+        {/* Project info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h3 style={{
+            margin: '0 0 4px', fontSize: 15, fontWeight: 600, color: 'var(--text)',
+            letterSpacing: '-0.01em',
+            overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+          }}>
+            {project.name}
+          </h3>
+          {project.description && (
+              <p style={{
+                margin: 0, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5,
+                overflow: 'hidden', display: '-webkit-box',
+                WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+              }}>
+                {project.description}
+              </p>
           )}
         </div>
-      </div>
 
-      {/* Project info */}
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <h3 style={{
-          margin: '0 0 4px', fontSize: 15, fontWeight: 600, color: 'var(--text)',
-          letterSpacing: '-0.01em',
-          overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
-        }}>
-          {project.name}
-        </h3>
-        {project.description && (
-          <p style={{
-            margin: 0, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5,
-            overflow: 'hidden', display: '-webkit-box',
-            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-          }}>
-            {project.description}
-          </p>
-        )}
-      </div>
-
-      {/* Bottom: avatars + updated ago */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
-        <MemberAvatars members={members} userMap={userMap} />
-        <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+        {/* Bottom: avatars + updated ago */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 14 }}>
+          <MemberAvatars members={members} userMap={userMap} />
+          <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>
           {t('workspace.dashboard.updated', { time: timeAgo(project.updatedAt, t) })}
         </span>
-      </div>
-    </Link>
+        </div>
+      </Link>
   );
 }
 
@@ -226,6 +227,7 @@ export default function WorkspaceDashboardPage() {
   const [projectTeamId, setProjectTeamId] = useState('');
   const [projectVisibility, setProjectVisibility] = useState<ProjectVisibility>('PRIVATE');
   const [teams, setTeams] = useState<Team[]>([]);
+  const [isWorkspaceAdmin, setIsWorkspaceAdmin] = useState(false);
 
   const [showInlineCatForm, setShowInlineCatForm] = useState(false);
   const [newCatName, setNewCatName] = useState('');
@@ -260,10 +262,13 @@ export default function WorkspaceDashboardPage() {
     });
     categoriesAction.run(categoriesApi.list(workspaceId)).then((data) => { if (data) setCategories(data); });
     teamsApi.list(workspaceId).then((res) => setTeams(res.data)).catch(() => {});
+    workspacesApi.getMembers(workspaceId)
+      .then((res) => setIsWorkspaceAdmin(res.data.some((m) => m.userId === currentUser?.id && m.role === 'ADMIN')))
+      .catch(() => setIsWorkspaceAdmin(false));
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { loadData(); }, [workspaceId]);
+  useEffect(() => { loadData(); }, [workspaceId, currentUser?.id]);
 
   // Collect all user IDs from project members for avatar resolution
   const allMemberUserIds = Object.values(projectMembers).flat().map((m) => m.userId);
@@ -271,16 +276,16 @@ export default function WorkspaceDashboardPage() {
 
   const handleCreateProject = async (e: FormEvent) => {
     e.preventDefault();
-    if (!workspaceId || !projectTeamId) return;
+    if (!workspaceId || !projectTeamId || !isWorkspaceAdmin) return;
     const data = await createAction.run(
-      projectsApi.create(workspaceId, {
-        name: projectName,
-        description: projectDescription || undefined,
-        categoryId: projectCategoryId || undefined,
-        teamId: projectTeamId,
-        color: projectColor,
-        visibility: projectVisibility,
-      }),
+        projectsApi.create(workspaceId, {
+          name: projectName,
+          description: projectDescription || undefined,
+          categoryId: projectCategoryId || undefined,
+          teamId: projectTeamId,
+          color: projectColor,
+          visibility: projectVisibility,
+        }),
     );
     if (data) {
       setProjects((prev) => [...prev, data]);
@@ -308,7 +313,7 @@ export default function WorkspaceDashboardPage() {
   };
 
   const handleCreateInlineCategory = async () => {
-    if (!workspaceId || !newCatName.trim()) return;
+    if (!workspaceId || !newCatName.trim() || !isWorkspaceAdmin) return;
     setCreatingCat(true);
     setInlineCatError(null);
     try {
@@ -338,11 +343,11 @@ export default function WorkspaceDashboardPage() {
   const loading = projectsAction.loading || categoriesAction.loading;
   const allGroups = groupByCategory(projects, categories);
   const groups = activeFilter
-    ? allGroups.filter((g) => {
+      ? allGroups.filter((g) => {
         if (activeFilter === '__uncategorized__') return g.category === null;
         return g.category?.id === activeFilter;
       })
-    : allGroups;
+      : allGroups;
 
   const filterTabs = [
     { id: null, label: t('workspace.dashboard.allCategories', { defaultValue: 'All Categories' }) },
@@ -351,431 +356,473 @@ export default function WorkspaceDashboardPage() {
   ];
 
   return (
-    <div>
-      {/* Page header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28 }}>
-        <div>
-          <PageTitle>
-            {t('workspace.dashboard.title')}
-          </PageTitle>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-faint)' }}>
-            {t('workspace.dashboard.subtitle')}
-          </p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              padding: '9px 18px', fontSize: 13, fontWeight: 600,
-              background: 'var(--accent)', color: 'var(--accent-fg)',
-              border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-              transition: 'background 150ms',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
-          >
-            <Plus size={15} strokeWidth={2.5} />
-            {t('workspace.dashboard.newProject')}
-          </button>
-        </div>
-      </div>
+      <div>
+        <PageHeader
+            icon={LayoutGrid}
+            title={t('workspace.dashboard.title')}
+            subtitle={t('workspace.dashboard.subtitle')}
+            action={isWorkspaceAdmin && (
+              <button
+                  onClick={() => setShowCreateModal(true)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 6,
+                    padding: '9px 18px', fontSize: 13, fontWeight: 600,
+                    background: 'var(--accent)', color: 'var(--accent-fg)',
+                    border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+                    transition: 'background 150ms',
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
+              >
+                <Plus size={15} strokeWidth={2.5} />
+                {t('workspace.dashboard.newProject')}
+              </button>
+            )}
+        />
 
-      {(projectsAction.error || categoriesAction.error) && (
-        <Alert type="error" message={projectsAction.error ?? categoriesAction.error!} onClose={() => { projectsAction.reset(); categoriesAction.reset(); }} />
-      )}
+        {(projectsAction.error || categoriesAction.error) && (
+            <Alert type="error" message={projectsAction.error ?? categoriesAction.error!} onClose={() => { projectsAction.reset(); categoriesAction.reset(); }} />
+        )}
 
-      {/* Category filter tabs */}
-      {!loading && allGroups.length > 0 && filterTabs.length > 2 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+        {/* Category filter tabs */}
+        {!loading && allGroups.length > 0 && filterTabs.length > 2 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 4 }}>
             {t('workspace.dashboard.view')}:
           </span>
-          {filterTabs.map((tab) => {
-            const isActive = activeFilter === tab.id;
-            return (
-              <button
-                key={tab.id ?? '__all__'}
-                onClick={() => setActiveFilter(isActive ? null : tab.id)}
-                style={{
-                  padding: '6px 14px', fontSize: 13, fontWeight: 500,
-                  background: isActive ? 'var(--accent)' : 'var(--bg-elevated)',
-                  color: isActive ? 'var(--accent-fg)' : 'var(--text-muted)',
-                  border: `1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}`,
-                  borderRadius: 'var(--radius-pill)', cursor: 'pointer',
-                  transition: 'all 150ms',
-                }}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
+              {filterTabs.map((tab) => {
+                const isActive = activeFilter === tab.id;
+                return (
+                    <button
+                        key={tab.id ?? '__all__'}
+                        onClick={() => setActiveFilter(isActive ? null : tab.id)}
+                        style={{
+                          padding: '6px 14px', fontSize: 13, fontWeight: 500,
+                          background: isActive ? 'var(--accent)' : 'var(--bg-elevated)',
+                          color: isActive ? 'var(--accent-fg)' : 'var(--text-muted)',
+                          border: `1px solid ${isActive ? 'var(--accent)' : 'var(--border)'}`,
+                          borderRadius: 'var(--radius-pill)', cursor: 'pointer',
+                          transition: 'all 150ms',
+                        }}
+                    >
+                      {tab.label}
+                    </button>
+                );
+              })}
+            </div>
+        )}
 
-      {/* Content */}
-      {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-          <div style={{
-            width: 28, height: 28, border: '3px solid var(--border)', borderTopColor: 'var(--accent-text)',
-            borderRadius: '50%', animation: 'spin 0.7s linear infinite',
-          }} />
-        </div>
-      ) : groups.length === 0 && projects.length === 0 ? (
-        <div style={{
-          textAlign: 'center', padding: '64px 24px',
-          background: 'var(--bg-elevated)', border: '2px dashed var(--border)',
-          borderRadius: 'var(--radius-card)',
-        }}>
-          <div style={{
-            width: 56, height: 56, margin: '0 auto 16px',
-            background: 'var(--accent-muted)', borderRadius: 'var(--radius-lg)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <LayoutGrid size={24} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
-          </div>
-          <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
-            {t('workspace.dashboard.noProjects')}
-          </p>
-          <p style={{ margin: '6px 0 20px', fontSize: 14, color: 'var(--text-muted)' }}>
-            {t('workspace.dashboard.noProjectsSubtitle')}
-          </p>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            style={{
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              padding: '10px 20px', fontSize: 14, fontWeight: 600,
-              background: 'var(--accent)', color: 'var(--accent-fg)',
-              border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-            }}
-          >
-            <Plus size={16} strokeWidth={2.5} />
-            {t('workspace.dashboard.newProject')}
-          </button>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-          {groups.map((group) => {
-            const groupKey = group.category?.id ?? '__uncategorized__';
-            const isCollapsed = collapsedGroups.has(groupKey);
-            return (
-              <div key={groupKey}>
-                {/* Group header */}
-                <button
-                  onClick={() => toggleGroupCollapse(groupKey)}
+        {/* Content */}
+        {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+              <div style={{
+                width: 28, height: 28, border: '3px solid var(--border)', borderTopColor: 'var(--accent-text)',
+                borderRadius: '50%', animation: 'spin 0.7s linear infinite',
+              }} />
+            </div>
+        ) : groups.length === 0 && projects.length === 0 ? (
+            <div style={{
+              textAlign: 'center', padding: '64px 24px',
+              background: 'var(--bg-elevated)', border: '2px dashed var(--border)',
+              borderRadius: 'var(--radius-card)',
+            }}>
+              <div style={{
+                width: 56, height: 56, margin: '0 auto 16px',
+                background: 'var(--accent-muted)', borderRadius: 'var(--radius-lg)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <LayoutGrid size={24} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
+              </div>
+              <p style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
+                {t('workspace.dashboard.noProjects')}
+              </p>
+              <p style={{ margin: '6px 0 20px', fontSize: 14, color: 'var(--text-muted)' }}>
+                {t('workspace.dashboard.noProjectsSubtitle')}
+              </p>
+              {isWorkspaceAdmin && (
+              <button
+                  onClick={() => setShowCreateModal(true)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    marginBottom: isCollapsed ? 0 : 14,
-                    background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
-                    width: '100%', textAlign: 'left',
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '10px 20px', fontSize: 14, fontWeight: 600,
+                    background: 'var(--accent)', color: 'var(--accent-fg)',
+                    border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
                   }}
-                >
-                  {isCollapsed
-                    ? <ChevronRight size={16} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
-                    : <ChevronDown size={16} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
-                  }
-                  {group.category?.color && (
-                    <span style={{
-                      width: 10, height: 10, borderRadius: '50%',
-                      background: group.category.color, flexShrink: 0,
-                    }} />
-                  )}
-                  <h2 style={{
-                    margin: 0, fontSize: 14, fontWeight: 600,
-                    color: group.category ? 'var(--text)' : 'var(--text-muted)',
-                  }}>
-                    {group.category ? group.category.name : t('workspace.dashboard.uncategorized')}
-                  </h2>
-                  <span style={{
-                    fontSize: 12, fontWeight: 600, color: 'var(--text-faint)',
-                    background: 'var(--bg-hover)', border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius-sm)', padding: '1px 8px',
-                    fontFamily: 'var(--font-mono)', flexShrink: 0,
-                  }}>
+              >
+                <Plus size={16} strokeWidth={2.5} />
+                {t('workspace.dashboard.newProject')}
+              </button>
+              )}
+            </div>
+        ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+              {groups.map((group) => {
+                const groupKey = group.category?.id ?? '__uncategorized__';
+                const isCollapsed = collapsedGroups.has(groupKey);
+                return (
+                    <div key={groupKey}>
+                      {/* Group header */}
+                      <button
+                          onClick={() => toggleGroupCollapse(groupKey)}
+                          style={{
+                            display: 'flex', alignItems: 'center', gap: 8,
+                            marginBottom: isCollapsed ? 0 : 14,
+                            background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
+                            width: '100%', textAlign: 'left',
+                          }}
+                      >
+                        {isCollapsed
+                            ? <ChevronRight size={16} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+                            : <ChevronDown size={16} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+                        }
+                        {group.category?.color && (
+                            <span style={{
+                              width: 10, height: 10, borderRadius: '50%',
+                              background: group.category.color, flexShrink: 0,
+                            }} />
+                        )}
+                        <h2 style={{
+                          margin: 0, fontSize: 14, fontWeight: 600,
+                          color: group.category ? 'var(--text)' : 'var(--text-muted)',
+                        }}>
+                          {group.category ? group.category.name : t('workspace.dashboard.uncategorized')}
+                        </h2>
+                        <span style={{
+                          fontSize: 12, fontWeight: 600, color: 'var(--text-faint)',
+                          background: 'var(--bg-hover)', border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-sm)', padding: '1px 8px',
+                          fontFamily: 'var(--font-mono)', flexShrink: 0,
+                        }}>
                     {group.projects.length}
                   </span>
-                  <div style={{ flex: 1, height: 1, background: 'var(--border)', marginLeft: 4 }} />
-                </button>
+                        <div style={{ flex: 1, height: 1, background: 'var(--border)', marginLeft: 4 }} />
+                      </button>
 
-                {/* Projects grid */}
-                {!isCollapsed && (
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                    gap: 14,
-                  }}>
-                    {group.projects.map((p, pIdx) => {
-                      const pMembers = projectMembers[p.id] || [];
-                      const myMembership = pMembers.find((m) => m.userId === currentUser?.id);
-                      return (
-                        <ProjectCard
-                          key={p.id}
-                          project={p}
-                          to={`/workspaces/${workspaceId}/projects/${p.id}`}
-                          colorIdx={pIdx}
-                          myRole={myMembership?.role}
-                          members={pMembers}
-                          userMap={userMap}
-                        />
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Create project modal */}
-      {showCreateModal && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, zIndex: 50,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: 16,
-            backgroundColor: 'var(--bg-overlay)',
-            backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
-            animation: 'fade-in 200ms ease both',
-          }}
-          onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
-        >
-          <div style={{
-            width: '100%', maxWidth: 480,
-            background: 'var(--bg-elevated)', border: '1px solid var(--border-strong)',
-            borderRadius: 'var(--radius-lg)',
-            boxShadow: 'var(--shadow-lg)',
-          }}>
-            {/* Header */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '18px 24px', borderBottom: '1px solid var(--border)',
-            }}>
-              <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
-                {t('workspace.dashboard.modal.title')}
-              </h2>
-              <button onClick={closeModal} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                width: 28, height: 28, border: 'none', background: 'transparent',
-                borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--text-faint)',
-              }}>
-                <X size={16} />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateProject}>
-              <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {createAction.error && (
-                  <div style={{
-                    fontSize: 13, color: 'var(--danger-text)',
-                    background: 'var(--danger-bg)',
-                    borderRadius: 'var(--radius-sm)', padding: '8px 12px',
-                  }}>
-                    {createAction.error}
-                  </div>
-                )}
-
-                <div>
-                  <label style={labelStyle}>{t('workspace.dashboard.modal.name')}</label>
-                  <input
-                    type="text"
-                    value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
-                    placeholder={t('workspace.dashboard.modal.namePlaceholder')}
-                    required
-                    autoFocus
-                    style={inputStyle}
-                    onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
-                    onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-                  />
-                </div>
-
-                {/* Color picker */}
-                <div>
-                  <label style={labelStyle}>{t('workspace.dashboard.modal.color')}</label>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {PRESET_COLORS.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setProjectColor(c)}
-                        style={{
-                          width: 24, height: 24,
-                          borderRadius: 'var(--radius-sm)',
-                          background: c,
-                          border: projectColor === c ? '2px solid var(--text)' : '2px solid transparent',
-                          cursor: 'pointer',
-                          padding: 0,
-                          outline: projectColor === c ? '2px solid var(--bg-elevated)' : 'none',
-                          outlineOffset: -4,
-                        }}
-                      />
-                    ))}
-                  </div>
-                  <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 'var(--radius-md)',
-                      background: projectColor, display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', color: '#fff', fontSize: 14, fontWeight: 700,
-                    }}>
-                      {projectName.trim() ? projectName.charAt(0).toUpperCase() : 'P'}
+                      {/* Projects grid */}
+                      {!isCollapsed && (
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                            gap: 14,
+                          }}>
+                            {group.projects.map((p, pIdx) => {
+                              const pMembers = projectMembers[p.id] || [];
+                              const myMembership = pMembers.find((m) => m.userId === currentUser?.id);
+                              return (
+                                  <ProjectCard
+                                      key={p.id}
+                                      project={p}
+                                      to={`/workspaces/${workspaceId}/projects/${p.id}`}
+                                      colorIdx={pIdx}
+                                      myRole={myMembership?.role}
+                                      members={pMembers}
+                                      userMap={userMap}
+                                  />
+                              );
+                            })}
+                          </div>
+                      )}
                     </div>
-                    <span style={{ fontSize: 12, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-                      {projectColor}
-                    </span>
+                );
+              })}
+            </div>
+        )}
+
+        {/* Create project modal */}
+        {showCreateModal && (
+            <div
+                style={{
+                  position: 'fixed', inset: 0, zIndex: 50,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: 16,
+                  backgroundColor: 'var(--bg-overlay)',
+                  backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)',
+                  animation: 'fade-in 200ms ease both',
+                }}
+                onClick={(e) => { if (e.target === e.currentTarget) closeModal(); }}
+            >
+              <div style={{
+                width: '100%', maxWidth: 760,
+                maxHeight: 'calc(100vh - 32px)',
+                display: 'flex', flexDirection: 'column',
+                background: 'var(--bg-elevated)', border: '1px solid var(--border-strong)',
+                borderRadius: 'var(--radius-lg)',
+                boxShadow: 'var(--shadow-lg)',
+                overflow: 'hidden',
+              }}>
+                {/* Header */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '14px 20px', borderBottom: '1px solid var(--border)',
+                  flexShrink: 0,
+                }}>
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>
+                      {t('workspace.dashboard.modal.title')}
+                    </h2>
+                    <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
+                      {t('workspace.dashboard.modal.subtitle', { defaultValue: 'Define la información básica y la organización del proyecto.' })}
+                    </p>
                   </div>
+                  <button onClick={closeModal} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 28, height: 28, border: 'none', background: 'transparent',
+                    borderRadius: 'var(--radius-sm)', cursor: 'pointer', color: 'var(--text-faint)',
+                  }}>
+                    <X size={16} />
+                  </button>
                 </div>
 
-                <div>
-                  <label style={labelStyle}>
-                    {t('workspace.dashboard.modal.description')}{' '}
-                    <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={projectDescription}
-                    onChange={(e) => setProjectDescription(e.target.value)}
-                    placeholder={t('workspace.dashboard.modal.descriptionPlaceholder')}
-                    style={inputStyle}
-                    onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
-                    onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-                  />
-                </div>
-
-                {/* Team (required) */}
-                <div>
-                  <label style={labelStyle}>{t('workspace.dashboard.modal.team', { defaultValue: 'Team' })}</label>
-                  <select
-                    value={projectTeamId}
-                    onChange={(e) => setProjectTeamId(e.target.value)}
-                    required
-                    style={inputStyle}
-                  >
-                    <option value="">{t('workspace.dashboard.modal.selectTeam', { defaultValue: 'Select a team…' })}</option>
-                    {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
-                  </select>
-                </div>
-
-                {/* Category */}
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <label style={{ ...labelStyle, marginBottom: 0 }}>
-                      {t('workspace.dashboard.modal.category')}{' '}
-                      <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
-                    </label>
-                    {!showInlineCatForm ? (
-                      <button type="button" onClick={() => setShowInlineCatForm(true)} style={{
-                        fontSize: 13, fontWeight: 500, color: 'var(--accent-text)',
-                        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                      }}>
-                        + {t('workspace.dashboard.modal.newCategory')}
-                      </button>
-                    ) : (
-                      <button type="button" onClick={() => { setShowInlineCatForm(false); setInlineCatError(null); }} style={{
-                        fontSize: 13, color: 'var(--text-faint)',
-                        background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                      }}>
-                        {t('common.cancel')}
-                      </button>
+                <form onSubmit={handleCreateProject} style={{ display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                  <div style={{
+                    padding: '16px 20px',
+                    overflowY: 'auto',
+                    display: 'flex', flexDirection: 'column', gap: 14,
+                  }}>
+                    {createAction.error && (
+                        <div style={{
+                          fontSize: 13, color: 'var(--danger-text)',
+                          background: 'var(--danger-bg)',
+                          borderRadius: 'var(--radius-sm)', padding: '8px 12px',
+                        }}>
+                          {createAction.error}
+                        </div>
                     )}
-                  </div>
-                  <select
-                    value={projectCategoryId}
-                    onChange={(e) => setProjectCategoryId(e.target.value)}
-                    style={inputStyle}
-                  >
-                    <option value="">{t('workspace.dashboard.modal.noCategory')}</option>
-                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
 
-                  {showInlineCatForm && (
+                    {/* Fila 1: nombre + color */}
                     <div style={{
-                      marginTop: 8, padding: '10px 12px',
-                      border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
-                      background: 'var(--bg-hover)',
-                      display: 'flex', flexDirection: 'column', gap: 8,
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(0, 1.15fr) minmax(260px, 0.85fr)',
+                      gap: 16,
+                      alignItems: 'start',
                     }}>
-                      {inlineCatError && <p style={{ margin: 0, fontSize: 13, color: 'var(--danger-text)' }}>{inlineCatError}</p>}
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div>
+                        <label style={labelStyle}>{t('workspace.dashboard.modal.name')}</label>
                         <input
-                          type="text"
-                          value={newCatName}
-                          onChange={(e) => setNewCatName(e.target.value)}
-                          placeholder={t('workspace.settings.categories.modal.namePlaceholder')}
-                          autoFocus
-                          style={{ ...inputStyle, flex: 1 }}
+                            type="text"
+                            value={projectName}
+                            onChange={(e) => setProjectName(e.target.value)}
+                            placeholder={t('workspace.dashboard.modal.namePlaceholder')}
+                            required
+                            autoFocus
+                            style={inputStyle}
+                            onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                            onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
                         />
-                        <input
-                          type="color"
-                          value={newCatColor}
-                          onChange={(e) => setNewCatColor(e.target.value)}
-                          style={{
-                            width: 38, height: 38, border: '1px solid var(--border)',
-                            borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                            padding: 2, background: 'var(--bg-elevated)', flexShrink: 0,
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleCreateInlineCategory}
-                          disabled={creatingCat || !newCatName.trim()}
-                          style={{
-                            padding: '0 14px', fontSize: 13, fontWeight: 600,
-                            background: 'var(--accent)', color: 'var(--accent-fg)',
-                            border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                            opacity: creatingCat || !newCatName.trim() ? 0.5 : 1, flexShrink: 0,
-                          }}
-                        >
-                          {creatingCat ? '...' : t('workspace.dashboard.modal.createCategory')}
-                        </button>
+
+                        <div style={{ marginTop: 12 }}>
+                          <label style={labelStyle}>
+                            {t('workspace.dashboard.modal.description')}{' '}
+                            <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
+                          </label>
+                          <input
+                              type="text"
+                              value={projectDescription}
+                              onChange={(e) => setProjectDescription(e.target.value)}
+                              placeholder={t('workspace.dashboard.modal.descriptionPlaceholder')}
+                              style={inputStyle}
+                              onFocus={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
+                              onBlur={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Color picker compacto */}
+                      <div>
+                        <label style={labelStyle}>{t('workspace.dashboard.modal.color')}</label>
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(10, 20px)',
+                          gap: 5,
+                          alignItems: 'center',
+                        }}>
+                          {PRESET_COLORS.map((c) => (
+                              <button
+                                  key={c}
+                                  type="button"
+                                  onClick={() => setProjectColor(c)}
+                                  title={c}
+                                  style={{
+                                    width: 20, height: 20,
+                                    borderRadius: 5,
+                                    background: c,
+                                    border: projectColor === c ? '2px solid var(--text)' : '2px solid transparent',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    outline: projectColor === c ? '2px solid var(--bg-elevated)' : 'none',
+                                    outlineOffset: -4,
+                                  }}
+                              />
+                          ))}
+                        </div>
+                        <div style={{
+                          marginTop: 8, display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '7px 9px',
+                          border: '1px solid var(--border)',
+                          borderRadius: 'var(--radius-md)',
+                          background: 'var(--bg)',
+                        }}>
+                          <div style={{
+                            width: 28, height: 28, borderRadius: 'var(--radius-sm)',
+                            background: projectColor, display: 'flex', alignItems: 'center',
+                            justifyContent: 'center', color: '#fff', fontSize: 12, fontWeight: 700,
+                            flexShrink: 0,
+                          }}>
+                            {projectName.trim() ? projectName.charAt(0).toUpperCase() : 'P'}
+                          </div>
+                          <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+                        {projectColor}
+                      </span>
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
 
-                {/* Visibility */}
-                <div>
-                  <label style={labelStyle}>{t('projects.settings.visibilityLabel')}</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                    {(['PRIVATE', 'WORKSPACE'] as ProjectVisibility[]).map((v) => (
-                      <button
-                        key={v}
-                        type="button"
-                        onClick={() => setProjectVisibility(v)}
-                        style={{
-                          padding: '10px 14px', textAlign: 'left', cursor: 'pointer',
-                          border: `1px solid ${projectVisibility === v ? 'var(--accent)' : 'var(--border)'}`,
-                          borderRadius: 'var(--radius-md)',
-                          background: projectVisibility === v ? 'var(--accent-muted)' : 'var(--bg)',
-                          transition: 'border-color 150ms, background 150ms',
-                        }}
-                      >
-                        <p style={{
-                          margin: 0, fontSize: 13, fontWeight: 600,
-                          color: projectVisibility === v ? 'var(--accent-text)' : 'var(--text-muted)',
+                    {/* Fila 2: equipo + categoría */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 16,
+                      alignItems: 'start',
+                    }}>
+                      {/* Team (required) */}
+                      <div>
+                        <label style={labelStyle}>{t('workspace.dashboard.modal.team', { defaultValue: 'Team' })}</label>
+                        <select
+                            value={projectTeamId}
+                            onChange={(e) => setProjectTeamId(e.target.value)}
+                            required
+                            style={inputStyle}
+                        >
+                          <option value="">{t('workspace.dashboard.modal.selectTeam', { defaultValue: 'Select a team…' })}</option>
+                          {teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}
+                        </select>
+                      </div>
+
+                      {/* Category */}
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, gap: 8 }}>
+                          <label style={{ ...labelStyle, marginBottom: 0 }}>
+                            {t('workspace.dashboard.modal.category')}{' '}
+                            <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>({t('common.optional')})</span>
+                          </label>
+                          {isWorkspaceAdmin && (!showInlineCatForm ? (
+                              <button type="button" onClick={() => setShowInlineCatForm(true)} style={{
+                                fontSize: 12, fontWeight: 500, color: 'var(--accent-text)',
+                                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                                whiteSpace: 'nowrap',
+                              }}>
+                                + {t('workspace.dashboard.modal.newCategory')}
+                              </button>
+                          ) : (
+                              <button type="button" onClick={() => { setShowInlineCatForm(false); setInlineCatError(null); }} style={{
+                                fontSize: 12, color: 'var(--text-faint)',
+                                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                              }}>
+                                {t('common.cancel')}
+                              </button>
+                          ))}
+                        </div>
+                        <select
+                            value={projectCategoryId}
+                            onChange={(e) => setProjectCategoryId(e.target.value)}
+                            style={inputStyle}
+                        >
+                          <option value="">{t('workspace.dashboard.modal.noCategory')}</option>
+                          {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {showInlineCatForm && (
+                        <div style={{
+                          padding: '10px 12px',
+                          border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+                          background: 'var(--bg-hover)',
+                          display: 'flex', flexDirection: 'column', gap: 8,
                         }}>
-                          {t(`projects.settings.visibility.${v}`)}
-                        </p>
-                        <p style={{ margin: '3px 0 0', fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.3 }}>
-                          {t(`projects.settings.visibility.${v}_desc`)}
-                        </p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
+                          {inlineCatError && <p style={{ margin: 0, fontSize: 13, color: 'var(--danger-text)' }}>{inlineCatError}</p>}
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 38px auto', gap: 8 }}>
+                            <input
+                                type="text"
+                                value={newCatName}
+                                onChange={(e) => setNewCatName(e.target.value)}
+                                placeholder={t('workspace.settings.categories.modal.namePlaceholder')}
+                                autoFocus
+                                style={inputStyle}
+                            />
+                            <input
+                                type="color"
+                                value={newCatColor}
+                                onChange={(e) => setNewCatColor(e.target.value)}
+                                style={{
+                                  width: 38, height: 38, border: '1px solid var(--border)',
+                                  borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                                  padding: 2, background: 'var(--bg-elevated)',
+                                }}
+                            />
+                            <button
+                                type="button"
+                                onClick={handleCreateInlineCategory}
+                                disabled={creatingCat || !newCatName.trim()}
+                                style={{
+                                  padding: '0 14px', fontSize: 13, fontWeight: 600,
+                                  background: 'var(--accent)', color: 'var(--accent-fg)',
+                                  border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                                  opacity: creatingCat || !newCatName.trim() ? 0.5 : 1,
+                                }}
+                            >
+                              {creatingCat ? '...' : t('workspace.dashboard.modal.createCategory')}
+                            </button>
+                          </div>
+                        </div>
+                    )}
 
-              <div style={{
-                display: 'flex', justifyContent: 'flex-end', gap: 8,
-                padding: '14px 24px', borderTop: '1px solid var(--border)',
-              }}>
-                <Button type="button" variant="secondary" onClick={closeModal}>{t('common.cancel')}</Button>
-                <Button type="submit" loading={createAction.loading}>{t('workspace.dashboard.modal.submit')}</Button>
+                    {/* Visibility */}
+                    <div>
+                      <label style={labelStyle}>{t('projects.settings.visibilityLabel')}</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        {(['PRIVATE', 'WORKSPACE'] as ProjectVisibility[]).map((v) => (
+                            <button
+                                key={v}
+                                type="button"
+                                onClick={() => setProjectVisibility(v)}
+                                style={{
+                                  padding: '8px 12px', textAlign: 'left', cursor: 'pointer',
+                                  border: `1px solid ${projectVisibility === v ? 'var(--accent)' : 'var(--border)'}`,
+                                  borderRadius: 'var(--radius-md)',
+                                  background: projectVisibility === v ? 'var(--accent-muted)' : 'var(--bg)',
+                                  transition: 'border-color 150ms, background 150ms',
+                                  minHeight: 58,
+                                }}
+                            >
+                              <p style={{
+                                margin: 0, fontSize: 13, fontWeight: 600,
+                                color: projectVisibility === v ? 'var(--accent-text)' : 'var(--text-muted)',
+                              }}>
+                                {t(`projects.settings.visibility.${v}`)}
+                              </p>
+                              <p style={{ margin: '2px 0 0', fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.25 }}>
+                                {t(`projects.settings.visibility.${v}_desc`)}
+                              </p>
+                            </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    display: 'flex', justifyContent: 'flex-end', gap: 8,
+                    padding: '12px 20px', borderTop: '1px solid var(--border)',
+                    background: 'var(--bg-elevated)',
+                    flexShrink: 0,
+                  }}>
+                    <Button type="button" variant="secondary" onClick={closeModal}>{t('common.cancel')}</Button>
+                    <Button type="submit" loading={createAction.loading}>{t('workspace.dashboard.modal.submit')}</Button>
+                  </div>
+                </form>
               </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
+            </div>
+        )}
+      </div>
   );
 }

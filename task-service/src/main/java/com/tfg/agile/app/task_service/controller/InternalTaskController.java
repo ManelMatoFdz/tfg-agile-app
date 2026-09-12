@@ -1,6 +1,7 @@
 package com.tfg.agile.app.task_service.controller;
 
 import com.tfg.agile.app.task_service.service.BoardColumnService;
+import com.tfg.agile.app.task_service.service.ProjectCleanupService;
 import com.tfg.agile.app.task_service.service.TaskService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,10 +15,14 @@ public class InternalTaskController {
 
     private final TaskService taskService;
     private final BoardColumnService boardColumnService;
+    private final ProjectCleanupService projectCleanupService;
 
-    public InternalTaskController(TaskService taskService, BoardColumnService boardColumnService) {
+    public InternalTaskController(TaskService taskService,
+                                  BoardColumnService boardColumnService,
+                                  ProjectCleanupService projectCleanupService) {
         this.taskService = taskService;
         this.boardColumnService = boardColumnService;
+        this.projectCleanupService = projectCleanupService;
     }
 
     @PutMapping("/tasks/{taskId}/story-points")
@@ -31,6 +36,12 @@ public class InternalTaskController {
     @PostMapping("/projects/{projectId}/init-board")
     public ResponseEntity<Void> initBoard(@PathVariable("projectId") UUID projectId) {
         boardColumnService.createDefaultColumns(projectId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/projects/{projectId}/data")
+    public ResponseEntity<Void> deleteProjectData(@PathVariable("projectId") UUID projectId) {
+        projectCleanupService.deleteAllByProjectId(projectId);
         return ResponseEntity.noContent().build();
     }
 }

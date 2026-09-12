@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface PokerSessionRepository extends JpaRepository<PokerSession, UUID> {
 
     List<PokerSession> findByProjectIdOrderByCreatedAtDesc(UUID projectId);
+
+    void deleteByProjectId(UUID projectId);
 }

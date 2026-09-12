@@ -1,5 +1,6 @@
 package com.tfg.agile.app.project_service.service;
 
+import com.tfg.agile.app.project_service.client.DataCleanupClient;
 import com.tfg.agile.app.project_service.dto.*;
 import com.tfg.agile.app.project_service.entity.*;
 import com.tfg.agile.app.project_service.exception.ForbiddenException;
@@ -21,26 +22,29 @@ public class ProjectService {
     private final TeamRepository teamRepository;
     private final TeamMemberRepository teamMemberRepository;
     private final CategoryRepository categoryRepository;
+    private final DataCleanupClient dataCleanupClient;
 
     public ProjectService(ProjectRepository projectRepository,
                           WorkspaceRepository workspaceRepository,
                           WorkspaceMemberRepository workspaceMemberRepository,
                           TeamRepository teamRepository,
                           TeamMemberRepository teamMemberRepository,
-                          CategoryRepository categoryRepository) {
+                          CategoryRepository categoryRepository,
+                          DataCleanupClient dataCleanupClient) {
         this.projectRepository = projectRepository;
         this.workspaceRepository = workspaceRepository;
         this.workspaceMemberRepository = workspaceMemberRepository;
         this.teamRepository = teamRepository;
         this.teamMemberRepository = teamMemberRepository;
         this.categoryRepository = categoryRepository;
+        this.dataCleanupClient = dataCleanupClient;
     }
 
     @Transactional
     public ProjectResponseDto create(UUID workspaceId, CreateProjectRequestDto dto, UUID callerId) {
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new ResourceNotFoundException("WORKSPACE_NOT_FOUND"));
-        requireWorkspaceMember(workspaceId, callerId);
+        requireWorkspaceAdmin(workspaceId, callerId);
 
         Category category = resolveCategory(dto.categoryId(), workspaceId);
         Team team = teamRepository.findById(dto.teamId())
@@ -114,6 +118,7 @@ public class ProjectService {
     public void delete(UUID projectId, UUID callerId) {
         Project project = getProjectOrThrow(projectId);
         requireAdmin(project, callerId);
+        dataCleanupClient.cleanupProject(projectId);
         projectRepository.deleteById(projectId);
     }
 
@@ -139,7 +144,7 @@ public class ProjectService {
 
         if (project.getTeam() == null) {
             if (wsAdmin) {
-                return new MemberPermissionsDto(workspaceId, true, false, null);
+                return new MemberPermissionsDto(workspaceId, true, false, false, null);
             }
             throw new ResourceNotFoundException("MEMBER_NOT_FOUND");
         }
@@ -149,14 +154,14 @@ public class ProjectService {
 
         if (optionalMember.isEmpty()) {
             if (wsAdmin) {
-                return new MemberPermissionsDto(workspaceId, true, false, null);
+                return new MemberPermissionsDto(workspaceId, true, false, false, null);
             }
             throw new ResourceNotFoundException("MEMBER_NOT_FOUND");
         }
 
         TeamMember teamMember = optionalMember.get();
         boolean teamAdmin = teamMember.getRole() == TeamRole.ADMIN;
-        return new MemberPermissionsDto(workspaceId, wsAdmin, teamAdmin, teamMember.getScrumRole());
+        return new MemberPermissionsDto(workspaceId, wsAdmin, teamAdmin, true, teamMember.getScrumRole());
     }
 
     @Transactional(readOnly = true)
@@ -220,6 +225,12 @@ public class ProjectService {
     private void requireWorkspaceMember(UUID workspaceId, UUID userId) {
         if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
             throw new ForbiddenException("NOT_WORKSPACE_MEMBER");
+        }
+    }
+
+    private void requireWorkspaceAdmin(UUID workspaceId, UUID userId) {
+        if (!workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspaceId, userId, WorkspaceRole.ADMIN)) {
+            throw new ForbiddenException("WORKSPACE_ADMIN_REQUIRED");
         }
     }
 

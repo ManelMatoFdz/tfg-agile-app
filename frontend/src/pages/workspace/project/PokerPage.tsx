@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Users, Zap, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Users, Zap, ChevronDown, ChevronUp, Layers } from 'lucide-react';
 import { pokerApi } from '../../../api/poker';
 import type { PokerSession, PokerRound, DeckType, SessionStatus, ParticipantRole } from '../../../types';
 import CreateSessionModal from '../../../components/poker/CreateSessionModal';
@@ -24,7 +24,7 @@ export default function PokerPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const user = useAuthStore((s) => s.user);
-  const { member, canCreatePokerSession, isScrumMaster, isProductOwner, isAdmin } = useProjectMember(projectId);
+  const { member, canCreatePokerSession, isScrumMaster, isProductOwner } = useProjectMember(projectId);
 
   const [sessions, setSessions] = useState<PokerSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -132,23 +132,17 @@ export default function PokerPage() {
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <PageTitle as="h2" style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-            {t('poker.title')}
-          </PageTitle>
-          {sessions.length > 0 && (
-            <span style={{
-              display: 'inline-flex', alignItems: 'center',
-              fontSize: 12, fontWeight: 600,
-              color: '#2563EB',
-              background: 'rgba(37,99,235,0.08)',
-              borderRadius: 999,
-              padding: '4px 12px',
-            }}>
-              {sessions.length} {sessions.length === 1 ? t('poker.session') : t('poker.sessions')}
-            </span>
-          )}
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Layers size={22} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+            <PageTitle as="h2" style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+              {t('poker.title')}
+            </PageTitle>
+          </div>
+          <p style={{ margin: '4px 0 0', fontSize: 14, color: 'var(--text-muted)', fontWeight: 400 }}>
+            {t('poker.subtitle')}
+          </p>
         </div>
         {canCreatePokerSession && (
           <button
@@ -424,7 +418,7 @@ export default function PokerPage() {
         const hasModerator = pendingSession.participants.some(
           (p) => p.role === 'MODERATOR' && p.connected
         );
-        const canModerate = isScrumMaster || isProductOwner || isAdmin;
+        const canModerate = isScrumMaster || isProductOwner;
         let roles: ParticipantRole[];
         let defRole: ParticipantRole;
         if (canModerate) {

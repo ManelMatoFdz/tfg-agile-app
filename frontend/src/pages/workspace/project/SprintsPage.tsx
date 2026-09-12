@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Plus, X, Zap, BookOpen, CheckSquare, Bug,
   Calendar, BarChart2, Columns2, PlayCircle, CheckCircle2, CalendarClock,
-  Pencil, Trash2, ListChecks, ClipboardList,
+  Pencil, Trash2, ListChecks, ClipboardList, RefreshCw,
 } from 'lucide-react';
 import type { Sprint, SprintTaskSnapshot, Task, TaskType, RetrospectiveData } from '../../../types';
 
@@ -348,7 +348,7 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
 
 function formatDateShort(date: string | null | undefined): string {
   if (!date) return '—';
-  return new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  return new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 // ── SprintsPage ──────────────────────────────────────────────────────────────
@@ -373,6 +373,7 @@ export default function SprintsPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [confirmActivate, setConfirmActivate] = useState<string | null>(null);
   const [retroSprint, setRetroSprint] = useState<Sprint | null>(null);
+  const [confirmComplete, setConfirmComplete] = useState(false);
 
   useEffect(() => {
     if (!projectId) return;
@@ -425,6 +426,19 @@ export default function SprintsPage() {
     }
   };
 
+  const handleCompleteSprint = async (sprintId: string) => {
+    setActionLoading(true);
+    try {
+      const updated = await sprintsApi.completeSprint(sprintId);
+      setSprints((prev) => prev.map((s) => (s.id === updated.id ? { ...s, ...updated } : s)));
+      setConfirmComplete(false);
+    } catch {
+      setError(t('projects.sprints.completeError'));
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const handleRemoveFromSprint = async (sprintId: string, taskId: string) => {
     try {
       await sprintsApi.removeTaskFromSprint(sprintId, taskId);
@@ -445,9 +459,12 @@ export default function SprintsPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
-          <PageTitle as="h2" style={{ fontSize: 28, marginBottom: 4 }}>
-            {t('projects.sprints.title')}
-          </PageTitle>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <RefreshCw size={22} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+            <PageTitle as="h2" style={{ fontSize: 28, marginBottom: 0 }}>
+              {t('projects.sprints.title')}
+            </PageTitle>
+          </div>
           <p style={{ margin: 0, fontSize: 15, color: 'var(--text-faint)' }}>
             {t('projects.sprints.subtitle')}
           </p>
@@ -601,6 +618,25 @@ export default function SprintsPage() {
                           {t('projects.sprints.viewReport')}
                         </Link>
                       </div>
+                      {canManageSprint && (
+                        <button
+                          onClick={() => setConfirmComplete(true)}
+                          style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                            padding: '8px 14px', fontSize: 12, fontWeight: 600,
+                            background: 'transparent',
+                            border: '1px solid var(--danger)',
+                            borderRadius: 'var(--radius-md)',
+                            color: 'var(--danger-text)', cursor: 'pointer',
+                            width: '100%', marginTop: 8,
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--danger-bg)')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                        >
+                          <CheckCircle2 size={14} strokeWidth={2} />
+                          {t('projects.sprints.completeSprint')}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -856,6 +892,38 @@ export default function SprintsPage() {
                 style={{ ...btnAccent, opacity: actionLoading ? 0.5 : 1 }}
               >
                 {actionLoading ? '...' : t('projects.sprints.activate')}
+              </button>
+            </div>
+          </div>
+        </ModalOverlay>
+      )}
+
+      {confirmComplete && activeSprint && (
+        <ModalOverlay onClose={() => setConfirmComplete(false)}>
+          <div style={{ ...modalBox, maxWidth: 420 }}>
+            <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+                {t('projects.sprints.completeConfirm.title')}
+              </h2>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                {t('projects.sprints.completeConfirm.message')}
+              </p>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, padding: '12px 24px 16px', borderTop: '1px solid var(--border)' }}>
+              <button onClick={() => setConfirmComplete(false)} style={btnSecondary}>
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={() => handleCompleteSprint(activeSprint.id)}
+                disabled={actionLoading}
+                style={{
+                  ...btnAccent, opacity: actionLoading ? 0.5 : 1,
+                  background: 'var(--danger)', color: '#fff',
+                }}
+                onMouseEnter={e => { if (!actionLoading) e.currentTarget.style.opacity = '0.85'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = actionLoading ? '0.5' : '1'; }}
+              >
+                {actionLoading ? '...' : t('projects.sprints.completeSprint')}
               </button>
             </div>
           </div>

@@ -1,8 +1,8 @@
 package com.tfg.agile.app.poker_service.config;
 
 import com.tfg.agile.app.poker_service.security.JwtService;
+import com.tfg.agile.app.poker_service.security.TokenVersionClient;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.messaging.simp.config.ChannelRegistration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.messaging.simp.config.SimpleBrokerRegistration;
@@ -23,7 +23,8 @@ class WebSocketConfigTest {
     @Test
     void configureMessageBroker_setsExpectedPrefixes() {
         JwtService jwtService = mock(JwtService.class);
-        WebSocketConfig config = new WebSocketConfig(jwtService);
+        TokenVersionClient tokenVersionClient = mock(TokenVersionClient.class);
+        WebSocketConfig config = new WebSocketConfig(jwtService, tokenVersionClient);
         MessageBrokerRegistry registry = mock(MessageBrokerRegistry.class, RETURNS_SELF);
         SimpleBrokerRegistration brokerReg = mock(SimpleBrokerRegistration.class, RETURNS_SELF);
 
@@ -40,7 +41,8 @@ class WebSocketConfigTest {
     @Test
     void registerStompEndpoints_registersPokerEndpoint() {
         JwtService jwtService = mock(JwtService.class);
-        WebSocketConfig config = new WebSocketConfig(jwtService);
+        TokenVersionClient tokenVersionClient = mock(TokenVersionClient.class);
+        WebSocketConfig config = new WebSocketConfig(jwtService, tokenVersionClient);
         StompEndpointRegistry registry = mock(StompEndpointRegistry.class);
         StompWebSocketEndpointRegistration registration = mock(StompWebSocketEndpointRegistration.class, RETURNS_SELF);
 
@@ -57,7 +59,8 @@ class WebSocketConfigTest {
     @Test
     void configureClientInboundChannel_registersChannelInterceptor() {
         JwtService jwtService = mock(JwtService.class);
-        WebSocketConfig config = new WebSocketConfig(jwtService);
+        TokenVersionClient tokenVersionClient = mock(TokenVersionClient.class);
+        WebSocketConfig config = new WebSocketConfig(jwtService, tokenVersionClient);
         ChannelRegistration registration = mock(ChannelRegistration.class, RETURNS_SELF);
 
         config.configureClientInboundChannel(registration);
@@ -65,4 +68,3 @@ class WebSocketConfigTest {
         verify(registration).interceptors(isA(WebSocketChannelInterceptor.class));
     }
 }
-

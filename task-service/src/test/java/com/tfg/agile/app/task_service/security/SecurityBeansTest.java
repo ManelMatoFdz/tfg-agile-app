@@ -16,7 +16,7 @@ class SecurityBeansTest {
 
     @Test
     void jwtAuthFilter_createsFilter() {
-        JwtAuthFilter filter = securityBeans.jwtAuthFilter(mock(JwtService.class));
+        JwtAuthFilter filter = securityBeans.jwtAuthFilter(mock(JwtService.class), mock(TokenVersionClient.class));
 
         assertThat(filter).isNotNull();
     }

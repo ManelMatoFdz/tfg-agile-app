@@ -5,6 +5,13 @@ spring:
   application:
     name: task-service
 
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASS:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+
   datasource:
     url: jdbc:postgresql://${TASK_DB_HOST:localhost}:${TASK_DB_PORT:5435}/${TASK_DB_NAME:taskdb}
     username: ${TASK_DB_USER:task}
@@ -36,6 +43,9 @@ app:
   git:
     # URL publica desde la que GitHub alcanza este servicio
     webhook-base-url: ${GIT_WEBHOOK_BASE_URL:http://localhost:8083}
+  notifications:
+    exchange: ${NOTIFICATIONS_EXCHANGE:agileflow.notifications}
+    routing-key: ${NOTIFICATIONS_ROUTING_KEY:user-service.notification}
 
 management:
   endpoints:

@@ -2,6 +2,7 @@ package com.tfg.agile.app.task_service.repository;
 
 import com.tfg.agile.app.task_service.entity.TaskDependency;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -33,4 +34,9 @@ public interface TaskDependencyRepository extends JpaRepository<TaskDependency, 
            "AND bt.status NOT IN :doneStatuses")
     int countActiveBlockers(@Param("blockedTaskId") UUID blockedTaskId,
                             @Param("doneStatuses") Collection<String> doneStatuses);
+
+    @Modifying
+    @Query("DELETE FROM TaskDependency d WHERE d.blockingTaskId IN (SELECT t.id FROM Task t WHERE t.projectId = :projectId) " +
+           "OR d.blockedTaskId IN (SELECT t.id FROM Task t WHERE t.projectId = :projectId)")
+    void deleteByProjectId(@Param("projectId") UUID projectId);
 }

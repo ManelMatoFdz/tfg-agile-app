@@ -6,7 +6,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer,
 } from 'recharts';
 import {
-  ClipboardList, Zap, RefreshCw, Users, TrendingUp,
+  ClipboardList, Zap, RefreshCw, Users, TrendingUp, BarChart2,
 } from 'lucide-react';
 import type { TeamMember, Sprint, Task, TaskPriority, UserSummary } from '../../../types';
 import { tasksApi } from '../../../api/tasks';
@@ -131,7 +131,6 @@ export default function ProjectMetricsPage() {
   const completedSprints = sprints.filter((s) => s.status === 'COMPLETED').length;
   const activeSprint = sprints.find((s) => s.status === 'ACTIVE');
   const donePct = total > 0 ? Math.round((done / total) * 100) : 0;
-  const unassigned = rootTasks.filter((t) => !t.assigneeId).length;
 
   // ── Chart data ────────────────────────────────────────────────────────────
 
@@ -202,9 +201,12 @@ export default function ProjectMetricsPage() {
       `}</style>
       {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
-      <PageTitle as="h2" style={{ fontSize: 22 }}>
-        {t('projects.metrics.title')}
-      </PageTitle>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <BarChart2 size={22} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+        <PageTitle as="h2" style={{ fontSize: 22 }}>
+          {t('projects.metrics.title')}
+        </PageTitle>
+      </div>
 
       {/* Summary cards — 5 columns (new: avg velocity) */}
       <div className="pm-stats-grid">
@@ -257,39 +259,6 @@ export default function ProjectMetricsPage() {
         )}
       </div>
 
-      {/* Progress bar */}
-      {total > 0 && (
-        <div style={{ ...card, padding: '16px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-              {t('projects.metrics.overallProgress')}
-            </p>
-            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-text)', fontFamily: 'var(--font-mono)' }}>
-              {donePct}%
-            </span>
-          </div>
-          <div style={{ width: '100%', background: 'var(--bg-hover)', borderRadius: 4, height: 8, overflow: 'hidden' }}>
-            <div style={{
-              height: 8, borderRadius: 4, background: 'var(--accent)',
-              width: `${donePct}%`, transition: 'width 1s ease',
-            }} />
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px 20px', marginTop: 12 }}>
-            {statuses.map((s) => {
-              const count = rootTasks.filter((t) => t.status === s).length;
-              if (count === 0) return null;
-              return (
-                <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ width: 10, height: 10, borderRadius: '50%', background: getStatusColor(s, columns), flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{getStatusLabel(s, columns, t)}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-mono)' }}>{count}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Task distribution + Backlog vs Sprint */}
       <div className="pm-charts-grid">
         {/* Status donut */}
@@ -310,6 +279,9 @@ export default function ProjectMetricsPage() {
                     {statusPieData.map((entry) => (
                       <Cell key={entry.name} fill={entry.color} />
                     ))}
+                    <text x="50%" y="50%" textAnchor="middle" dominantBaseline="central" style={{ fill: 'var(--text)', fontWeight: 700, fontSize: 18, fontFamily: 'var(--font-mono)' }}>
+                      {total}
+                    </text>
                   </Pie>
                   <Tooltip
                     formatter={(value, name) => {
@@ -354,8 +326,7 @@ export default function ProjectMetricsPage() {
               </p>
               {[
                 { label: t('projects.metrics.inSprints'), count: sprintedTasks.length, color: 'var(--accent-text)' },
-                { label: t('projects.metrics.inBacklog'), count: backlogTasks.length, color: 'var(--ochre)' },
-                ...(unassigned > 0 ? [{ label: t('projects.metrics.unassigned'), count: unassigned, color: 'var(--border)' }] : []),
+                { label: t('projects.metrics.inBacklog'), count: backlogTasks.length, color: 'var(--warning-text)' },
               ].map((row) => (
                 <div key={row.label}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
@@ -386,8 +357,8 @@ export default function ProjectMetricsPage() {
         </div>
       </div>
 
-      {/* Priority breakdown + Sprint velocity side by side */}
-      <div className="pm-charts-grid">
+      {/* Priority breakdown + Sprint velocity — full width */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {priorityData.length > 0 && (
           <div style={{ ...card, padding: '16px 20px' }}>
             <h3 style={{ margin: '0 0 14px', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
@@ -406,7 +377,7 @@ export default function ProjectMetricsPage() {
                   }}
                   contentStyle={tooltipStyle}
                 />
-                <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 13, fontWeight: 600, paddingTop: 8 }} formatter={(value) => <span style={{ color: 'var(--text)' }}>{value}</span>} />
                 <Bar dataKey="done" name={t('tasks.status.DONE')} radius={[0, 4, 4, 0]} fill={chart.success} />
                 <Bar dataKey="total" name={t('projects.metrics.total')} radius={[0, 4, 4, 0]} fill={chart.muted} />
               </BarChart>
@@ -431,10 +402,10 @@ export default function ProjectMetricsPage() {
                 </span>
               )}
             </div>
-            <ResponsiveContainer width="100%" height={170}>
+            <ResponsiveContainer width="100%" height={200}>
               <BarChart data={velocityData} margin={{ top: 4, right: 8, bottom: 4, left: -10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
-                <XAxis dataKey="name" tick={{ fontSize: 10, fill: chart.axis }} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: chart.axisText }} interval={0} />
                 <YAxis tick={{ fontSize: 10, fill: chart.axis }} allowDecimals={false} />
                 <Tooltip
                   formatter={(value) => {

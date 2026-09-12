@@ -45,15 +45,16 @@ class CategoryServiceTest {
     }
 
     @Test
-    void create_requiresWorkspaceMembership() {
+    void create_requiresWorkspaceAdmin() {
         UUID callerId = UUID.randomUUID();
         Workspace workspace = TestDataFactory.workspace();
 
         when(workspaceRepository.findById(workspace.getId())).thenReturn(Optional.of(workspace));
-        when(workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), callerId)).thenReturn(false);
+        when(workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspace.getId(), callerId, WorkspaceRole.ADMIN)).thenReturn(false);
 
         assertThatThrownBy(() -> service.create(workspace.getId(), new CreateCategoryRequestDto("Backend", "#112233", 0), callerId))
-                .isInstanceOf(ForbiddenException.class);
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("WORKSPACE_ADMIN_REQUIRED");
     }
 
     @Test
@@ -113,13 +114,13 @@ class CategoryServiceTest {
     }
 
     @Test
-    void create_persistsCategoryForWorkspaceMember() {
+    void create_persistsCategoryForWorkspaceAdmin() {
         UUID callerId = UUID.randomUUID();
         Workspace workspace = TestDataFactory.workspace();
         Category category = TestDataFactory.category(workspace);
 
         when(workspaceRepository.findById(workspace.getId())).thenReturn(Optional.of(workspace));
-        when(workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), callerId)).thenReturn(true);
+        when(workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspace.getId(), callerId, WorkspaceRole.ADMIN)).thenReturn(true);
         when(categoryRepository.save(any(Category.class))).thenReturn(category);
 
         var response = service.create(workspace.getId(), new CreateCategoryRequestDto("Backend", "#112233", 1), callerId);

@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface LabelRepository extends JpaRepository<Label, UUID> {
 
     List<Label> findByProjectIdOrderByNameAsc(UUID projectId);
+
+    void deleteByProjectId(UUID projectId);
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { GitBranch, GitCommit, GitPullRequest, ExternalLink, CheckSquare, ChevronDown } from 'lucide-react';
 import type { GitEvent, GitEventType, GitIntegration } from '../../../types';
@@ -14,7 +14,7 @@ const PR_STATUS_COLORS: Record<string, string> = {
   closed: '#DC2626',
 };
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 5;
 
 interface PagedEvents {
   items: GitEvent[];
@@ -81,6 +81,7 @@ function usePagedEvents(
 export default function RepositoryPage() {
   const { t, i18n } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
+  const navigate = useNavigate();
 
   const [integration, setIntegration] = useState<GitIntegration | null>(null);
   const [loading, setLoading] = useState(true);
@@ -103,40 +104,42 @@ export default function RepositoryPage() {
 
   const sectionFailed = openPrs.failed || commits.failed || branches.failed;
 
+  const rowGrid: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: '20px 70px 1fr 340px 110px 100px 16px',
+    alignItems: 'center',
+    gap: 12,
+    padding: '10px 14px',
+    borderTop: '1px solid var(--border)',
+    textDecoration: 'none',
+    color: 'inherit',
+    transition: 'background 150ms',
+  };
+
   const renderEvent = (event: GitEvent, icon: React.ReactNode, prefix?: string) => (
     <a
       key={event.id}
       href={event.externalUrl}
       target="_blank"
       rel="noopener noreferrer"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '10px 14px',
-        borderTop: '1px solid var(--border)',
-        textDecoration: 'none',
-        color: 'inherit',
-        transition: 'background 150ms',
-      }}
+      style={rowGrid}
       onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
     >
       <span style={{ display: 'flex', flexShrink: 0, color: 'var(--text-muted)' }}>{icon}</span>
 
-      {prefix && (
-        <code style={{
-          fontSize: 11,
-          fontFamily: 'var(--font-mono, monospace)',
-          color: 'var(--text-muted)',
-          flexShrink: 0,
-        }}>
-          {prefix}
-        </code>
-      )}
+      <code style={{
+        fontSize: 11,
+        fontFamily: 'var(--font-mono, monospace)',
+        color: 'var(--text-muted)',
+        overflow: 'hidden',
+        whiteSpace: 'nowrap',
+        textOverflow: 'ellipsis',
+      }}>
+        {prefix ?? ''}
+      </code>
 
       <span style={{
-        flex: 1,
         minWidth: 0,
         fontSize: 13,
         fontWeight: 500,
@@ -148,56 +151,69 @@ export default function RepositoryPage() {
         {event.title}
       </span>
 
-      {event.status && (
-        <span style={{
-          fontSize: 9,
-          fontWeight: 700,
-          letterSpacing: '0.04em',
-          textTransform: 'uppercase',
-          color: PR_STATUS_COLORS[event.status] ?? 'var(--text-muted)',
-          background: `${PR_STATUS_COLORS[event.status] ?? '#6B7280'}14`,
-          border: `1px solid ${PR_STATUS_COLORS[event.status] ?? '#6B7280'}35`,
-          borderRadius: 'var(--radius-sm)',
-          padding: '1px 7px',
-          flexShrink: 0,
-        }}>
-          {event.status}
-        </span>
-      )}
-
-      {event.taskTitle ? (
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 4,
-          fontSize: 11,
-          fontWeight: 600,
-          color: '#2563EB',
-          background: 'rgba(37,99,235,0.08)',
-          border: '1px solid rgba(37,99,235,0.2)',
-          borderRadius: 'var(--radius-pill)',
-          padding: '2px 8px',
-          flexShrink: 0,
-          maxWidth: 420,
-        }}>
+      <div style={{ display: 'flex', justifyContent: 'flex-start', overflow: 'hidden' }}>
+      {event.taskTitle && event.taskId ? (
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            navigate(`/workspaces/${workspaceId}/projects/${event.projectId}/tasks/${event.taskId}`);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+              navigate(`/workspaces/${workspaceId}/projects/${event.projectId}/tasks/${event.taskId}`);
+            }
+          }}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 4,
+            fontSize: 11,
+            fontWeight: 600,
+            color: '#2563EB',
+            background: 'rgba(37,99,235,0.08)',
+            border: '1px solid rgba(37,99,235,0.2)',
+            borderRadius: 'var(--radius-pill)',
+            padding: '2px 8px',
+            maxWidth: '100%',
+            overflow: 'hidden',
+            cursor: 'pointer',
+            transition: 'background 150ms, border-color 150ms',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(37,99,235,0.16)';
+            e.currentTarget.style.borderColor = 'rgba(37,99,235,0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(37,99,235,0.08)';
+            e.currentTarget.style.borderColor = 'rgba(37,99,235,0.2)';
+          }}
+        >
           <CheckSquare size={10} strokeWidth={2.5} style={{ flexShrink: 0 }} />
           <span style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
             {event.taskTitle}
           </span>
         </span>
       ) : (
-        <span style={{ fontSize: 11, color: 'var(--text-faint)', flexShrink: 0 }}>—</span>
+        <span style={{ fontSize: 11, color: 'var(--text-faint)', fontStyle: 'italic' }}>
+          {t('projects.repository.unlinked')}
+        </span>
       )}
+      </div>
 
-      {event.author && (
-        <span style={{ fontSize: 11, color: 'var(--text-muted)', flexShrink: 0 }}>@{event.author}</span>
-      )}
+      <span style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+        {event.author ? `@${event.author}` : ''}
+      </span>
 
-      <span style={{ fontSize: 11, color: 'var(--text-faint)', flexShrink: 0 }}>
+      <span style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'right' }}>
         {relativeTime(event.receivedAt, i18n.language)}
       </span>
 
-      <ExternalLink size={12} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+      <ExternalLink size={12} strokeWidth={2} style={{ color: 'var(--text-faint)' }} />
     </a>
   );
 

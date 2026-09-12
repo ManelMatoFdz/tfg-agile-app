@@ -3,6 +3,9 @@ package com.tfg.agile.app.task_service.repository;
 import com.tfg.agile.app.task_service.entity.Task;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
@@ -39,4 +42,14 @@ public interface TaskRepository extends JpaRepository<Task, UUID>, JpaSpecificat
     int countByEpicId(UUID epicId);
 
     int countByEpicIdAndStatusIn(UUID epicId, java.util.Collection<String> statuses);
+
+    @Modifying
+    @Query("UPDATE Task t SET t.parentId = null, t.epicId = null, t.sprintId = null WHERE t.projectId = :projectId")
+    void clearReferencesForProjectId(@Param("projectId") UUID projectId);
+
+    @Modifying
+    @Query(value = "DELETE FROM task_labels WHERE task_id IN (SELECT id FROM tasks WHERE project_id = :projectId)", nativeQuery = true)
+    void deleteTaskLabelsByProjectId(@Param("projectId") UUID projectId);
+
+    void deleteByProjectId(UUID projectId);
 }

@@ -4,12 +4,16 @@ import com.tfg.agile.app.project_service.dto.AddMemberRequestDto;
 import com.tfg.agile.app.project_service.dto.CreateWorkspaceRequestDto;
 import com.tfg.agile.app.project_service.dto.UpdateMemberRoleRequestDto;
 import com.tfg.agile.app.project_service.dto.UpdateWorkspaceRequestDto;
+import com.tfg.agile.app.project_service.entity.Category;
+import com.tfg.agile.app.project_service.entity.Project;
+import com.tfg.agile.app.project_service.entity.Team;
 import com.tfg.agile.app.project_service.entity.Workspace;
 import com.tfg.agile.app.project_service.entity.WorkspaceMember;
 import com.tfg.agile.app.project_service.entity.WorkspaceRole;
 import com.tfg.agile.app.project_service.exception.ConflictException;
 import com.tfg.agile.app.project_service.exception.ForbiddenException;
 import com.tfg.agile.app.project_service.exception.ResourceNotFoundException;
+import com.tfg.agile.app.project_service.client.DataCleanupClient;
 import com.tfg.agile.app.project_service.repository.CategoryRepository;
 import com.tfg.agile.app.project_service.repository.ProjectRepository;
 import com.tfg.agile.app.project_service.repository.TeamMemberRepository;
@@ -31,6 +35,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -51,6 +56,8 @@ class WorkspaceServiceTest {
     private CategoryRepository categoryRepository;
     @Mock
     private WorkspaceInvitationRepository invitationRepository;
+    @Mock
+    private DataCleanupClient dataCleanupClient;
 
     private WorkspaceService service;
 
@@ -63,7 +70,8 @@ class WorkspaceServiceTest {
                 teamMemberRepository,
                 projectRepository,
                 categoryRepository,
-                invitationRepository
+                invitationRepository,
+                dataCleanupClient
         );
     }
 
@@ -198,6 +206,30 @@ class WorkspaceServiceTest {
         verify(invitationRepository).deleteByWorkspaceId(workspace.getId());
         verify(memberRepository).deleteByWorkspaceId(workspace.getId());
         verify(workspaceRepository).deleteById(workspace.getId());
+    }
+
+    @Test
+    void delete_cleansProjectDataBeforeDeletingProjectsAndTeams() {
+        UUID callerId = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        Category category = TestDataFactory.category(workspace);
+        Team team = TestDataFactory.team(workspace);
+        Project project = TestDataFactory.project(workspace, category);
+        project.setTeam(team);
+
+        when(workspaceRepository.findById(workspace.getId())).thenReturn(Optional.of(workspace));
+        when(memberRepository.existsByWorkspaceIdAndUserIdAndRole(workspace.getId(), callerId, WorkspaceRole.ADMIN)).thenReturn(true);
+        when(projectRepository.findByWorkspaceId(workspace.getId())).thenReturn(List.of(project));
+        when(teamRepository.findByWorkspaceId(workspace.getId())).thenReturn(List.of(team));
+
+        service.delete(workspace.getId(), callerId);
+
+        var order = inOrder(dataCleanupClient, projectRepository, teamMemberRepository, teamRepository);
+        order.verify(dataCleanupClient).cleanupProject(project.getId());
+        order.verify(projectRepository).deleteAll(List.of(project));
+        order.verify(projectRepository).flush();
+        order.verify(teamMemberRepository).deleteByTeamId(team.getId());
+        order.verify(teamRepository).deleteAll(List.of(team));
     }
 
     @Test

@@ -34,23 +34,6 @@ const currentUser: User = {
   email: 'tester@example.com',
 };
 
-const allPermissions = {
-  isAdmin: true,
-  isScrumMaster: false,
-  isProductOwner: false,
-  isDeveloper: false,
-  canCreateTask: true,
-  canEditBacklogTask: true,
-  canEditSprintTask: true,
-  canDeleteBacklogTask: true,
-  canDeleteSprintTask: true,
-  canMoveTask: true,
-  canPlanSprint: true,
-  canAddToActiveSprint: true,
-  canManageSprint: true,
-  canCreatePokerSession: true,
-} satisfies Omit<ProjectMemberPermissions, 'member' | 'loading'>;
-
 const noPermissions = {
   isAdmin: false,
   isScrumMaster: false,
@@ -159,13 +142,25 @@ describe('useProjectMember', () => {
       name: 'team administrator',
       members: [teamMember({ role: 'ADMIN', scrumRole: null })],
       workspaceMembers: [workspaceMember()],
-      expected: allPermissions,
+      expected: {
+        ...noPermissions,
+        isAdmin: true,
+        isDeveloper: true,
+        canEditSprintTask: true,
+        canDeleteSprintTask: true,
+        canMoveTask: true,
+        canPlanSprint: true,
+        canAddToActiveSprint: true,
+      },
     },
     {
       name: 'workspace administrator outside the team',
       members: [],
       workspaceMembers: [workspaceMember({ role: 'ADMIN' })],
-      expected: allPermissions,
+      expected: {
+        ...noPermissions,
+        isAdmin: true,
+      },
     },
     {
       name: 'product owner',

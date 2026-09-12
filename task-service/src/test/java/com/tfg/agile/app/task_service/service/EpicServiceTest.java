@@ -140,7 +140,7 @@ class EpicServiceTest {
                 new CreateEpicRequestDto("Blocked", null, null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("ONLY_PO_OR_ADMIN_CAN_MANAGE_EPICS");
+                .hasMessage("ONLY_PO_CAN_MANAGE_EPICS");
     }
 
     @Test
@@ -151,7 +151,7 @@ class EpicServiceTest {
         epic.setColor("#123456");
 
         when(epicRepository.findById(epic.getId())).thenReturn(Optional.of(epic));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
         when(epicRepository.save(any(Epic.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(boardColumnService.getDoneEquivalentStatuses(projectId)).thenReturn(Set.of("DONE"));
         when(taskRepository.countByEpicId(epic.getId())).thenReturn(4);
@@ -179,7 +179,7 @@ class EpicServiceTest {
         secondTask.setEpicId(epic.getId());
 
         when(epicRepository.findById(epic.getId())).thenReturn(Optional.of(epic));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.teamAdminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
         when(taskRepository.findByEpicIdOrderByPositionAsc(epic.getId())).thenReturn(List.of(firstTask, secondTask));
 
         service.delete(epic.getId(), callerId);
@@ -218,7 +218,7 @@ class EpicServiceTest {
         Epic epic = epic(UUID.randomUUID(), "Other project");
 
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(projectServiceClient.getMemberPermissions(task.getProjectId(), callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(task.getProjectId(), callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
         when(epicRepository.findById(epic.getId())).thenReturn(Optional.of(epic));
 
         assertThatThrownBy(() -> service.assignEpicToTask(task.getId(), epic.getId(), callerId))
@@ -235,7 +235,7 @@ class EpicServiceTest {
         task.setEpicId(epic.getId());
 
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.teamAdminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
         when(epicRepository.findById(epic.getId())).thenReturn(Optional.of(epic));
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

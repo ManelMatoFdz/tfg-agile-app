@@ -98,6 +98,12 @@ public class SprintController {
         return sprintService.activateSprint(sprintId, callerId);
     }
 
+    @PostMapping("/sprints/{sprintId}/complete")
+    public SprintResponseDto completeSprint(@PathVariable("sprintId") UUID sprintId,
+                                            @AuthenticationPrincipal UUID callerId) {
+        return sprintService.completeSprint(sprintId, callerId);
+    }
+
     @PatchMapping("/sprints/{sprintId}/retrospective")
     public SprintResponseDto saveRetrospective(@PathVariable("sprintId") UUID sprintId,
                                                 @Valid @RequestBody SaveRetrospectiveRequestDto dto,

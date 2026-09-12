@@ -1,6 +1,7 @@
 package com.tfg.agile.app.poker_service.config;
 
 import com.tfg.agile.app.poker_service.security.JwtService;
+import com.tfg.agile.app.poker_service.security.TokenVersionClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -16,9 +17,11 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final JwtService jwtService;
+    private final TokenVersionClient tokenVersionClient;
 
-    public WebSocketConfig(JwtService jwtService) {
+    public WebSocketConfig(JwtService jwtService, TokenVersionClient tokenVersionClient) {
         this.jwtService = jwtService;
+        this.tokenVersionClient = tokenVersionClient;
     }
 
     @Override
@@ -34,7 +37,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws/poker")
                 .setAllowedOriginPatterns("*")
-                .addInterceptors(new WebSocketAuthInterceptor(jwtService))
+                .addInterceptors(new WebSocketAuthInterceptor(jwtService, tokenVersionClient))
                 .withSockJS();
     }
 

@@ -14,6 +14,7 @@ import com.tfg.agile.app.project_service.entity.Workspace;
 import com.tfg.agile.app.project_service.entity.WorkspaceRole;
 import com.tfg.agile.app.project_service.exception.ForbiddenException;
 import com.tfg.agile.app.project_service.exception.ResourceNotFoundException;
+import com.tfg.agile.app.project_service.client.DataCleanupClient;
 import com.tfg.agile.app.project_service.repository.CategoryRepository;
 import com.tfg.agile.app.project_service.repository.ProjectRepository;
 import com.tfg.agile.app.project_service.repository.TeamMemberRepository;
@@ -34,6 +35,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -52,6 +54,8 @@ class ProjectServiceTest {
     private TeamMemberRepository teamMemberRepository;
     @Mock
     private CategoryRepository categoryRepository;
+    @Mock
+    private DataCleanupClient dataCleanupClient;
 
     private ProjectService service;
 
@@ -63,7 +67,8 @@ class ProjectServiceTest {
                 workspaceMemberRepository,
                 teamRepository,
                 teamMemberRepository,
-                categoryRepository
+                categoryRepository,
+                dataCleanupClient
         );
     }
 
@@ -77,7 +82,7 @@ class ProjectServiceTest {
         project.setTeam(team);
 
         when(workspaceRepository.findById(workspace.getId())).thenReturn(Optional.of(workspace));
-        when(workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), callerId)).thenReturn(true);
+        when(workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspace.getId(), callerId, WorkspaceRole.ADMIN)).thenReturn(true);
         when(categoryRepository.findById(category.getId())).thenReturn(Optional.of(category));
         when(teamRepository.findById(team.getId())).thenReturn(Optional.of(team));
         when(projectRepository.save(any(Project.class))).thenReturn(project);
@@ -99,7 +104,7 @@ class ProjectServiceTest {
         Team team = TestDataFactory.team(workspace);
 
         when(workspaceRepository.findById(workspace.getId())).thenReturn(Optional.of(workspace));
-        when(workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspace.getId(), callerId)).thenReturn(true);
+        when(workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspace.getId(), callerId, WorkspaceRole.ADMIN)).thenReturn(true);
         when(categoryRepository.findById(foreignCategory.getId())).thenReturn(Optional.of(foreignCategory));
 
         assertThatThrownBy(() -> service.create(workspace.getId(),
@@ -190,7 +195,25 @@ class ProjectServiceTest {
 
         service.delete(project.getId(), callerId);
 
+        verify(dataCleanupClient).cleanupProject(project.getId());
         verify(projectRepository).deleteById(project.getId());
+    }
+
+    @Test
+    void delete_keepsProjectWhenCleanupFails() {
+        UUID callerId = UUID.randomUUID();
+        Workspace workspace = TestDataFactory.workspace();
+        Project project = TestDataFactory.project(workspace, null);
+
+        when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
+        when(workspaceMemberRepository.existsByWorkspaceIdAndUserIdAndRole(workspace.getId(), callerId, WorkspaceRole.ADMIN)).thenReturn(true);
+        org.mockito.Mockito.doThrow(new IllegalStateException("cleanup failed"))
+                .when(dataCleanupClient).cleanupProject(project.getId());
+
+        assertThatThrownBy(() -> service.delete(project.getId(), callerId))
+                .isInstanceOf(IllegalStateException.class);
+
+        verify(projectRepository, never()).deleteById(project.getId());
     }
 
     @Test

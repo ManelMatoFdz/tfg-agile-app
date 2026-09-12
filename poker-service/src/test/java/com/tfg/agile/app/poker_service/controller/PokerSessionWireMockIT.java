@@ -1,7 +1,5 @@
 package com.tfg.agile.app.poker_service.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.tfg.agile.app.poker_service.entity.ParticipantRole;
 import com.tfg.agile.app.poker_service.entity.PokerParticipant;
@@ -35,11 +33,10 @@ import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.put;
 import static com.github.tomakehurst.wiremock.client.WireMock.putRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -78,15 +75,18 @@ class PokerSessionWireMockIT extends IntegrationTestBase {
     @Autowired
     private PokerSessionService pokerSessionService;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     @BeforeEach
     void setUp() {
         wireMock.resetAll();
+        wireMock.stubFor(get(urlMatching("/internal/users/.*/token-version"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"tokenVersion\":0}")));
     }
 
     @Test
-    void createSessionPersistsAndNotifiesProjectMembers() throws Exception {
+    void createSessionPersistsAndReadsProjectMembers() {
         UUID projectId = UUID.randomUUID();
         UUID creatorId = UUID.randomUUID();
         UUID workspaceId = UUID.randomUUID();
@@ -102,8 +102,6 @@ class PokerSessionWireMockIT extends IntegrationTestBase {
                                   "memberUserIds":["%s","%s"]
                                 }
                                 """.formatted(workspaceId, creatorId, teammateId))));
-        wireMock.stubFor(post(urlEqualTo("/internal/notifications/enqueue"))
-                .willReturn(aResponse().withStatus(200)));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(jwtFor(creatorId));
@@ -117,26 +115,14 @@ class PokerSessionWireMockIT extends IntegrationTestBase {
         );
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        PokerSession session = sessionRepository.findAll().getFirst();
-        assertThat(session.getProjectId()).isEqualTo(projectId);
+        assertThat(sessionRepository.findByProjectIdOrderByCreatedAtDesc(projectId))
+                .hasSize(1)
+                .first()
+                .extracting(PokerSession::getProjectId)
+                .isEqualTo(projectId);
 
         wireMock.verify(getRequestedFor(urlEqualTo("/internal/projects/" + projectId + "/member-ids"))
                 .withHeader("X-Internal-Api-Key", equalTo("test-internal-key")));
-        wireMock.verify(1, postRequestedFor(urlEqualTo("/internal/notifications/enqueue"))
-                .withHeader("X-Internal-Api-Key", equalTo("test-internal-key"))
-                .withRequestBody(matchingJsonPath("$.userId", equalTo(teammateId.toString())))
-                .withRequestBody(matchingJsonPath("$.type", equalTo("POKER_INVITATION")))
-                .withRequestBody(matchingJsonPath("$.actorUserId", equalTo(creatorId.toString()))));
-
-        String notificationBody = wireMock.getServeEvents().getServeEvents().stream()
-                .filter(event -> event.getRequest().getUrl().equals("/internal/notifications/enqueue"))
-                .findFirst()
-                .orElseThrow()
-                .getRequest()
-                .getBodyAsString();
-        JsonNode payload = objectMapper.readTree(notificationBody);
-        assertThat(payload.path("link").asText()).isEqualTo("/workspaces/" + workspaceId + "/projects/" + projectId + "/poker/" + session.getId());
-        assertThat(payload.path("message").asText()).contains("Sprint planning");
     }
 
     @Test

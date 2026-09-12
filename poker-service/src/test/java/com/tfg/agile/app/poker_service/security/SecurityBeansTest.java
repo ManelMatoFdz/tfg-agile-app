@@ -12,7 +12,7 @@ class SecurityBeansTest {
         SecurityBeans beans = new SecurityBeans();
 
         assertThat(beans.objectMapper()).isNotNull();
-        assertThat(beans.jwtAuthFilter(mock(JwtService.class))).isNotNull();
+        assertThat(beans.jwtAuthFilter(mock(JwtService.class), mock(TokenVersionClient.class))).isNotNull();
         assertThat(beans.internalApiKeyAuthFilter("secret")).isNotNull();
     }
 }

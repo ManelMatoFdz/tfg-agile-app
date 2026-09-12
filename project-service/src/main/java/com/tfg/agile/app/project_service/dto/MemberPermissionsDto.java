@@ -8,5 +8,6 @@ public record MemberPermissionsDto(
         UUID workspaceId,
         boolean workspaceAdmin,
         boolean teamAdmin,
+        boolean projectMember,
         ScrumRole scrumRole
 ) {}

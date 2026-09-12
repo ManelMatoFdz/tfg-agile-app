@@ -105,6 +105,13 @@
         "descriptionPlaceholder": "Unha breve descrición",
         "submit": "Crear workspace"
       },
+      "searchPlaceholder": "Buscar workspaces...",
+      "member": "membro",
+      "members": "membros",
+      "roleAdmin": "Admin",
+      "roleMember": "Membro",
+      "launch": "Entrar",
+      "noSearchResults": "Ningún workspace coincide coa túa busca.",
       "pendingInvitations": "Invitacións pendentes",
       "invitedToJoin": "Foches invitado/a a unirte"
     },
@@ -126,6 +133,7 @@
     "dashboard": {
       "title": "Proxectos",
       "subtitle": "Xestiona os proxectos do teu equipo e segue o progreso.",
+      "allCategories": "Todas as categorías",
       "count_one": "{{count}} proxecto",
       "count_other": "{{count}} proxectos",
       "noProjects": "Non hai proxectos aínda",
@@ -635,10 +643,14 @@
         "message": "Seguro que queres activar este sprint? Só pode haber un sprint activo á vez por proxecto."
       },
       "activateError": "Erro ao activar o sprint.",
+      "completeSprint": "Completar sprint",
+      "completeConfirm": {
+        "title": "Completar sprint",
+        "message": "Seguro que queres completar este sprint? As tarefas non rematadas volverán ao backlog automaticamente."
+      },
+      "completeError": "Erro ao completar o sprint.",
       "activateEndDateRequired": "Debes establecer unha data de fin antes de activar o sprint.",
       "complete": "Completar",
-      "completeConfirm": "Completar? As tarefas non rematadas volverán ao backlog.",
-      "completeError": "Erro ao completar o sprint.",
       "deleteConfirm": "Eliminar este sprint?",
       "deleteError": "Erro ao eliminar o sprint.",
       "activeSprint": "Sprint activo",
@@ -1098,6 +1110,7 @@
   },
   "poker": {
     "title": "Planning Poker",
+    "subtitle": "Estima historias de usuario en equipo mediante votación simultánea e sen nesgo.",
     "session": "sesión",
     "sessions": "sesións",
     "newSession": "Nova sesión",
@@ -1217,7 +1230,10 @@
     "subtask": "Subtarefa",
     "empty": "Non tes tarefas asignadas",
     "emptySubtitle": "Cando che asignen tarefas nun proxecto, aparecerán aquí",
-    "loadError": "Erro ao cargar as tarefas."
+    "loadError": "Erro ao cargar as tarefas.",
+    "pending": "Por facer",
+    "done": "Feito",
+    "subtasks": "subtarefas"
   },
   "errors": {
     "FORBIDDEN": "Non tes permisos para realizar esta acción.",
@@ -1261,8 +1277,15 @@
     "CANNOT_ADD_TASKS_COMPLETED_SPRINT": "Non se poden engadir tarefas a un sprint completado.",
     "TASK_WRONG_PROJECT": "A tarefa non pertence a este proxecto.",
     "TASK_NOT_IN_SPRINT": "A tarefa non está neste sprint.",
-    "SCRUM_MASTER_OR_ADMIN_REQUIRED": "Requírese rol de Scrum Master ou Administrador.",
-    "PO_SM_OR_ADMIN_REQUIRED": "Requírese rol de Product Owner, Scrum Master ou Administrador.",
+    "ONLY_PO_CAN_CREATE_TASKS": "Só o Product Owner pode crear tarefas.",
+    "ONLY_PO_CAN_EDIT_BACKLOG_TASKS": "Só o Product Owner pode editar tarefas do backlog.",
+    "ONLY_DEVELOPERS_CAN_EDIT_SPRINT_TASKS": "Só os Developers poden editar tarefas de sprint.",
+    "ONLY_DEVELOPERS_CAN_MOVE_TASKS": "Só os Developers poden mover tarefas.",
+    "ONLY_PO_CAN_DELETE_BACKLOG_TASKS": "Só o Product Owner pode eliminar tarefas do backlog.",
+    "ONLY_DEVELOPERS_CAN_DELETE_SPRINT_TASKS": "Só os Developers poden eliminar tarefas de sprint.",
+    "ONLY_PO_CAN_MANAGE_EPICS": "Só o Product Owner pode xestionar épicas.",
+    "SCRUM_MASTER_REQUIRED": "Requírese rol de Scrum Master.",
+    "PO_OR_SM_REQUIRED": "Requírese rol de Product Owner, Scrum Master.",
     "ALREADY_WORKSPACE_MEMBER": "O usuario xa é membro deste workspace.",
     "ALREADY_TEAM_MEMBER": "O usuario xa é membro deste equipo.",
     "LAST_TEAM_ADMIN": "Es o único administrador do equipo. Asigna outro administrador antes de realizar esta acción.",

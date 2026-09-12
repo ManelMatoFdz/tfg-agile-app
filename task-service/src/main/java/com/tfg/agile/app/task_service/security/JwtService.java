@@ -1,6 +1,5 @@
 package com.tfg.agile.app.task_service.security;
 
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +25,9 @@ public class JwtService {
         this.audience = audience;
     }
 
-    public UUID validateAndExtractUserId(String token) {
+    public record JwtClaims(UUID userId, int tokenVersion) {}
+
+    public JwtClaims validateAndExtract(String token) {
         var claims = Jwts.parser()
                 .verifyWith(signingKey)
                 .requireIssuer(issuer)
@@ -35,6 +36,13 @@ public class JwtService {
                 .parseSignedClaims(token)
                 .getPayload();
 
-        return UUID.fromString(claims.getSubject());
+        UUID userId = UUID.fromString(claims.getSubject());
+        Number tv = claims.get("tokenVersion", Number.class);
+        int tokenVersion = tv == null ? 0 : tv.intValue();
+        return new JwtClaims(userId, tokenVersion);
+    }
+
+    public UUID validateAndExtractUserId(String token) {
+        return validateAndExtract(token).userId();
     }
 }

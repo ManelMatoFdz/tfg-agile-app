@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore';
 import { projectsApi } from '../../api/projects';
 import { categoriesApi } from '../../api/categories';
 import { teamsApi } from '../../api/teams';
+import { workspacesApi } from '../../api/workspaces';
 import { useUserMap } from '../../hooks/useUserMap';
 import { userFixture, userSummaryFixture, teamMemberFixture } from '../../test/fixtures';
 import type { Category, Project, Team } from '../../types';
@@ -14,6 +15,7 @@ import i18n from '../../i18n';
 jest.mock('../../api/projects', () => ({ projectsApi: { list: jest.fn(), create: jest.fn(), getTeamMembers: jest.fn() } }));
 jest.mock('../../api/categories', () => ({ categoriesApi: { list: jest.fn(), create: jest.fn() } }));
 jest.mock('../../api/teams', () => ({ teamsApi: { list: jest.fn() } }));
+jest.mock('../../api/workspaces', () => ({ workspacesApi: { getMembers: jest.fn() } }));
 jest.mock('../../hooks/useUserMap', () => ({ useUserMap: jest.fn() }));
 
 const mockProjectList = jest.mocked(projectsApi.list);
@@ -22,6 +24,7 @@ const mockGetTeamMembers = jest.mocked(projectsApi.getTeamMembers);
 const mockCategoryList = jest.mocked(categoriesApi.list);
 const mockCategoryCreate = jest.mocked(categoriesApi.create);
 const mockTeamList = jest.mocked(teamsApi.list);
+const mockWorkspaceMembers = jest.mocked(workspacesApi.getMembers);
 const mockUseUserMap = jest.mocked(useUserMap);
 
 function projectFixture(overrides: Partial<Project> = {}): Project {
@@ -73,6 +76,7 @@ describe('WorkspaceDashboardPage', () => {
       ['user-2', userSummaryFixture({ id: 'user-2', fullName: 'Grace Hopper' })],
     ]));
     mockTeamList.mockResolvedValue({ data: [teamFixture()] } as never);
+    mockWorkspaceMembers.mockResolvedValue({ data: [{ id: 'wm-1', workspaceId: 'workspace-1', userId: 'current-user', role: 'ADMIN', joinedAt: '2026-01-01' }] } as never);
   });
 
   it('renders grouped projects, supports category filters and collapses groups', async () => {

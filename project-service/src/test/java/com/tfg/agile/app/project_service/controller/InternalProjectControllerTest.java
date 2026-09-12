@@ -27,7 +27,7 @@ class InternalProjectControllerTest {
         InternalProjectController controller = new InternalProjectController(projectService);
         UUID projectId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
-        MemberPermissionsDto dto = new MemberPermissionsDto(UUID.randomUUID(), true, false, ScrumRole.SCRUM_MASTER);
+        MemberPermissionsDto dto = new MemberPermissionsDto(UUID.randomUUID(), true, false, true, ScrumRole.SCRUM_MASTER);
 
         when(projectService.getMemberPermissions(projectId, userId)).thenReturn(dto);
 

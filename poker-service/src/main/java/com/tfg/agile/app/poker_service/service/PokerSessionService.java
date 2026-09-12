@@ -1,5 +1,6 @@
 package com.tfg.agile.app.poker_service.service;
 
+import com.tfg.agile.app.poker_service.client.MemberPermissionsDto;
 import com.tfg.agile.app.poker_service.client.ProjectMemberIdsDto;
 import com.tfg.agile.app.poker_service.client.ProjectServiceClient;
 import com.tfg.agile.app.poker_service.client.TaskServiceClient;
@@ -52,6 +53,8 @@ public class PokerSessionService {
     }
     
     public SessionResponseDto createSession(UUID projectId, UUID userId, CreateSessionRequestDto dto) {
+        requireProductOwnerOrScrumMaster(projectServiceClient.getMemberPermissions(projectId, userId));
+
         var session = PokerSession.builder()
                 .projectId(projectId)
                 .name(dto.name())
@@ -105,8 +108,14 @@ public class PokerSessionService {
         if (session.getStatus() == SessionStatus.CLOSED) {
             throw new ConflictException("SESSION_CLOSED");
         }
+        MemberPermissionsDto permissions = projectServiceClient.getMemberPermissions(session.getProjectId(), userId);
+        if (!permissions.projectMember()) {
+            throw new ForbiddenException("NOT_PROJECT_MEMBER");
+        }
+
         // Enforce single moderator per session
         if (dto.role() == ParticipantRole.MODERATOR) {
+            requireProductOwnerOrScrumMaster(permissions);
             boolean moderatorExists = session.getParticipants().stream()
                     .anyMatch(p -> p.getRole() == ParticipantRole.MODERATOR && p.isConnected());
             if (moderatorExists) {
@@ -281,6 +290,13 @@ public class PokerSessionService {
     private PokerSession findSession(UUID sessionId) {
         return sessionRepository.findById(sessionId)
                 .orElseThrow(() -> new ResourceNotFoundException("SESSION_NOT_FOUND"));
+    }
+
+    private void requireProductOwnerOrScrumMaster(MemberPermissionsDto permissions) {
+        if ("PRODUCT_OWNER".equals(permissions.scrumRole()) || "SCRUM_MASTER".equals(permissions.scrumRole())) {
+            return;
+        }
+        throw new ForbiddenException("PO_OR_SM_REQUIRED");
     }
 
     private void assertFacilitator(PokerSession session, UUID userId) {

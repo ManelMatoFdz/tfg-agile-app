@@ -1,7 +1,5 @@
 package com.tfg.agile.app.project_service.controller;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.tfg.agile.app.project_service.entity.InvitationStatus;
 import com.tfg.agile.app.project_service.entity.Workspace;
@@ -28,11 +26,8 @@ import java.util.Map;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.matchingJsonPath;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlMatching;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,17 +61,18 @@ class WorkspaceInvitationWireMockIT extends IntegrationTestBase {
     @Autowired
     private WorkspaceInvitationRepository invitationRepository;
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     @BeforeEach
     void setUp() {
         wireMock.resetAll();
-        wireMock.stubFor(post(urlEqualTo("/internal/notifications/enqueue"))
-                .willReturn(aResponse().withStatus(200)));
+        wireMock.stubFor(get(urlMatching("/internal/users/.*/token-version"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"tokenVersion\":0}")));
     }
 
     @Test
-    void createInvitationPersistsAndCallsUserServiceContract() throws Exception {
+    void createInvitationPersistsInvitation() {
         UUID callerId = UUID.randomUUID();
         UUID invitedUserId = UUID.randomUUID();
         Workspace workspace = workspaceRepository.save(Workspace.builder()
@@ -106,20 +102,5 @@ class WorkspaceInvitationWireMockIT extends IntegrationTestBase {
                 .singleElement()
                 .extracting(invitation -> invitation.getInvitedUserId(), invitation -> invitation.getStatus())
                 .containsExactly(invitedUserId, InvitationStatus.PENDING);
-
-        wireMock.verify(postRequestedFor(urlEqualTo("/internal/notifications/enqueue"))
-                .withHeader("X-Internal-Api-Key", equalTo("test-internal-key"))
-                .withRequestBody(matchingJsonPath("$.userId", equalTo(invitedUserId.toString())))
-                .withRequestBody(matchingJsonPath("$.type", equalTo("WORKSPACE_INVITATION")))
-                .withRequestBody(matchingJsonPath("$.link", equalTo("/workspaces")))
-                .withRequestBody(matchingJsonPath("$.actorUserId", equalTo(callerId.toString()))));
-
-        String requestBody = wireMock.getServeEvents().getServeEvents().getFirst().getRequest().getBodyAsString();
-        JsonNode payload = objectMapper.readTree(requestBody);
-        JsonNode data = objectMapper.readTree(payload.path("data").asText());
-        assertThat(payload.path("title").asText()).isEqualTo("Invitación al workspace");
-        assertThat(data.path("workspaceId").asText()).isEqualTo(workspace.getId().toString());
-        assertThat(data.path("workspaceName").asText()).isEqualTo("Acme");
-        assertThat(data.path("invitationId").asText()).isNotBlank();
     }
 }

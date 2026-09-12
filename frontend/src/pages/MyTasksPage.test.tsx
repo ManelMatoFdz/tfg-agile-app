@@ -125,7 +125,6 @@ describe('MyTasksPage', () => {
 
     const selects = screen.getAllByRole('combobox');
     await user.selectOptions(selects[0], 'project-2');
-    await user.click(screen.getByRole('button', { name: /IN_PROGRESS/ }));
     expect(screen.getByText('Progress task')).toBeInTheDocument();
 
     await user.selectOptions(selects[1], 'LOW');
@@ -133,12 +132,12 @@ describe('MyTasksPage', () => {
 
     await user.selectOptions(selects[0], 'ALL');
     await user.selectOptions(selects[1], 'ALL');
-    await user.click(screen.getByRole('button', { name: /TODO/ }));
+    await user.click(screen.getByRole('button', { name: new RegExp(i18n.t('myTasks.pending')) }));
     await user.click(screen.getByText('Root task'));
 
     expect(mockNavigate).toHaveBeenCalledWith('/workspaces/workspace-1/projects/project-1/tasks/todo-1', expect.any(Object));
 
-    await user.click(screen.getByTitle(i18n.t('myTasks.goToProject')));
+    await user.click(screen.getAllByTitle(i18n.t('myTasks.goToProject'))[0]);
     expect(mockNavigate).toHaveBeenCalledWith('/workspaces/workspace-1/projects/project-1/board');
   });
 
@@ -163,8 +162,7 @@ describe('MyTasksPage', () => {
       path: '/workspaces/:workspaceId/my-tasks',
     });
 
-    expect(await screen.findByRole('button', { name: /IN_PROGRESS/ })).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /IN_PROGRESS/ }));
+    expect(await screen.findByRole('button', { name: new RegExp(i18n.t('myTasks.pending')) })).toBeInTheDocument();
     await user.click(screen.getByText('Subtask from list'));
 
     expect(await screen.findByText('Fresh subtask')).toBeInTheDocument();
@@ -192,8 +190,7 @@ describe('MyTasksPage', () => {
       path: '/workspaces/:workspaceId/my-tasks',
     });
 
-    await screen.findByRole('button', { name: /IN_PROGRESS/ });
-    await user.click(screen.getByRole('button', { name: /IN_PROGRESS/ }));
+    await screen.findByRole('button', { name: new RegExp(i18n.t('myTasks.pending')) });
     await user.click(screen.getByText('Fallback subtask'));
 
     expect(await screen.findByText('read-only')).toBeInTheDocument();

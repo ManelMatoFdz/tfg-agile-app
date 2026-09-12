@@ -9,7 +9,7 @@ class SecurityConfigTest {
     @Test
     void securityConfig_canBeInstantiated() {
         SecurityConfig config = new SecurityConfig(
-                new JwtAuthFilter(org.mockito.Mockito.mock(JwtService.class)),
+                new JwtAuthFilter(org.mockito.Mockito.mock(JwtService.class), org.mockito.Mockito.mock(TokenVersionClient.class)),
                 new InternalApiKeyAuthFilter("secret"),
                 new tools.jackson.databind.ObjectMapper()
         );

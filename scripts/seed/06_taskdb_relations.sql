@@ -1,5 +1,5 @@
 -- ============================================================================
---  AgileFlow — Seed 06: taskdb — etiquetas, dependencias, comentarios,
+--  Nexora Consulting — Seed 06: taskdb — etiquetas, dependencias, comentarios,
 --  actividad y snapshots de sprints cerrados.
 -- ============================================================================
 
@@ -68,111 +68,111 @@ INSERT INTO task_labels (task_id, label_id) VALUES
 ('88888888-0006-0000-0000-000000000004','99999999-0006-0000-0000-000000000002');
 
 -- ---------------------------------------------------------------------------
--- 2. Dependencias entre tareas
+-- 2. Dependencias entre actuaciones
 -- ---------------------------------------------------------------------------
 INSERT INTO task_dependencies (id, blocking_task_id, blocked_task_id, created_by, created_at) VALUES
-('deadbeef-0000-0000-0000-000000000001','88888888-0001-0000-0000-000000000021','88888888-0001-0000-0000-000000000022','ca8bb86d-46e6-44ed-9f77-4e841be4de8a',now() - interval '18 days'),
-('deadbeef-0000-0000-0000-000000000002','88888888-0001-0000-0000-000000000022','88888888-0001-0000-0000-000000000023','ca8bb86d-46e6-44ed-9f77-4e841be4de8a',now() - interval '18 days'),
-('deadbeef-0000-0000-0000-000000000003','88888888-0001-0000-0000-000000000021','88888888-0001-0000-0000-000000000024','11111111-0000-0000-0000-000000000001',now() - interval '15 days'),
-('deadbeef-0000-0000-0000-000000000004','88888888-0001-0000-0000-000000000013','88888888-0001-0000-0000-000000000014','ca8bb86d-46e6-44ed-9f77-4e841be4de8a',now() - interval '12 days'),
-('deadbeef-0000-0000-0000-000000000005','88888888-0001-0000-0000-000000000012','88888888-0001-0000-0000-000000000013','11111111-0000-0000-0000-000000000001',now() - interval '12 days'),
-('deadbeef-0000-0000-0000-000000000006','88888888-0001-0000-0000-00000000000b','88888888-0001-0000-0000-000000000026','ca8bb86d-46e6-44ed-9f77-4e841be4de8a',now() - interval '16 days'),
-('deadbeef-0000-0000-0000-000000000007','88888888-0001-0000-0000-00000000000f','88888888-0001-0000-0000-000000000029','11111111-0000-0000-0000-000000000003',now() - interval '9 days'),
-('deadbeef-0000-0000-0000-000000000008','88888888-0002-0000-0000-000000000006','88888888-0002-0000-0000-000000000007','ca8bb86d-46e6-44ed-9f77-4e841be4de8a',now() - interval '10 days'),
-('deadbeef-0000-0000-0000-000000000009','88888888-0002-0000-0000-000000000008','88888888-0002-0000-0000-00000000000e','11111111-0000-0000-0000-000000000002',now() - interval '9 days'),
-('deadbeef-0000-0000-0000-00000000000a','88888888-0002-0000-0000-000000000002','88888888-0002-0000-0000-00000000000c','11111111-0000-0000-0000-000000000002',now() - interval '14 days'),
-('deadbeef-0000-0000-0000-00000000000b','88888888-0003-0000-0000-000000000001','88888888-0003-0000-0000-000000000002','11111111-0000-0000-0000-000000000001',now() - interval '8 days'),
-('deadbeef-0000-0000-0000-00000000000c','88888888-0003-0000-0000-000000000003','88888888-0003-0000-0000-000000000004','11111111-0000-0000-0000-000000000001',now() - interval '7 days'),
-('deadbeef-0000-0000-0000-00000000000d','88888888-0004-0000-0000-000000000001','88888888-0004-0000-0000-000000000002','ca8bb86d-46e6-44ed-9f77-4e841be4de8a',now() - interval '6 days'),
-('deadbeef-0000-0000-0000-00000000000e','88888888-0004-0000-0000-000000000002','88888888-0004-0000-0000-000000000003','ca8bb86d-46e6-44ed-9f77-4e841be4de8a',now() - interval '5 days'),
-('deadbeef-0000-0000-0000-00000000000f','88888888-0006-0000-0000-000000000002','88888888-0006-0000-0000-000000000005','11111111-0000-0000-0000-000000000001',now() - interval '9 days');
+                                                                                                  ('deadbeef-0000-0000-0000-000000000001','88888888-0001-0000-0000-000000000021','88888888-0001-0000-0000-000000000022','a21a40cb-6b69-42a0-b790-b576df0641ec',now() - interval '18 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-000000000002','88888888-0001-0000-0000-000000000022','88888888-0001-0000-0000-000000000023','a21a40cb-6b69-42a0-b790-b576df0641ec',now() - interval '18 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-000000000003','88888888-0001-0000-0000-000000000021','88888888-0001-0000-0000-000000000024','11111111-0000-0000-0000-000000000001',now() - interval '15 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-000000000004','88888888-0001-0000-0000-000000000013','88888888-0001-0000-0000-000000000014','a21a40cb-6b69-42a0-b790-b576df0641ec',now() - interval '12 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-000000000005','88888888-0001-0000-0000-000000000012','88888888-0001-0000-0000-000000000013','11111111-0000-0000-0000-000000000001',now() - interval '12 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-000000000006','88888888-0001-0000-0000-00000000000b','88888888-0001-0000-0000-000000000026','a21a40cb-6b69-42a0-b790-b576df0641ec',now() - interval '16 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-000000000007','88888888-0001-0000-0000-00000000000f','88888888-0001-0000-0000-000000000029','11111111-0000-0000-0000-000000000003',now() - interval '9 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-000000000008','88888888-0002-0000-0000-000000000006','88888888-0002-0000-0000-000000000007','a21a40cb-6b69-42a0-b790-b576df0641ec',now() - interval '10 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-000000000009','88888888-0002-0000-0000-000000000008','88888888-0002-0000-0000-00000000000e','11111111-0000-0000-0000-000000000002',now() - interval '9 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-00000000000a','88888888-0002-0000-0000-000000000002','88888888-0002-0000-0000-00000000000c','11111111-0000-0000-0000-000000000002',now() - interval '14 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-00000000000b','88888888-0003-0000-0000-000000000001','88888888-0003-0000-0000-000000000002','11111111-0000-0000-0000-000000000001',now() - interval '8 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-00000000000c','88888888-0003-0000-0000-000000000003','88888888-0003-0000-0000-000000000004','11111111-0000-0000-0000-000000000001',now() - interval '7 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-00000000000d','88888888-0004-0000-0000-000000000001','88888888-0004-0000-0000-000000000002','a21a40cb-6b69-42a0-b790-b576df0641ec',now() - interval '6 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-00000000000e','88888888-0004-0000-0000-000000000002','88888888-0004-0000-0000-000000000003','a21a40cb-6b69-42a0-b790-b576df0641ec',now() - interval '5 days'),
+                                                                                                  ('deadbeef-0000-0000-0000-00000000000f','88888888-0006-0000-0000-000000000002','88888888-0006-0000-0000-000000000005','11111111-0000-0000-0000-000000000001',now() - interval '9 days');
 
 -- ---------------------------------------------------------------------------
 -- 3. Comentarios
 -- ---------------------------------------------------------------------------
 INSERT INTO task_comments (id, task_id, author_id, content, created_at, edited_at) VALUES
-('cafe0000-0000-0000-0000-000000000001','88888888-0001-0000-0000-000000000002','11111111-0000-0000-0000-000000000001','Ojo con la caducidad del access token: 15 minutos es demasiado corto para la demo.',now() - interval '44 days',NULL),
-('cafe0000-0000-0000-0000-000000000002','88888888-0001-0000-0000-000000000002','11111111-0000-0000-0000-000000000002','Subido a 30 minutos y el refresh a 7 dias. Documentado en el README.',now() - interval '43 days',NULL),
-('cafe0000-0000-0000-0000-000000000003','88888888-0001-0000-0000-000000000009','11111111-0000-0000-0000-000000000009','El arrastre en pantallas pequenas es incomodo, deberiamos abrir una tarea aparte.',now() - interval '26 days',NULL),
-('cafe0000-0000-0000-0000-000000000004','88888888-0001-0000-0000-000000000009','11111111-0000-0000-0000-000000000003','De acuerdo, lo saco a "Accesibilidad: navegacion por teclado en el tablero".',now() - interval '25 days',now() - interval '25 days'),
-('cafe0000-0000-0000-0000-000000000005','88888888-0001-0000-0000-00000000000f','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','No entra en el sprint 2, vuelve al backlog con la estimacion revisada.',now() - interval '17 days',NULL),
-('cafe0000-0000-0000-0000-000000000006','88888888-0001-0000-0000-000000000012','11111111-0000-0000-0000-000000000002','El broker en memoria nos vale para el TFG. Con varias instancias haria falta RabbitMQ.',now() - interval '11 days',NULL),
-('cafe0000-0000-0000-0000-000000000007','88888888-0001-0000-0000-000000000012','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','Perfecto, lo dejamos anotado como limitacion conocida en la memoria.',now() - interval '10 days',NULL),
-('cafe0000-0000-0000-0000-000000000008','88888888-0001-0000-0000-000000000013','11111111-0000-0000-0000-000000000009','Anado desviacion tipica ademas de media y moda, ayuda a ver si hay consenso.',now() - interval '8 days',NULL),
-('cafe0000-0000-0000-0000-000000000009','88888888-0001-0000-0000-000000000017','11111111-0000-0000-0000-000000000007','Reproducido: pasa solo si el reveal se hizo antes de re-votar.',now() - interval '5 days',NULL),
-('cafe0000-0000-0000-0000-00000000000a','88888888-0001-0000-0000-00000000001a','11111111-0000-0000-0000-000000000003','La deteccion de ciclos deberia avisar en el propio selector, no al guardar.',now() - interval '2 days',NULL),
-('cafe0000-0000-0000-0000-00000000000b','88888888-0001-0000-0000-00000000001a','11111111-0000-0000-0000-000000000004','Buena idea. Lo meto en la subtarea de UI.',now() - interval '1 days',NULL),
-('cafe0000-0000-0000-0000-00000000000c','88888888-0001-0000-0000-000000000023','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','Paginacion de 10 en 10 en las tres secciones, no solo en commits.',now() - interval '4 days',NULL),
-('cafe0000-0000-0000-0000-00000000000d','88888888-0001-0000-0000-000000000026','11111111-0000-0000-0000-000000000005','Los snapshots del sprint ya guardan lo necesario, no hace falta tabla nueva.',now() - interval '5 days',NULL),
-('cafe0000-0000-0000-0000-00000000000e','88888888-0002-0000-0000-000000000006','11111111-0000-0000-0000-000000000002','Las claves se muestran una sola vez; hay que dejarlo muy claro en la UI.',now() - interval '6 days',NULL),
-('cafe0000-0000-0000-0000-00000000000f','88888888-0002-0000-0000-00000000000a','11111111-0000-0000-0000-000000000010','Confirmado en las metricas: el pool se agota tras 40 minutos de carga.',now() - interval '3 days',NULL),
-('cafe0000-0000-0000-0000-000000000010','88888888-0002-0000-0000-00000000000a','11111111-0000-0000-0000-000000000004','Era una transaccion de solo lectura sin cerrar. Corrigiendo.',now() - interval '2 days',NULL),
-('cafe0000-0000-0000-0000-000000000011','88888888-0003-0000-0000-000000000002','11111111-0000-0000-0000-000000000001','El cliente pide poder filtrar tambien por proyecto, no solo por estado.',now() - interval '4 days',NULL),
-('cafe0000-0000-0000-0000-000000000012','88888888-0003-0000-0000-000000000005','11111111-0000-0000-0000-000000000009','Pasa con clientes en zona horaria negativa. Normalizando a UTC en el backend.',now() - interval '2 days',NULL),
-('cafe0000-0000-0000-0000-000000000013','88888888-0004-0000-0000-000000000003','11111111-0000-0000-0000-000000000008','Empezamos con un chart unico parametrizado y luego separamos si hace falta.',now() - interval '4 days',NULL),
-('cafe0000-0000-0000-0000-000000000014','88888888-0006-0000-0000-000000000002','11111111-0000-0000-0000-000000000012','El cliente prefiere honeypot antes que captcha, menos friccion.',now() - interval '3 days',NULL),
-('cafe0000-0000-0000-0000-000000000015','88888888-0006-0000-0000-000000000003','11111111-0000-0000-0000-000000000009','Con WebP y carga diferida ya vamos por 87. Falta reducir el bundle inicial.',now() - interval '1 days',NULL);
+                                                                                       ('cafe0000-0000-0000-0000-000000000001','88888888-0001-0000-0000-000000000002','11111111-0000-0000-0000-000000000001','Ojo con la caducidad de la sesion: 15 minutos es demasiado corto para una tramitacion real.',now() - interval '44 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-000000000002','88888888-0001-0000-0000-000000000002','11111111-0000-0000-0000-000000000006','Subido a 30 minutos y la renovacion a 7 dias. Queda documentado en las decisiones tecnicas.',now() - interval '43 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-000000000003','88888888-0001-0000-0000-000000000009','11111111-0000-0000-0000-000000000009','El arrastre en pantallas pequenas es incomodo, deberiamos abrir una tarea aparte.',now() - interval '26 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-000000000004','88888888-0001-0000-0000-000000000009','11111111-0000-0000-0000-000000000003','De acuerdo, lo saco a "Accesibilidad: navegacion por teclado en la bandeja".',now() - interval '25 days',now() - interval '25 days'),
+                                                                                       ('cafe0000-0000-0000-0000-000000000005','88888888-0001-0000-0000-00000000000f','a21a40cb-6b69-42a0-b790-b576df0641ec','No entra en el sprint 2, vuelve al backlog con la estimacion revisada.',now() - interval '17 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-000000000006','88888888-0001-0000-0000-000000000012','11111111-0000-0000-0000-000000000006','El broker en memoria nos vale para el piloto. Si escalamos a varias instancias, revisamos la mensajeria.',now() - interval '11 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-000000000007','88888888-0001-0000-0000-000000000012','a21a40cb-6b69-42a0-b790-b576df0641ec','Perfecto, lo dejamos como limitacion conocida en la documentacion tecnica.',now() - interval '10 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-000000000008','88888888-0001-0000-0000-000000000013','11111111-0000-0000-0000-000000000009','Anado desviacion tipica ademas de media y moda; ayuda a ver si las valoraciones estan realmente alineadas.',now() - interval '8 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-000000000009','88888888-0001-0000-0000-000000000017','11111111-0000-0000-0000-000000000003','Reproducido: pasa solo si cerramos una ronda y abrimos otra sobre el mismo expediente.',now() - interval '5 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-00000000000a','88888888-0001-0000-0000-00000000001a','11111111-0000-0000-0000-000000000003','La deteccion de ciclos deberia avisar en el propio selector, no al guardar.',now() - interval '2 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-00000000000b','88888888-0001-0000-0000-00000000001a','11111111-0000-0000-0000-000000000006','Buena idea. Lo meto en la subtarea de UI.',now() - interval '1 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-00000000000c','88888888-0001-0000-0000-000000000023','a21a40cb-6b69-42a0-b790-b576df0641ec','Paginacion de 10 en 10 en todas las secciones de actividad de proveedores.',now() - interval '4 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-00000000000d','88888888-0001-0000-0000-000000000026','11111111-0000-0000-0000-000000000005','El historial del expediente ya guarda lo necesario; no hace falta una tabla adicional.',now() - interval '5 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-00000000000e','88888888-0002-0000-0000-000000000006','11111111-0000-0000-0000-000000000002','Las credenciales de partner se muestran una sola vez; hay que dejarlo muy claro en la interfaz.',now() - interval '6 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-00000000000f','88888888-0002-0000-0000-00000000000a','11111111-0000-0000-0000-000000000010','Confirmado en las metricas: el pool se agota tras 40 minutos de carga.',now() - interval '3 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-000000000010','88888888-0002-0000-0000-00000000000a','11111111-0000-0000-0000-000000000004','Era una transaccion de solo lectura sin cerrar. Corrigiendo.',now() - interval '2 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-000000000011','88888888-0003-0000-0000-000000000002','11111111-0000-0000-0000-000000000001','El cliente pide poder filtrar tambien por contrato, no solo por estado.',now() - interval '4 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-000000000012','88888888-0003-0000-0000-000000000005','11111111-0000-0000-0000-000000000009','Pasa con clientes en zona horaria negativa. Normalizando a UTC en el backend.',now() - interval '2 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-000000000013','88888888-0004-0000-0000-000000000003','11111111-0000-0000-0000-000000000008','Empezamos con una vista de mapa unica y luego separamos paneles si la operacion lo necesita.',now() - interval '4 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-000000000014','88888888-0006-0000-0000-000000000002','11111111-0000-0000-0000-000000000012','El cliente prefiere honeypot antes que captcha para reducir friccion en la captacion.',now() - interval '3 days',NULL),
+                                                                                       ('cafe0000-0000-0000-0000-000000000015','88888888-0006-0000-0000-000000000003','11111111-0000-0000-0000-000000000009','Con WebP y carga diferida ya vamos por 87. Falta reducir el bundle inicial.',now() - interval '1 days',NULL);
 
 -- ---------------------------------------------------------------------------
 -- 4. Actividad de tareas
 -- ---------------------------------------------------------------------------
 INSERT INTO task_activities (id, task_id, actor_id, type, old_value, new_value, created_at) VALUES
-('acaca000-0000-0000-0000-000000000001','88888888-0001-0000-0000-000000000012','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','CREATED',NULL,NULL,now() - interval '13 days'),
-('acaca000-0000-0000-0000-000000000002','88888888-0001-0000-0000-000000000012','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','SPRINT_ADDED',NULL,'Sprint 3 — Planning Poker',now() - interval '13 days'),
-('acaca000-0000-0000-0000-000000000003','88888888-0001-0000-0000-000000000012','11111111-0000-0000-0000-000000000001','ASSIGNEE_CHANGED',NULL,'Sergio Rey',now() - interval '12 days'),
-('acaca000-0000-0000-0000-000000000004','88888888-0001-0000-0000-000000000012','11111111-0000-0000-0000-000000000002','STORY_POINTS_CHANGED','8','13',now() - interval '11 days'),
-('acaca000-0000-0000-0000-000000000005','88888888-0001-0000-0000-000000000012','11111111-0000-0000-0000-000000000002','STATUS_CHANGED','TODO','IN_PROGRESS',now() - interval '10 days'),
-('acaca000-0000-0000-0000-000000000006','88888888-0001-0000-0000-000000000012','11111111-0000-0000-0000-000000000002','SUBTASK_ADDED',NULL,'Configurar STOMP + SockJS en el backend',now() - interval '13 days'),
-('acaca000-0000-0000-0000-000000000007','88888888-0001-0000-0000-000000000012','11111111-0000-0000-0000-000000000002','SUBTASK_ADDED',NULL,'Cliente stompjs con reconexion automatica',now() - interval '12 days'),
-('acaca000-0000-0000-0000-000000000008','88888888-0001-0000-0000-000000000013','11111111-0000-0000-0000-000000000009','STATUS_CHANGED','TODO','IN_PROGRESS',now() - interval '9 days'),
-('acaca000-0000-0000-0000-000000000009','88888888-0001-0000-0000-000000000013','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','PRIORITY_CHANGED','MEDIUM','HIGH',now() - interval '8 days'),
-('acaca000-0000-0000-0000-00000000000a','88888888-0001-0000-0000-000000000014','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','DEPENDENCY_ADDED',NULL,'Reveal de cartas y estadisticas',now() - interval '12 days'),
-('acaca000-0000-0000-0000-00000000000b','88888888-0001-0000-0000-00000000000f','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','RETURNED_TO_BACKLOG','Sprint 2 — Kanban y Backlog',NULL,now() - interval '17 days'),
-('acaca000-0000-0000-0000-00000000000c','88888888-0001-0000-0000-000000000010','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','RETURNED_TO_BACKLOG','Sprint 2 — Kanban y Backlog',NULL,now() - interval '17 days'),
-('acaca000-0000-0000-0000-00000000000d','88888888-0001-0000-0000-000000000009','11111111-0000-0000-0000-000000000003','STATUS_CHANGED','IN_REVIEW','DONE',now() - interval '21 days'),
-('acaca000-0000-0000-0000-00000000000e','88888888-0001-0000-0000-00000000000a','11111111-0000-0000-0000-000000000009','STATUS_CHANGED','IN_REVIEW','DONE',now() - interval '19 days'),
-('acaca000-0000-0000-0000-00000000000f','88888888-0001-0000-0000-000000000018','11111111-0000-0000-0000-000000000005','STATUS_CHANGED','IN_REVIEW','DONE',now() - interval '4 days'),
-('acaca000-0000-0000-0000-000000000010','88888888-0001-0000-0000-000000000018','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','EPIC_CHANGED',NULL,'Gestion de tareas',now() - interval '13 days'),
-('acaca000-0000-0000-0000-000000000011','88888888-0001-0000-0000-00000000001a','11111111-0000-0000-0000-000000000004','STATUS_CHANGED','TODO','IN_PROGRESS',now() - interval '6 days'),
-('acaca000-0000-0000-0000-000000000012','88888888-0001-0000-0000-00000000001c','11111111-0000-0000-0000-000000000006','STATUS_CHANGED','IN_PROGRESS','DONE',now() - interval '2 days'),
-('acaca000-0000-0000-0000-000000000013','88888888-0001-0000-0000-000000000021','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','READY_CHANGED','false','true',now() - interval '4 days'),
-('acaca000-0000-0000-0000-000000000014','88888888-0001-0000-0000-000000000021','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','SPRINT_ADDED',NULL,'Sprint 4 — Integraciones',now() - interval '4 days'),
-('acaca000-0000-0000-0000-000000000015','88888888-0001-0000-0000-000000000022','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','SPRINT_ADDED',NULL,'Sprint 4 — Integraciones',now() - interval '4 days'),
-('acaca000-0000-0000-0000-000000000016','88888888-0001-0000-0000-000000000023','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','ASSIGNEE_CHANGED',NULL,'Manel Mato',now() - interval '4 days'),
-('acaca000-0000-0000-0000-000000000017','88888888-0001-0000-0000-000000000023','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','LABEL_ADDED',NULL,'frontend',now() - interval '4 days'),
-('acaca000-0000-0000-0000-000000000018','88888888-0002-0000-0000-000000000006','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','CREATED',NULL,NULL,now() - interval '10 days'),
-('acaca000-0000-0000-0000-000000000019','88888888-0002-0000-0000-000000000006','11111111-0000-0000-0000-000000000004','STATUS_CHANGED','TODO','IN_PROGRESS',now() - interval '5 days'),
-('acaca000-0000-0000-0000-00000000001a','88888888-0002-0000-0000-000000000007','11111111-0000-0000-0000-000000000002','STORY_POINTS_CHANGED','8','13',now() - interval '3 days'),
-('acaca000-0000-0000-0000-00000000001b','88888888-0002-0000-0000-00000000000a','11111111-0000-0000-0000-000000000004','PRIORITY_CHANGED','HIGH','CRITICAL',now() - interval '2 days'),
-('acaca000-0000-0000-0000-00000000001c','88888888-0002-0000-0000-00000000000b','11111111-0000-0000-0000-000000000008','STATUS_CHANGED','IN_REVIEW','DONE',now() - interval '3 days'),
-('acaca000-0000-0000-0000-00000000001d','88888888-0003-0000-0000-000000000001','11111111-0000-0000-0000-000000000009','STATUS_CHANGED','IN_REVIEW','DONE',now() - interval '2 days'),
-('acaca000-0000-0000-0000-00000000001e','88888888-0003-0000-0000-000000000003','11111111-0000-0000-0000-000000000006','STATUS_CHANGED','IN_PROGRESS','IN_REVIEW',now() - interval '1 days'),
-('acaca000-0000-0000-0000-00000000001f','88888888-0003-0000-0000-000000000005','11111111-0000-0000-0000-000000000007','CREATED',NULL,NULL,now() - interval '3 days'),
-('acaca000-0000-0000-0000-000000000020','88888888-0004-0000-0000-000000000001','ca8bb86d-46e6-44ed-9f77-4e841be4de8a','SPRINT_ADDED',NULL,'Sprint Infra 1',now() - interval '2 days'),
-('acaca000-0000-0000-0000-000000000021','88888888-0005-0000-0000-000000000005','11111111-0000-0000-0000-000000000008','STATUS_CHANGED','IN_PROGRESS','IN_REVIEW',now() - interval '1 days'),
-('acaca000-0000-0000-0000-000000000022','88888888-0006-0000-0000-000000000001','11111111-0000-0000-0000-000000000011','STATUS_CHANGED','IN_REVIEW','DONE',now() - interval '4 days'),
-('acaca000-0000-0000-0000-000000000023','88888888-0006-0000-0000-000000000003','11111111-0000-0000-0000-000000000009','STATUS_CHANGED','TODO','IN_PROGRESS',now() - interval '2 days'),
-('acaca000-0000-0000-0000-000000000024','88888888-0006-0000-0000-000000000002','11111111-0000-0000-0000-000000000012','STATUS_CHANGED','IN_PROGRESS','IN_REVIEW',now() - interval '1 days');
+                                                                                                ('acaca000-0000-0000-0000-000000000001','88888888-0001-0000-0000-000000000012','a21a40cb-6b69-42a0-b790-b576df0641ec','CREATED',NULL,NULL,now() - interval '13 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000002','88888888-0001-0000-0000-000000000012','a21a40cb-6b69-42a0-b790-b576df0641ec','SPRINT_ADDED',NULL,'Sprint 3 — Valoracion colaborativa',now() - interval '13 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000003','88888888-0001-0000-0000-000000000012','11111111-0000-0000-0000-000000000001','ASSIGNEE_CHANGED',NULL,'Sergio Rey',now() - interval '12 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000004','88888888-0001-0000-0000-000000000012','11111111-0000-0000-0000-000000000002','STORY_POINTS_CHANGED','8','13',now() - interval '11 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000005','88888888-0001-0000-0000-000000000012','11111111-0000-0000-0000-000000000002','STATUS_CHANGED','TODO','IN_PROGRESS',now() - interval '10 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000006','88888888-0001-0000-0000-000000000012','11111111-0000-0000-0000-000000000002','SUBTASK_ADDED',NULL,'Canal WebSocket para valoraciones en tiempo real',now() - interval '13 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000007','88888888-0001-0000-0000-000000000012','11111111-0000-0000-0000-000000000002','SUBTASK_ADDED',NULL,'Cliente de tiempo real con reconexion automatica',now() - interval '12 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000008','88888888-0001-0000-0000-000000000013','11111111-0000-0000-0000-000000000009','STATUS_CHANGED','TODO','IN_PROGRESS',now() - interval '9 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000009','88888888-0001-0000-0000-000000000013','a21a40cb-6b69-42a0-b790-b576df0641ec','PRIORITY_CHANGED','MEDIUM','HIGH',now() - interval '8 days'),
+                                                                                                ('acaca000-0000-0000-0000-00000000000a','88888888-0001-0000-0000-000000000014','a21a40cb-6b69-42a0-b790-b576df0641ec','DEPENDENCY_ADDED',NULL,'Comparativa de valoraciones y dispersion',now() - interval '12 days'),
+                                                                                                ('acaca000-0000-0000-0000-00000000000b','88888888-0001-0000-0000-00000000000f','a21a40cb-6b69-42a0-b790-b576df0641ec','RETURNED_TO_BACKLOG','Sprint 2 — Tramitacion operativa',NULL,now() - interval '17 days'),
+                                                                                                ('acaca000-0000-0000-0000-00000000000c','88888888-0001-0000-0000-000000000010','a21a40cb-6b69-42a0-b790-b576df0641ec','RETURNED_TO_BACKLOG','Sprint 2 — Tramitacion operativa',NULL,now() - interval '17 days'),
+                                                                                                ('acaca000-0000-0000-0000-00000000000d','88888888-0001-0000-0000-000000000009','11111111-0000-0000-0000-000000000003','STATUS_CHANGED','IN_REVIEW','DONE',now() - interval '21 days'),
+                                                                                                ('acaca000-0000-0000-0000-00000000000e','88888888-0001-0000-0000-00000000000a','11111111-0000-0000-0000-000000000009','STATUS_CHANGED','IN_REVIEW','DONE',now() - interval '19 days'),
+                                                                                                ('acaca000-0000-0000-0000-00000000000f','88888888-0001-0000-0000-000000000018','11111111-0000-0000-0000-000000000005','STATUS_CHANGED','IN_REVIEW','DONE',now() - interval '4 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000010','88888888-0001-0000-0000-000000000018','a21a40cb-6b69-42a0-b790-b576df0641ec','EPIC_CHANGED',NULL,'Gestion del expediente',now() - interval '13 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000011','88888888-0001-0000-0000-00000000001a','11111111-0000-0000-0000-000000000004','STATUS_CHANGED','TODO','IN_PROGRESS',now() - interval '6 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000012','88888888-0001-0000-0000-00000000001c','11111111-0000-0000-0000-000000000006','STATUS_CHANGED','IN_PROGRESS','DONE',now() - interval '2 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000013','88888888-0001-0000-0000-000000000021','a21a40cb-6b69-42a0-b790-b576df0641ec','READY_CHANGED','false','true',now() - interval '4 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000014','88888888-0001-0000-0000-000000000021','a21a40cb-6b69-42a0-b790-b576df0641ec','SPRINT_ADDED',NULL,'Sprint 4 — Red de proveedores',now() - interval '4 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000015','88888888-0001-0000-0000-000000000022','a21a40cb-6b69-42a0-b790-b576df0641ec','SPRINT_ADDED',NULL,'Sprint 4 — Red de proveedores',now() - interval '4 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000016','88888888-0001-0000-0000-000000000023','a21a40cb-6b69-42a0-b790-b576df0641ec','ASSIGNEE_CHANGED',NULL,'Manel Mato',now() - interval '4 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000017','88888888-0001-0000-0000-000000000023','a21a40cb-6b69-42a0-b790-b576df0641ec','LABEL_ADDED',NULL,'experiencia-cliente',now() - interval '4 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000018','88888888-0002-0000-0000-000000000006','a21a40cb-6b69-42a0-b790-b576df0641ec','CREATED',NULL,NULL,now() - interval '10 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000019','88888888-0002-0000-0000-000000000006','11111111-0000-0000-0000-000000000004','STATUS_CHANGED','TODO','IN_PROGRESS',now() - interval '5 days'),
+                                                                                                ('acaca000-0000-0000-0000-00000000001a','88888888-0002-0000-0000-000000000007','11111111-0000-0000-0000-000000000002','STORY_POINTS_CHANGED','8','13',now() - interval '3 days'),
+                                                                                                ('acaca000-0000-0000-0000-00000000001b','88888888-0002-0000-0000-00000000000a','11111111-0000-0000-0000-000000000004','PRIORITY_CHANGED','HIGH','CRITICAL',now() - interval '2 days'),
+                                                                                                ('acaca000-0000-0000-0000-00000000001c','88888888-0002-0000-0000-00000000000b','11111111-0000-0000-0000-000000000008','STATUS_CHANGED','IN_REVIEW','DONE',now() - interval '3 days'),
+                                                                                                ('acaca000-0000-0000-0000-00000000001d','88888888-0003-0000-0000-000000000001','11111111-0000-0000-0000-000000000009','STATUS_CHANGED','IN_REVIEW','DONE',now() - interval '2 days'),
+                                                                                                ('acaca000-0000-0000-0000-00000000001e','88888888-0003-0000-0000-000000000003','11111111-0000-0000-0000-000000000006','STATUS_CHANGED','IN_PROGRESS','IN_REVIEW',now() - interval '1 days'),
+                                                                                                ('acaca000-0000-0000-0000-00000000001f','88888888-0003-0000-0000-000000000005','11111111-0000-0000-0000-000000000007','CREATED',NULL,NULL,now() - interval '3 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000020','88888888-0004-0000-0000-000000000001','a21a40cb-6b69-42a0-b790-b576df0641ec','SPRINT_ADDED',NULL,'Sprint 1 — Visibilidad operativa',now() - interval '2 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000021','88888888-0005-0000-0000-000000000005','11111111-0000-0000-0000-000000000008','STATUS_CHANGED','IN_PROGRESS','IN_REVIEW',now() - interval '1 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000022','88888888-0006-0000-0000-000000000001','11111111-0000-0000-0000-000000000011','STATUS_CHANGED','IN_REVIEW','DONE',now() - interval '4 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000023','88888888-0006-0000-0000-000000000003','11111111-0000-0000-0000-000000000009','STATUS_CHANGED','TODO','IN_PROGRESS',now() - interval '2 days'),
+                                                                                                ('acaca000-0000-0000-0000-000000000024','88888888-0006-0000-0000-000000000002','11111111-0000-0000-0000-000000000012','STATUS_CHANGED','IN_PROGRESS','IN_REVIEW',now() - interval '1 days');
 
 -- ---------------------------------------------------------------------------
 -- 5. Snapshots de los sprints cerrados
 -- ---------------------------------------------------------------------------
--- Sprint 1 de AgileFlow Web (todo completado)
+-- Sprint 1 de Orion Seguros · Gestion de Siniestros (todo completado)
 INSERT INTO sprint_task_snapshots (id, sprint_id, task_id, parent_task_id, title, description, type,
                                    priority, story_points, status_at_end, completed, returned_to_backlog,
                                    due_date, completed_at, created_at)
 SELECT ('5aa55007-0001-0000-0000-' || substr(t.id::text, 25))::uuid,
-       '77777777-0001-0000-0000-000000000001', t.id, t.parent_id, t.title, t.description, t.type,
+    '77777777-0001-0000-0000-000000000001', t.id, t.parent_id, t.title, t.description, t.type,
        t.priority, t.story_points, 'DONE', true, false, t.due_date, t.completed_at,
        now() - interval '31 days'
 FROM tasks t WHERE t.sprint_id = '77777777-0001-0000-0000-000000000001';
 
--- Sprint 2 de AgileFlow Web (6 completadas)
+-- Sprint 2 de Orion Seguros · Gestion de Siniestros (6 completadas)
 INSERT INTO sprint_task_snapshots (id, sprint_id, task_id, parent_task_id, title, description, type,
                                    priority, story_points, status_at_end, completed, returned_to_backlog,
                                    due_date, completed_at, created_at)
 SELECT ('5aa55007-0002-0000-0000-' || substr(t.id::text, 25))::uuid,
-       '77777777-0001-0000-0000-000000000002', t.id, t.parent_id, t.title, t.description, t.type,
+    '77777777-0001-0000-0000-000000000002', t.id, t.parent_id, t.title, t.description, t.type,
        t.priority, t.story_points, 'DONE', true, false, t.due_date, t.completed_at,
        now() - interval '17 days'
 FROM tasks t WHERE t.sprint_id = '77777777-0001-0000-0000-000000000002';
@@ -181,15 +181,15 @@ FROM tasks t WHERE t.sprint_id = '77777777-0001-0000-0000-000000000002';
 INSERT INTO sprint_task_snapshots (id, sprint_id, task_id, parent_task_id, title, description, type,
                                    priority, story_points, status_at_end, completed, returned_to_backlog,
                                    due_date, completed_at, created_at) VALUES
-('5aa55007-0002-0000-0000-00000000000f','77777777-0001-0000-0000-000000000002','88888888-0001-0000-0000-00000000000f',NULL,'Subtareas dentro de una tarea','Jerarquia de un solo nivel: una tarea padre con sus subtareas y progreso agregado.','STORY','HIGH',8,'IN_PROGRESS',false,true,NULL,NULL,now() - interval '17 days'),
-('5aa55007-0002-0000-0000-000000000010','77777777-0001-0000-0000-000000000002','88888888-0001-0000-0000-000000000010',NULL,'El orden del backlog se pierde al recargar','La posicion se recalculaba en cliente y no se enviaba al backend al soltar el elemento.','BUG','HIGH',3,'TODO',false,true,NULL,NULL,now() - interval '17 days');
+                                                                           ('5aa55007-0002-0000-0000-00000000000f','77777777-0001-0000-0000-000000000002','88888888-0001-0000-0000-00000000000f',NULL,'Actuaciones asociadas al siniestro','Jerarquia de un nivel para dividir un expediente en actuaciones de peritacion, documentacion y seguimiento.','STORY','HIGH',8,'IN_PROGRESS',false,true,NULL,NULL,now() - interval '17 days'),
+                                                                           ('5aa55007-0002-0000-0000-000000000010','77777777-0001-0000-0000-000000000002','88888888-0001-0000-0000-000000000010',NULL,'El orden de prioridad se pierde al recargar','La posicion de la cola se recalculaba en cliente y no se persistia al mover un expediente.','BUG','HIGH',3,'TODO',false,true,NULL,NULL,now() - interval '17 days');
 
--- Sprint API 1 (todo completado)
+-- Sprint 1 de Vega Retail · Operacion Omnicanal (todo completado)
 INSERT INTO sprint_task_snapshots (id, sprint_id, task_id, parent_task_id, title, description, type,
                                    priority, story_points, status_at_end, completed, returned_to_backlog,
                                    due_date, completed_at, created_at)
 SELECT ('5aa55007-0003-0000-0000-' || substr(t.id::text, 25))::uuid,
-       '77777777-0002-0000-0000-000000000001', t.id, t.parent_id, t.title, t.description, t.type,
+    '77777777-0002-0000-0000-000000000001', t.id, t.parent_id, t.title, t.description, t.type,
        t.priority, t.story_points, 'DONE', true, false, t.due_date, t.completed_at,
        now() - interval '14 days'
 FROM tasks t WHERE t.sprint_id = '77777777-0002-0000-0000-000000000001';

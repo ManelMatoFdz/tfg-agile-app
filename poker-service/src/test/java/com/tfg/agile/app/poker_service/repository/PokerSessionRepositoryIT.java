@@ -99,4 +99,56 @@ class PokerSessionRepositoryIT {
         assertThat(roundRepository.count()).isZero();
         assertThat(voteRepository.count()).isZero();
     }
+
+    @Test
+    void deleteByProjectIdDeletesSessionsAndChildrenForOnlyThatProject() {
+        UUID projectId = UUID.randomUUID();
+        UUID otherProjectId = UUID.randomUUID();
+
+        saveSessionWithChildren(projectId, "Target session");
+        PokerSession otherSession = saveSessionWithChildren(otherProjectId, "Other session");
+
+        sessionRepository.deleteByProjectId(projectId);
+        sessionRepository.flush();
+
+        assertThat(sessionRepository.findByProjectIdOrderByCreatedAtDesc(projectId)).isEmpty();
+        assertThat(sessionRepository.findByProjectIdOrderByCreatedAtDesc(otherProjectId))
+                .extracting(PokerSession::getId)
+                .containsExactly(otherSession.getId());
+        assertThat(participantRepository.count()).isEqualTo(1);
+        assertThat(roundRepository.count()).isEqualTo(1);
+        assertThat(voteRepository.count()).isEqualTo(1);
+    }
+
+    private PokerSession saveSessionWithChildren(UUID projectId, String name) {
+        PokerSession session = PokerSession.builder()
+                .projectId(projectId)
+                .name(name)
+                .createdBy(UUID.randomUUID())
+                .build();
+
+        PokerParticipant participant = PokerParticipant.builder()
+                .session(session)
+                .userId(UUID.randomUUID())
+                .displayName("Ada")
+                .role(ParticipantRole.VOTER)
+                .build();
+        session.getParticipants().add(participant);
+
+        PokerRound round = PokerRound.builder()
+                .session(session)
+                .taskId(UUID.randomUUID())
+                .taskTitle("Estimate login flow")
+                .build();
+        session.getRounds().add(round);
+
+        PokerVote vote = PokerVote.builder()
+                .round(round)
+                .userId(UUID.randomUUID())
+                .value("8")
+                .build();
+        round.getVotes().add(vote);
+
+        return sessionRepository.saveAndFlush(session);
+    }
 }

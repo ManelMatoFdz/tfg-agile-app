@@ -131,7 +131,7 @@ class TaskServiceTest {
                 new CreateTaskRequestDto("Task", "Desc", null, null, null, null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("ONLY_PO_OR_ADMIN_CAN_CREATE_TASKS");
+                .hasMessage("ONLY_PO_CAN_CREATE_TASKS");
     }
 
     @Test
@@ -145,7 +145,7 @@ class TaskServiceTest {
                 new CreateTaskRequestDto("Task", "Desc", null, null, null, null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("ONLY_PO_OR_ADMIN_CAN_CREATE_TASKS");
+                .hasMessage("ONLY_PO_CAN_CREATE_TASKS");
     }
 
     @Test
@@ -364,7 +364,7 @@ class TaskServiceTest {
                 new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("ONLY_PO_OR_ADMIN_CAN_EDIT_BACKLOG_TASKS");
+                .hasMessage("ONLY_PO_CAN_EDIT_BACKLOG_TASKS");
     }
 
     @Test
@@ -380,7 +380,7 @@ class TaskServiceTest {
                 new UpdateTaskRequestDto("Updated", "Desc", "HIGH", null, null, null, null),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("ONLY_PO_OR_ADMIN_CAN_EDIT_BACKLOG_TASKS");
+                .hasMessage("ONLY_PO_CAN_EDIT_BACKLOG_TASKS");
     }
 
     @Test
@@ -508,7 +508,7 @@ class TaskServiceTest {
 
         assertThatThrownBy(() -> service.delete(task.getId(), callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("ONLY_PO_OR_ADMIN_CAN_DELETE_BACKLOG_TASKS");
+                .hasMessage("ONLY_PO_CAN_DELETE_BACKLOG_TASKS");
         verify(taskRepository, never()).delete(any(Task.class));
     }
 
@@ -523,7 +523,7 @@ class TaskServiceTest {
 
         assertThatThrownBy(() -> service.delete(task.getId(), callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("ONLY_PO_OR_ADMIN_CAN_DELETE_BACKLOG_TASKS");
+                .hasMessage("ONLY_PO_CAN_DELETE_BACKLOG_TASKS");
         verify(taskRepository, never()).delete(any(Task.class));
     }
 
@@ -542,7 +542,7 @@ class TaskServiceTest {
     }
 
     @Test
-    void delete_removesBacklogTaskForAdmin() {
+    void delete_throwsForAdminWithoutProductOwnerRoleOnBacklogTask() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Task task = TestDataFactory.task(projectId, UUID.randomUUID());
@@ -550,9 +550,11 @@ class TaskServiceTest {
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
 
-        service.delete(task.getId(), callerId);
+        assertThatThrownBy(() -> service.delete(task.getId(), callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("ONLY_PO_CAN_DELETE_BACKLOG_TASKS");
 
-        verify(taskRepository).delete(task);
+        verify(taskRepository, never()).delete(task);
     }
 
     @Test

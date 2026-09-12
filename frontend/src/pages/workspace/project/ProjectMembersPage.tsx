@@ -160,6 +160,7 @@ export default function ProjectMembersPage() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Users size={22} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
             <PageTitle as="h2" style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em' }}>
               {t('projects.members.title')}
             </PageTitle>

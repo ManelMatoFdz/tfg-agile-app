@@ -10,8 +10,8 @@ import { useAuthStore } from '../../store/authStore';
 import { useUserMap } from '../../hooks/useUserMap';
 import { buildAvatarSrc } from '../../utils/avatarUrl';
 import Alert from '../../components/ui/Alert';
-import PageTitle from '../../components/motion/PageTitle';
 import type { WorkspaceMember, WorkspaceRole, Team, UserLookup } from '../../types';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 const PAGE_SIZE = 5;
 
@@ -273,15 +273,11 @@ export default function WorkspaceMembersPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-        <div>
-          <PageTitle>{t('workspace.members.title')}</PageTitle>
-          <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-faint)' }}>
-            {t('workspace.members.subtitle')}
-          </p>
-        </div>
-        {isAdmin && (
+      <PageHeader
+        icon={UserPlus}
+        title={t('workspace.members.title')}
+        subtitle={t('workspace.members.subtitle')}
+        action={isAdmin && (
           <button
             onClick={() => setShowInviteModal(true)}
             style={{
@@ -298,7 +294,7 @@ export default function WorkspaceMembersPage() {
             {t('workspace.members.inviteToWorkspace')}
           </button>
         )}
-      </div>
+      />
 
       {listAction.error && <Alert type="error" message={listAction.error} onClose={listAction.reset} />}
       {actionError && <Alert type="error" message={actionError} onClose={() => setActionError(null)} />}

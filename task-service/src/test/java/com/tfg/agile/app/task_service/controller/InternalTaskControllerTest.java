@@ -1,6 +1,7 @@
 package com.tfg.agile.app.task_service.controller;
 
 import com.tfg.agile.app.task_service.service.BoardColumnService;
+import com.tfg.agile.app.task_service.service.ProjectCleanupService;
 import com.tfg.agile.app.task_service.service.TaskService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,10 +21,12 @@ class InternalTaskControllerTest {
     private TaskService taskService;
     @Mock
     private BoardColumnService boardColumnService;
+    @Mock
+    private ProjectCleanupService projectCleanupService;
 
     @Test
     void updateStoryPoints_delegatesToService() {
-        InternalTaskController controller = new InternalTaskController(taskService, boardColumnService);
+        InternalTaskController controller = new InternalTaskController(taskService, boardColumnService, projectCleanupService);
         UUID taskId = UUID.randomUUID();
         Map<String, Integer> body = Map.of("storyPoints", 8);
 
@@ -35,12 +38,23 @@ class InternalTaskControllerTest {
 
     @Test
     void initBoard_delegatesToService() {
-        InternalTaskController controller = new InternalTaskController(taskService, boardColumnService);
+        InternalTaskController controller = new InternalTaskController(taskService, boardColumnService, projectCleanupService);
         UUID projectId = UUID.randomUUID();
 
         var response = controller.initBoard(projectId);
 
         assertThat(response.getStatusCode().value()).isEqualTo(204);
         verify(boardColumnService).createDefaultColumns(projectId);
+    }
+
+    @Test
+    void deleteProjectData_delegatesToCleanupService() {
+        InternalTaskController controller = new InternalTaskController(taskService, boardColumnService, projectCleanupService);
+        UUID projectId = UUID.randomUUID();
+
+        var response = controller.deleteProjectData(projectId);
+
+        assertThat(response.getStatusCode().value()).isEqualTo(204);
+        verify(projectCleanupService).deleteAllByProjectId(projectId);
     }
 }

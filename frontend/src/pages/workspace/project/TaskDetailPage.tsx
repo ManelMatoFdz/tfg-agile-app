@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, X, Plus, PlayCircle, Lock, Link2, Search,
   GitBranch, GitCommit, GitPullRequest, ExternalLink,
+  ListChecks, PanelRight, CalendarDays,
 } from 'lucide-react';
 import type { Task, TaskPriority, Label, Epic, TaskDependency, GitEvent, Sprint } from '../../../types';
 import type { UpdateTaskDto } from '../../../api/tasks';
@@ -26,11 +27,6 @@ import { LabelChip, LabelMultiSelect } from '../../../components/kanban/LabelPic
 import { EpicDropdown } from '../../../components/kanban/EpicPicker';
 
 type PageState = 'loading' | 'ready' | 'notfound' | 'forbidden' | 'error';
-
-const sectionStyle: React.CSSProperties = {
-  borderTop: '1px solid var(--border)',
-  paddingTop: 20,
-};
 
 function httpStatus(err: unknown): number | undefined {
   return (err as { response?: { status?: number } })?.response?.status;
@@ -106,15 +102,15 @@ export default function TaskDetailPage() {
   const loadTask = useCallback(() => {
     if (!taskId) return;
     tasksApi
-      .getById(taskId)
-      .then((fresh) => {
-        hydrate(fresh);
-        setPageState('ready');
-      })
-      .catch((err) => {
-        const status = httpStatus(err);
-        setPageState(status === 404 ? 'notfound' : status === 403 ? 'forbidden' : 'error');
-      });
+        .getById(taskId)
+        .then((fresh) => {
+          hydrate(fresh);
+          setPageState('ready');
+        })
+        .catch((err) => {
+          const status = httpStatus(err);
+          setPageState(status === 404 ? 'notfound' : status === 403 ? 'forbidden' : 'error');
+        });
   }, [taskId, hydrate]);
 
   useEffect(() => {
@@ -184,30 +180,30 @@ export default function TaskDetailPage() {
   const isActiveSprint = sprint?.status === 'ACTIVE';
 
   const canEdit = perms.loading || sprintUnknown
-    ? false
-    : !inSprint
-      ? perms.canEditBacklogTask
-      : isCompletedSprint
-        ? false
-        : isActiveSprint
-          ? perms.canEditSprintTask
-          : perms.canEditSprintTask || perms.canEditBacklogTask;
+      ? false
+      : !inSprint
+          ? perms.canEditBacklogTask
+          : isCompletedSprint
+              ? false
+              : isActiveSprint
+                  ? perms.canEditSprintTask
+                  : perms.canEditSprintTask || perms.canEditBacklogTask;
 
   const canDelete = perms.loading || sprintUnknown
-    ? false
-    : !inSprint
-      ? perms.canDeleteBacklogTask
-      : isCompletedSprint
-        ? false
-        : isActiveSprint
-          ? perms.canDeleteSprintTask
-          : perms.canDeleteSprintTask || perms.canDeleteBacklogTask;
+      ? false
+      : !inSprint
+          ? perms.canDeleteBacklogTask
+          : isCompletedSprint
+              ? false
+              : isActiveSprint
+                  ? perms.canDeleteSprintTask
+                  : perms.canDeleteSprintTask || perms.canDeleteBacklogTask;
 
   const readOnlyReason = perms.loading || canEdit
-    ? null
-    : isCompletedSprint
-      ? t('tasks.detail.readOnlyCompleted')
-      : t('tasks.detail.readOnlyPermission');
+      ? null
+      : isCompletedSprint
+          ? t('tasks.detail.readOnlyCompleted')
+          : t('tasks.detail.readOnlyPermission');
 
   // ── Dirty tracking ─────────────────────────────────────────────────────────
 
@@ -215,14 +211,14 @@ export default function TaskDetailPage() {
     if (!task) return false;
     if (toggledSubtaskIds.size > 0) return true;
     return (
-      title !== task.title ||
-      description !== (task.description ?? '') ||
-      definitionOfDone !== (task.definitionOfDone ?? '') ||
-      priority !== task.priority ||
-      assigneeId !== (task.assigneeId ?? '') ||
-      ready !== task.ready ||
-      epicId !== (task.epicId ?? '') ||
-      [...selectedLabelIds].sort().join(',') !== (task.labels ?? []).map((l) => l.id).sort().join(',')
+        title !== task.title ||
+        description !== (task.description ?? '') ||
+        definitionOfDone !== (task.definitionOfDone ?? '') ||
+        priority !== task.priority ||
+        assigneeId !== (task.assigneeId ?? '') ||
+        ready !== task.ready ||
+        epicId !== (task.epicId ?? '') ||
+        [...selectedLabelIds].sort().join(',') !== (task.labels ?? []).map((l) => l.id).sort().join(',')
     );
   }, [task, title, description, definitionOfDone, priority, assigneeId, ready, epicId, selectedLabelIds, toggledSubtaskIds]);
 
@@ -236,7 +232,7 @@ export default function TaskDetailPage() {
   };
 
   const goBack = () => guardedNavigate(() =>
-    navigate(backTo ?? `/workspaces/${workspaceId}/projects/${projectId}/board`));
+      navigate(backTo ?? `/workspaces/${workspaceId}/projects/${projectId}/board`));
 
   const handleSave = useCallback(async () => {
     if (!task || !title.trim()) return;
@@ -388,8 +384,8 @@ export default function TaskDetailPage() {
   const depSearchResults = allProjectTasks.filter((candidate) => {
     if (!task || candidate.id === task.id) return false;
     const alreadyLinked = dependencies.some((d) =>
-      (d.blockingTaskId === candidate.id && d.blockedTaskId === task.id) ||
-      (d.blockedTaskId === candidate.id && d.blockingTaskId === task.id));
+        (d.blockingTaskId === candidate.id && d.blockedTaskId === task.id) ||
+        (d.blockedTaskId === candidate.id && d.blockingTaskId === task.id));
     if (alreadyLinked) return false;
     if (!depSearchQuery.trim()) return false;
     return candidate.title.toLowerCase().includes(depSearchQuery.toLowerCase());
@@ -399,41 +395,41 @@ export default function TaskDetailPage() {
   const blocksDeps = dependencies.filter((d) => d.blockingTaskId === task?.id);
 
   const formatDate = (iso?: string | null) =>
-    iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null;
+      iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : null;
 
   // ── Non-ready states ───────────────────────────────────────────────────────
 
   if (pageState === 'loading') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ height: 32, width: 200, background: 'var(--bg-hover)', borderRadius: 'var(--radius-md)' }} />
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 24 }}>
-          <div style={{ height: 380, background: 'var(--bg-hover)', borderRadius: 'var(--radius-md)' }} />
-          <div style={{ height: 380, background: 'var(--bg-hover)', borderRadius: 'var(--radius-md)' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ height: 32, width: 200, background: 'var(--bg-hover)', borderRadius: 'var(--radius-md)' }} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 24 }}>
+            <div style={{ height: 380, background: 'var(--bg-hover)', borderRadius: 'var(--radius-md)' }} />
+            <div style={{ height: 380, background: 'var(--bg-hover)', borderRadius: 'var(--radius-md)' }} />
+          </div>
         </div>
-      </div>
     );
   }
 
   if (pageState !== 'ready' || !task) {
     const heading = pageState === 'forbidden' ? t('tasks.detail.forbidden')
-      : pageState === 'notfound' ? t('tasks.detail.notFound')
-        : t('tasks.detail.loadError');
+        : pageState === 'notfound' ? t('tasks.detail.notFound')
+            : t('tasks.detail.loadError');
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 12, padding: '48px 0' }}>
-        <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{heading}</h2>
-        {pageState === 'notfound' && (
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>{t('tasks.detail.notFoundHint')}</p>
-        )}
-        <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
-          <button onClick={goBack} style={secondaryBtn}>{t('common.back')}</button>
-          {pageState === 'error' && (
-            <button onClick={() => { setPageState('loading'); loadTask(); }} style={primaryBtn}>
-              {t('tasks.detail.retry')}
-            </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 12, padding: '48px 0' }}>
+          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{heading}</h2>
+          {pageState === 'notfound' && (
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>{t('tasks.detail.notFoundHint')}</p>
           )}
+          <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+            <button onClick={goBack} style={secondaryBtn}>{t('common.back')}</button>
+            {pageState === 'error' && (
+                <button onClick={() => { setPageState('loading'); loadTask(); }} style={primaryBtn}>
+                  {t('tasks.detail.retry')}
+                </button>
+            )}
+          </div>
         </div>
-      </div>
     );
   }
 
@@ -446,95 +442,206 @@ export default function TaskDetailPage() {
 
   const doneColumnNames = columns.filter((c) => c.doneEquivalent).map((c) => c.name);
   const isSubtaskDone = (s: Task) =>
-    doneColumnNames.length > 0 ? doneColumnNames.includes(s.status) : s.completedAt != null;
+      doneColumnNames.length > 0 ? doneColumnNames.includes(s.status) : s.completedAt != null;
   const totalSubs = subtasks.length || task.subtaskCount;
   const doneSubs = subtasks.length > 0 ? subtasks.filter(isSubtaskDone).length : task.completedSubtaskCount;
   const subPct = totalSubs > 0 ? Math.round((doneSubs / totalSubs) * 100) : 0;
   const subBarColor = totalSubs > 0 && doneSubs === totalSubs ? '#16A34A' : '#3B82F6';
 
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Action bar */}
-      <div style={{
-        position: 'sticky',
-        top: 0,
-        zIndex: 20,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 16,
-        padding: '10px 0',
-        background: 'var(--bg)',
-        borderBottom: '1px solid var(--border)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
-          <button onClick={goBack} style={{ ...secondaryBtn, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <ArrowLeft size={14} strokeWidth={2} />
-            {t('common.back')}
-          </button>
-          <span style={{ fontSize: 12, color: 'var(--text-faint)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {sprint ? `${t('tasks.detail.inSprint')} · ${sprint.name}` : t('tasks.detail.inBacklog')}
-          </span>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-          {isDirty && (
-            <span style={{
-              fontSize: 11, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase',
-              color: '#D97706', background: '#D9770614', border: '1px solid #D9770640',
-              borderRadius: 'var(--radius-sm)', padding: '2px 8px',
-            }}>
+  return (
+      <div style={{ width: '100%', minWidth: 0, display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <style>{`
+        .task-detail-layout {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) 360px;
+          gap: 22px;
+          align-items: start;
+        }
+        .task-detail-overview-grid {
+          display: grid;
+          grid-template-columns: minmax(0, 1.2fr) minmax(280px, .8fr);
+          gap: 16px;
+        }
+        .task-detail-relations-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px;
+        }
+        .task-detail-sidebar {
+          position: sticky;
+          top: 72px;
+          align-self: start;
+          height: fit-content;
+          max-height: calc(100vh - 88px);
+          overflow-y: auto;
+          overscroll-behavior: contain;
+          scrollbar-gutter: stable;
+        }
+        @media (max-width: 1100px) {
+          .task-detail-layout {
+            grid-template-columns: minmax(0, 1fr) 320px;
+          }
+          .task-detail-overview-grid,
+          .task-detail-relations-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+        @media (max-width: 880px) {
+          .task-detail-layout {
+            grid-template-columns: 1fr;
+          }
+          .task-detail-sidebar {
+            position: static;
+            max-height: none;
+            overflow-y: visible;
+          }
+        }
+        @media (max-width: 640px) {
+          .task-detail-toolbar {
+            align-items: flex-start !important;
+            flex-direction: column;
+          }
+          .task-detail-toolbar-actions {
+            width: 100%;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+          }
+        }
+      `}</style>
+
+        {/* Sticky toolbar */}
+        <div
+            className="task-detail-toolbar"
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 30,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 16,
+              padding: '10px 12px',
+              margin: '0 -2px',
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-card)',
+              boxShadow: 'var(--shadow-sm)',
+            }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+            <button
+                onClick={goBack}
+                style={{ ...secondaryBtn, display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
+            >
+              <ArrowLeft size={14} strokeWidth={2} />
+              {t('common.back')}
+            </button>
+          </div>
+
+          <div className="task-detail-toolbar-actions" style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+            {isDirty && (
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.05em',
+                  textTransform: 'uppercase',
+                  color: '#D97706',
+                  background: '#D9770614',
+                  border: '1px solid #D9770640',
+                  borderRadius: 'var(--radius-pill)',
+                  padding: '3px 9px',
+                }}>
               {t('tasks.detail.unsavedBadge')}
             </span>
-          )}
-          {canDelete && (
-            confirmDelete ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('tasks.modal.deleteConfirm')}</span>
-                <button onClick={handleDelete} disabled={saving} style={dangerLinkBtn}>{t('common.delete')}</button>
-                <button onClick={() => setConfirmDelete(false)} style={mutedLinkBtn}>{t('common.cancel')}</button>
-              </div>
-            ) : (
-              <button onClick={() => setConfirmDelete(true)} style={dangerLinkBtn}>{t('tasks.modal.deleteTask')}</button>
-            )
-          )}
-          {canEdit && (
-            <button
-              onClick={handleSave}
-              disabled={saveDisabled}
-              style={{ ...primaryBtn, cursor: saveDisabled ? 'not-allowed' : 'pointer', opacity: saveDisabled ? 0.5 : 1 }}
-            >
-              {saving ? '...' : t('tasks.modal.save')}
-            </button>
-          )}
-        </div>
-      </div>
+            )}
 
-      {error && (
-        <div style={{
-          fontSize: 13, fontWeight: 500, color: '#DC2626',
-          background: 'rgba(220,38,38,0.06)', borderLeft: '3px solid #DC2626',
-          borderRadius: 'var(--radius-md)', padding: '10px 14px',
-        }}>
-          {error}
-        </div>
-      )}
+            {canDelete && (
+                confirmDelete ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{t('tasks.modal.deleteConfirm')}</span>
+                      <button onClick={handleDelete} disabled={saving} style={dangerLinkBtn}>{t('common.delete')}</button>
+                      <button onClick={() => setConfirmDelete(false)} style={mutedLinkBtn}>{t('common.cancel')}</button>
+                    </div>
+                ) : (
+                    <button onClick={() => setConfirmDelete(true)} style={dangerLinkBtn}>{t('tasks.modal.deleteTask')}</button>
+                )
+            )}
 
-      {readOnlyReason && (
-        <div style={{
-          fontSize: 12, color: 'var(--text-muted)',
-          background: 'var(--bg-hover)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-md)', padding: '8px 12px',
-        }}>
-          {readOnlyReason}
+            {canEdit && (
+                <button
+                    onClick={handleSave}
+                    disabled={saveDisabled}
+                    style={{
+                      ...primaryBtn,
+                      minWidth: 132,
+                      cursor: saveDisabled ? 'not-allowed' : 'pointer',
+                      opacity: saveDisabled ? 0.5 : 1,
+                    }}
+                >
+                  {saving ? '...' : t('tasks.modal.save')}
+                </button>
+            )}
+          </div>
         </div>
-      )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 340px', gap: 24, alignItems: 'start' }}>
-        {/* ── Main ─────────────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, minWidth: 0 }}>
-          <div>
-            <input
+        {error && (
+            <div style={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: '#DC2626',
+              background: 'rgba(220,38,38,0.06)',
+              border: '1px solid rgba(220,38,38,0.18)',
+              borderLeft: '4px solid #DC2626',
+              borderRadius: 'var(--radius-md)',
+              padding: '10px 14px',
+            }}>
+              {error}
+            </div>
+        )}
+
+        {readOnlyReason && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: 12,
+              color: 'var(--text-muted)',
+              background: 'var(--bg-hover)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-md)',
+              padding: '9px 12px',
+            }}>
+              <Lock size={13} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+              {readOnlyReason}
+            </div>
+        )}
+
+        {/* Hero / task summary */}
+        <section style={{ ...surfaceCard, padding: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '4px 9px', borderRadius: 'var(--radius-pill)',
+            color: typeCfg.color, background: `${typeCfg.color}12`,
+            border: `1px solid ${typeCfg.color}30`, fontSize: 11, fontWeight: 700,
+          }}>
+            <TypeIcon size={13} strokeWidth={2} />
+            {t(`tasks.type.${task.type ?? 'TASK'}`)}
+          </span>
+
+            {sprint && (
+                <span style={{
+                  padding: '4px 9px', borderRadius: 'var(--radius-pill)',
+                  color: 'var(--text-muted)', background: 'var(--bg-hover)',
+                  border: '1px solid var(--border)', fontSize: 11, fontWeight: 600,
+                }}>
+              {sprint.name}
+            </span>
+            )}
+          </div>
+
+          <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
@@ -543,641 +650,812 @@ export default function TaskDetailPage() {
               readOnly={!canEdit}
               style={{
                 ...(canEdit ? fieldStyle : readOnlyFieldStyle),
-                fontSize: 20,
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                padding: '10px 12px',
+                fontSize: 24,
+                fontWeight: 750,
+                letterSpacing: '-0.025em',
+                lineHeight: 1.25,
+                padding: canEdit ? '10px 12px' : '6px 0',
+                borderColor: canEdit ? 'var(--border)' : 'transparent',
+                background: canEdit ? 'var(--bg)' : 'transparent',
               }}
               onFocus={(e) => { if (canEdit) focusHandler(e); }}
               onBlur={blurHandler}
-            />
-          </div>
+          />
 
-          <div>
-            <label style={sidebarLabel}>{t('tasks.modal.description')}</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={canEdit ? t('tasks.modal.descriptionPlaceholder') : '--'}
-              rows={5}
-              readOnly={!canEdit}
-              style={{ ...(canEdit ? fieldStyle : readOnlyFieldStyle), resize: 'vertical', minHeight: 100 }}
-              onFocus={(e) => { if (canEdit) focusHandler(e); }}
-              onBlur={blurHandler}
-            />
-          </div>
-
-          <div>
-            <label style={sidebarLabel}>{t('tasks.modal.definitionOfDone')}</label>
-            <textarea
-              value={definitionOfDone}
-              onChange={(e) => setDefinitionOfDone(e.target.value)}
-              placeholder={canEdit ? t('tasks.modal.dodPlaceholder') : '--'}
-              rows={3}
-              readOnly={!canEdit}
-              style={{ ...(canEdit ? fieldStyle : readOnlyFieldStyle), resize: 'vertical', minHeight: 70 }}
-              onFocus={(e) => { if (canEdit) focusHandler(e); }}
-              onBlur={blurHandler}
-            />
-          </div>
-
-          {/* Subtasks */}
-          {task.sprintId && (
-            <div style={sectionStyle}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                <label style={{ ...sidebarLabel, margin: 0 }}>{t('tasks.modal.subtasks')}</label>
-                {totalSubs > 0 && (
-                  <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-faint)' }}>
-                    {doneSubs}/{totalSubs} {t('tasks.modal.subtaskCompleted')}
-                  </span>
-                )}
+          <div className="task-detail-overview-grid" style={{ marginTop: 18 }}>
+            <div style={softSection}>
+              <div style={sectionHeading}>
+                <span>{t('tasks.modal.description')}</span>
               </div>
-
-              {totalSubs > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-                  <div style={{ flex: 1, height: 6, background: 'var(--border)', borderRadius: 3, overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${subPct}%`, background: subBarColor, borderRadius: 3, transition: 'width 300ms ease' }} />
-                  </div>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: subBarColor, fontFamily: 'var(--font-mono)', minWidth: 32, textAlign: 'right' }}>
-                    {subPct}%
-                  </span>
-                </div>
-              )}
-
-              {subtasks.map((st) => {
-                const done = isSubtaskDone(st);
-                const stAssignee = st.assigneeId ? userMap[st.assigneeId] : null;
-                const stAssigneeName = stAssignee ? (stAssignee.fullName ?? stAssignee.username) : null;
-                return (
-                  <div key={st.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 2px' }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!canEdit) return;
-                        const firstCol = columns.length > 0 ? columns[0].name : 'TODO';
-                        const firstDoneCol = doneColumnNames.length > 0 ? doneColumnNames[0] : 'DONE';
-                        setSubtasks((prev) => prev.map((s) => {
-                          if (s.id !== st.id) return s;
-                          const wasDone = isSubtaskDone(s);
-                          return {
-                            ...s,
-                            status: wasDone ? firstCol : firstDoneCol,
-                            completedAt: wasDone ? null : new Date().toISOString(),
-                          };
-                        }));
-                        setToggledSubtaskIds((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(st.id)) next.delete(st.id);
-                          else next.add(st.id);
-                          return next;
-                        });
-                      }}
-                      style={{
-                        width: 18, height: 18, borderRadius: 4,
-                        border: done ? 'none' : '2px solid var(--border-strong)',
-                        background: done ? '#3B82F6' : 'var(--bg-elevated)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        flexShrink: 0, cursor: canEdit ? 'pointer' : 'default', padding: 0,
-                        transition: 'background 150ms, border-color 150ms',
-                      }}
-                    >
-                      {done && (
-                        <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                          <path d="M2 5.5L4.5 8L9 3" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      )}
-                    </button>
-                    <span
-                      onClick={() => setSelectedSubtask(st)}
-                      style={{
-                        flex: 1, fontSize: 13,
-                        color: done ? 'var(--text-faint)' : 'var(--text)',
-                        textDecoration: done ? 'line-through' : 'none',
-                        overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {st.title}
-                    </span>
-                    {stAssigneeName && <AssigneeAvatar name={stAssigneeName} avatarUrl={stAssignee?.avatarUrl} size={20} />}
-                  </div>
-                );
-              })}
-
-              {totalSubs === 0 && !showSubtaskForm && (
-                <p style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic', margin: 0 }}>
-                  {t('tasks.modal.noSubtasks')}
-                </p>
-              )}
-
-              {canEdit && !showSubtaskForm && (
-                <button type="button" onClick={() => setShowSubtaskForm(true)} style={{ ...linkBtn, marginTop: 10 }}>
-                  <Plus size={13} strokeWidth={2.5} />
-                  {t('tasks.modal.addSubtask')}
-                </button>
-              )}
-
-              {showSubtaskForm && (
-                <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                  <input
-                    type="text"
-                    value={subtaskTitle}
-                    onChange={(e) => setSubtaskTitle(e.target.value)}
-                    placeholder={t('tasks.modal.titlePlaceholder')}
-                    autoFocus
-                    style={{ ...fieldStyle, flex: 1, padding: '6px 10px', fontSize: 12 }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleAddSubtask();
-                      if (e.key === 'Escape') { setShowSubtaskForm(false); setSubtaskTitle(''); }
-                    }}
-                    onFocus={focusHandler}
-                    onBlur={blurHandler}
-                  />
-                  <button type="button" onClick={handleAddSubtask} disabled={!subtaskTitle.trim()} style={{ ...primaryBtn, opacity: subtaskTitle.trim() ? 1 : 0.5 }}>
-                    {t('common.add')}
-                  </button>
-                  <button type="button" onClick={() => { setShowSubtaskForm(false); setSubtaskTitle(''); }} style={secondaryBtn}>
-                    {t('common.cancel')}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Dependencies */}
-          <div style={sectionStyle}>
-            <label style={sidebarLabel}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <Link2 size={11} strokeWidth={2} />
-                {t('tasks.modal.dependencies')}
-              </span>
-            </label>
-
-            {blockedByDeps.length > 0 && (
-              <div style={{ marginBottom: 10 }}>
-                <span style={depGroupLabel('#DC2626')}>{t('tasks.modal.blockedBy')}</span>
-                {blockedByDeps.map((dep) => (
-                  <div key={dep.id} style={depRow('#DC2626')}>
-                    <Lock size={12} strokeWidth={2} style={{ color: '#DC2626', flexShrink: 0 }} />
-                    <button type="button" onClick={() => openSiblingTask(dep.blockingTaskId)} style={depTitleBtn}>
-                      {dep.blockingTaskTitle}
-                    </button>
-                    <span style={depStatus}>{dep.blockingTaskStatus}</span>
-                    {canEdit && (
-                      <button type="button" onClick={() => handleRemoveDependency(dep.id)} style={iconBtn}>
-                        <X size={12} strokeWidth={2} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {blocksDeps.length > 0 && (
-              <div style={{ marginBottom: 10 }}>
-                <span style={depGroupLabel('#D97706')}>{t('tasks.modal.blocks')}</span>
-                {blocksDeps.map((dep) => (
-                  <div key={dep.id} style={depRow('#D97706')}>
-                    <Link2 size={12} strokeWidth={2} style={{ color: '#D97706', flexShrink: 0 }} />
-                    <button type="button" onClick={() => openSiblingTask(dep.blockedTaskId)} style={depTitleBtn}>
-                      {dep.blockedTaskTitle}
-                    </button>
-                    <span style={depStatus}>{dep.blockedTaskStatus}</span>
-                    {canEdit && (
-                      <button type="button" onClick={() => handleRemoveDependency(dep.id)} style={iconBtn}>
-                        <X size={12} strokeWidth={2} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {dependencies.length === 0 && (
-              <p style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic', margin: '0 0 8px' }}>
-                {t('tasks.modal.noDependencies')}
-              </p>
-            )}
-
-            {canEdit && !showDepSearch && (
-              <button type="button" onClick={openDepSearch} style={linkBtn}>
-                <Plus size={12} strokeWidth={2.5} />
-                {t('tasks.modal.addDependency')}
-              </button>
-            )}
-
-            {showDepSearch && (
-              <div style={{ maxWidth: 420 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                  <div style={{ position: 'relative', flex: 1 }}>
-                    <Search size={12} strokeWidth={2} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)' }} />
-                    <input
-                      type="text"
-                      value={depSearchQuery}
-                      onChange={(e) => setDepSearchQuery(e.target.value)}
-                      placeholder={t('tasks.modal.searchTask')}
-                      autoFocus
-                      style={{ ...fieldStyle, fontSize: 12, padding: '6px 8px 6px 26px' }}
-                      onFocus={focusHandler}
-                      onBlur={blurHandler}
-                      onKeyDown={(e) => { if (e.key === 'Escape') { setShowDepSearch(false); setDepSearchQuery(''); } }}
-                    />
-                  </div>
-                  <button type="button" onClick={() => { setShowDepSearch(false); setDepSearchQuery(''); }} style={iconBtn}>
-                    <X size={14} strokeWidth={2} />
-                  </button>
-                </div>
-                {depSearchResults.length > 0 && (
-                  <div style={{
-                    background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-                    borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)',
-                    maxHeight: 200, overflowY: 'auto', padding: '2px 0',
-                  }}>
-                    {depSearchResults.map((candidate) => {
-                      const cfg = TYPE_CONFIG[candidate.type ?? 'TASK'];
-                      const CIcon = cfg.icon;
-                      return (
-                        <button
-                          key={candidate.id}
-                          type="button"
-                          onClick={() => handleAddDependency(candidate.id)}
-                          style={{
-                            width: '100%', display: 'flex', alignItems: 'center', gap: 8,
-                            padding: '6px 10px', border: 'none', background: 'transparent',
-                            cursor: 'pointer', textAlign: 'left', transition: 'background 100ms',
-                          }}
-                          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                        >
-                          <CIcon size={12} strokeWidth={2} style={{ color: cfg.color, flexShrink: 0 }} />
-                          <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-                            {candidate.title}
-                          </span>
-                          <span style={depStatus}>{candidate.status}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Git activity */}
-          <div style={sectionStyle}>
-            <label style={sidebarLabel}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <GitBranch size={11} strokeWidth={2} />
-                {t('tasks.modal.gitActivity')}
-              </span>
-            </label>
-
-            <div style={{ marginBottom: 10 }}>
-              <span style={{ fontSize: 10, color: 'var(--text-faint)', display: 'block', marginBottom: 3 }}>
-                {t('tasks.modal.gitRef')}
-              </span>
-              <code style={{
-                fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text)',
-                background: 'var(--bg-hover)', border: '1px solid var(--border)',
-                borderRadius: 'var(--radius-sm)', padding: '2px 7px',
-              }}>
-                {taskGitRef(task.id)}
-              </code>
-            </div>
-
-            {gitEvents.length === 0 ? (
-              <p style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic', margin: '0 0 8px' }}>
-                {t('tasks.modal.noGitActivity')}
-              </p>
-            ) : (
-              <div style={{ marginBottom: 8 }}>
-                {gitEvents.map((event) => {
-                  const EventIcon = event.type === 'PULL_REQUEST' ? GitPullRequest
-                    : event.type === 'BRANCH' ? GitBranch : GitCommit;
-                  return (
-                    <div key={event.id} style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '6px 10px', marginBottom: 4,
-                      background: 'var(--bg-hover)', border: '1px solid var(--border)',
-                      borderRadius: 'var(--radius-sm)',
-                    }}>
-                      <EventIcon size={12} strokeWidth={2} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                      <a
-                        href={event.externalUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{
-                          flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 4,
-                          fontSize: 12, fontWeight: 500, color: 'var(--text)', textDecoration: 'none',
-                          overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
-                        }}
-                      >
-                        <span style={{ overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{event.title}</span>
-                        <ExternalLink size={10} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
-                      </a>
-                      {event.status && <span style={depStatus}>{event.status}</span>}
-                      {canEdit && (
-                        <button type="button" onClick={() => handleUnlinkGitEvent(event.id)} style={iconBtn}>
-                          <X size={12} strokeWidth={2} />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {canEdit && !showGitLinkForm && (
-              <button type="button" onClick={() => setShowGitLinkForm(true)} style={linkBtn}>
-                <Plus size={12} strokeWidth={2.5} />
-                {t('tasks.modal.linkManually')}
-              </button>
-            )}
-
-            {showGitLinkForm && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, maxWidth: 420 }}>
-                <input
-                  type="text"
-                  value={gitLinkUrl}
-                  onChange={(e) => setGitLinkUrl(e.target.value)}
-                  placeholder={t('tasks.modal.gitUrlPlaceholder')}
-                  autoFocus
-                  style={{ ...fieldStyle, fontSize: 12, padding: '6px 8px' }}
-                  onFocus={focusHandler}
-                  onBlur={blurHandler}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') { e.preventDefault(); handleLinkGitEvent(); }
-                    if (e.key === 'Escape') { setShowGitLinkForm(false); setGitLinkUrl(''); }
+              <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder={canEdit ? t('tasks.modal.descriptionPlaceholder') : '--'}
+                  rows={5}
+                  readOnly={!canEdit}
+                  style={{
+                    ...(canEdit ? fieldStyle : readOnlyFieldStyle),
+                    resize: 'vertical',
+                    minHeight: 118,
+                    lineHeight: 1.55,
+                    background: canEdit ? 'var(--bg-elevated)' : 'transparent',
                   }}
-                />
-                <button type="button" onClick={handleLinkGitEvent} style={iconBtn}>
-                  <Plus size={14} strokeWidth={2.5} />
-                </button>
-                <button type="button" onClick={() => { setShowGitLinkForm(false); setGitLinkUrl(''); }} style={iconBtn}>
-                  <X size={14} strokeWidth={2} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Comments */}
-          {projectId && (
-            <div style={sectionStyle}>
-              <TaskComments
-                taskId={task.id}
-                projectId={projectId}
-                members={members}
-                userMap={userMap}
-                isAdmin={perms.isAdmin}
-                readOnly={!canEdit}
+                  onFocus={(e) => { if (canEdit) focusHandler(e); }}
+                  onBlur={blurHandler}
               />
             </div>
-          )}
 
-          {/* Activity feed */}
-          <div style={sectionStyle}>
-            <TaskActivityFeed taskId={task.id} comments={[]} userMap={userMap} labels={projectLabels} />
-          </div>
-        </div>
-
-        {/* ── Sidebar ──────────────────────────────────────────────────────── */}
-        <div style={{
-          position: 'sticky',
-          top: 64,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 20,
-        }}>
-          <div>
-            <label style={sidebarLabel}>{t('tasks.modal.status')}</label>
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 5,
-              fontSize: 11, fontWeight: 600, color: statusColor,
-              background: `${statusColor}15`, border: `1px solid ${statusColor}33`,
-              borderRadius: 'var(--radius-sm)', padding: '3px 9px',
-            }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor, flexShrink: 0 }} />
-              {getStatusLabel(task.status, columns, t)}
-            </span>
-          </div>
-
-          <div>
-            <label style={sidebarLabel}>{t('tasks.modal.type')}</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <TypeIcon size={14} strokeWidth={2} style={{ color: typeCfg.color }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: typeCfg.color }}>{t(`tasks.type.${task.type ?? 'TASK'}`)}</span>
-            </div>
-          </div>
-
-          <div>
-            <label style={sidebarLabel}>{t('tasks.modal.priority')}</label>
-            {canEdit ? (
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                style={{ ...fieldStyle, fontSize: 12, padding: '7px 10px' }}
-                onFocus={focusHandler}
-                onBlur={blurHandler}
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
-                ))}
-              </select>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ width: 8, height: 8, borderRadius: '50%', background: PRIORITY_COLOR[priority], flexShrink: 0 }} />
-                <span style={{ fontSize: 13, fontWeight: 600, color: PRIORITY_COLOR[priority] }}>{t(`tasks.priority.${priority}`)}</span>
+            <div style={softSection}>
+              <div style={sectionHeading}>
+                <span>{t('tasks.modal.definitionOfDone')}</span>
               </div>
-            )}
+              <textarea
+                  value={definitionOfDone}
+                  onChange={(e) => setDefinitionOfDone(e.target.value)}
+                  placeholder={canEdit ? t('tasks.modal.dodPlaceholder') : '--'}
+                  rows={5}
+                  readOnly={!canEdit}
+                  style={{
+                    ...(canEdit ? fieldStyle : readOnlyFieldStyle),
+                    resize: 'vertical',
+                    minHeight: 118,
+                    lineHeight: 1.55,
+                    background: canEdit ? 'var(--bg-elevated)' : 'transparent',
+                  }}
+                  onFocus={(e) => { if (canEdit) focusHandler(e); }}
+                  onBlur={blurHandler}
+              />
+            </div>
           </div>
+        </section>
 
-          {members.length > 0 && (
-            <div>
-              <label style={sidebarLabel}>{t('tasks.modal.assignee')}</label>
-              {canEdit ? (
-                <AssigneeDropdown
-                  value={assigneeId}
-                  onChange={setAssigneeId}
-                  members={members}
-                  userMap={userMap}
-                  placeholder={t('tasks.modal.unassigned')}
-                  compact
-                />
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {assigneeId && userMap[assigneeId] ? (
-                    <>
-                      <AssigneeAvatar name={userMap[assigneeId].fullName ?? userMap[assigneeId].username} avatarUrl={userMap[assigneeId].avatarUrl} size={24} />
-                      <span style={{ fontSize: 13, color: 'var(--text)' }}>{userMap[assigneeId].fullName ?? userMap[assigneeId].username}</span>
-                    </>
-                  ) : (
-                    <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>{t('tasks.modal.unassigned')}</span>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {projectLabels.length > 0 && (
-            <div>
-              <label style={sidebarLabel}>{t('tasks.modal.labels')}</label>
-              {canEdit ? (
-                <LabelMultiSelect labels={projectLabels} selected={selectedLabelIds} onChange={setSelectedLabelIds} compact />
-              ) : (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {selectedLabelIds.length === 0 ? (
-                    <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>—</span>
-                  ) : (
-                    selectedLabelIds.map((id) => {
-                      const lbl = projectLabels.find((l) => l.id === id);
-                      return lbl ? <LabelChip key={id} label={lbl} /> : null;
-                    })
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {projectEpics.length > 0 && (
-            <div>
-              <label style={sidebarLabel}>{t('tasks.modal.epic')}</label>
-              {canEdit ? (
-                <EpicDropdown value={epicId} onChange={setEpicId} epics={projectEpics} placeholder={t('tasks.modal.noEpic')} />
-              ) : (() => {
-                const epic = projectEpics.find((e) => e.id === epicId);
-                if (!epic) {
-                  return <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>{t('tasks.modal.noEpic')}</span>;
-                }
-                return (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: epic.color, flexShrink: 0 }} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: epic.color }}>{epic.name}</span>
+        <div className="task-detail-layout">
+          {/* Main column */}
+          <main style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+            {/* Subtasks */}
+            {task.sprintId && (
+                <section style={surfaceCard}>
+                  <div style={{ ...cardHeader, alignItems: 'flex-start' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={sectionIconBox}><ListChecks size={15} strokeWidth={2} /></span>
+                      <div>
+                        <h2 style={cardTitle}>{t('tasks.modal.subtasks')}</h2>
+                        {totalSubs > 0 && (
+                            <p style={cardSubtitle}>
+                              {doneSubs}/{totalSubs} {t('tasks.modal.subtaskCompleted')}
+                            </p>
+                        )}
+                      </div>
+                    </div>
+                    {totalSubs > 0 && (
+                        <span style={{
+                          fontSize: 11, fontWeight: 700, color: subBarColor,
+                          background: `${subBarColor}12`, border: `1px solid ${subBarColor}28`,
+                          borderRadius: 'var(--radius-pill)', padding: '3px 8px', fontFamily: 'var(--font-mono)',
+                        }}>
+                    {subPct}%
+                  </span>
+                    )}
                   </div>
-                );
-              })()}
-            </div>
-          )}
 
-          <div>
-            <label style={sidebarLabel}>{t('tasks.modal.storyPoints')}</label>
-            {task.storyPoints != null ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{
-                  fontWeight: 700, color: 'var(--accent-text)', background: 'var(--accent-muted)',
-                  borderRadius: 'var(--radius-pill)', width: 28, height: 28,
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 13, fontFamily: 'var(--font-mono)',
-                }}>
-                  {task.storyPoints}
-                </span>
-                <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t('tasks.modal.storyPointsPoker')}</span>
+                  <div style={{ padding: '0 18px 18px' }}>
+                    {totalSubs > 0 && (
+                        <div style={{ height: 6, background: 'var(--bg-hover)', borderRadius: 999, overflow: 'hidden', marginBottom: 12 }}>
+                          <div style={{ height: '100%', width: `${subPct}%`, background: subBarColor, borderRadius: 999, transition: 'width 300ms ease' }} />
+                        </div>
+                    )}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                      {subtasks.map((st) => {
+                        const done = isSubtaskDone(st);
+                        const stAssignee = st.assigneeId ? userMap[st.assigneeId] : null;
+                        const stAssigneeName = stAssignee ? (stAssignee.fullName ?? stAssignee.username) : null;
+                        return (
+                            <div
+                                key={st.id}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 10,
+                                  padding: '9px 10px', border: '1px solid var(--border)',
+                                  borderRadius: 'var(--radius-md)', background: 'var(--bg)',
+                                }}
+                            >
+                              <button
+                                  type="button"
+                                  onClick={() => {
+                                    if (!canEdit) return;
+                                    const firstCol = columns.length > 0 ? columns[0].name : 'TODO';
+                                    const firstDoneCol = doneColumnNames.length > 0 ? doneColumnNames[0] : 'DONE';
+                                    setSubtasks((prev) => prev.map((s) => {
+                                      if (s.id !== st.id) return s;
+                                      const wasDone = isSubtaskDone(s);
+                                      return {
+                                        ...s,
+                                        status: wasDone ? firstCol : firstDoneCol,
+                                        completedAt: wasDone ? null : new Date().toISOString(),
+                                      };
+                                    }));
+                                    setToggledSubtaskIds((prev) => {
+                                      const next = new Set(prev);
+                                      if (next.has(st.id)) next.delete(st.id);
+                                      else next.add(st.id);
+                                      return next;
+                                    });
+                                  }}
+                                  style={{
+                                    width: 19, height: 19, borderRadius: 5,
+                                    border: done ? 'none' : '2px solid var(--border-strong)',
+                                    background: done ? '#3B82F6' : 'var(--bg-elevated)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    flexShrink: 0, cursor: canEdit ? 'pointer' : 'default', padding: 0,
+                                  }}
+                              >
+                                {done && (
+                                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                                      <path d="M2 5.5L4.5 8L9 3" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                )}
+                              </button>
+                              <button
+                                  type="button"
+                                  onClick={() => setSelectedSubtask(st)}
+                                  style={{
+                                    flex: 1, minWidth: 0, textAlign: 'left', border: 'none', background: 'transparent', padding: 0,
+                                    fontFamily: 'var(--font-sans)', fontSize: 13, fontWeight: 500,
+                                    color: done ? 'var(--text-faint)' : 'var(--text)',
+                                    textDecoration: done ? 'line-through' : 'none',
+                                    overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis', cursor: 'pointer',
+                                  }}
+                              >
+                                {st.title}
+                              </button>
+                              {stAssigneeName && <AssigneeAvatar name={stAssigneeName} avatarUrl={stAssignee?.avatarUrl} size={22} />}
+                            </div>
+                        );
+                      })}
+                    </div>
+
+                    {totalSubs === 0 && !showSubtaskForm && (
+                        <div style={emptyState}>
+                          {t('tasks.modal.noSubtasks')}
+                        </div>
+                    )}
+
+                    {canEdit && !showSubtaskForm && (
+                        <button type="button" onClick={() => setShowSubtaskForm(true)} style={{ ...linkBtn, marginTop: 12 }}>
+                          <Plus size={13} strokeWidth={2.5} />
+                          {t('tasks.modal.addSubtask')}
+                        </button>
+                    )}
+
+                    {showSubtaskForm && (
+                        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                          <input
+                              type="text"
+                              value={subtaskTitle}
+                              onChange={(e) => setSubtaskTitle(e.target.value)}
+                              placeholder={t('tasks.modal.titlePlaceholder')}
+                              autoFocus
+                              style={{ ...fieldStyle, flex: 1, padding: '7px 10px', fontSize: 12 }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleAddSubtask();
+                                if (e.key === 'Escape') { setShowSubtaskForm(false); setSubtaskTitle(''); }
+                              }}
+                              onFocus={focusHandler}
+                              onBlur={blurHandler}
+                          />
+                          <button type="button" onClick={handleAddSubtask} disabled={!subtaskTitle.trim()} style={{ ...primaryBtn, opacity: subtaskTitle.trim() ? 1 : 0.5 }}>
+                            {t('common.add')}
+                          </button>
+                          <button type="button" onClick={() => { setShowSubtaskForm(false); setSubtaskTitle(''); }} style={secondaryBtn}>
+                            {t('common.cancel')}
+                          </button>
+                        </div>
+                    )}
+                  </div>
+                </section>
+            )}
+
+            {/* Dependencies + Git */}
+            <div className="task-detail-relations-grid">
+              <section style={surfaceCard}>
+                <div style={cardHeader}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={sectionIconBox}><Link2 size={15} strokeWidth={2} /></span>
+                    <div>
+                      <h2 style={cardTitle}>{t('tasks.modal.dependencies')}</h2>
+                      <p style={cardSubtitle}>{dependencies.length} {t('tasks.modal.dependencies').toLowerCase()}</p>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ padding: '0 18px 18px' }}>
+                  {blockedByDeps.length > 0 && (
+                      <div style={{ marginBottom: 12 }}>
+                        <span style={depGroupLabel('#DC2626')}>{t('tasks.modal.blockedBy')}</span>
+                        {blockedByDeps.map((dep) => (
+                            <div key={dep.id} style={depRow('#DC2626')}>
+                              <Lock size={12} strokeWidth={2} style={{ color: '#DC2626', flexShrink: 0 }} />
+                              <button type="button" onClick={() => openSiblingTask(dep.blockingTaskId)} style={depTitleBtn}>
+                                {dep.blockingTaskTitle}
+                              </button>
+                              <span style={depStatus}>{dep.blockingTaskStatus}</span>
+                              {canEdit && (
+                                  <button type="button" onClick={() => handleRemoveDependency(dep.id)} style={iconBtn}>
+                                    <X size={12} strokeWidth={2} />
+                                  </button>
+                              )}
+                            </div>
+                        ))}
+                      </div>
+                  )}
+
+                  {blocksDeps.length > 0 && (
+                      <div style={{ marginBottom: 12 }}>
+                        <span style={depGroupLabel('#D97706')}>{t('tasks.modal.blocks')}</span>
+                        {blocksDeps.map((dep) => (
+                            <div key={dep.id} style={depRow('#D97706')}>
+                              <Link2 size={12} strokeWidth={2} style={{ color: '#D97706', flexShrink: 0 }} />
+                              <button type="button" onClick={() => openSiblingTask(dep.blockedTaskId)} style={depTitleBtn}>
+                                {dep.blockedTaskTitle}
+                              </button>
+                              <span style={depStatus}>{dep.blockedTaskStatus}</span>
+                              {canEdit && (
+                                  <button type="button" onClick={() => handleRemoveDependency(dep.id)} style={iconBtn}>
+                                    <X size={12} strokeWidth={2} />
+                                  </button>
+                              )}
+                            </div>
+                        ))}
+                      </div>
+                  )}
+
+                  {dependencies.length === 0 && (
+                      <div style={emptyState}>{t('tasks.modal.noDependencies')}</div>
+                  )}
+
+                  {canEdit && !showDepSearch && (
+                      <button type="button" onClick={openDepSearch} style={{ ...linkBtn, marginTop: 10 }}>
+                        <Plus size={12} strokeWidth={2.5} />
+                        {t('tasks.modal.addDependency')}
+                      </button>
+                  )}
+
+                  {showDepSearch && (
+                      <div style={{ marginTop: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                          <div style={{ position: 'relative', flex: 1 }}>
+                            <Search size={12} strokeWidth={2} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)' }} />
+                            <input
+                                type="text"
+                                value={depSearchQuery}
+                                onChange={(e) => setDepSearchQuery(e.target.value)}
+                                placeholder={t('tasks.modal.searchTask')}
+                                autoFocus
+                                style={{ ...fieldStyle, fontSize: 12, padding: '6px 8px 6px 26px' }}
+                                onFocus={focusHandler}
+                                onBlur={blurHandler}
+                                onKeyDown={(e) => { if (e.key === 'Escape') { setShowDepSearch(false); setDepSearchQuery(''); } }}
+                            />
+                          </div>
+                          <button type="button" onClick={() => { setShowDepSearch(false); setDepSearchQuery(''); }} style={iconBtn}>
+                            <X size={14} strokeWidth={2} />
+                          </button>
+                        </div>
+                        {depSearchResults.length > 0 && (
+                            <div style={{
+                              background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                              borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-md)',
+                              maxHeight: 200, overflowY: 'auto', padding: '2px 0',
+                            }}>
+                              {depSearchResults.map((candidate) => {
+                                const cfg = TYPE_CONFIG[candidate.type ?? 'TASK'];
+                                const CIcon = cfg.icon;
+                                return (
+                                    <button
+                                        key={candidate.id}
+                                        type="button"
+                                        onClick={() => handleAddDependency(candidate.id)}
+                                        style={{
+                                          width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                                          padding: '7px 10px', border: 'none', background: 'transparent',
+                                          cursor: 'pointer', textAlign: 'left', transition: 'background 100ms',
+                                        }}
+                                        onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                    >
+                                      <CIcon size={12} strokeWidth={2} style={{ color: cfg.color, flexShrink: 0 }} />
+                                      <span style={{ flex: 1, fontSize: 12, fontWeight: 500, color: 'var(--text)', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                                {candidate.title}
+                              </span>
+                                      <span style={depStatus}>{candidate.status}</span>
+                                    </button>
+                                );
+                              })}
+                            </div>
+                        )}
+                      </div>
+                  )}
+                </div>
+              </section>
+
+              <section style={surfaceCard}>
+                <div style={cardHeader}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={sectionIconBox}><GitBranch size={15} strokeWidth={2} /></span>
+                    <div>
+                      <h2 style={cardTitle}>{t('tasks.modal.gitActivity')}</h2>
+                      <p style={cardSubtitle}>{gitEvents.length} Git</p>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ padding: '0 18px 18px' }}>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                    padding: '10px 12px', marginBottom: 12,
+                    background: 'var(--bg)', border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)',
+                  }}>
+                  <span style={{
+                    fontSize: 11, color: 'var(--text-faint)', fontWeight: 700,
+                    flexShrink: 0,
+                  }}>
+                    {t('tasks.modal.gitRef')}
+                  </span>
+                    <code style={{
+                      minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      fontSize: 12, fontFamily: 'var(--font-mono)', fontWeight: 600,
+                      color: 'var(--text-muted)',
+                    }}>
+                      {taskGitRef(task.id)}
+                    </code>
+                  </div>
+
+                  {gitEvents.length === 0 ? (
+                      <div style={emptyState}>{t('tasks.modal.noGitActivity')}</div>
+                  ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                        {gitEvents.map((event) => {
+                          const EventIcon = event.type === 'PULL_REQUEST' ? GitPullRequest
+                              : event.type === 'BRANCH' ? GitBranch : GitCommit;
+                          return (
+                              <div key={event.id} style={{
+                                display: 'flex', alignItems: 'center', gap: 8,
+                                padding: '8px 10px', background: 'var(--bg)',
+                                border: '1px solid var(--border)', borderRadius: 'var(--radius-md)',
+                              }}>
+                                <EventIcon size={12} strokeWidth={2} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+                                <a
+                                    href={event.externalUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      flex: 1, minWidth: 0,
+                                      fontSize: 12, fontWeight: 500, color: 'var(--text)', textDecoration: 'none',
+                                      overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                                    }}
+                                    title={event.title}
+                                >
+                                  {event.title}
+                                </a>
+                                {event.status && event.type !== 'PULL_REQUEST' && (
+                                    <span style={depStatus}>{event.status}</span>
+                                )}
+                                <a
+                                    href={event.externalUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label={t('tasks.modal.openGitLink', { defaultValue: 'Abrir enlace Git' })}
+                                    title={t('tasks.modal.openGitLink', { defaultValue: 'Abrir enlace Git' })}
+                                    style={gitActionBtn}
+                                >
+                                  <ExternalLink size={13} strokeWidth={2} />
+                                </a>
+                                {canEdit && (
+                                    <button
+                                        type="button"
+                                        onClick={() => handleUnlinkGitEvent(event.id)}
+                                        aria-label={t('common.delete')}
+                                        title={t('common.delete')}
+                                        style={gitActionBtn}
+                                    >
+                                      <X size={13} strokeWidth={2} />
+                                    </button>
+                                )}
+                              </div>
+                          );
+                        })}
+                      </div>
+                  )}
+
+                  {canEdit && !showGitLinkForm && (
+                      <button type="button" onClick={() => setShowGitLinkForm(true)} style={{ ...linkBtn, marginTop: 10 }}>
+                        <Plus size={12} strokeWidth={2.5} />
+                        {t('tasks.modal.linkManually')}
+                      </button>
+                  )}
+
+                  {showGitLinkForm && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10 }}>
+                        <input
+                            type="text"
+                            value={gitLinkUrl}
+                            onChange={(e) => setGitLinkUrl(e.target.value)}
+                            placeholder={t('tasks.modal.gitUrlPlaceholder')}
+                            autoFocus
+                            style={{ ...fieldStyle, fontSize: 12, padding: '6px 8px' }}
+                            onFocus={focusHandler}
+                            onBlur={blurHandler}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') { e.preventDefault(); handleLinkGitEvent(); }
+                              if (e.key === 'Escape') { setShowGitLinkForm(false); setGitLinkUrl(''); }
+                            }}
+                        />
+                        <button type="button" onClick={handleLinkGitEvent} style={iconBtn}><Plus size={14} strokeWidth={2.5} /></button>
+                        <button type="button" onClick={() => { setShowGitLinkForm(false); setGitLinkUrl(''); }} style={iconBtn}><X size={14} strokeWidth={2} /></button>
+                      </div>
+                  )}
+                </div>
+              </section>
+            </div>
+
+            {/* Comments */}
+            {projectId && (
+                <section style={{ ...surfaceCard, padding: 18 }}>
+                  <TaskComments
+                      taskId={task.id}
+                      projectId={projectId}
+                      members={members}
+                      userMap={userMap}
+                      // Los comentarios solo pueden editarse/eliminarse por su autor.
+                      // No damos privilegios extra a administradores en esta pantalla.
+                      isAdmin={false}
+                      readOnly={!canEdit}
+                  />
+                </section>
+            )}
+
+            {/* Activity */}
+            <section style={{ ...surfaceCard, padding: 18 }}>
+              <TaskActivityFeed taskId={task.id} comments={[]} userMap={userMap} labels={projectLabels} />
+            </section>
+          </main>
+
+          {/* Sidebar */}
+          <aside className="task-detail-sidebar">
+            <section style={{ ...surfaceCard, overflow: 'visible' }}>
+              <div style={{ ...cardHeader, borderBottom: '1px solid var(--border)', paddingBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={sectionIconBox}><PanelRight size={15} strokeWidth={2} /></span>
+                  <div>
+                    <h2 style={cardTitle}>{t('tasks.detail.details', { defaultValue: 'Detalles' })}</h2>
+                    <p style={cardSubtitle}>{t('tasks.detail.detailsSubtitle', { defaultValue: 'Propiedades y planificación' })}</p>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <span style={{ fontSize: 12, fontStyle: 'italic', color: 'var(--text-faint)' }}>{t('tasks.modal.storyPointsUnestimated')}</span>
-            )}
-            {canEdit && workspaceId && projectId && (
-              <button
-                type="button"
-                onClick={() => guardedNavigate(() =>
-                  navigate(`/workspaces/${workspaceId}/projects/${projectId}/poker`))}
-                style={{ ...linkBtn, marginTop: 8 }}
-              >
-                <PlayCircle size={13} strokeWidth={2} />
-                {t('tasks.modal.startPoker')}
-              </button>
-            )}
-          </div>
 
-          <div>
-            <label style={sidebarLabel}>{t('tasks.modal.ready')}</label>
-            <button
-              type="button"
-              onClick={canEdit ? () => setReady((r) => !r) : undefined}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '5px 12px', fontSize: 12, fontWeight: 600,
-                fontFamily: 'var(--font-sans)',
-                background: ready ? '#16A34A14' : '#D9770614',
-                color: ready ? '#16A34A' : '#D97706',
-                border: `1px solid ${ready ? '#16A34A40' : '#D9770640'}`,
-                borderRadius: 'var(--radius-md)',
-                cursor: canEdit ? 'pointer' : 'default',
-                transition: 'all 150ms',
-              }}
+              <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 18 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div style={metaTile}>
+                    <label style={{ ...sidebarLabel, marginBottom: 7 }}>{t('tasks.modal.status')}</label>
+                    <span style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                      fontSize: 11, fontWeight: 700, color: statusColor,
+                      background: `${statusColor}12`, border: `1px solid ${statusColor}30`,
+                      borderRadius: 'var(--radius-pill)', padding: '4px 8px', width: 'fit-content',
+                    }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor, flexShrink: 0 }} />
+                      {getStatusLabel(task.status, columns, t)}
+                  </span>
+                  </div>
+
+                  <div style={metaTile}>
+                    <label style={{ ...sidebarLabel, marginBottom: 7 }}>{t('tasks.modal.type')}</label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <TypeIcon size={14} strokeWidth={2} style={{ color: typeCfg.color }} />
+                      <span style={{ fontSize: 12, fontWeight: 700, color: typeCfg.color }}>{t(`tasks.type.${task.type ?? 'TASK'}`)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label style={sidebarLabel}>{t('tasks.modal.priority')}</label>
+                  {canEdit ? (
+                      <select
+                          value={priority}
+                          onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                          style={{ ...fieldStyle, fontSize: 12, padding: '8px 10px' }}
+                          onFocus={focusHandler}
+                          onBlur={blurHandler}
+                      >
+                        {PRIORITIES.map((p) => (
+                            <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
+                        ))}
+                      </select>
+                  ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: PRIORITY_COLOR[priority], flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, fontWeight: 600, color: PRIORITY_COLOR[priority] }}>{t(`tasks.priority.${priority}`)}</span>
+                      </div>
+                  )}
+                </div>
+
+                {members.length > 0 && (
+                    <div>
+                      <label style={sidebarLabel}>{t('tasks.modal.assignee')}</label>
+                      {canEdit ? (
+                          <AssigneeDropdown
+                              value={assigneeId}
+                              onChange={setAssigneeId}
+                              members={members}
+                              userMap={userMap}
+                              placeholder={t('tasks.modal.unassigned')}
+                              compact
+                          />
+                      ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {assigneeId && userMap[assigneeId] ? (
+                                <>
+                                  <AssigneeAvatar name={userMap[assigneeId].fullName ?? userMap[assigneeId].username} avatarUrl={userMap[assigneeId].avatarUrl} size={24} />
+                                  <span style={{ fontSize: 13, color: 'var(--text)' }}>{userMap[assigneeId].fullName ?? userMap[assigneeId].username}</span>
+                                </>
+                            ) : (
+                                <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>{t('tasks.modal.unassigned')}</span>
+                            )}
+                          </div>
+                      )}
+                    </div>
+                )}
+
+                {projectLabels.length > 0 && (
+                    <div>
+                      <label style={sidebarLabel}>{t('tasks.modal.labels')}</label>
+                      {canEdit ? (
+                          <LabelMultiSelect labels={projectLabels} selected={selectedLabelIds} onChange={setSelectedLabelIds} compact />
+                      ) : (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {selectedLabelIds.length === 0 ? (
+                                <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>—</span>
+                            ) : (
+                                selectedLabelIds.map((id) => {
+                                  const lbl = projectLabels.find((l) => l.id === id);
+                                  return lbl ? <LabelChip key={id} label={lbl} /> : null;
+                                })
+                            )}
+                          </div>
+                      )}
+                    </div>
+                )}
+
+                {projectEpics.length > 0 && (
+                    <div>
+                      <label style={sidebarLabel}>{t('tasks.modal.epic')}</label>
+                      {canEdit ? (
+                          <EpicDropdown value={epicId} onChange={setEpicId} epics={projectEpics} placeholder={t('tasks.modal.noEpic')} />
+                      ) : (() => {
+                        const epic = projectEpics.find((e) => e.id === epicId);
+                        if (!epic) {
+                          return <span style={{ fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic' }}>{t('tasks.modal.noEpic')}</span>;
+                        }
+                        return (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ width: 8, height: 8, borderRadius: '50%', background: epic.color, flexShrink: 0 }} />
+                              <span style={{ fontSize: 13, fontWeight: 600, color: epic.color }}>{epic.name}</span>
+                            </div>
+                        );
+                      })()}
+                    </div>
+                )}
+
+                <div style={{ height: 1, background: 'var(--border)', margin: '0 -18px' }} />
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <CalendarDays size={14} strokeWidth={2} style={{ color: 'var(--text-faint)' }} />
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                  {t('tasks.detail.planning', { defaultValue: 'Planificación' })}
+                </span>
+                </div>
+
+                <div>
+                  <label style={sidebarLabel}>{t('tasks.modal.storyPoints')}</label>
+                  {task.storyPoints != null ? (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <span style={{
+                      fontWeight: 750, color: 'var(--accent-text)', background: 'var(--accent-muted)',
+                      borderRadius: 'var(--radius-pill)', width: 32, height: 32,
+                      display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 13, fontFamily: 'var(--font-mono)',
+                    }}>
+                      {task.storyPoints}
+                    </span>
+                        <span style={{ fontSize: 11, color: 'var(--text-faint)', lineHeight: 1.35 }}>{t('tasks.modal.storyPointsPoker')}</span>
+                      </div>
+                  ) : (
+                      <span style={{ fontSize: 12, fontStyle: 'italic', color: 'var(--text-faint)' }}>{t('tasks.modal.storyPointsUnestimated')}</span>
+                  )}
+                  {canEdit && workspaceId && projectId && (
+                      <button
+                          type="button"
+                          onClick={() => guardedNavigate(() => navigate(`/workspaces/${workspaceId}/projects/${projectId}/poker`))}
+                          style={{ ...linkBtn, marginTop: 9 }}
+                      >
+                        <PlayCircle size={13} strokeWidth={2} />
+                        {t('tasks.modal.startPoker')}
+                      </button>
+                  )}
+                </div>
+
+                <div>
+                  <label style={sidebarLabel}>{t('tasks.modal.ready')}</label>
+                  <button
+                      type="button"
+                      onClick={canEdit ? () => setReady((r) => !r) : undefined}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 7,
+                        padding: '6px 11px', fontSize: 12, fontWeight: 700,
+                        fontFamily: 'var(--font-sans)',
+                        background: ready ? '#16A34A12' : '#D9770612',
+                        color: ready ? '#16A34A' : '#D97706',
+                        border: `1px solid ${ready ? '#16A34A35' : '#D9770635'}`,
+                        borderRadius: 'var(--radius-pill)',
+                        cursor: canEdit ? 'pointer' : 'default',
+                      }}
+                  >
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: ready ? '#16A34A' : '#D97706' }} />
+                    {ready ? t('tasks.modal.readyLabel') : t('tasks.modal.notReadyLabel')}
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div style={metaTile}>
+                    <label style={{ ...sidebarLabel, marginBottom: 5 }}>{t('tasks.modal.createdAt')}</label>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatDate(task.createdAt) ?? '—'}</span>
+                  </div>
+                  <div style={metaTile}>
+                    <label style={{ ...sidebarLabel, marginBottom: 5 }}>{t('tasks.modal.completedAt')}</label>
+                    <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{formatDate(task.completedAt) ?? '—'}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </aside>
+        </div>
+
+        {selectedSubtask && (
+            <SubtaskModal
+                subtask={selectedSubtask}
+                columns={columns}
+                readOnly={!canEdit}
+                onClose={() => setSelectedSubtask(null)}
+                onUpdated={(updated) => setSubtasks((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))}
+                onDeleted={(deletedId) => setSubtasks((prev) => prev.filter((s) => s.id !== deletedId))}
+            />
+        )}
+
+        {/* Unsaved changes guard */}
+        {pendingNav && (
+            <div
+                style={{
+                  position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.48)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+                  padding: 16, backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)',
+                }}
+                onClick={() => setPendingNav(null)}
             >
-              <span style={{ width: 8, height: 8, borderRadius: '50%', background: ready ? '#16A34A' : '#D97706' }} />
-              {ready ? t('tasks.modal.readyLabel') : t('tasks.modal.notReadyLabel')}
-            </button>
-          </div>
-
-          {formatDate(task.completedAt) && (
-            <div>
-              <label style={sidebarLabel}>{t('tasks.modal.completedAt')}</label>
-              <span style={{ fontSize: 13, color: 'var(--text)' }}>{formatDate(task.completedAt)}</span>
-            </div>
-          )}
-
-          <div>
-            <label style={sidebarLabel}>{t('tasks.modal.createdAt')}</label>
-            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{formatDate(task.createdAt)}</span>
-          </div>
-        </div>
-      </div>
-
-      {selectedSubtask && (
-        <SubtaskModal
-          subtask={selectedSubtask}
-          columns={columns}
-          readOnly={!canEdit}
-          onClose={() => setSelectedSubtask(null)}
-          onUpdated={(updated) => setSubtasks((prev) => prev.map((s) => (s.id === updated.id ? updated : s)))}
-          onDeleted={(deletedId) => setSubtasks((prev) => prev.filter((s) => s.id !== deletedId))}
-        />
-      )}
-
-      {/* Confirmacion de salida con cambios sin guardar */}
-      {pendingNav && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-          }}
-          onClick={() => setPendingNav(null)}
-        >
-          <div
-            style={{
-              background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)', padding: '24px 28px',
-              maxWidth: 420, width: '90%', boxShadow: 'var(--shadow-lg)',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ margin: '0 0 12px', fontSize: '1rem', fontWeight: 600, color: 'var(--text)' }}>
-              {t('tasks.detail.unsavedTitle')}
-            </h3>
-            <p style={{ margin: '0 0 20px', fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-              {t('tasks.detail.unsavedBody')}
-            </p>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button type="button" onClick={() => setPendingNav(null)} style={secondaryBtn}>
-                {t('tasks.detail.unsavedStay')}
-              </button>
-              <button
-                type="button"
-                onClick={() => { const go = pendingNav; setPendingNav(null); go(); }}
-                style={{ ...primaryBtn, background: '#ef4444' }}
+              <div
+                  style={{
+                    background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-lg)', padding: '24px 26px',
+                    maxWidth: 420, width: '100%', boxShadow: 'var(--shadow-lg)',
+                  }}
+                  onClick={(e) => e.stopPropagation()}
               >
-                {t('tasks.detail.unsavedDiscard')}
-              </button>
+                <h3 style={{ margin: '0 0 8px', fontSize: '1rem', fontWeight: 700, color: 'var(--text)' }}>
+                  {t('tasks.detail.unsavedTitle')}
+                </h3>
+                <p style={{ margin: '0 0 20px', fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                  {t('tasks.detail.unsavedBody')}
+                </p>
+                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                  <button type="button" onClick={() => setPendingNav(null)} style={secondaryBtn}>
+                    {t('tasks.detail.unsavedStay')}
+                  </button>
+                  <button
+                      type="button"
+                      onClick={() => { const go = pendingNav; setPendingNav(null); go(); }}
+                      style={{ ...primaryBtn, background: '#ef4444' }}
+                  >
+                    {t('tasks.detail.unsavedDiscard')}
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
   );
 }
 
 // ── Local styles ─────────────────────────────────────────────────────────────
+
+
+const surfaceCard: React.CSSProperties = {
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-card)',
+  boxShadow: 'var(--shadow-sm)',
+  overflow: 'hidden',
+};
+
+const softSection: React.CSSProperties = {
+  padding: 14,
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+};
+
+const sectionHeading: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  marginBottom: 10,
+  fontSize: 11,
+  fontWeight: 700,
+  color: 'var(--text-muted)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+};
+
+const sectionIconBox: React.CSSProperties = {
+  width: 28,
+  height: 28,
+  borderRadius: 'var(--radius-md)',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  color: 'var(--accent-text)',
+  background: 'var(--accent-muted)',
+  flexShrink: 0,
+};
+
+const cardHeader: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  gap: 12,
+  padding: '16px 18px 12px',
+};
+
+const cardTitle: React.CSSProperties = {
+  margin: 0,
+  fontSize: 14,
+  fontWeight: 700,
+  color: 'var(--text)',
+  letterSpacing: '-0.01em',
+};
+
+const cardSubtitle: React.CSSProperties = {
+  margin: '2px 0 0',
+  fontSize: 11,
+  color: 'var(--text-faint)',
+};
+
+const metaTile: React.CSSProperties = {
+  padding: '10px 11px',
+  background: 'var(--bg)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-md)',
+  minWidth: 0,
+};
+
+const emptyState: React.CSSProperties = {
+  margin: 0,
+  padding: '14px 12px',
+  textAlign: 'center',
+  fontSize: 12,
+  color: 'var(--text-faint)',
+  fontStyle: 'italic',
+  background: 'var(--bg)',
+  border: '1px dashed var(--border)',
+  borderRadius: 'var(--radius-md)',
+};
 
 const primaryBtn: React.CSSProperties = {
   padding: '7px 16px',
@@ -1232,6 +1510,23 @@ const linkBtn: React.CSSProperties = {
   color: 'var(--accent-text)',
   border: 'none',
   cursor: 'pointer',
+};
+
+const gitActionBtn: React.CSSProperties = {
+  width: 28,
+  height: 28,
+  flex: '0 0 28px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 0,
+  background: 'var(--bg-elevated)',
+  color: 'var(--text-faint)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-sm)',
+  cursor: 'pointer',
+  textDecoration: 'none',
+  boxSizing: 'border-box',
 };
 
 const iconBtn: React.CSSProperties = {

@@ -46,45 +46,23 @@ function getHealth(donePct: number): HealthLevel {
 
 const HEALTH_CONFIG: Record<HealthLevel, { accent: string; bg: string; textColor: string }> = {
   excellent: { accent: 'var(--success)', bg: 'var(--success-bg)',  textColor: 'var(--success-text)' },
-  good:      { accent: 'var(--ink-blue)', bg: 'var(--info-bg)',   textColor: 'var(--ink-blue)' },
+  good:      { accent: 'var(--accent)',    bg: 'var(--info-bg)',   textColor: 'var(--accent-text)' },
   acceptable:{ accent: 'var(--ochre)', bg: 'var(--warning-bg)',   textColor: 'var(--ochre)' },
   poor:      { accent: 'var(--danger)', bg: 'var(--danger-bg)',   textColor: 'var(--danger-text)' },
 };
-
-// ── Circular progress ring ────────────────────────────────────────────────────
-
-function CircularProgress({ pct, color, track, size = 80 }: { pct: number; color: string; track: string; size?: number }) {
-  const r = size / 2 - 6;
-  const circ = 2 * Math.PI * r;
-  const [animated, setAnimated] = useState(false);
-  useEffect(() => { requestAnimationFrame(() => setAnimated(true)); }, []);
-  return (
-    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke={track} strokeWidth={5} />
-      <circle
-        cx={size / 2} cy={size / 2} r={r}
-        fill="none" stroke={color} strokeWidth={5}
-        strokeLinecap="round"
-        strokeDasharray={circ}
-        strokeDashoffset={animated ? circ * (1 - pct) : circ}
-        style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)' }}
-      />
-    </svg>
-  );
-}
 
 // ── Burndown data ─────────────────────────────────────────────────────────────
 
 interface BurndownPoint { label: string; ideal: number; actual: number | null; }
 
-function buildBurndown(sprint: Sprint, tasks: Task[]): { points: BurndownPoint[]; useTaskCount: boolean } | null {
+function buildBurndown(sprint: Sprint, tasks: Task[], overrideTotal?: { tasks: number; sp: number }): { points: BurndownPoint[]; useTaskCount: boolean } | null {
   if (!sprint.startDate || !sprint.endDate || tasks.length === 0) return null;
   const start = new Date(sprint.startDate); start.setHours(0, 0, 0, 0);
   const end = new Date(sprint.endDate); end.setHours(23, 59, 59, 999);
   const today = new Date();
-  const totalSP = tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
+  const totalSP = overrideTotal ? overrideTotal.sp : tasks.reduce((s, t) => s + (t.storyPoints ?? 0), 0);
   const useTaskCount = totalSP === 0;
-  const total = useTaskCount ? tasks.length : totalSP;
+  const total = useTaskCount ? (overrideTotal ? overrideTotal.tasks : tasks.length) : totalSP;
   const doneTasks = tasks.filter((t) => t.status === 'DONE');
   const totalMs = end.getTime() - start.getTime();
   const totalDays = Math.max(Math.ceil(totalMs / 86_400_000), 1);
@@ -223,7 +201,7 @@ export default function SprintReportPage() {
       }).length
     : 0;
 
-  const health = isCompleted ? getHealth(donePct) : ('acceptable' as HealthLevel);
+  const health = getHealth(donePct);
   const hConf = HEALTH_CONFIG[health];
 
   const startDate = sprint.startDate ? new Date(sprint.startDate) : null;
@@ -237,7 +215,7 @@ export default function SprintReportPage() {
   const formatDate = (d: Date) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   const formatDateShort = (d: string | null | undefined) => {
     if (!d) return '—';
-    return new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    return new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   };
 
   const allStatuses = hasSnapshots
@@ -265,12 +243,12 @@ export default function SprintReportPage() {
     color: chart[PRIORITY_KEY[p]],
   })).filter((d) => d.total > 0);
 
-  const burndownResult = buildBurndown(sprint, rootTasks);
+  const burndownResult = buildBurndown(sprint, rootTasks, { tasks: total, sp: totalSP });
   const burndown = burndownResult?.points ?? null;
   const burndownUsesTaskCount = burndownResult?.useTaskCount ?? false;
 
   // Flat task list for paginated table
-  const REPORT_PAGE_SIZE = 10;
+  const REPORT_PAGE_SIZE = 5;
 
   // Build unified list items from snapshots or tasks
   type ReportItem = {
@@ -440,12 +418,6 @@ export default function SprintReportPage() {
               {t(`projects.sprints.status.${sprint.status}`)}
             </span>
           </div>
-          <p style={{ margin: '4px 0 0', fontSize: 10, color: 'var(--text-faint)' }}>
-            {t('projects.sprints.report.generatedAt')}{' '}
-            <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>
-              {new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}
-            </span>
-          </p>
         </div>
 
         {sprint.startDate && (
@@ -482,34 +454,6 @@ export default function SprintReportPage() {
         </div>
       )}
 
-      {/* Health banner */}
-      <div style={{
-        background: hConf.bg, border: `1px solid ${hConf.accent}33`,
-        borderRadius: 'var(--radius-lg)', padding: '16px 20px',
-        display: 'flex', alignItems: 'center', gap: 16,
-      }}>
-        <div style={{ position: 'relative', flexShrink: 0 }}>
-          <CircularProgress pct={donePct} color={hConf.accent} track={chart.grid} size={64} />
-          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(90deg)' }}>
-            <span style={{ fontSize: 12, fontWeight: 800, color: hConf.accent, fontFamily: 'var(--font-mono)' }}>
-              {Math.round(donePct * 100)}%
-            </span>
-          </div>
-        </div>
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: hConf.textColor }}>
-            {isActive
-              ? t('projects.sprints.report.inProgress')
-              : t(`projects.sprints.report.health.${health}`)}
-          </p>
-          <p style={{ margin: '3px 0 0', fontSize: 12, color: hConf.textColor, opacity: 0.8 }}>
-            {t('projects.sprints.report.healthSummary', { done, total, doneSP, totalSP })}
-            {isCompleted && incomplete > 0 && ` · ${incomplete} ${t('projects.sprints.report.returnedToBacklog')}`}
-            {isCompleted && lateCount > 0 && ` · ${t('projects.sprints.report.lateCount', { count: lateCount })}`}
-          </p>
-        </div>
-      </div>
-
       {/* Stat cards — 4 columns */}
       <div className="report-stats-grid">
         {/* Tasks done */}
@@ -526,11 +470,9 @@ export default function SprintReportPage() {
             </span>
             <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>/{total}</span>
           </div>
-          {total > 0 && (
-            <div style={{ width: '100%', height: 5, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
-              <div style={{ height: 5, borderRadius: 3, background: hConf.accent, width: `${Math.round(donePct * 100)}%`, transition: 'width 1s ease' }} />
-            </div>
-          )}
+          <div style={{ width: '100%', height: 5, background: 'var(--bg-hover)', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ height: 5, borderRadius: 3, background: hConf.accent, width: `${Math.max(done > 0 ? 4 : 0, Math.round(donePct * 100))}%`, transition: 'width 1s ease' }} />
+          </div>
         </div>
 
         {/* Story points */}
@@ -702,7 +644,7 @@ export default function SprintReportPage() {
                 }}
                 contentStyle={{ fontSize: 11, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-elevated)' } as object}
               />
-              <Legend iconSize={7} iconType="circle" wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
+              <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 13, fontWeight: 600, paddingTop: 8 }} formatter={(value) => <span style={{ color: 'var(--text)' }}>{value}</span>} />
               <Bar dataKey="done" name={t('tasks.status.DONE')} radius={[0, 3, 3, 0]} fill={chart.success} />
               <Bar dataKey="total" name={t('projects.sprints.report.totalTasks')} radius={[0, 3, 3, 0]} fill={chart.muted} />
             </BarChart>
@@ -881,11 +823,6 @@ export default function SprintReportPage() {
                             color: 'var(--text-muted)', flexShrink: 0,
                           }}>
                             {item.subtaskCount}
-                          </span>
-                        )}
-                        {item.completed && !item.returnedToBacklog && item.completedAt && sprint.endDate && new Date(item.completedAt) > new Date(sprint.endDate) && (
-                          <span style={{ flexShrink: 0, fontSize: 9, fontWeight: 600, color: 'var(--danger-text)', background: 'var(--danger-bg)', border: '1px solid rgba(220,38,38,0.3)', borderRadius: 'var(--radius-sm)', padding: '0 5px', whiteSpace: 'nowrap' }}>
-                            {t('projects.sprints.report.lateBadge')}
                           </span>
                         )}
                       </div>

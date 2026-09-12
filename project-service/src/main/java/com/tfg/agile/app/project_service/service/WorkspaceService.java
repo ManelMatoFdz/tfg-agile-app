@@ -1,5 +1,6 @@
 package com.tfg.agile.app.project_service.service;
 
+import com.tfg.agile.app.project_service.client.DataCleanupClient;
 import com.tfg.agile.app.project_service.dto.*;
 import com.tfg.agile.app.project_service.entity.*;
 import com.tfg.agile.app.project_service.exception.ConflictException;
@@ -22,6 +23,7 @@ public class WorkspaceService {
     private final ProjectRepository projectRepository;
     private final CategoryRepository categoryRepository;
     private final WorkspaceInvitationRepository invitationRepository;
+    private final DataCleanupClient dataCleanupClient;
 
     public WorkspaceService(WorkspaceRepository workspaceRepository,
                             WorkspaceMemberRepository memberRepository,
@@ -29,7 +31,8 @@ public class WorkspaceService {
                             TeamMemberRepository teamMemberRepository,
                             ProjectRepository projectRepository,
                             CategoryRepository categoryRepository,
-                            WorkspaceInvitationRepository invitationRepository) {
+                            WorkspaceInvitationRepository invitationRepository,
+                            DataCleanupClient dataCleanupClient) {
         this.workspaceRepository = workspaceRepository;
         this.memberRepository = memberRepository;
         this.teamRepository = teamRepository;
@@ -37,6 +40,7 @@ public class WorkspaceService {
         this.projectRepository = projectRepository;
         this.categoryRepository = categoryRepository;
         this.invitationRepository = invitationRepository;
+        this.dataCleanupClient = dataCleanupClient;
     }
 
     @Transactional
@@ -86,13 +90,18 @@ public class WorkspaceService {
         getWorkspaceOrThrow(workspaceId);
         requireAdmin(workspaceId, callerId);
 
+        // Cleanup external data (tasks, poker sessions) for each project
+        List<Project> projects = projectRepository.findByWorkspaceId(workspaceId);
+        projects.forEach(p -> dataCleanupClient.cleanupProject(p.getId()));
+
+        // Delete projects
+        projectRepository.deleteAll(projects);
+        projectRepository.flush();
+
         // Delete team members before teams
         List<Team> teams = teamRepository.findByWorkspaceId(workspaceId);
         teams.forEach(t -> teamMemberRepository.deleteByTeamId(t.getId()));
         teamRepository.deleteAll(teams);
-
-        // Delete projects
-        projectRepository.deleteAll(projectRepository.findByWorkspaceId(workspaceId));
 
         categoryRepository.deleteByWorkspaceId(workspaceId);
         invitationRepository.deleteByWorkspaceId(workspaceId);

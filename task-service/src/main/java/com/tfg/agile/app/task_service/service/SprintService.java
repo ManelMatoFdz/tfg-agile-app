@@ -141,7 +141,7 @@ public class SprintService {
     @Transactional
     public SprintResponseDto createSprint(UUID projectId, CreateSprintRequestDto dto, UUID callerId) {
         MemberPermissionsDto perms = requireMember(projectId, callerId);
-        requireScrumMasterOrAdmin(perms);
+        requireScrumMaster(perms);
 
         validateDateRange(dto.startDate(), dto.endDate());
         validateNoOverlap(projectId, UUID.randomUUID(), dto.startDate(), dto.endDate());
@@ -163,7 +163,7 @@ public class SprintService {
     public SprintResponseDto updateSprint(UUID sprintId, UpdateSprintRequestDto dto, UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
-        requireScrumMasterOrAdmin(perms);
+        requireScrumMaster(perms);
 
         if (sprint.getStatus() == SprintStatus.COMPLETED) {
             throw new ForbiddenException("CANNOT_EDIT_COMPLETED_SPRINT");
@@ -191,7 +191,7 @@ public class SprintService {
     public SprintResponseDto activateSprint(UUID sprintId, UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
-        requireScrumMasterOrAdmin(perms);
+        requireScrumMaster(perms);
 
         if (sprint.getStatus() != SprintStatus.PLANNING) {
             throw new ConflictException("SPRINT_NOT_PLANNING");
@@ -302,10 +302,25 @@ public class SprintService {
     }
 
     @Transactional
+    public SprintResponseDto completeSprint(UUID sprintId, UUID callerId) {
+        Sprint sprint = getSprintOrThrow(sprintId);
+        MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
+        requireScrumMaster(perms);
+
+        if (sprint.getStatus() != SprintStatus.ACTIVE) {
+            throw new ConflictException("SPRINT_NOT_ACTIVE");
+        }
+
+        completeSprintInternal(sprint);
+        projectServiceClient.touchMemberActivity(sprint.getProjectId(), callerId);
+        return SprintResponseDto.from(sprint);
+    }
+
+    @Transactional
     public SprintResponseDto saveRetrospective(UUID sprintId, String reviewNotes, UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
-        requireScrumMasterOrAdmin(perms);
+        requireScrumMaster(perms);
 
         if (sprint.getStatus() != SprintStatus.COMPLETED) {
             throw new ConflictException("SPRINT_NOT_COMPLETED");
@@ -322,7 +337,7 @@ public class SprintService {
     public void deleteSprint(UUID sprintId, UUID callerId) {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
-        requireScrumMasterOrAdmin(perms);
+        requireScrumMaster(perms);
 
         if (sprint.getStatus() != SprintStatus.PLANNING) {
             throw new ForbiddenException("ONLY_PLANNING_SPRINTS_CAN_BE_DELETED");
@@ -346,9 +361,9 @@ public class SprintService {
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
 
         if (sprint.getStatus() == SprintStatus.PLANNING) {
-            requireDeveloperOrPOOrAdmin(perms);
+            requireDeveloperOrProductOwner(perms);
         } else if (sprint.getStatus() == SprintStatus.ACTIVE) {
-            requireDeveloperOrAdmin(perms);
+            requireDeveloper(perms);
         } else {
             throw new ForbiddenException("CAN_ONLY_ADD_TASKS_TO_PLANNING_OR_ACTIVE_SPRINT");
         }
@@ -399,9 +414,9 @@ public class SprintService {
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
 
         if (sprint.getStatus() == SprintStatus.PLANNING) {
-            requireDeveloperOrPOOrAdmin(perms);
+            requireDeveloperOrProductOwner(perms);
         } else if (sprint.getStatus() == SprintStatus.ACTIVE) {
-            requireDeveloperOrAdmin(perms);
+            requireDeveloper(perms);
         } else {
             throw new ForbiddenException("CAN_ONLY_REMOVE_TASKS_FROM_PLANNING_OR_ACTIVE_SPRINT");
         }
@@ -487,28 +502,24 @@ public class SprintService {
         return projectServiceClient.getMemberPermissions(projectId, userId);
     }
 
-    private boolean isAdmin(MemberPermissionsDto p) {
-        return p.workspaceAdmin() || p.teamAdmin();
+    private boolean isProjectDeveloper(MemberPermissionsDto p) {
+        return p.projectMember() && (p.scrumRole() == null || "DEVELOPER".equals(p.scrumRole()));
     }
 
-    private void requireScrumMasterOrAdmin(MemberPermissionsDto p) {
-        if (isAdmin(p)) return;
+    private void requireScrumMaster(MemberPermissionsDto p) {
         if ("SCRUM_MASTER".equals(p.scrumRole())) return;
-        throw new ForbiddenException("SCRUM_MASTER_OR_ADMIN_REQUIRED");
+        throw new ForbiddenException("SCRUM_MASTER_REQUIRED");
     }
 
-    private void requireDeveloperOrAdmin(MemberPermissionsDto p) {
-        if (isAdmin(p)) return;
-        if ("DEVELOPER".equals(p.scrumRole())) return;
-        if (p.scrumRole() == null) return; // Member without scrum role = Developer
-        throw new ForbiddenException("DEVELOPER_OR_ADMIN_REQUIRED");
+    private void requireDeveloper(MemberPermissionsDto p) {
+        if (isProjectDeveloper(p)) return;
+        throw new ForbiddenException("DEVELOPER_REQUIRED");
     }
 
-    private void requireDeveloperOrPOOrAdmin(MemberPermissionsDto p) {
-        if (isAdmin(p)) return;
+    private void requireDeveloperOrProductOwner(MemberPermissionsDto p) {
         if ("PRODUCT_OWNER".equals(p.scrumRole())) return;
-        if (!"SCRUM_MASTER".equals(p.scrumRole())) return; // Developer or no role = allowed
-        throw new ForbiddenException("DEVELOPER_OR_PO_OR_ADMIN_REQUIRED");
+        if (isProjectDeveloper(p)) return;
+        throw new ForbiddenException("DEVELOPER_OR_PO_REQUIRED");
     }
 
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {

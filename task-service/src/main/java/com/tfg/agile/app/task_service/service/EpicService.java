@@ -67,7 +67,7 @@ public class EpicService {
     @Transactional
     public EpicResponseDto create(UUID projectId, CreateEpicRequestDto dto, UUID callerId) {
         MemberPermissionsDto perms = projectServiceClient.getMemberPermissions(projectId, callerId);
-        requirePoOrAdmin(perms);
+        requireProductOwner(perms);
 
         Epic epic = Epic.builder()
                 .projectId(projectId)
@@ -88,7 +88,7 @@ public class EpicService {
     public EpicResponseDto update(UUID epicId, UpdateEpicRequestDto dto, UUID callerId) {
         Epic epic = getEpicOrThrow(epicId);
         MemberPermissionsDto perms = projectServiceClient.getMemberPermissions(epic.getProjectId(), callerId);
-        requirePoOrAdmin(perms);
+        requireProductOwner(perms);
 
         epic.setName(dto.name());
         epic.setDescription(dto.description());
@@ -111,7 +111,7 @@ public class EpicService {
     public void delete(UUID epicId, UUID callerId) {
         Epic epic = getEpicOrThrow(epicId);
         MemberPermissionsDto perms = projectServiceClient.getMemberPermissions(epic.getProjectId(), callerId);
-        requirePoOrAdmin(perms);
+        requireProductOwner(perms);
 
         // Unlink all tasks from this epic
         List<Task> tasks = taskRepository.findByEpicIdOrderByPositionAsc(epicId);
@@ -129,7 +129,7 @@ public class EpicService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("TASK_NOT_FOUND"));
         MemberPermissionsDto perms = projectServiceClient.getMemberPermissions(task.getProjectId(), callerId);
-        requirePoOrAdmin(perms);
+        requireProductOwner(perms);
 
         String oldEpicName = null;
         String newEpicName = null;
@@ -174,11 +174,10 @@ public class EpicService {
                 .orElseThrow(() -> new ResourceNotFoundException("EPIC_NOT_FOUND"));
     }
 
-    private void requirePoOrAdmin(MemberPermissionsDto perms) {
-        boolean isAdmin = perms.workspaceAdmin() || perms.teamAdmin();
+    private void requireProductOwner(MemberPermissionsDto perms) {
         boolean isPo = "PRODUCT_OWNER".equals(perms.scrumRole());
-        if (!isAdmin && !isPo) {
-            throw new ForbiddenException("ONLY_PO_OR_ADMIN_CAN_MANAGE_EPICS");
+        if (!isPo) {
+            throw new ForbiddenException("ONLY_PO_CAN_MANAGE_EPICS");
         }
     }
 

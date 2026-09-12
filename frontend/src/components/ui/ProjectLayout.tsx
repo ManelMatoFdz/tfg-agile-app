@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation, useParams } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
-  ChevronRight, LayoutDashboard, ListChecks, RefreshCw,
+  LayoutDashboard, ListChecks, RefreshCw,
   Users, Layers, BarChart2, Settings, Target, GitBranch,
 } from 'lucide-react';
 import { projectsApi } from '../../api/projects';
 import type { Project } from '../../types';
+import { PageHeader } from './PageHeader';
 
 const TABS = [
   { key: 'board',    path: 'board',    Icon: LayoutDashboard },
@@ -33,40 +34,11 @@ export default function ProjectLayout() {
 
   return (
     <div>
-      {/* Breadcrumb */}
-      <nav style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        marginBottom: 16,
-        fontSize: 13,
-      }}>
-        <Link
-          to={`/workspaces/${workspaceId}`}
-          style={{
-            color: 'var(--accent-text)',
-            textDecoration: 'none',
-            fontWeight: 500,
-          }}
-          onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
-          onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
-        >
-          Kadenza
-        </Link>
-        <ChevronRight size={13} style={{ color: 'var(--text-faint)', flexShrink: 0 }} strokeWidth={1.75} />
-        <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>
-          {project?.name ?? '...'}
-        </span>
-        <ChevronRight size={13} style={{ color: 'var(--text-faint)', flexShrink: 0 }} strokeWidth={1.75} />
-        <span style={{ fontWeight: 600, color: 'var(--text)', textTransform: 'uppercase', fontSize: 12, letterSpacing: '0.02em' }}>
-          {getCurrentTabLabel(t, pathname)}
-        </span>
-      </nav>
-
+      <PageHeader flush>
       {/* Project header */}
       <div style={{
         marginBottom: 0,
-        paddingBottom: 16,
+        paddingBottom: 30,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
@@ -107,10 +79,7 @@ export default function ProjectLayout() {
       </div>
 
       {/* Tab navigation */}
-      <div style={{
-        marginBottom: 24,
-        borderBottom: '1px solid var(--border)',
-      }}>
+      <div>
         <nav style={{ display: 'flex', gap: 0 }}>
           {TABS.map(({ key, path, Icon }) => (
             <NavLink
@@ -155,6 +124,7 @@ export default function ProjectLayout() {
           ))}
         </nav>
       </div>
+      </PageHeader>
 
       <div>
         <Outlet />

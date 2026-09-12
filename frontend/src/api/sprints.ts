@@ -53,6 +53,9 @@ export const sprintsApi = {
   activateSprint: (sprintId: string) =>
     taskClient.post<Sprint>(`/sprints/${sprintId}/activate`).then((r) => r.data),
 
+  completeSprint: (sprintId: string) =>
+    taskClient.post<Sprint>(`/sprints/${sprintId}/complete`).then((r) => r.data),
+
   deleteSprint: (sprintId: string) =>
     taskClient.delete(`/sprints/${sprintId}`),
 

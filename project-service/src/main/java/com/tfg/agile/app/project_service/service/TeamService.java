@@ -42,7 +42,7 @@ public class TeamService {
     public TeamResponseDto create(UUID workspaceId, CreateTeamRequestDto dto, UUID callerId) {
         Workspace workspace = workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new ResourceNotFoundException("WORKSPACE_NOT_FOUND"));
-        requireWorkspaceMember(workspaceId, callerId);
+        requireWorkspaceAdmin(workspaceId, callerId);
 
         Team team = Team.builder()
                 .workspace(workspace)
@@ -259,6 +259,12 @@ public class TeamService {
     private void requireWorkspaceMember(UUID workspaceId, UUID userId) {
         if (!workspaceMemberRepository.existsByWorkspaceIdAndUserId(workspaceId, userId)) {
             throw new ForbiddenException("NOT_WORKSPACE_MEMBER");
+        }
+    }
+
+    private void requireWorkspaceAdmin(UUID workspaceId, UUID userId) {
+        if (!isWorkspaceAdmin(workspaceId, userId)) {
+            throw new ForbiddenException("WORKSPACE_ADMIN_REQUIRED");
         }
     }
 

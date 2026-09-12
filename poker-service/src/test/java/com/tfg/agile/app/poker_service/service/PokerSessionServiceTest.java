@@ -1,5 +1,6 @@
 package com.tfg.agile.app.poker_service.service;
 
+import com.tfg.agile.app.poker_service.client.MemberPermissionsDto;
 import com.tfg.agile.app.poker_service.client.ProjectServiceClient;
 import com.tfg.agile.app.poker_service.client.TaskServiceClient;
 import com.tfg.agile.app.poker_service.client.UserServiceClient;
@@ -71,6 +72,7 @@ class PokerSessionServiceTest {
         UUID projectId = UUID.randomUUID();
         UUID userId = UUID.randomUUID();
 
+        when(projectServiceClient.getMemberPermissions(projectId, userId)).thenReturn(scrumMasterPermissions(projectId));
         when(sessionRepository.save(any(PokerSession.class))).thenAnswer(invocation -> {
             PokerSession session = invocation.getArgument(0);
             session.setId(UUID.randomUUID());
@@ -114,6 +116,7 @@ class PokerSessionServiceTest {
         participant.setConnected(false);
 
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(projectServiceClient.getMemberPermissions(session.getProjectId(), userId)).thenReturn(memberPermissions(session.getProjectId()));
         when(participantRepository.existsBySessionIdAndUserId(sessionId, userId)).thenReturn(true);
         when(participantRepository.findBySessionIdAndUserId(sessionId, userId)).thenReturn(Optional.of(participant));
         when(participantRepository.save(any(PokerParticipant.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -130,6 +133,7 @@ class PokerSessionServiceTest {
         PokerSession session = TestDataFactory.session(UUID.randomUUID(), UUID.randomUUID());
 
         when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+        when(projectServiceClient.getMemberPermissions(session.getProjectId(), userId)).thenReturn(memberPermissions(session.getProjectId()));
         when(participantRepository.existsBySessionIdAndUserId(sessionId, userId)).thenReturn(false);
         when(participantRepository.save(any(PokerParticipant.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -493,5 +497,13 @@ class PokerSessionServiceTest {
         assertThatThrownBy(() -> service.revote(sessionId, userId))
                 .isInstanceOf(ForbiddenException.class)
                 .hasMessage("SESSION_FACILITATOR_REQUIRED");
+    }
+
+    private MemberPermissionsDto scrumMasterPermissions(UUID projectId) {
+        return new MemberPermissionsDto(UUID.randomUUID(), false, false, true, "SCRUM_MASTER");
+    }
+
+    private MemberPermissionsDto memberPermissions(UUID projectId) {
+        return new MemberPermissionsDto(UUID.randomUUID(), false, false, true, null);
     }
 }

@@ -9,4 +9,6 @@ import java.util.UUID;
 public interface EpicRepository extends JpaRepository<Epic, UUID> {
 
     List<Epic> findByProjectIdOrderByNameAsc(UUID projectId);
+
+    void deleteByProjectId(UUID projectId);
 }

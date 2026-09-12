@@ -6,11 +6,9 @@ import type { Task, TaskPriority, TaskType, Project } from '../types';
 import { tasksApi } from '../api/tasks';
 import { projectsApi } from '../api/projects';
 import Alert from '../components/ui/Alert';
-import PageTitle from '../components/motion/PageTitle';
 import SubtaskModal from '../components/kanban/SubtaskModal';
-import { getStatusLabel, getStatusColor, useBoardColumns } from '../hooks/useBoardColumns';
-
-const STATUS_ORDER: string[] = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'];
+import { useBoardColumns } from '../hooks/useBoardColumns';
+import { PageHeader } from '../components/ui/PageHeader';
 
 const PRIORITY_ORDER: Record<TaskPriority, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
 
@@ -42,8 +40,8 @@ export default function MyTasksPage() {
   const [filterProject, setFilterProject] = useState<string>('ALL');
   const [filterPriority, setFilterPriority] = useState<string>('ALL');
 
-  // Active tab
-  const [activeTab, setActiveTab] = useState<string>('TODO');
+  // Active tab: 'PENDING' (everything not DONE) or 'DONE'
+  const [activeTab, setActiveTab] = useState<string>('PENDING');
 
   // Subtask modal
   const [viewSubtask, setViewSubtask] = useState<Task | null>(null);
@@ -56,20 +54,19 @@ export default function MyTasksPage() {
       tasksApi.myTasks(),
       projectsApi.list(workspaceId).then((r) => r.data),
     ])
-      .then(([allTasks, p]) => {
-        setProjects(p);
-        // Filter tasks to only those belonging to projects in this workspace
-        const wsProjectIds = new Set(p.map((proj) => proj.id));
-        const wsTasks = allTasks.filter((task) => wsProjectIds.has(task.projectId));
-        setTasks(wsTasks);
-        // Set initial tab to first status that has tasks
-        const statuses = [...new Set(wsTasks.map((task) => task.status))];
-        const firstActive = STATUS_ORDER.find((s) => statuses.includes(s));
-        if (firstActive) setActiveTab(firstActive);
-      })
-      .catch(() => setError(t('myTasks.loadError')))
-      .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+        .then(([allTasks, p]) => {
+          setProjects(p);
+          // Filter tasks to only those belonging to projects in this workspace
+          const wsProjectIds = new Set(p.map((proj) => proj.id));
+          const wsTasks = allTasks.filter((task) => wsProjectIds.has(task.projectId));
+          setTasks(wsTasks);
+          // Default to PENDING if there are non-done tasks
+          const hasPending = wsTasks.some((task) => task.status !== 'DONE');
+          setActiveTab(hasPending ? 'PENDING' : 'DONE');
+        })
+        .catch(() => setError(t('myTasks.loadError')))
+        .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspaceId]);
 
   const projectMap = useMemo(() => {
@@ -77,15 +74,6 @@ export default function MyTasksPage() {
     for (const p of projects) map[p.id] = p;
     return map;
   }, [projects]);
-
-  // All statuses present in tasks
-  const allStatuses = useMemo(() => {
-    const set = new Set(tasks.map((t) => t.status));
-    return [
-      ...STATUS_ORDER.filter((s) => set.has(s)),
-      ...[...set].filter((s) => !STATUS_ORDER.includes(s)),
-    ];
-  }, [tasks]);
 
   // Filtered tasks
   const filtered = useMemo(() => {
@@ -95,20 +83,17 @@ export default function MyTasksPage() {
     return result;
   }, [tasks, filterProject, filterPriority]);
 
-  // Count per status (from filtered)
-  const countByStatus = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const t of filtered) map[t.status] = (map[t.status] ?? 0) + 1;
-    return map;
-  }, [filtered]);
+  // Count per virtual tab
+  const pendingCount = useMemo(() => filtered.filter((t) => t.status !== 'DONE').length, [filtered]);
+  const doneCount = useMemo(() => filtered.filter((t) => t.status === 'DONE').length, [filtered]);
 
   // Tasks for active tab
   const tabTasks = useMemo(
-    () =>
-      filtered
-        .filter((t) => t.status === activeTab)
-        .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]),
-    [filtered, activeTab],
+      () =>
+          filtered
+              .filter((t) => activeTab === 'DONE' ? t.status === 'DONE' : t.status !== 'DONE')
+              .sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]),
+      [filtered, activeTab],
   );
 
   // Unique project ids in tasks (for filter)
@@ -153,352 +138,359 @@ export default function MyTasksPage() {
   };
 
   return (
-    <div style={{ maxWidth: 960, display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
-
-      {/* Header */}
-      <div>
-        <PageTitle>{t('myTasks.title')}</PageTitle>
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-faint)' }}>
-          {t('myTasks.subtitle')}
-        </p>
-      </div>
-
-      {/* Filters */}
-      {!loading && tasks.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <Filter size={14} strokeWidth={2} style={{ color: 'var(--text-faint)' }} />
-
-          <select
-            value={filterProject}
-            onChange={(e) => setFilterProject(e.target.value)}
-            style={selectStyle}
-          >
-            <option value="ALL">{t('myTasks.allProjects')}</option>
-            {taskProjectIds.map((pid) => (
-              <option key={pid} value={pid}>{projectMap[pid]?.name ?? pid}</option>
-            ))}
-          </select>
-
-          <select
-            value={filterPriority}
-            onChange={(e) => setFilterPriority(e.target.value)}
-            style={selectStyle}
-          >
-            <option value="ALL">{t('myTasks.anyPriority')}</option>
-            {(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as TaskPriority[]).map((p) => (
-              <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {/* Content */}
-      {loading ? (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
-          <div style={{
-            width: 24, height: 24,
-            border: '2px solid var(--border)',
-            borderTopColor: 'var(--accent-text)',
-            borderRadius: '50%',
-            animation: 'spin 0.7s linear infinite',
-          }} />
-        </div>
-      ) : tasks.length === 0 ? (
-        <div style={{
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-card)',
-          padding: '48px 24px',
-          textAlign: 'center',
-        }}>
-          <div style={{
-            width: 44, height: 44,
-            background: 'var(--accent-muted)',
-            borderRadius: 'var(--radius-md)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 12px',
-          }}>
-            <CheckSquare size={20} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
-          </div>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>{t('myTasks.empty')}</p>
-          <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>{t('myTasks.emptySubtitle')}</p>
-        </div>
-      ) : (
-        <>
-          {/* Status tabs */}
-          <div style={{
+      <div
+          style={{
+            width: '100%',
+            minWidth: 0,
             display: 'flex',
-            gap: 0,
-            borderBottom: '2px solid var(--border)',
-          }}>
-            {allStatuses.map((status) => {
-              const count = countByStatus[status] ?? 0;
-              const active = activeTab === status;
-              const statusColor = getStatusColor(status, []);
-              return (
-                <button
-                  key={status}
-                  onClick={() => setActiveTab(status)}
-                  style={{
-                    padding: '10px 16px',
-                    fontSize: 13,
-                    fontWeight: active ? 600 : 500,
-                    color: active ? 'var(--text)' : 'var(--text-muted)',
-                    background: 'transparent',
-                    border: 'none',
-                    borderBottom: active ? `2px solid ${statusColor}` : '2px solid transparent',
-                    marginBottom: -2,
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-sans)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    transition: 'color 150ms, border-color 150ms',
-                  }}
-                >
-                  {getStatusLabel(status, [], t)}
-                  <span style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: active ? statusColor : 'var(--text-faint)',
-                    background: active ? `${statusColor}14` : 'var(--bg-hover)',
-                    borderRadius: 'var(--radius-pill)',
-                    padding: '1px 7px',
-                    fontFamily: 'var(--font-mono)',
-                  }}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+            flexDirection: 'column',
+            gap: 12,
+          }}
+      >
+        {error && <Alert type="error" message={error} onClose={() => setError(null)} />}
 
-          {/* Task cards */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {tabTasks.length === 0 ? (
-              <p style={{
-                textAlign: 'center', padding: '32px 0',
-                fontSize: 13, color: 'var(--text-faint)', fontStyle: 'italic',
+        <PageHeader
+            icon={CheckSquare}
+            title={t('myTasks.title')}
+            subtitle={t('myTasks.subtitle')}
+        />
+
+        {/* Filters */}
+        {!loading && tasks.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <Filter size={14} strokeWidth={2} style={{ color: 'var(--text-faint)' }} />
+
+              <select
+                  value={filterProject}
+                  onChange={(e) => setFilterProject(e.target.value)}
+                  style={selectStyle}
+              >
+                <option value="ALL">{t('myTasks.allProjects')}</option>
+                {taskProjectIds.map((pid) => (
+                    <option key={pid} value={pid}>{projectMap[pid]?.name ?? pid}</option>
+                ))}
+              </select>
+
+              <select
+                  value={filterPriority}
+                  onChange={(e) => setFilterPriority(e.target.value)}
+                  style={selectStyle}
+              >
+                <option value="ALL">{t('myTasks.anyPriority')}</option>
+                {(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'] as TaskPriority[]).map((p) => (
+                    <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
+                ))}
+              </select>
+            </div>
+        )}
+
+        {/* Content */}
+        {loading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
+              <div style={{
+                width: 24, height: 24,
+                border: '2px solid var(--border)',
+                borderTopColor: 'var(--accent-text)',
+                borderRadius: '50%',
+                animation: 'spin 0.7s linear infinite',
+              }} />
+            </div>
+        ) : tasks.length === 0 ? (
+            <div style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-card)',
+              padding: '48px 24px',
+              textAlign: 'center',
+            }}>
+              <div style={{
+                width: 44, height: 44,
+                background: 'var(--accent-muted)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 12px',
               }}>
-                {t('myTasks.noTasksInTab')}
-              </p>
-            ) : (
-              tabTasks.map((task) => {
-                const project = projectMap[task.projectId];
-                const priorityCfg = PRIORITY_CONFIG[task.priority];
-                const isSubtask = !!task.parentId;
-                const typeConfig = TYPE_ICON[task.type ?? 'TASK'];
-                const TypeIcon = typeConfig.icon;
+                <CheckSquare size={20} strokeWidth={1.5} style={{ color: 'var(--accent-text)' }} />
+              </div>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>{t('myTasks.empty')}</p>
+              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>{t('myTasks.emptySubtitle')}</p>
+            </div>
+        ) : (
+            <>
+              {/* Status tabs */}
+              <div style={{
+                display: 'flex',
+                gap: 0,
+                borderBottom: '2px solid var(--border)',
+              }}>
+                {([
+                  { key: 'PENDING', label: t('myTasks.pending'), count: pendingCount, color: 'var(--accent-text)' },
+                  { key: 'DONE', label: t('myTasks.done'), count: doneCount, color: 'var(--success-text)' },
+                ] as const).map(({ key, label, count, color }) => {
+                  const active = activeTab === key;
+                  return (
+                      <button
+                          key={key}
+                          onClick={() => setActiveTab(key)}
+                          style={{
+                            padding: '10px 16px',
+                            fontSize: 13,
+                            fontWeight: active ? 600 : 500,
+                            color: active ? 'var(--text)' : 'var(--text-muted)',
+                            background: 'transparent',
+                            border: 'none',
+                            borderBottom: active ? `2px solid ${color}` : '2px solid transparent',
+                            marginBottom: -2,
+                            cursor: 'pointer',
+                            fontFamily: 'var(--font-sans)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            transition: 'color 150ms, border-color 150ms',
+                          }}
+                      >
+                        {label}
+                        <span style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: active ? color : 'var(--text-faint)',
+                          background: active ? `${color}14` : 'var(--bg-hover)',
+                          borderRadius: 'var(--radius-pill)',
+                          padding: '1px 7px',
+                          fontFamily: 'var(--font-mono)',
+                        }}>
+                          {count}
+                        </span>
+                      </button>
+                  );
+                })}
+              </div>
 
-                return (
-                  <div
-                    key={task.id}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 14,
-                      padding: isSubtask ? '12px 16px 12px 24px' : '14px 16px',
-                      background: isSubtask ? 'var(--bg)' : 'var(--bg-elevated)',
-                      border: '1px solid var(--border)',
-                      borderLeft: isSubtask ? '2px dashed var(--border-strong)' : '1px solid var(--border)',
-                      borderRadius: 'var(--radius-card)',
-                      cursor: 'pointer',
-                      transition: 'border-color 150ms, box-shadow 150ms, transform 150ms',
-                    }}
-                    onClick={() => handleOpenTask(task)}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--border-strong)';
-                      e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--border)';
-                      e.currentTarget.style.borderLeftColor = isSubtask ? 'var(--border-strong)' : 'var(--border)';
-                      e.currentTarget.style.boxShadow = 'none';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    {/* Icon: subtask arrow vs type icon */}
-                    {isSubtask ? (
-                      <CornerDownRight size={15} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
-                    ) : (
-                      <TypeIcon size={16} strokeWidth={2} style={{ color: typeConfig.color, flexShrink: 0 }} />
-                    )}
+              {/* Task cards */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {tabTasks.length === 0 ? (
+                    <p style={{
+                      textAlign: 'center', padding: '32px 0',
+                      fontSize: 13, color: 'var(--text-faint)', fontStyle: 'italic',
+                    }}>
+                      {t('myTasks.noTasksInTab')}
+                    </p>
+                ) : (
+                    tabTasks.map((task) => {
+                      const project = projectMap[task.projectId];
+                      const priorityCfg = PRIORITY_CONFIG[task.priority];
+                      const isSubtask = !!task.parentId;
+                      const typeConfig = TYPE_ICON[task.type ?? 'TASK'];
+                      const TypeIcon = typeConfig.icon;
 
-                    {/* Main content */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      {/* Title row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        {isSubtask && (
-                          <span style={{
-                            flexShrink: 0,
-                            fontSize: 9,
-                            fontWeight: 700,
-                            letterSpacing: '0.06em',
-                            textTransform: 'uppercase',
-                            color: 'var(--text-faint)',
-                            background: 'var(--bg-hover)',
-                            border: '1px solid var(--border)',
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '1px 5px',
-                          }}>
+                      return (
+                          <div
+                              key={task.id}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 14,
+                                padding: isSubtask ? '12px 16px 12px 24px' : '14px 16px',
+                                background: isSubtask ? 'var(--bg)' : 'var(--bg-elevated)',
+                                border: '1px solid var(--border)',
+                                borderLeft: isSubtask ? '2px dashed var(--border-strong)' : '1px solid var(--border)',
+                                borderRadius: 'var(--radius-card)',
+                                cursor: 'pointer',
+                                transition: 'border-color 150ms, box-shadow 150ms, transform 150ms',
+                              }}
+                              onClick={() => handleOpenTask(task)}
+                              onMouseEnter={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--border-strong)';
+                                e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+                                e.currentTarget.style.transform = 'translateY(-1px)';
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.style.borderColor = 'var(--border)';
+                                e.currentTarget.style.borderLeftColor = isSubtask ? 'var(--border-strong)' : 'var(--border)';
+                                e.currentTarget.style.boxShadow = 'none';
+                                e.currentTarget.style.transform = 'translateY(0)';
+                              }}
+                          >
+                            {/* Icon: subtask arrow vs type icon */}
+                            {isSubtask ? (
+                                <CornerDownRight size={15} strokeWidth={2} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+                            ) : (
+                                <TypeIcon size={16} strokeWidth={2} style={{ color: typeConfig.color, flexShrink: 0 }} />
+                            )}
+
+                            {/* Main content */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              {/* Title row */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                                {isSubtask && (
+                                    <span style={{
+                                      flexShrink: 0,
+                                      fontSize: 9,
+                                      fontWeight: 700,
+                                      letterSpacing: '0.06em',
+                                      textTransform: 'uppercase',
+                                      color: 'var(--text-faint)',
+                                      background: 'var(--bg-hover)',
+                                      border: '1px solid var(--border)',
+                                      borderRadius: 'var(--radius-sm)',
+                                      padding: '1px 5px',
+                                    }}>
                             {t('myTasks.subtask')}
                           </span>
-                        )}
-                        <p style={{
-                          margin: 0, fontSize: 13, fontWeight: 500,
-                          color: isSubtask ? 'var(--text-muted)' : 'var(--text)',
-                          overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
-                        }}>
-                          {task.title}
-                        </p>
-                        {!isSubtask && (
-                          <span style={{
-                            flexShrink: 0,
-                            fontSize: 10,
-                            fontWeight: 700,
-                            letterSpacing: '0.06em',
-                            textTransform: 'uppercase',
-                            color: priorityCfg.color,
-                            background: priorityCfg.bg,
-                            borderRadius: 'var(--radius-sm)',
-                            padding: '1px 6px',
-                          }}>
+                                )}
+                                <p style={{
+                                  margin: 0, fontSize: 13, fontWeight: 500,
+                                  color: isSubtask ? 'var(--text-muted)' : 'var(--text)',
+                                  overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis',
+                                }}>
+                                  {task.title}
+                                </p>
+                                {!isSubtask && (
+                                    <span style={{
+                                      flexShrink: 0,
+                                      fontSize: 10,
+                                      fontWeight: 700,
+                                      letterSpacing: '0.06em',
+                                      textTransform: 'uppercase',
+                                      color: priorityCfg.color,
+                                      background: priorityCfg.bg,
+                                      borderRadius: 'var(--radius-sm)',
+                                      padding: '1px 6px',
+                                    }}>
                             {t(`tasks.priority.${task.priority}`)}
                           </span>
-                        )}
-                      </div>
+                                )}
+                              </div>
 
-                      {/* Meta row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 11, color: 'var(--text-faint)' }}>
-                        {project && (
-                          <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                              {/* Meta row */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 11, color: 'var(--text-faint)' }}>
+                                {project && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                             {project.color && (
-                              <span style={{
-                                width: 7, height: 7, borderRadius: '50%',
-                                background: project.color, flexShrink: 0,
-                              }} />
+                                <span style={{
+                                  width: 7, height: 7, borderRadius: '50%',
+                                  background: project.color, flexShrink: 0,
+                                }} />
                             )}
-                            {project.name}
+                                      {project.name}
                           </span>
-                        )}
-                        {isSubtask && task.parentTitle && (
-                          <>
-                            <span style={{ width: 1, height: 10, background: 'var(--border)' }} />
-                            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                )}
+                                {isSubtask && task.parentTitle && (
+                                    <>
+                                      <span style={{ width: 1, height: 10, background: 'var(--border)' }} />
+                                      <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                               {'↳'} {task.parentTitle}
                             </span>
-                          </>
-                        )}
-                        {!isSubtask && task.subtaskCount > 0 && (
-                          <>
-                            <span style={{ width: 1, height: 10, background: 'var(--border)' }} />
-                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
-                              {task.completedSubtaskCount}/{task.subtaskCount}
+                                    </>
+                                )}
+                                {!isSubtask && task.subtaskCount > 0 && (
+                                    <>
+                                      <span style={{ width: 1, height: 10, background: 'var(--border)' }} />
+                                      <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>
+                              {task.completedSubtaskCount}/{task.subtaskCount} {t('myTasks.subtasks')}
                             </span>
-                          </>
-                        )}
-                        {task.labels && task.labels.length > 0 && (
-                          <>
-                            <span style={{ width: 1, height: 10, background: 'var(--border)' }} />
-                            <div style={{ display: 'flex', gap: 3 }}>
-                              {task.labels.slice(0, 2).map((lbl) => (
-                                <span key={lbl.id} style={{
-                                  fontSize: 9, fontWeight: 700,
-                                  letterSpacing: '0.04em', textTransform: 'uppercase',
-                                  color: lbl.color,
-                                  background: `${lbl.color}14`,
-                                  border: `1px solid ${lbl.color}40`,
-                                  borderRadius: 'var(--radius-sm)',
-                                  padding: '0px 5px',
-                                  lineHeight: '16px',
-                                }}>
+                                    </>
+                                )}
+                                {task.labels && task.labels.length > 0 && (
+                                    <>
+                                      <span style={{ width: 1, height: 10, background: 'var(--border)' }} />
+                                      <div style={{ display: 'flex', gap: 3 }}>
+                                        {task.labels.slice(0, 2).map((lbl) => (
+                                            <span key={lbl.id} style={{
+                                              fontSize: 9, fontWeight: 700,
+                                              letterSpacing: '0.04em', textTransform: 'uppercase',
+                                              color: lbl.color,
+                                              background: `${lbl.color}14`,
+                                              border: `1px solid ${lbl.color}40`,
+                                              borderRadius: 'var(--radius-sm)',
+                                              padding: '0px 5px',
+                                              lineHeight: '16px',
+                                            }}>
                                   {lbl.name}
                                 </span>
-                              ))}
-                              {task.labels.length > 2 && (
-                                <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-faint)' }}>
+                                        ))}
+                                        {task.labels.length > 2 && (
+                                            <span style={{ fontSize: 9, fontWeight: 600, color: 'var(--text-faint)' }}>
                                   +{task.labels.length - 2}
                                 </span>
-                              )}
+                                        )}
+                                      </div>
+                                    </>
+                                )}
+                              </div>
                             </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
 
-                    {/* Story points (only for regular tasks) */}
-                    {!isSubtask && task.storyPoints != null && (
-                      <span style={{
-                        flexShrink: 0,
-                        fontWeight: 700,
-                        color: 'var(--accent-text)',
-                        background: 'var(--accent-muted)',
-                        borderRadius: 'var(--radius-pill)',
-                        width: 26,
-                        height: 26,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 11,
-                        fontFamily: 'var(--font-mono)',
-                      }}>
+                            {/* Story points (only for regular tasks) */}
+                            {!isSubtask && task.storyPoints != null && (
+                                <span style={{
+                                  flexShrink: 0,
+                                  fontWeight: 700,
+                                  color: 'var(--accent-text)',
+                                  background: 'var(--accent-muted)',
+                                  borderRadius: 'var(--radius-pill)',
+                                  width: 26,
+                                  height: 26,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: 11,
+                                  fontFamily: 'var(--font-mono)',
+                                }}>
                         {task.storyPoints}
                       </span>
-                    )}
+                            )}
 
-                    {/* Go to project button */}
-                    <button
-                      title={t('myTasks.goToProject')}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        goToProject(task);
-                      }}
-                      style={{
-                        flexShrink: 0,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: 28,
-                        height: 28,
-                        borderRadius: 'var(--radius-md)',
-                        border: '1px solid var(--border)',
-                        background: 'var(--bg)',
-                        color: 'var(--text-faint)',
-                        cursor: 'pointer',
-                        transition: 'color 150ms, border-color 150ms, background 150ms',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.color = 'var(--accent-text)';
-                        e.currentTarget.style.borderColor = 'var(--accent)';
-                        e.currentTarget.style.background = 'var(--accent-muted)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.color = 'var(--text-faint)';
-                        e.currentTarget.style.borderColor = 'var(--border)';
-                        e.currentTarget.style.background = 'var(--bg)';
-                      }}
-                    >
-                      <ExternalLink size={13} strokeWidth={2} />
-                    </button>
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </>
-      )}
+                            {/* Go to project button */}
+                            <button
+                                title={t('myTasks.goToProject')}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  goToProject(task);
+                                }}
+                                style={{
+                                  flexShrink: 0,
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: 28,
+                                  height: 28,
+                                  borderRadius: 'var(--radius-md)',
+                                  border: '1px solid var(--border)',
+                                  background: 'var(--bg)',
+                                  color: 'var(--text-faint)',
+                                  cursor: 'pointer',
+                                  transition: 'color 150ms, border-color 150ms, background 150ms',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.color = 'var(--accent-text)';
+                                  e.currentTarget.style.borderColor = 'var(--accent)';
+                                  e.currentTarget.style.background = 'var(--accent-muted)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.color = 'var(--text-faint)';
+                                  e.currentTarget.style.borderColor = 'var(--border)';
+                                  e.currentTarget.style.background = 'var(--bg)';
+                                }}
+                            >
+                              <ExternalLink size={13} strokeWidth={2} />
+                            </button>
+                          </div>
+                      );
+                    })
+                )}
+              </div>
+            </>
+        )}
 
-      {/* Subtask modal (read-only) */}
-      {viewSubtask && (
-        <SubtaskModal
-          subtask={viewSubtask}
-          columns={subtaskColumns}
-          readOnly
-          onClose={() => setViewSubtask(null)}
-        />
-      )}
-    </div>
+        {/* Subtask modal (read-only) */}
+        {viewSubtask && (
+            <SubtaskModal
+                subtask={viewSubtask}
+                columns={subtaskColumns}
+                readOnly
+                onClose={() => setViewSubtask(null)}
+            />
+        )}
+      </div>
   );
 }

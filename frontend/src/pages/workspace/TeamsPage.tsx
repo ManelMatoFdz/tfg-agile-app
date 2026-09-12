@@ -3,12 +3,14 @@ import { Link, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Plus, Users, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { teamsApi } from '../../api/teams';
+import { workspacesApi } from '../../api/workspaces';
 import { useApiAction } from '../../hooks/useApiAction';
 import { useUserMap } from '../../hooks/useUserMap';
 import { buildAvatarSrc } from '../../utils/avatarUrl';
 import Alert from '../../components/ui/Alert';
-import PageTitle from '../../components/motion/PageTitle';
 import type { Team, UserSummary } from '../../types';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { useAuthStore } from '../../store/authStore';
 
 const PAGE_SIZE = 5;
 const MAX_AVATARS = 4;
@@ -64,6 +66,7 @@ const labelStyle: React.CSSProperties = {
 export default function TeamsPage() {
   const { t } = useTranslation();
   const { workspaceId } = useParams<{ workspaceId: string }>();
+  const currentUser = useAuthStore((s) => s.user);
 
   const [teams, setTeams] = useState<Team[]>([]);
   const [teamMemberIds, setTeamMemberIds] = useState<Record<string, string[]>>({});
@@ -72,6 +75,7 @@ export default function TeamsPage() {
   const [description, setDescription] = useState('');
   const [selectedColor, setSelectedColor] = useState(DEFAULT_COLOR);
   const [page, setPage] = useState(0);
+  const [isWorkspaceAdmin, setIsWorkspaceAdmin] = useState(false);
 
   const listAction = useApiAction<Team[]>();
   const createAction = useApiAction<Team>();
@@ -87,6 +91,9 @@ export default function TeamsPage() {
 
   const loadTeams = () => {
     if (!workspaceId) return;
+    workspacesApi.getMembers(workspaceId)
+      .then((res) => setIsWorkspaceAdmin(res.data.some((m) => m.userId === currentUser?.id && m.role === 'ADMIN')))
+      .catch(() => setIsWorkspaceAdmin(false));
     listAction.run(teamsApi.list(workspaceId)).then((data) => {
       if (data) {
         setTeams(data);
@@ -103,11 +110,11 @@ export default function TeamsPage() {
   useEffect(() => {
     loadTeams();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspaceId]);
+  }, [workspaceId, currentUser?.id]);
 
   const handleCreate = async (e: FormEvent) => {
     e.preventDefault();
-    if (!workspaceId) return;
+    if (!workspaceId || !isWorkspaceAdmin) return;
     const data = await createAction.run(
       teamsApi.create(workspaceId, { name, description: description || undefined, color: selectedColor }),
     );
@@ -138,26 +145,28 @@ export default function TeamsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      {/* Header */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <PageTitle style={{ fontSize: 24 }}>
-            {t('teams.title')}
-          </PageTitle>
-          {!listAction.loading && teams.length > 0 && (
-            <span style={{
-              fontSize: 11, fontWeight: 500, color: 'var(--text-faint)',
-              background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-sm)', padding: '1px 6px', fontFamily: 'var(--font-mono)',
-            }}>
-              {teams.length}
-            </span>
-          )}
-        </div>
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-faint)' }}>
-          {t('teams.subtitle')}
-        </p>
-      </div>
+      <PageHeader
+        icon={Users}
+        title={t('teams.title')}
+        subtitle={t('teams.subtitle')}
+        action={isWorkspaceAdmin && !listAction.loading && teams.length > 0 && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+              padding: '9px 18px', fontSize: 13, fontWeight: 600,
+              background: 'var(--accent)', color: 'var(--accent-fg)',
+              border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
+              transition: 'background 150ms',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
+          >
+            <Plus size={15} strokeWidth={2.5} />
+            {t('teams.ctaButton')}
+          </button>
+        )}
+      />
 
       {listAction.error && (
         <Alert type="error" message={listAction.error} onClose={listAction.reset} />
@@ -186,6 +195,7 @@ export default function TeamsPage() {
           </div>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: 'var(--text-muted)' }}>{t('teams.noTeams')}</p>
           <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>{t('teams.noTeamsSubtitle')}</p>
+          {isWorkspaceAdmin && (
           <button
             onClick={() => setShowCreateModal(true)}
             style={{
@@ -198,6 +208,7 @@ export default function TeamsPage() {
           >
             {t('teams.newTeam')}
           </button>
+          )}
         </div>
       ) : (
         <>
@@ -282,38 +293,6 @@ export default function TeamsPage() {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* CTA card */}
-          <div style={{
-            background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-card)', padding: '24px 28px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            flexWrap: 'wrap', gap: 16,
-          }}>
-            <div>
-              <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
-                {t('teams.ctaTitle')}
-              </p>
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text-faint)' }}>
-                {t('teams.ctaSubtitle')}
-              </p>
-            </div>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '8px 18px', fontSize: 13, fontWeight: 500,
-                background: 'var(--accent)', color: 'var(--accent-fg)',
-                border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--accent-hover)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'var(--accent)')}
-            >
-              <Plus size={14} strokeWidth={2.5} />
-              {t('teams.ctaButton')}
-            </button>
           </div>
         </>
       )}

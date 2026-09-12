@@ -316,7 +316,9 @@ export default function AppLayout() {
         maxWidth: 1120,
         margin: '0 auto',
         padding: '32px 24px',
-      }}>
+        '--page-px': '24px',
+        '--page-pt': '32px',
+      } as React.CSSProperties}>
         <Outlet />
       </main>
     </div>

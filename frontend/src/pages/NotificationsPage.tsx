@@ -2,10 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, CheckCheck, Inbox } from 'lucide-react';
+import { Check, CheckCheck, Inbox, Bell } from 'lucide-react';
 import Alert from '../components/ui/Alert';
 import NotificationSource from '../components/ui/NotificationSource';
-import PageTitle from '../components/motion/PageTitle';
 import { notificationsApi } from '../api/notifications';
 import { invitationsApi } from '../api/invitations';
 import { useApiAction } from '../hooks/useApiAction';
@@ -17,6 +16,7 @@ import {
   timeAgo,
 } from '../utils/notificationMeta';
 import type { Notification, NotificationPage } from '../types';
+import { PageHeader } from '../components/ui/PageHeader';
 
 const PAGE_SIZE = 10;
 
@@ -47,8 +47,7 @@ const CSS = `
 .nfy-row[data-unread='false'] .nfy-title{color:var(--text-muted);font-weight:500}
 .nfy-time{flex-shrink:0;color:var(--text-faint);font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .nfy-message{margin:3px 0 0;color:var(--text-faint);font-size:13px;line-height:1.55;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.nfy-mark{width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:0;border-radius:var(--radius-sm);background:transparent;color:var(--text-faint);opacity:0;cursor:pointer;transition:opacity var(--duration),background var(--duration),color var(--duration)}
-.nfy-row:hover .nfy-mark,.nfy-mark:focus-visible{opacity:1}
+.nfy-mark{width:30px;height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;border:0;border-radius:var(--radius-sm);background:transparent;color:var(--text-faint);cursor:pointer;transition:background var(--duration),color var(--duration)}
 .nfy-mark:hover{background:var(--bg-elevated);color:var(--accent-text)}
 .nfy-actions{display:flex;align-items:center;gap:8px;margin-top:11px}
 .nfy-action{height:32px;padding:0 14px;border-radius:var(--radius-sm);font:inherit;font-size:13px;font-weight:600;cursor:pointer}
@@ -60,7 +59,6 @@ const CSS = `
 .nfy-load-more:hover:not(:disabled){background:var(--accent-muted)}
 .nfy-load-more:disabled{cursor:wait;opacity:.65}
 .nfy-spinner{width:15px;height:15px;border:2px solid var(--border);border-top-color:var(--accent-text);border-radius:50%;animation:spin .7s linear infinite}
-@media (hover:none){.nfy-mark{opacity:1}}
 @media (max-width:640px){
   .nfy-header{align-items:stretch}
   .nfy-header-copy{width:100%}
@@ -219,23 +217,22 @@ export default function NotificationsPage() {
     <div className="nfy-page">
       <style>{CSS}</style>
 
-      <header className="nfy-header">
-        <div className="nfy-header-copy">
-          <PageTitle>{t('notifications.title')}</PageTitle>
-          <p style={{ margin: '4px 0 0', color: 'var(--text-faint)', fontSize: 13 }}>
-            {t('notifications.subtitle')}
-          </p>
-        </div>
-        <button
-          type="button"
-          className="nfy-mark-all"
-          onClick={handleMarkAll}
-          disabled={markAllAction.loading || unreadCount === 0}
-        >
-          {markAllAction.loading ? <span className="nfy-spinner" /> : <CheckCheck size={16} strokeWidth={2} />}
-          {t('notifications.markAll')}
-        </button>
-      </header>
+      <PageHeader
+        icon={Bell}
+        title={t('notifications.title')}
+        subtitle={t('notifications.subtitle')}
+        action={
+          <button
+            type="button"
+            className="nfy-mark-all"
+            onClick={handleMarkAll}
+            disabled={markAllAction.loading || unreadCount === 0}
+          >
+            {markAllAction.loading ? <span className="nfy-spinner" /> : <CheckCheck size={16} strokeWidth={2} />}
+            {t('notifications.markAll')}
+          </button>
+        }
+      />
 
       {loadError && <Alert type="error" message={loadError} />}
       {markAllAction.error && <Alert type="error" message={markAllAction.error} />}

@@ -15,7 +15,7 @@ class SecurityBeansTest {
 
     @Test
     void jwtAuthFilter_returnsFilterInstance() {
-        JwtAuthFilter filter = securityBeans.jwtAuthFilter(org.mockito.Mockito.mock(JwtService.class));
+        JwtAuthFilter filter = securityBeans.jwtAuthFilter(org.mockito.Mockito.mock(JwtService.class), org.mockito.Mockito.mock(TokenVersionClient.class));
 
         assertThat(filter).isNotNull();
     }

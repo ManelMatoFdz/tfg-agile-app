@@ -2,14 +2,10 @@ package com.tfg.agile.app.task_service.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 @Component
@@ -17,16 +13,17 @@ public class UserServiceClient {
 
     private static final Logger log = LoggerFactory.getLogger(UserServiceClient.class);
 
-    private final RestClient restClient;
+    private final RabbitTemplate rabbitTemplate;
+    private final String exchange;
+    private final String routingKey;
 
     public UserServiceClient(
-            @Value("${app.user-service.url}") String baseUrl,
-            @Value("${app.internal.api-key}") String apiKey) {
-        this.restClient = RestClient.builder()
-                .baseUrl(baseUrl)
-                .defaultHeader("X-Internal-Api-Key", apiKey)
-                .requestFactory(new SimpleClientHttpRequestFactory())
-                .build();
+            RabbitTemplate rabbitTemplate,
+            @Value("${app.notifications.exchange}") String exchange,
+            @Value("${app.notifications.routing-key}") String routingKey) {
+        this.rabbitTemplate = rabbitTemplate;
+        this.exchange = exchange;
+        this.routingKey = routingKey;
     }
 
     public void sendNotification(UUID userId, String title, String message, String type, String link, String data) {
@@ -35,23 +32,15 @@ public class UserServiceClient {
 
     public void sendNotification(UUID userId, String title, String message, String type, String link, String data, UUID actorUserId) {
         try {
-            Map<String, Object> body = new HashMap<>();
-            body.put("userId", userId);
-            body.put("title", title);
-            body.put("message", message);
-            body.put("type", type);
-            body.put("link", link != null ? link : "");
-            body.put("data", data != null ? data : "");
-            if (actorUserId != null) body.put("actorUserId", actorUserId);
-
-            restClient.post()
-                    .uri("/internal/notifications/enqueue")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(body)
-                    .retrieve()
-                    .toBodilessEntity();
+            NotificationMessage msg = new NotificationMessage(
+                    userId, title, message, type,
+                    link != null ? link : "",
+                    data != null ? data : "",
+                    actorUserId
+            );
+            rabbitTemplate.convertAndSend(exchange, routingKey, msg);
         } catch (Exception e) {
-            log.error("Failed to send notification to user {}: {}", userId, e.getMessage());
+            log.error("Failed to publish notification to user {}: {}", userId, e.getMessage());
         }
     }
 }
