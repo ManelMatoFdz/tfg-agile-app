@@ -55,6 +55,7 @@ services:
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_AUTH: ${SMTP_AUTH:-true}
       SMTP_STARTTLS: ${SMTP_STARTTLS:-true}
+      MANAGEMENT_HEALTH_MAIL_ENABLED: ${MANAGEMENT_HEALTH_MAIL_ENABLED:-false}
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_USER:?set RABBITMQ_USER}
@@ -93,10 +94,17 @@ services:
       PROJECT_DB_USER: ${PROJECT_DB_USER:?set PROJECT_DB_USER}
       PROJECT_DB_PASS: ${PROJECT_DB_PASS:?set PROJECT_DB_PASS}
       USER_SERVICE_URL: http://user-service:8081
+      TASK_SERVICE_URL: http://task-service:8083
+      POKER_SERVICE_URL: http://poker-service:8084
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
       JWT_ISSUER: ${JWT_ISSUER:-agileflow-user-service}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-agileflow-api}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?set INTERNAL_API_KEY}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:?set RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:?set RABBITMQ_PASS}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
       PROJECT_SERVICE_JPA_DDL_AUTO: ${PROJECT_SERVICE_JPA_DDL_AUTO:-validate}
       SERVER_FORWARD_HEADERS_STRATEGY: framework
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
@@ -110,6 +118,8 @@ services:
       project-db:
         condition: service_healthy
       user-service:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   task-service:
@@ -134,6 +144,11 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-agileflow-user-service}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-agileflow-api}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?set INTERNAL_API_KEY}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:?set RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:?set RABBITMQ_PASS}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
       TASK_SERVICE_JPA_DDL_AUTO: ${TASK_SERVICE_JPA_DDL_AUTO:-validate}
       SERVER_FORWARD_HEADERS_STRATEGY: framework
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
@@ -149,6 +164,8 @@ services:
       project-service:
         condition: service_healthy
       user-service:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   poker-service:
@@ -173,6 +190,11 @@ services:
       JWT_ISSUER: ${JWT_ISSUER:-agileflow-user-service}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-agileflow-api}
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:?set INTERNAL_API_KEY}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: ${RABBITMQ_USER:?set RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS:?set RABBITMQ_PASS}
+      RABBITMQ_VHOST: ${RABBITMQ_VHOST:-/}
       POKER_SERVICE_JPA_DDL_AUTO: ${POKER_SERVICE_JPA_DDL_AUTO:-validate}
       SERVER_FORWARD_HEADERS_STRATEGY: framework
       JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=70 -XX:+ExitOnOutOfMemoryError
@@ -190,6 +212,8 @@ services:
       project-service:
         condition: service_healthy
       user-service:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   user-db:
