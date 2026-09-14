@@ -480,7 +480,10 @@
       "errorEmptyName": "All columns must have a name.",
       "errorNoDone": "At least one column must be marked as DONE equivalent.",
       "errorDuplicateName": "Column names must be unique.",
-      "errorWipExceeded": "Column \"{{column}}\" has {{current}} task(s) but the WIP limit is {{limit}}."
+      "errorWipExceeded": "Column \"{{column}}\" has {{current}} task(s) but the WIP limit is {{limit}}.",
+      "accessDeniedTitle": "Only Developers can configure the board",
+      "accessDeniedDescription": "Workflow columns and WIP limits are managed by Developers for this project.",
+      "backToBoard": "Back to board"
     },
     "members": {
       "title": "Members",
@@ -1315,7 +1318,8 @@
     "STORY_STATUS_IS_DERIVED": "Story status is automatically derived.",
     "PARENT_TASK_HAS_OPEN_SUBTASKS": "You cannot move this task to a done column until all its subtasks are complete.",
     "SUBTASKS_FOLLOW_PARENT": "Subtasks are automatically assigned with their parent story.",
-    "SUBTASK_NOT_ESTIMABLE": "Subtasks cannot have story points."
+    "SUBTASK_NOT_ESTIMABLE": "Subtasks cannot have story points.",
+    "ONLY_DEVELOPERS_CAN_CONFIGURE_BOARD": "Only Developers can configure the board."
   },
   "landing": {
     "nav": {

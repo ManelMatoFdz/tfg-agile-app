@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { renderWithProviders } from '../test/testUtils';
 import { userFixture } from '../test/fixtures';
@@ -19,6 +19,7 @@ import { gitApi } from '../api/git';
 import { notificationsApi } from '../api/notifications';
 import { usersApi } from '../api/users';
 import { dependenciesApi } from '../api/dependencies';
+import { useProjectMember } from '../hooks/useProjectMember';
 import LandingPage from './LandingPage';
 import ProfilePage from './ProfilePage';
 import WorkspaceSelectorPage from './workspace/WorkspaceSelectorPage';
@@ -93,9 +94,9 @@ jest.mock('../api/users', () => ({ usersApi: {
 } }));
 jest.mock('../api/dependencies', () => ({ dependenciesApi: { getByTask: jest.fn(), create: jest.fn(), delete: jest.fn() } }));
 jest.mock('../hooks/useProjectMember', () => ({ useProjectMember: jest.fn(() => ({
-  member: null, loading: false, isAdmin: true, isScrumMaster: false, isProductOwner: false,
-  isDeveloper: false, canCreateTask: true, canEditBacklogTask: true, canEditSprintTask: true,
-  canDeleteBacklogTask: true, canDeleteSprintTask: true, canMoveTask: true, canPlanSprint: true,
+  member: null, loading: false, isAdmin: false, isScrumMaster: false, isProductOwner: false,
+  isDeveloper: true, canCreateTask: true, canEditBacklogTask: true, canEditSprintTask: true,
+  canDeleteBacklogTask: true, canDeleteSprintTask: true, canMoveTask: true, canConfigureBoard: true, canPlanSprint: true,
   canAddToActiveSprint: true, canManageSprint: true, canCreatePokerSession: true,
 })) }));
 jest.mock('../hooks/useProjectMembers', () => ({ useProjectMembers: jest.fn(() => ({ members: [], userMap: {}, loading: false })) }));
@@ -215,6 +216,44 @@ describe('main page loading contracts', () => {
     const { container } = renderWithProviders(ui, { route, path });
     await waitFor(() => expect(called).toHaveBeenCalled());
     await waitFor(() => expect(container).not.toBeEmptyDOMElement());
+  });
+
+  it('shows board settings access on the kanban page only when board configuration is allowed', async () => {
+    jest.mocked(sprintsApi.listSprints).mockResolvedValue([{ ...sprint, status: 'ACTIVE' }] as never);
+
+    const first = renderWithProviders(<KanbanPage />, {
+      route: '/workspaces/workspace-1/projects/project-1/board',
+      path: '/workspaces/:workspaceId/projects/:projectId/board',
+    });
+    expect(await screen.findByRole('button', { name: /Board settings/i })).toBeInTheDocument();
+    first.unmount();
+
+    jest.mocked(useProjectMember).mockReturnValue({
+      member: null,
+      loading: false,
+      isAdmin: true,
+      isScrumMaster: true,
+      isProductOwner: false,
+      isDeveloper: false,
+      canCreateTask: false,
+      canEditBacklogTask: false,
+      canEditSprintTask: false,
+      canDeleteBacklogTask: false,
+      canDeleteSprintTask: false,
+      canMoveTask: false,
+      canConfigureBoard: false,
+      canPlanSprint: false,
+      canAddToActiveSprint: false,
+      canManageSprint: true,
+      canCreatePokerSession: true,
+    });
+
+    renderWithProviders(<KanbanPage />, {
+      route: '/workspaces/workspace-1/projects/project-1/board',
+      path: '/workspaces/:workspaceId/projects/:projectId/board',
+    });
+    await waitFor(() => expect(sprintsApi.listSprints).toHaveBeenCalled());
+    expect(screen.queryByRole('button', { name: /Board settings/i })).not.toBeInTheDocument();
   });
 
   it('renders the landing page without making an API request', () => {

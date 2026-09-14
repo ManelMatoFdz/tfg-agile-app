@@ -37,17 +37,13 @@ public class BoardColumnController {
                                             @Valid @RequestBody SaveBoardColumnsRequestDto dto,
                                             @AuthenticationPrincipal UUID callerId) {
         MemberPermissionsDto perms = projectServiceClient.getMemberPermissions(projectId, callerId);
-        if (!isAdmin(perms) && !isScrumMaster(perms)) {
-            throw new ForbiddenException("ONLY_ADMIN_OR_SM_CAN_CONFIGURE_BOARD");
+        if (!isDeveloper(perms)) {
+            throw new ForbiddenException("ONLY_DEVELOPERS_CAN_CONFIGURE_BOARD");
         }
         return boardColumnService.saveColumns(projectId, dto.columns());
     }
 
-    private boolean isAdmin(MemberPermissionsDto p) {
-        return p.workspaceAdmin() || p.teamAdmin();
-    }
-
-    private boolean isScrumMaster(MemberPermissionsDto p) {
-        return "SCRUM_MASTER".equals(p.scrumRole());
+    private boolean isDeveloper(MemberPermissionsDto p) {
+        return p.projectMember() && "DEVELOPER".equals(p.scrumRole());
     }
 }

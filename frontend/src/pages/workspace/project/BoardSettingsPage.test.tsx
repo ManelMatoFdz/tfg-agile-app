@@ -70,20 +70,21 @@ describe('BoardSettingsPage', () => {
     mockUseProjectMember.mockReturnValue({
       member: null,
       loading: false,
-      isAdmin: true,
+      isAdmin: false,
       isScrumMaster: false,
       isProductOwner: false,
-      isDeveloper: false,
-      canCreateTask: true,
-      canEditBacklogTask: true,
+      isDeveloper: true,
+      canCreateTask: false,
+      canEditBacklogTask: false,
       canEditSprintTask: true,
-      canDeleteBacklogTask: true,
+      canDeleteBacklogTask: false,
       canDeleteSprintTask: true,
       canMoveTask: true,
+      canConfigureBoard: true,
       canPlanSprint: true,
       canAddToActiveSprint: true,
-      canManageSprint: true,
-      canCreatePokerSession: true,
+      canManageSprint: false,
+      canCreatePokerSession: false,
     });
     mockGetColumns.mockResolvedValue([
       columnFixture({ id: 'todo', name: 'TODO', position: 0 }),
@@ -94,6 +95,41 @@ describe('BoardSettingsPage', () => {
       taskFixture({ id: 't2', status: 'TODO' }),
       taskFixture({ id: 't3', status: 'DONE' }),
     ]);
+  });
+
+  it('blocks the settings page for non-Developers without loading board data', async () => {
+    mockUseProjectMember.mockReturnValue({
+      member: null,
+      loading: false,
+      isAdmin: true,
+      isScrumMaster: false,
+      isProductOwner: false,
+      isDeveloper: false,
+      canCreateTask: false,
+      canEditBacklogTask: false,
+      canEditSprintTask: false,
+      canDeleteBacklogTask: false,
+      canDeleteSprintTask: false,
+      canMoveTask: false,
+      canConfigureBoard: false,
+      canPlanSprint: false,
+      canAddToActiveSprint: false,
+      canManageSprint: false,
+      canCreatePokerSession: false,
+    });
+
+    const { user } = renderWithProviders(<BoardSettingsPage />, {
+      route: '/workspaces/workspace-1/projects/project-1/board-settings',
+      path: '/workspaces/:workspaceId/projects/:projectId/board-settings',
+    });
+
+    expect(await screen.findByText(i18n.t('projects.boardSettings.accessDeniedTitle'))).toBeInTheDocument();
+    expect(mockGetColumns).not.toHaveBeenCalled();
+    expect(mockGetTasks).not.toHaveBeenCalled();
+    expect(mockSaveColumns).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('button', { name: i18n.t('projects.boardSettings.backToBoard') }));
+    expect(mockNavigate).toHaveBeenCalledWith('/workspaces/workspace-1/projects/project-1/board');
   });
 
   it('validates empty names, missing done columns, duplicates and exceeded WIP', async () => {

@@ -51,14 +51,14 @@ class BoardColumnControllerTest {
     }
 
     @Test
-    void saveColumns_adminCanSave() {
+    void saveColumns_developerCanSave() {
         UUID projectId = UUID.randomUUID();
         UUID callerId = UUID.randomUUID();
 
         BoardColumnDto doneCol = new BoardColumnDto(null, "DONE", 0, "#22C55E", null, true);
         SaveBoardColumnsRequestDto request = new SaveBoardColumnsRequestDto(List.of(doneCol));
 
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
         when(boardColumnService.saveColumns(projectId, request.columns())).thenReturn(List.of(doneCol));
 
         var result = controller.saveColumns(projectId, request, callerId);
@@ -68,7 +68,22 @@ class BoardColumnControllerTest {
     }
 
     @Test
-    void saveColumns_scrumMasterCanSave() {
+    void saveColumns_throwsForAdmin() {
+        UUID projectId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+
+        BoardColumnDto doneCol = new BoardColumnDto(null, "DONE", 0, "#22C55E", null, true);
+        SaveBoardColumnsRequestDto request = new SaveBoardColumnsRequestDto(List.of(doneCol));
+
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+
+        assertThatThrownBy(() -> controller.saveColumns(projectId, request, callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("ONLY_DEVELOPERS_CAN_CONFIGURE_BOARD");
+    }
+
+    @Test
+    void saveColumns_throwsForScrumMaster() {
         UUID projectId = UUID.randomUUID();
         UUID callerId = UUID.randomUUID();
 
@@ -76,25 +91,24 @@ class BoardColumnControllerTest {
         SaveBoardColumnsRequestDto request = new SaveBoardColumnsRequestDto(List.of(doneCol));
 
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
-        when(boardColumnService.saveColumns(projectId, request.columns())).thenReturn(List.of(doneCol));
 
-        var result = controller.saveColumns(projectId, request, callerId);
-
-        assertThat(result).hasSize(1);
+        assertThatThrownBy(() -> controller.saveColumns(projectId, request, callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("ONLY_DEVELOPERS_CAN_CONFIGURE_BOARD");
     }
 
     @Test
-    void saveColumns_throwsWhenNotAdminNorSM() {
+    void saveColumns_throwsForProductOwner() {
         UUID projectId = UUID.randomUUID();
         UUID callerId = UUID.randomUUID();
 
         BoardColumnDto doneCol = new BoardColumnDto(null, "DONE", 0, "#22C55E", null, true);
         SaveBoardColumnsRequestDto request = new SaveBoardColumnsRequestDto(List.of(doneCol));
 
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
 
         assertThatThrownBy(() -> controller.saveColumns(projectId, request, callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("ONLY_ADMIN_OR_SM_CAN_CONFIGURE_BOARD");
+                .hasMessage("ONLY_DEVELOPERS_CAN_CONFIGURE_BOARD");
     }
 }

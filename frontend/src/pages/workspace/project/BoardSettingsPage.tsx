@@ -20,6 +20,7 @@ export default function BoardSettingsPage() {
   const navigate = useNavigate();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
   const permissions = useProjectMember(projectId);
+  const canEdit = permissions.canConfigureBoard;
 
   const [columns, setColumns] = useState<BoardColumn[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +30,18 @@ export default function BoardSettingsPage() {
   const [taskCounts, setTaskCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    if (!projectId) return;
+    if (!projectId) {
+      setLoading(false);
+      return;
+    }
+    if (permissions.loading) return;
+    if (!canEdit) {
+      setColumns([]);
+      setTaskCounts({});
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     Promise.all([
       boardColumnsApi.getColumns(projectId),
@@ -43,9 +55,7 @@ export default function BoardSettingsPage() {
       })
       .catch(() => setError(t('projects.boardSettings.loadError')))
       .finally(() => setLoading(false));
-  }, [projectId, t]);
-
-  const canEdit = permissions.isAdmin || permissions.isScrumMaster;
+  }, [projectId, permissions.loading, canEdit, t]);
 
   const updateColumn = (index: number, patch: Partial<BoardColumn>) => {
     setColumns((prev) => prev.map((c, i) => (i === index ? { ...c, ...patch } : c)));
@@ -135,6 +145,8 @@ export default function BoardSettingsPage() {
           current: parts[2] ?? '?',
           limit: parts[3] ?? '?',
         }));
+      } else if (msg === 'ONLY_DEVELOPERS_CAN_CONFIGURE_BOARD') {
+        setError(t('errors.ONLY_DEVELOPERS_CAN_CONFIGURE_BOARD'));
       } else {
         setError(t('projects.boardSettings.saveError'));
       }
@@ -143,7 +155,7 @@ export default function BoardSettingsPage() {
     }
   };
 
-  if (loading) {
+  if (permissions.loading || loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: '80px 0' }}>
         <div style={{
@@ -153,6 +165,44 @@ export default function BoardSettingsPage() {
           borderRadius: '50%',
           animation: 'spin 0.7s linear infinite',
         }} />
+      </div>
+    );
+  }
+
+  if (!canEdit) {
+    return (
+      <div style={{ width: '100%', maxWidth: 720, margin: '0 auto', padding: '48px 16px', boxSizing: 'border-box' }}>
+        <div style={{
+          background: 'var(--bg-elevated)',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-card)',
+          padding: '32px',
+          textAlign: 'center',
+          boxShadow: 'var(--shadow-sm)',
+        }}>
+          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--text)' }}>
+            {t('projects.boardSettings.accessDeniedTitle')}
+          </h1>
+          <p style={{ margin: '10px auto 0', maxWidth: 460, fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            {t('projects.boardSettings.accessDeniedDescription')}
+          </p>
+          <button
+            onClick={() => navigate(`/workspaces/${workspaceId}/projects/${projectId}/board`)}
+            style={{
+              marginTop: 20,
+              padding: '9px 18px',
+              fontSize: 13,
+              fontWeight: 600,
+              background: 'var(--accent)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 'var(--radius-md)',
+              cursor: 'pointer',
+            }}
+          >
+            {t('projects.boardSettings.backToBoard')}
+          </button>
+        </div>
       </div>
     );
   }

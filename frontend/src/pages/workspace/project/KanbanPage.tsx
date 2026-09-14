@@ -27,7 +27,7 @@ export default function KanbanPage() {
   const navigate = useNavigate();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
 
-  const { canMoveTask, isAdmin, isScrumMaster } = useProjectMember(projectId);
+  const { canMoveTask, canConfigureBoard } = useProjectMember(projectId);
   const { members, userMap } = useProjectMembers(projectId);
 
   const [activeSprint, setActiveSprint] = useState<Sprint | null>(null);
@@ -135,7 +135,6 @@ export default function KanbanPage() {
     return Math.ceil((end.getTime() - today.getTime()) / 86_400_000);
   })();
 
-  const canConfigureBoard = isAdmin || isScrumMaster;
 
   return (
     <div>

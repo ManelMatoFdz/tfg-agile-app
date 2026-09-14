@@ -24,6 +24,8 @@ export interface ProjectMemberPermissions {
   canDeleteSprintTask: boolean;
   /** Developer — moving tasks on the Kanban board */
   canMoveTask: boolean;
+  /** Developer — configuring workflow columns and WIP limits */
+  canConfigureBoard: boolean;
   /** Developer — modifies Sprint Planning */
   canPlanSprint: boolean;
   /** Developer — add/remove tasks from an ACTIVE sprint (team self-organizes) */
@@ -87,6 +89,7 @@ export function useProjectMember(projectId: string | undefined): ProjectMemberPe
   const canDeleteBacklogTask = isProductOwner;
   const canDeleteSprintTask = isDeveloper;
   const canMoveTask = isDeveloper;
+  const canConfigureBoard = isDeveloper;
   const canPlanSprint = isDeveloper;
   const canAddToActiveSprint = isDeveloper;
   const canManageSprint = isScrumMaster;
@@ -105,6 +108,7 @@ export function useProjectMember(projectId: string | undefined): ProjectMemberPe
     canDeleteBacklogTask,
     canDeleteSprintTask,
     canMoveTask,
+    canConfigureBoard,
     canPlanSprint,
     canAddToActiveSprint,
     canManageSprint,

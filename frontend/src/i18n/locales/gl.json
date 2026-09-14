@@ -481,7 +481,10 @@
       "errorEmptyName": "Todas as columnas deben ter un nome.",
       "errorNoDone": "Polo menos unha columna debe estar marcada como equivalente a DONE.",
       "errorDuplicateName": "Os nomes de columna non se poden repetir.",
-      "errorWipExceeded": "A columna \"{{column}}\" ten {{current}} tarefa(s) pero o límite WIP é {{limit}}."
+      "errorWipExceeded": "A columna \"{{column}}\" ten {{current}} tarefa(s) pero o límite WIP é {{limit}}.",
+      "accessDeniedTitle": "Só os Developers poden configurar o taboleiro",
+      "accessDeniedDescription": "As columnas do workflow e os límites WIP xestiónanos os Developers deste proxecto.",
+      "backToBoard": "Volver ao taboleiro"
     },
     "members": {
       "title": "Membros",
@@ -1316,7 +1319,8 @@
     "STORY_STATUS_IS_DERIVED": "O estado das historias calcúlase automaticamente.",
     "PARENT_TASK_HAS_OPEN_SUBTASKS": "Non podes mover esta tarefa a unha columna finalizada ata completar todas as súas subtarefas.",
     "SUBTASKS_FOLLOW_PARENT": "As subtarefas asígnanse automaticamente coa súa historia pai.",
-    "SUBTASK_NOT_ESTIMABLE": "As subtarefas non poden ter story points."
+    "SUBTASK_NOT_ESTIMABLE": "As subtarefas non poden ter story points.",
+    "ONLY_DEVELOPERS_CAN_CONFIGURE_BOARD": "Só os Developers poden configurar o taboleiro."
   },
   "landing": {
     "nav": {
