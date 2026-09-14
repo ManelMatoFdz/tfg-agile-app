@@ -171,6 +171,8 @@ export default function KanbanBoard({
           current: parts[2] ?? '?',
           limit: parts[3] ?? '?',
         }));
+      } else if (msg === 'PARENT_TASK_HAS_OPEN_SUBTASKS' && onError) {
+        onError(t('errors.PARENT_TASK_HAS_OPEN_SUBTASKS'));
       }
     }
   }, [tasks, onTasksChange, onRefresh, onError, t]);

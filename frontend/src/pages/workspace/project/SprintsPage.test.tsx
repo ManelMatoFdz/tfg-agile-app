@@ -275,6 +275,7 @@ describe('SprintsPage', () => {
     });
 
     expect(await screen.findByText('Sprint Planned')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: i18n.t('projects.sprints.planning.title') })).toHaveAttribute('href', '/workspaces/workspace-1/projects/project-1/sprints/plan-1/planning');
     expect(screen.queryByRole('button', { name: i18n.t('projects.sprints.newSprint') })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: i18n.t('projects.sprints.activate') })).not.toBeInTheDocument();
   });

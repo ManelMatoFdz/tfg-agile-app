@@ -187,8 +187,7 @@ public class DependencyService {
 
     private void requireCanEditTask(Task task, MemberPermissionsDto perms) {
         boolean isPo = "PRODUCT_OWNER".equals(perms.scrumRole());
-        boolean isScrumMaster = "SCRUM_MASTER".equals(perms.scrumRole());
-        boolean isDev = perms.projectMember() && !isPo && !isScrumMaster;
+        boolean isDev = perms.projectMember() && "DEVELOPER".equals(perms.scrumRole());
 
         if (task.getSprintId() == null) {
             if (!isPo) throw new ForbiddenException("ONLY_PO_CAN_EDIT_BACKLOG_TASKS");

@@ -784,7 +784,8 @@
         "dropHere": "Move backlog tasks here",
         "removeFromSprint": "Remove from sprint",
         "viewSprintBacklog": "View Sprint Backlog",
-        "avgVelocity": "Avg. velocity"
+        "avgVelocity": "Avg. velocity",
+        "readOnlyHint": "You can view this sprint planning, but only Developers can add or remove tasks."
       },
       "sprintBacklog": {
         "title": "Sprint Backlog",
@@ -1312,6 +1313,7 @@
     "PARENT_MUST_BE_STORY": "Subtasks can only be created under user stories.",
     "MAX_ONE_LEVEL_NESTING": "Subtasks of subtasks are not allowed.",
     "STORY_STATUS_IS_DERIVED": "Story status is automatically derived.",
+    "PARENT_TASK_HAS_OPEN_SUBTASKS": "You cannot move this task to a done column until all its subtasks are complete.",
     "SUBTASKS_FOLLOW_PARENT": "Subtasks are automatically assigned with their parent story.",
     "SUBTASK_NOT_ESTIMABLE": "Subtasks cannot have story points."
   },

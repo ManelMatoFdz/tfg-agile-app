@@ -80,6 +80,7 @@ export default function TaskDetailPage() {
 
   const columns = useBoardColumns(projectId);
   const { members, userMap } = useProjectMembers(projectId);
+  const developerMembers = members.filter((m) => m.scrumRole === 'DEVELOPER');
   const perms = useProjectMember(projectId);
 
   // ── Data loading ───────────────────────────────────────────────────────────
@@ -1178,14 +1179,14 @@ export default function TaskDetailPage() {
                   )}
                 </div>
 
-                {members.length > 0 && (
+                {developerMembers.length > 0 && (
                     <div>
                       <label style={sidebarLabel}>{t('tasks.modal.assignee')}</label>
                       {canEdit ? (
                           <AssigneeDropdown
                               value={assigneeId}
                               onChange={setAssigneeId}
-                              members={members}
+                              members={developerMembers}
                               userMap={userMap}
                               placeholder={t('tasks.modal.unassigned')}
                               compact

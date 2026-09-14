@@ -42,6 +42,7 @@ export default function CreateTaskModal({ projectId, defaultType = 'TASK', paren
   const [createdHint, setCreatedHint] = useState(false);
 
   const { members, userMap } = useProjectMembers(projectId);
+  const developerMembers = members.filter((m) => m.scrumRole === 'DEVELOPER');
   const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -253,13 +254,13 @@ export default function CreateTaskModal({ projectId, defaultType = 'TASK', paren
                 ))}
               </select>
             </div>
-            {members.length > 0 && (
+            {developerMembers.length > 0 && (
               <div>
                 <label style={sidebarLabel}>{t('tasks.modal.assignee')}</label>
                 <AssigneeDropdown
                   value={assigneeId}
                   onChange={setAssigneeId}
-                  members={members}
+                  members={developerMembers}
                   userMap={userMap}
                   placeholder={t('tasks.modal.unassigned')}
                 />

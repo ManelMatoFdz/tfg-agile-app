@@ -785,7 +785,8 @@
         "dropHere": "Move tarefas do backlog aquí",
         "removeFromSprint": "Quitar do sprint",
         "viewSprintBacklog": "Ver Sprint Backlog",
-        "avgVelocity": "Vel. media"
+        "avgVelocity": "Vel. media",
+        "readOnlyHint": "Podes consultar esta planificación, pero só os Developers poden engadir ou quitar tarefas."
       },
       "sprintBacklog": {
         "title": "Sprint Backlog",
@@ -1313,6 +1314,7 @@
     "PARENT_MUST_BE_STORY": "Só se poden crear subtarefas baixo historias de usuario.",
     "MAX_ONE_LEVEL_NESTING": "Non se permiten subtarefas de subtarefas.",
     "STORY_STATUS_IS_DERIVED": "O estado das historias calcúlase automaticamente.",
+    "PARENT_TASK_HAS_OPEN_SUBTASKS": "Non podes mover esta tarefa a unha columna finalizada ata completar todas as súas subtarefas.",
     "SUBTASKS_FOLLOW_PARENT": "As subtarefas asígnanse automaticamente coa súa historia pai.",
     "SUBTASK_NOT_ESTIMABLE": "As subtarefas non poden ter story points."
   },

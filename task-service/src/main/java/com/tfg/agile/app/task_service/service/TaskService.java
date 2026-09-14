@@ -277,10 +277,16 @@ public class TaskService {
         String oldStatus = task.getStatus();
         String newStatus = dto.status();
 
-        if (task.getParentId() == null
-                && task.getType() == TaskType.STORY
-                && taskRepository.countByParentId(task.getId()) > 0) {
-            throw new ForbiddenException("STORY_STATUS_IS_DERIVED");
+        boolean isDone = boardColumnService.isDoneEquivalent(task.getProjectId(), newStatus);
+        if (isDone && task.getParentId() == null) {
+            int totalSubtasks = taskRepository.countByParentId(task.getId());
+            if (totalSubtasks > 0) {
+                Set<String> doneStatuses = boardColumnService.getDoneEquivalentStatuses(task.getProjectId());
+                int completedSubtasks = taskRepository.countByParentIdAndStatusIn(task.getId(), doneStatuses);
+                if (completedSubtasks < totalSubtasks) {
+                    throw new ForbiddenException("PARENT_TASK_HAS_OPEN_SUBTASKS");
+                }
+            }
         }
 
         // Enforce WIP limit on the target column
@@ -292,7 +298,6 @@ public class TaskService {
         task.setPosition(dto.position());
 
         // Manage completedAt automatically based on doneEquivalent columns
-        boolean isDone = boardColumnService.isDoneEquivalent(task.getProjectId(), newStatus);
         if (isDone && task.getCompletedAt() == null) {
             task.setCompletedAt(Instant.now());
         } else if (!isDone) {
@@ -465,7 +470,7 @@ public class TaskService {
     }
 
     private boolean isDeveloper(MemberPermissionsDto p) {
-        return p.projectMember() && !isProductOwner(p) && !isScrumMaster(p);
+        return p.projectMember() && "DEVELOPER".equals(p.scrumRole());
     }
 
     private void syncParentStoryStatus(Task subtask, UUID callerId) {

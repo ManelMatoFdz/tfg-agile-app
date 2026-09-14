@@ -145,12 +145,6 @@ describe('useProjectMember', () => {
       expected: {
         ...noPermissions,
         isAdmin: true,
-        isDeveloper: true,
-        canEditSprintTask: true,
-        canDeleteSprintTask: true,
-        canMoveTask: true,
-        canPlanSprint: true,
-        canAddToActiveSprint: true,
       },
     },
     {
@@ -172,7 +166,6 @@ describe('useProjectMember', () => {
         canCreateTask: true,
         canEditBacklogTask: true,
         canDeleteBacklogTask: true,
-        canPlanSprint: true,
         canCreatePokerSession: true,
       },
     },
@@ -205,15 +198,7 @@ describe('useProjectMember', () => {
       name: 'member without a scrum role',
       members: [teamMember({ scrumRole: null })],
       workspaceMembers: [workspaceMember()],
-      expected: {
-        ...noPermissions,
-        isDeveloper: true,
-        canEditSprintTask: true,
-        canDeleteSprintTask: true,
-        canMoveTask: true,
-        canPlanSprint: true,
-        canAddToActiveSprint: true,
-      },
+      expected: noPermissions,
     },
     {
       name: 'non-member',

@@ -210,6 +210,35 @@ describe('KanbanBoard', () => {
     expect(onTasksChange).toHaveBeenCalledWith(tasks);
   });
 
+  it('rolls back and shows a message when a parent task with open subtasks is moved to done', async () => {
+    const onTasksChange = jest.fn();
+    const onError = jest.fn();
+    const tasks = [taskFixture({ id: 'task-1', title: 'Parent task', status: 'TODO', subtaskCount: 2, completedSubtaskCount: 1 })];
+    mockMove.mockRejectedValueOnce({ response: { data: { message: 'PARENT_TASK_HAS_OPEN_SUBTASKS' } } });
+
+    renderWithProviders(
+      <KanbanBoard
+        projectId="project-1"
+        tasks={tasks}
+        columns={[columnFixture(), columnFixture({ id: 'col-2', name: 'DONE', position: 1, color: '#16A34A', doneEquivalent: true })]}
+        onTasksChange={onTasksChange}
+        onError={onError}
+      />,
+      {
+        route: '/workspaces/workspace-1/projects/project-1/board',
+        path: '/workspaces/:workspaceId/projects/:projectId/board',
+      },
+    );
+
+    await act(async () => {
+      dndHandlers.onDragEnd?.({ active: { id: 'task-1' }, over: { id: 'DONE' } });
+    });
+
+    await waitFor(() => expect(mockMove).toHaveBeenCalledWith('task-1', { status: 'DONE', position: 0 }));
+    await waitFor(() => expect(onError).toHaveBeenCalledWith(i18n.t('errors.PARENT_TASK_HAS_OPEN_SUBTASKS')));
+    expect(onTasksChange).toHaveBeenLastCalledWith(tasks);
+  });
+
   it('opens the blocked-task confirmation modal and only moves after confirmation', async () => {
     const onTasksChange = jest.fn();
     const tasks = [taskFixture({ id: 'task-1', title: 'Blocked task', blockedByCount: 2 })];

@@ -360,9 +360,7 @@ public class SprintService {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
 
-        if (sprint.getStatus() == SprintStatus.PLANNING) {
-            requireDeveloperOrProductOwner(perms);
-        } else if (sprint.getStatus() == SprintStatus.ACTIVE) {
+        if (sprint.getStatus() == SprintStatus.PLANNING || sprint.getStatus() == SprintStatus.ACTIVE) {
             requireDeveloper(perms);
         } else {
             throw new ForbiddenException("CAN_ONLY_ADD_TASKS_TO_PLANNING_OR_ACTIVE_SPRINT");
@@ -413,9 +411,7 @@ public class SprintService {
         Sprint sprint = getSprintOrThrow(sprintId);
         MemberPermissionsDto perms = requireMember(sprint.getProjectId(), callerId);
 
-        if (sprint.getStatus() == SprintStatus.PLANNING) {
-            requireDeveloperOrProductOwner(perms);
-        } else if (sprint.getStatus() == SprintStatus.ACTIVE) {
+        if (sprint.getStatus() == SprintStatus.PLANNING || sprint.getStatus() == SprintStatus.ACTIVE) {
             requireDeveloper(perms);
         } else {
             throw new ForbiddenException("CAN_ONLY_REMOVE_TASKS_FROM_PLANNING_OR_ACTIVE_SPRINT");
@@ -503,7 +499,7 @@ public class SprintService {
     }
 
     private boolean isProjectDeveloper(MemberPermissionsDto p) {
-        return p.projectMember() && (p.scrumRole() == null || "DEVELOPER".equals(p.scrumRole()));
+        return p.projectMember() && "DEVELOPER".equals(p.scrumRole());
     }
 
     private void requireScrumMaster(MemberPermissionsDto p) {
@@ -514,12 +510,6 @@ public class SprintService {
     private void requireDeveloper(MemberPermissionsDto p) {
         if (isProjectDeveloper(p)) return;
         throw new ForbiddenException("DEVELOPER_REQUIRED");
-    }
-
-    private void requireDeveloperOrProductOwner(MemberPermissionsDto p) {
-        if ("PRODUCT_OWNER".equals(p.scrumRole())) return;
-        if (isProjectDeveloper(p)) return;
-        throw new ForbiddenException("DEVELOPER_OR_PO_REQUIRED");
     }
 
     private void validateDateRange(LocalDate startDate, LocalDate endDate) {

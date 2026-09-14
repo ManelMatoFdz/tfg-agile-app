@@ -28,6 +28,7 @@ export default function SubtaskModal({ subtask, columns, readOnly = false, onClo
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { members, userMap } = useProjectMembers(subtask.projectId);
+  const developerMembers = members.filter((m) => m.scrumRole === 'DEVELOPER');
 
   const doneStatuses = columns.filter(c => c.doneEquivalent).map(c => c.name);
   const isDone = doneStatuses.includes(subtask.status) || subtask.completedAt != null;
@@ -216,7 +217,7 @@ export default function SubtaskModal({ subtask, columns, readOnly = false, onClo
           </div>
 
           {/* Assignee */}
-          {members.length > 0 && (
+          {developerMembers.length > 0 && (
             <div>
               <label style={sidebarLabel}>{t('tasks.modal.assignee')}</label>
               {readOnly ? (
@@ -234,7 +235,7 @@ export default function SubtaskModal({ subtask, columns, readOnly = false, onClo
                 <AssigneeDropdown
                   value={assigneeId}
                   onChange={setAssigneeId}
-                  members={members}
+                  members={developerMembers}
                   userMap={userMap}
                   placeholder={t('tasks.modal.unassigned')}
                   compact

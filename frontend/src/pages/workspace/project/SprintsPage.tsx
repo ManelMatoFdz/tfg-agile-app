@@ -357,7 +357,7 @@ export default function SprintsPage() {
   const { t } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
 
-  const { canManageSprint, canPlanSprint, canAddToActiveSprint } = useProjectMember(projectId);
+  const { canManageSprint, canAddToActiveSprint } = useProjectMember(projectId);
   const columns = useBoardColumns(projectId);
 
   const [sprints, setSprints] = useState<Sprint[]>([]);
@@ -714,7 +714,7 @@ export default function SprintsPage() {
                               {t('common.cancel')}
                             </button>
                           </div>
-                        ) : canManageSprint && (
+                        ) : (
                           <>
                             <Link
                               to={`/workspaces/${workspaceId}/projects/${projectId}/sprints/${sprint.id}/planning`}
@@ -725,7 +725,7 @@ export default function SprintsPage() {
                               <Columns2 size={12} strokeWidth={2} />
                               {t('projects.sprints.planning.title')}
                             </Link>
-                            {sprint.startDate && new Date(sprint.startDate) <= new Date(new Date().toDateString()) && (
+                            {canManageSprint && sprint.startDate && new Date(sprint.startDate) <= new Date(new Date().toDateString()) && (
                               <button
                                 onClick={() => setConfirmActivate(sprint.id)}
                                 style={{ ...btnOutline, color: 'var(--success-text)', borderColor: 'var(--success)' }}
@@ -737,24 +737,28 @@ export default function SprintsPage() {
                                 {t('projects.sprints.activate')}
                               </button>
                             )}
-                            <button
-                              onClick={() => setEditSprint(sprint)}
-                              style={btnOutline}
-                              title={t('common.edit')}
-                              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
-                              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                            >
-                              <Pencil size={12} strokeWidth={2} />
-                            </button>
-                            <button
-                              onClick={() => setConfirmDelete(sprint.id)}
-                              style={{ ...btnOutline, color: 'var(--danger-text)', borderColor: 'var(--danger)' }}
-                              title={t('common.delete')}
-                              onMouseEnter={e => (e.currentTarget.style.background = 'var(--danger-bg)')}
-                              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                            >
-                              <Trash2 size={12} strokeWidth={2} />
-                            </button>
+                            {canManageSprint && (
+                              <>
+                                <button
+                                  onClick={() => setEditSprint(sprint)}
+                                  style={btnOutline}
+                                  title={t('common.edit')}
+                                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover)')}
+                                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                >
+                                  <Pencil size={12} strokeWidth={2} />
+                                </button>
+                                <button
+                                  onClick={() => setConfirmDelete(sprint.id)}
+                                  style={{ ...btnOutline, color: 'var(--danger-text)', borderColor: 'var(--danger)' }}
+                                  title={t('common.delete')}
+                                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--danger-bg)')}
+                                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                                >
+                                  <Trash2 size={12} strokeWidth={2} />
+                                </button>
+                              </>
+                            )}
                           </>
                         )}
                       </div>

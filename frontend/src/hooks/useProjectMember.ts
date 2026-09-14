@@ -24,7 +24,7 @@ export interface ProjectMemberPermissions {
   canDeleteSprintTask: boolean;
   /** Developer — moving tasks on the Kanban board */
   canMoveTask: boolean;
-  /** Developer or PO — Sprint Planning: Developers select, PO proposes */
+  /** Developer — modifies Sprint Planning */
   canPlanSprint: boolean;
   /** Developer — add/remove tasks from an ACTIVE sprint (team self-organizes) */
   canAddToActiveSprint: boolean;
@@ -78,8 +78,8 @@ export function useProjectMember(projectId: string | undefined): ProjectMemberPe
   const isAdmin = wsAdmin || teamAdmin;
   const isScrumMaster = member?.scrumRole === 'SCRUM_MASTER';
   const isProductOwner = member?.scrumRole === 'PRODUCT_OWNER';
-  // Developer: any project team member who is not PO or SM. Technical admins do not get Scrum permissions by themselves.
-  const isDeveloper = member !== null && !isProductOwner && !isScrumMaster;
+  // Developer: explicit Scrum Developer role. Technical admins do not get Scrum permissions by themselves.
+  const isDeveloper = member?.scrumRole === 'DEVELOPER';
 
   const canCreateTask = isProductOwner;
   const canEditBacklogTask = isProductOwner;
@@ -87,7 +87,7 @@ export function useProjectMember(projectId: string | undefined): ProjectMemberPe
   const canDeleteBacklogTask = isProductOwner;
   const canDeleteSprintTask = isDeveloper;
   const canMoveTask = isDeveloper;
-  const canPlanSprint = isProductOwner || isDeveloper;
+  const canPlanSprint = isDeveloper;
   const canAddToActiveSprint = isDeveloper;
   const canManageSprint = isScrumMaster;
   const canCreatePokerSession = isScrumMaster || isProductOwner;

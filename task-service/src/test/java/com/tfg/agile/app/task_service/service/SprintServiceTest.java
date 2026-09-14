@@ -395,7 +395,7 @@ class SprintServiceTest {
                 new AssignTaskToSprintRequestDto(List.of(UUID.randomUUID())),
                 callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("DEVELOPER_OR_PO_REQUIRED");
+                .hasMessage("DEVELOPER_REQUIRED");
     }
 
     @Test
@@ -416,12 +416,10 @@ class SprintServiceTest {
     }
 
     @Test
-    void assignTasksToSprint_throwsForProductOwnerOnActiveSprint() {
-        // PO can only plan during PLANNING; during ACTIVE only Developer/Admin can pull work in
+    void assignTasksToSprint_throwsForProductOwner() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Sprint sprint = TestDataFactory.sprint(projectId);
-        sprint.setStatus(SprintStatus.ACTIVE);
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
@@ -434,12 +432,10 @@ class SprintServiceTest {
     }
 
     @Test
-    void removeTaskFromSprint_throwsForProductOwnerOnActiveSprint() {
-        // PO can only remove tasks during PLANNING; during ACTIVE only Developer/Admin can
+    void removeTaskFromSprint_throwsForProductOwner() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Sprint sprint = TestDataFactory.sprint(projectId);
-        sprint.setStatus(SprintStatus.ACTIVE);
         Task task = TestDataFactory.task(projectId, UUID.randomUUID());
         task.setSprintId(sprint.getId());
 
@@ -460,7 +456,7 @@ class SprintServiceTest {
         Task task = TestDataFactory.task(otherProjectId, UUID.randomUUID());
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
 
         assertThatThrownBy(() -> service.assignTasksToSprint(sprint.getId(),
@@ -504,7 +500,7 @@ class SprintServiceTest {
         task.setSprintId(UUID.randomUUID());
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
 
         assertThatThrownBy(() -> service.removeTaskFromSprint(sprint.getId(), task.getId(), callerId))
@@ -521,7 +517,7 @@ class SprintServiceTest {
         task.setSprintId(sprint.getId());
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
-        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.productOwnerPermissions());
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
         when(taskRepository.save(task)).thenReturn(task);
 

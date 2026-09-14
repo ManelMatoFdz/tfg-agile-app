@@ -277,18 +277,58 @@ class TaskServiceTest {
     }
 
     @Test
-    void move_storyWithChildren_throws() {
+    void move_storyWithOpenSubtasks_allowsNonDoneColumn() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Task story = TestDataFactory.story(projectId, callerId);
 
         when(taskRepository.findById(story.getId())).thenReturn(Optional.of(story));
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
-        when(taskRepository.countByParentId(story.getId())).thenReturn(3);
+        when(boardColumnService.isDoneEquivalent(projectId, "IN_PROGRESS")).thenReturn(false);
+        when(taskRepository.save(story)).thenReturn(story);
 
-        assertThatThrownBy(() -> service.move(story.getId(), new MoveTaskRequestDto("IN_PROGRESS", 0), callerId))
+        var response = service.move(story.getId(), new MoveTaskRequestDto("IN_PROGRESS", 0), callerId);
+
+        assertThat(response.status()).isEqualTo("IN_PROGRESS");
+        verify(taskRepository).save(story);
+    }
+
+    @Test
+    void move_storyWithOpenSubtasks_throwsForDoneColumn() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Task story = TestDataFactory.story(projectId, callerId);
+
+        when(taskRepository.findById(story.getId())).thenReturn(Optional.of(story));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
+        when(boardColumnService.isDoneEquivalent(projectId, "DONE")).thenReturn(true);
+        when(taskRepository.countByParentId(story.getId())).thenReturn(3);
+        when(boardColumnService.getDoneEquivalentStatuses(projectId)).thenReturn(Set.of("DONE"));
+        when(taskRepository.countByParentIdAndStatusIn(story.getId(), Set.of("DONE"))).thenReturn(2);
+
+        assertThatThrownBy(() -> service.move(story.getId(), new MoveTaskRequestDto("DONE", 0), callerId))
                 .isInstanceOf(ForbiddenException.class)
-                .hasMessage("STORY_STATUS_IS_DERIVED");
+                .hasMessage("PARENT_TASK_HAS_OPEN_SUBTASKS");
+    }
+
+    @Test
+    void move_storyWithAllSubtasksDone_allowsDoneColumn() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Task story = TestDataFactory.story(projectId, callerId);
+
+        when(taskRepository.findById(story.getId())).thenReturn(Optional.of(story));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
+        when(boardColumnService.isDoneEquivalent(projectId, "DONE")).thenReturn(true);
+        when(taskRepository.countByParentId(story.getId())).thenReturn(3);
+        when(boardColumnService.getDoneEquivalentStatuses(projectId)).thenReturn(Set.of("DONE"));
+        when(taskRepository.countByParentIdAndStatusIn(story.getId(), Set.of("DONE"))).thenReturn(3);
+        when(taskRepository.save(story)).thenReturn(story);
+
+        var response = service.move(story.getId(), new MoveTaskRequestDto("DONE", 0), callerId);
+
+        assertThat(response.status()).isEqualTo("DONE");
+        assertThat(story.getCompletedAt()).isNotNull();
     }
 
     @Test

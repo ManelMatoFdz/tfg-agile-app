@@ -265,6 +265,19 @@ export default function SprintPlanningPage() {
         </div>
       </div>
 
+      {!canPlanSprint && (
+        <div style={{
+          padding: '10px 12px',
+          border: '1px solid var(--border)',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--bg-elevated)',
+          color: 'var(--text-muted)',
+          fontSize: 13,
+        }}>
+          {t('projects.sprints.planning.readOnlyHint')}
+        </div>
+      )}
+
       {/* Sprint Goal */}
       {sprint?.goal && (
         <div style={{

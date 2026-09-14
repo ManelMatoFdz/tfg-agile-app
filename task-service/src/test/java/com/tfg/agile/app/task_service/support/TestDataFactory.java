@@ -24,7 +24,7 @@ public final class TestDataFactory {
     }
 
     public static MemberPermissionsDto memberPermissions() {
-        return new MemberPermissionsDto(UUID.randomUUID(), false, false, true, null);
+        return new MemberPermissionsDto(UUID.randomUUID(), false, false, true, "DEVELOPER");
     }
 
     public static MemberPermissionsDto scrumMasterPermissions() {

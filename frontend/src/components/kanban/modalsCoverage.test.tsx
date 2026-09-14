@@ -95,6 +95,9 @@ const projectEpics: Epic[] = [{
 
 const userMap = {
   'user-2': userSummaryFixture({ id: 'user-2', username: 'ada', fullName: 'Ada Lovelace' }),
+  'user-3': userSummaryFixture({ id: 'user-3', username: 'grace', fullName: 'Grace Hopper' }),
+  'user-4': userSummaryFixture({ id: 'user-4', username: 'ken', fullName: 'Ken Schwaber' }),
+  'user-5': userSummaryFixture({ id: 'user-5', username: 'jeff', fullName: 'Jeff Sutherland' }),
 };
 
 const columns: BoardColumn[] = [
@@ -141,6 +144,28 @@ describe('kanban modals coverage', () => {
     getLabels.mockResolvedValue(projectLabels);
     getEpics.mockResolvedValue(projectEpics);
     assignToTask.mockResolvedValue(taskFixture());
+  });
+
+  it('shows only Developers in task assignee dropdowns', () => {
+    mockedUseProjectMembers.mockReturnValue({
+      members: [
+        teamMemberFixture({ userId: 'user-2', scrumRole: 'DEVELOPER' }),
+        teamMemberFixture({ userId: 'user-3', scrumRole: 'PRODUCT_OWNER' }),
+        teamMemberFixture({ userId: 'user-4', scrumRole: 'SCRUM_MASTER' }),
+        teamMemberFixture({ userId: 'user-5', scrumRole: null }),
+      ],
+      userMap,
+      loading: false,
+    });
+
+    renderWithProviders(
+      <CreateTaskModal projectId="project-1" defaultType="TASK" onCreated={jest.fn()} onClose={jest.fn()} />,
+    );
+
+    expect(screen.getByRole('option', { name: 'Ada Lovelace' })).toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Grace Hopper' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Ken Schwaber' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('option', { name: 'Jeff Sutherland' })).not.toBeInTheDocument();
   });
 
   it('creates a root task, trims fields and assigns the selected epic', async () => {
