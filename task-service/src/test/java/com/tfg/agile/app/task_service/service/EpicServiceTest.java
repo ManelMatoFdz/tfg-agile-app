@@ -46,12 +46,14 @@ class EpicServiceTest {
     private BoardColumnService boardColumnService;
     @Mock
     private ActivityService activityService;
+    @Mock
+    private TaskNotificationService taskNotificationService;
 
     private EpicService service;
 
     @BeforeEach
     void setUp() {
-        service = new EpicService(epicRepository, taskRepository, projectServiceClient, boardColumnService, activityService);
+        service = new EpicService(epicRepository, taskRepository, projectServiceClient, boardColumnService, activityService, taskNotificationService);
     }
 
     @Test

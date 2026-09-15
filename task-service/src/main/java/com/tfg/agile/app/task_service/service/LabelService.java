@@ -4,11 +4,13 @@ import com.tfg.agile.app.task_service.client.MemberPermissionsDto;
 import com.tfg.agile.app.task_service.client.ProjectServiceClient;
 import com.tfg.agile.app.task_service.dto.CreateLabelRequestDto;
 import com.tfg.agile.app.task_service.dto.LabelDto;
+import com.tfg.agile.app.task_service.dto.LabelUsageDto;
 import com.tfg.agile.app.task_service.dto.UpdateLabelRequestDto;
 import com.tfg.agile.app.task_service.entity.Label;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
 import com.tfg.agile.app.task_service.repository.LabelRepository;
+import com.tfg.agile.app.task_service.repository.TaskRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,11 +21,14 @@ import java.util.UUID;
 public class LabelService {
 
     private final LabelRepository labelRepository;
+    private final TaskRepository taskRepository;
     private final ProjectServiceClient projectServiceClient;
 
     public LabelService(LabelRepository labelRepository,
+                        TaskRepository taskRepository,
                         ProjectServiceClient projectServiceClient) {
         this.labelRepository = labelRepository;
+        this.taskRepository = taskRepository;
         this.projectServiceClient = projectServiceClient;
     }
 
@@ -63,12 +68,22 @@ public class LabelService {
         return LabelDto.from(labelRepository.save(label));
     }
 
+    @Transactional(readOnly = true)
+    public LabelUsageDto usage(UUID labelId, UUID callerId) {
+        Label label = getLabelOrThrow(labelId);
+        MemberPermissionsDto perms = projectServiceClient.getMemberPermissions(label.getProjectId(), callerId);
+        requireAdmin(perms);
+
+        return new LabelUsageDto(labelId, taskRepository.countTasksByLabelId(labelId));
+    }
+
     @Transactional
     public void delete(UUID labelId, UUID callerId) {
         Label label = getLabelOrThrow(labelId);
         MemberPermissionsDto perms = projectServiceClient.getMemberPermissions(label.getProjectId(), callerId);
         requireAdmin(perms);
 
+        taskRepository.deleteTaskLabelsByLabelId(labelId);
         labelRepository.delete(label);
     }
 

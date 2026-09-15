@@ -546,7 +546,19 @@
         "title": "Etiquetas",
         "namePlaceholder": "Nome da etiqueta",
         "add": "Engadir",
-        "empty": "Non hai etiquetas definidas para este proxecto."
+        "empty": "Non hai etiquetas definidas para este proxecto.",
+        "deleteAria": "Eliminar etiqueta {{name}}",
+        "deleting": "Eliminando...",
+        "deleteSuccess": "Etiqueta «{{name}}» eliminada",
+        "deleteError": "Non se puido eliminar a etiqueta.",
+        "usageError": "Non se puido comprobar o uso da etiqueta.",
+        "deleteConfirm": {
+          "title": "Eliminar etiqueta",
+          "unusedMessage": "Vas eliminar a etiqueta «{{name}}». Esta acción non se pode desfacer.",
+          "confirm": "Eliminar etiqueta",
+          "inUseMessage_one": "A etiqueta «{{name}}» está asignada a {{count}} tarefa. Ao eliminala, quitarase desa tarefa.",
+          "inUseMessage_other": "A etiqueta «{{name}}» está asignada a {{count}} tarefas. Ao eliminala, quitarase desas tarefas."
+        }
       },
       "git": {
         "title": "Integración con Git",
@@ -1039,7 +1051,7 @@
     "defaultUser": "Usuario",
     "info": {
       "title": "Información persoal",
-      "subtitle": "Actualiza o teu nome e biografía",
+      "subtitle": "Actualiza o teu usuario, correo, nome e biografía",
       "username": "Nome de usuario",
       "email": "Correo electrónico",
       "fullName": "Nome completo",
@@ -1047,7 +1059,9 @@
       "bio": "Biografía",
       "bioPlaceholder": "Cóntanos sobre ti...",
       "save": "Gardar cambios",
-      "successMessage": "Perfil actualizado correctamente."
+      "successMessage": "Perfil actualizado correctamente.",
+      "usernamePlaceholder": "O teu nome de usuario",
+      "emailPlaceholder": "ti@exemplo.com"
     },
     "password": {
       "title": "Cambiar contrasinal",

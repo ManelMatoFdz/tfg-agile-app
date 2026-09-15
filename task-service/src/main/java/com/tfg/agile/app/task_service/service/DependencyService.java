@@ -2,7 +2,6 @@ package com.tfg.agile.app.task_service.service;
 
 import com.tfg.agile.app.task_service.client.MemberPermissionsDto;
 import com.tfg.agile.app.task_service.client.ProjectServiceClient;
-import com.tfg.agile.app.task_service.client.UserServiceClient;
 import com.tfg.agile.app.task_service.dto.CreateDependencyRequestDto;
 import com.tfg.agile.app.task_service.dto.TaskDependencyDto;
 import com.tfg.agile.app.task_service.entity.Task;
@@ -26,15 +25,18 @@ public class DependencyService {
     private final TaskRepository taskRepository;
     private final ProjectServiceClient projectServiceClient;
     private final ActivityService activityService;
+    private final TaskNotificationService taskNotificationService;
 
     public DependencyService(TaskDependencyRepository dependencyRepository,
                              TaskRepository taskRepository,
                              ProjectServiceClient projectServiceClient,
-                             ActivityService activityService) {
+                             ActivityService activityService,
+                             TaskNotificationService taskNotificationService) {
         this.dependencyRepository = dependencyRepository;
         this.taskRepository = taskRepository;
         this.projectServiceClient = projectServiceClient;
         this.activityService = activityService;
+        this.taskNotificationService = taskNotificationService;
     }
 
     @Transactional(readOnly = true)
@@ -110,6 +112,7 @@ public class DependencyService {
                 blockingTask.getTitle(), null);
 
         projectServiceClient.touchProject(blockingTask.getProjectId());
+        taskNotificationService.notifyTaskBlocked(blockingTask, blockedTask, callerId);
 
         return TaskDependencyDto.from(saved,
                 blockingTask.getTitle(), blockingTask.getStatus(),

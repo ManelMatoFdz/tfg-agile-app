@@ -7,6 +7,7 @@ import com.tfg.agile.app.task_service.entity.Label;
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
 import com.tfg.agile.app.task_service.repository.LabelRepository;
+import com.tfg.agile.app.task_service.repository.TaskRepository;
 import com.tfg.agile.app.task_service.support.TestDataFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,13 +32,15 @@ class LabelServiceTest {
     @Mock
     private LabelRepository labelRepository;
     @Mock
+    private TaskRepository taskRepository;
+    @Mock
     private ProjectServiceClient projectServiceClient;
 
     private LabelService service;
 
     @BeforeEach
     void setUp() {
-        service = new LabelService(labelRepository, projectServiceClient);
+        service = new LabelService(labelRepository, taskRepository, projectServiceClient);
     }
 
     @Test
@@ -132,6 +136,50 @@ class LabelServiceTest {
     }
 
     @Test
+    void usage_returnsTaskCount() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        UUID labelId = UUID.randomUUID();
+
+        Label label = Label.builder()
+                .id(labelId)
+                .projectId(projectId)
+                .name("In use")
+                .color("#000000")
+                .build();
+
+        when(labelRepository.findById(labelId)).thenReturn(Optional.of(label));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.adminPermissions());
+        when(taskRepository.countTasksByLabelId(labelId)).thenReturn(3L);
+
+        var result = service.usage(labelId, callerId);
+
+        assertThat(result.labelId()).isEqualTo(labelId);
+        assertThat(result.taskCount()).isEqualTo(3L);
+    }
+
+    @Test
+    void usage_throwsWhenNotAdmin() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        UUID labelId = UUID.randomUUID();
+
+        Label label = Label.builder()
+                .id(labelId)
+                .projectId(projectId)
+                .name("In use")
+                .color("#000000")
+                .build();
+
+        when(labelRepository.findById(labelId)).thenReturn(Optional.of(label));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.memberPermissions());
+
+        assertThatThrownBy(() -> service.usage(labelId, callerId))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("ONLY_ADMINS_CAN_MANAGE_LABELS");
+    }
+
+    @Test
     void delete_deletesLabel() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
@@ -149,7 +197,9 @@ class LabelServiceTest {
 
         service.delete(labelId, callerId);
 
-        verify(labelRepository).delete(label);
+        var inOrder = inOrder(taskRepository, labelRepository);
+        inOrder.verify(taskRepository).deleteTaskLabelsByLabelId(labelId);
+        inOrder.verify(labelRepository).delete(label);
     }
 
     @Test

@@ -2,6 +2,7 @@ package com.tfg.agile.app.task_service.controller;
 
 import com.tfg.agile.app.task_service.dto.CreateLabelRequestDto;
 import com.tfg.agile.app.task_service.dto.LabelDto;
+import com.tfg.agile.app.task_service.dto.LabelUsageDto;
 import com.tfg.agile.app.task_service.dto.UpdateLabelRequestDto;
 import com.tfg.agile.app.task_service.service.LabelService;
 import jakarta.validation.Valid;
@@ -41,6 +42,12 @@ public class LabelController {
                            @Valid @RequestBody UpdateLabelRequestDto dto,
                            @AuthenticationPrincipal UUID callerId) {
         return labelService.update(labelId, dto, callerId);
+    }
+
+    @GetMapping("/labels/{labelId}/usage")
+    public LabelUsageDto usage(@PathVariable("labelId") UUID labelId,
+                               @AuthenticationPrincipal UUID callerId) {
+        return labelService.usage(labelId, callerId);
     }
 
     @DeleteMapping("/labels/{labelId}")

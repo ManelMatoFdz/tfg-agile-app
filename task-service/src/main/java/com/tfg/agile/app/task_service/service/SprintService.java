@@ -31,6 +31,7 @@ public class SprintService {
     private final BoardColumnService boardColumnService;
     private final TaskService taskService;
     private final ActivityService activityService;
+    private final TaskNotificationService taskNotificationService;
 
     public SprintService(SprintRepository sprintRepository,
                          TaskRepository taskRepository,
@@ -38,7 +39,8 @@ public class SprintService {
                          ProjectServiceClient projectServiceClient,
                          BoardColumnService boardColumnService,
                          TaskService taskService,
-                         ActivityService activityService) {
+                         ActivityService activityService,
+                         TaskNotificationService taskNotificationService) {
         this.sprintRepository = sprintRepository;
         this.taskRepository = taskRepository;
         this.snapshotRepository = snapshotRepository;
@@ -46,6 +48,7 @@ public class SprintService {
         this.boardColumnService = boardColumnService;
         this.taskService = taskService;
         this.activityService = activityService;
+        this.taskNotificationService = taskNotificationService;
     }
 
     // ── Backlog ───────────────────────────────────────────────────────────────
@@ -216,6 +219,7 @@ public class SprintService {
         SprintResponseDto result = SprintResponseDto.from(sprintRepository.save(sprint));
         projectServiceClient.touchProject(sprint.getProjectId());
         projectServiceClient.touchMemberActivity(sprint.getProjectId(), callerId);
+        taskNotificationService.notifySprintStarted(sprint, callerId);
         return result;
     }
 
@@ -231,6 +235,7 @@ public class SprintService {
         sprint.setStatus(SprintStatus.ACTIVE);
         sprintRepository.save(sprint);
         projectServiceClient.touchProject(sprint.getProjectId());
+        taskNotificationService.notifySprintStarted(sprint, null);
         return true;
     }
 
@@ -240,6 +245,10 @@ public class SprintService {
      */
     @Transactional
     public void completeSprintInternal(Sprint sprint) {
+        completeSprintInternal(sprint, null);
+    }
+
+    private void completeSprintInternal(Sprint sprint, UUID actorUserId) {
         UUID sprintId = sprint.getId();
         UUID projectId = sprint.getProjectId();
         List<Task> allSprintTasks = taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprintId);
@@ -299,6 +308,7 @@ public class SprintService {
         sprint.setStatus(SprintStatus.COMPLETED);
         sprintRepository.save(sprint);
         projectServiceClient.touchProject(projectId);
+        taskNotificationService.notifySprintCompleted(sprint, actorUserId);
     }
 
     @Transactional
@@ -311,7 +321,7 @@ public class SprintService {
             throw new ConflictException("SPRINT_NOT_ACTIVE");
         }
 
-        completeSprintInternal(sprint);
+        completeSprintInternal(sprint, callerId);
         projectServiceClient.touchMemberActivity(sprint.getProjectId(), callerId);
         return SprintResponseDto.from(sprint);
     }

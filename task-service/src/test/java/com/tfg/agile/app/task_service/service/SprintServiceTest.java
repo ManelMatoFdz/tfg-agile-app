@@ -68,6 +68,8 @@ class SprintServiceTest {
     private GitEventRepository gitEventRepository;
     @Mock
     private ActivityService activityService;
+    @Mock
+    private TaskNotificationService taskNotificationService;
 
     private TaskService taskService;
     private SprintService service;
@@ -75,7 +77,7 @@ class SprintServiceTest {
     @BeforeEach
     void setUp() {
         taskService = new TaskService(taskRepository, labelRepository, epicRepository, dependencyRepository, gitEventRepository, projectServiceClient, userServiceClient, boardColumnService, activityService);
-        service = new SprintService(sprintRepository, taskRepository, snapshotRepository, projectServiceClient, boardColumnService, taskService, activityService);
+        service = new SprintService(sprintRepository, taskRepository, snapshotRepository, projectServiceClient, boardColumnService, taskService, activityService, taskNotificationService);
     }
 
     @SuppressWarnings("unchecked")

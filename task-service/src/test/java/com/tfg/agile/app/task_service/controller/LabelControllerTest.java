@@ -2,6 +2,7 @@ package com.tfg.agile.app.task_service.controller;
 
 import com.tfg.agile.app.task_service.dto.CreateLabelRequestDto;
 import com.tfg.agile.app.task_service.dto.LabelDto;
+import com.tfg.agile.app.task_service.dto.LabelUsageDto;
 import com.tfg.agile.app.task_service.dto.UpdateLabelRequestDto;
 import com.tfg.agile.app.task_service.service.LabelService;
 import org.junit.jupiter.api.Test;
@@ -61,6 +62,18 @@ class LabelControllerTest {
         when(labelService.update(labelId, request, callerId)).thenReturn(dto);
 
         assertThat(controller.update(labelId, request, callerId)).isEqualTo(dto);
+    }
+
+    @Test
+    void usage_delegatesToService() {
+        LabelController controller = new LabelController(labelService);
+        UUID labelId = UUID.randomUUID();
+        UUID callerId = UUID.randomUUID();
+
+        LabelUsageDto dto = new LabelUsageDto(labelId, 4);
+        when(labelService.usage(labelId, callerId)).thenReturn(dto);
+
+        assertThat(controller.usage(labelId, callerId)).isEqualTo(dto);
     }
 
     @Test

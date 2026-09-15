@@ -10,6 +10,7 @@ import com.tfg.agile.app.user_service.entity.Notification;
 import com.tfg.agile.app.user_service.entity.NotificationSettings;
 import com.tfg.agile.app.user_service.entity.RefreshToken;
 import com.tfg.agile.app.user_service.entity.User;
+import com.tfg.agile.app.user_service.exception.EmailAlreadyExistsException;
 import com.tfg.agile.app.user_service.exception.InvalidCredentialsException;
 import com.tfg.agile.app.user_service.exception.InvalidPasswordChangeException;
 import com.tfg.agile.app.user_service.exception.NotificationNotFoundException;
@@ -96,12 +97,65 @@ class UserProfileServiceTest {
 
         UserProfileResponseDto response = userProfileService.updateProfile(
                 user.getId(),
-                new UpdateUserProfileRequestDto("  New Name  ", "  New bio  ")
+                new UpdateUserProfileRequestDto(null, null, "  New Name  ", "  New bio  ")
         );
 
         assertThat(user.getFullName()).isEqualTo("New Name");
         assertThat(user.getBio()).isEqualTo("New bio");
         assertThat(response.getFullName()).isEqualTo("New Name");
+    }
+
+    @Test
+    void updateProfile_updatesUsernameEmailFullNameAndBio() {
+        User user = TestDataFactory.user();
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail("new@example.com")).thenReturn(Optional.empty());
+
+        UserProfileResponseDto response = userProfileService.updateProfile(
+                user.getId(),
+                new UpdateUserProfileRequestDto("  new-user  ", "  new@example.com  ", "  New Name  ", "  New bio  ")
+        );
+
+        assertThat(user.getUsername()).isEqualTo("new-user");
+        assertThat(user.getEmail()).isEqualTo("new@example.com");
+        assertThat(user.getFullName()).isEqualTo("New Name");
+        assertThat(user.getBio()).isEqualTo("New bio");
+        assertThat(response.getUsername()).isEqualTo("new-user");
+        assertThat(response.getEmail()).isEqualTo("new@example.com");
+    }
+
+    @Test
+    void updateProfile_throwsWhenEmailBelongsToAnotherUser() {
+        User user = TestDataFactory.user();
+        User other = TestDataFactory.user();
+        other.setEmail("taken@example.com");
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(userRepository.findByEmail("taken@example.com")).thenReturn(Optional.of(other));
+
+        assertThatThrownBy(() -> userProfileService.updateProfile(
+                user.getId(),
+                new UpdateUserProfileRequestDto(null, "taken@example.com", null, null)
+        )).isInstanceOf(EmailAlreadyExistsException.class);
+    }
+
+    @Test
+    void updateProfile_rejectsBlankUsernameAndEmail() {
+        User user = TestDataFactory.user();
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userProfileService.updateProfile(
+                user.getId(),
+                new UpdateUserProfileRequestDto("  ", null, null, null)
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("USERNAME_REQUIRED");
+
+        assertThatThrownBy(() -> userProfileService.updateProfile(
+                user.getId(),
+                new UpdateUserProfileRequestDto(null, "  ", null, null)
+        ))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("EMAIL_REQUIRED");
     }
 
     @Test

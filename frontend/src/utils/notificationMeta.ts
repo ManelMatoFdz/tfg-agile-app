@@ -1,10 +1,16 @@
 import {
+  AtSign,
+  Ban,
+  CheckCircle,
   CheckSquare,
+  Flag,
   FolderCog,
   GitBranch,
   GitCommit,
   GitPullRequest,
   Info,
+  MessageSquare,
+  PlayCircle,
   UserPlus,
   WalletCards,
 } from 'lucide-react';
@@ -60,8 +66,15 @@ export type NotificationMeta = { Icon: LucideIcon; color: string; bg: string };
 const META: Record<string, NotificationMeta> = {
   WORKSPACE_INVITATION: { Icon: UserPlus,    color: 'var(--success-text)', bg: 'var(--success-bg)' },
   PROJECT_UPDATE:       { Icon: FolderCog,   color: 'var(--info-text)',    bg: 'var(--info-bg)' },
-  TASK_REMINDER:        { Icon: CheckSquare, color: 'var(--warning-text)', bg: 'var(--warning-bg)' },
-  POKER_INVITATION:     { Icon: WalletCards, color: 'var(--purple-text)',  bg: 'var(--purple-soft)' },
+  TASK_REMINDER:        { Icon: CheckSquare,   color: 'var(--warning-text)', bg: 'var(--warning-bg)' },
+  COMMENT_MENTION:      { Icon: AtSign,        color: 'var(--accent-text)',  bg: 'var(--accent-muted)' },
+  TASK_COMMENT:         { Icon: MessageSquare, color: 'var(--info-text)',    bg: 'var(--info-bg)' },
+  TASK_BLOCKED:         { Icon: Ban,           color: 'var(--danger-text)',  bg: 'var(--danger-bg)' },
+  SPRINT_STARTED:       { Icon: PlayCircle,    color: 'var(--success-text)', bg: 'var(--success-bg)' },
+  SPRINT_COMPLETED:     { Icon: CheckCircle,   color: 'var(--success-text)', bg: 'var(--success-bg)' },
+  EPIC_OPENED:          { Icon: Flag,          color: 'var(--info-text)',    bg: 'var(--info-bg)' },
+  EPIC_COMPLETED:       { Icon: CheckCircle,   color: 'var(--success-text)', bg: 'var(--success-bg)' },
+  POKER_INVITATION:     { Icon: WalletCards,   color: 'var(--purple-text)',  bg: 'var(--purple-soft)' },
   GENERAL:              { Icon: Info,        color: 'var(--accent-text)',  bg: 'var(--accent-muted)' },
 };
 

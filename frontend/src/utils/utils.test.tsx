@@ -61,9 +61,19 @@ describe('notification metadata', () => {
     expect(timeAgo(date, t as never)).toBe(expected);
   });
 
-  it('uses known metadata and the general fallback', () => {
+  it('uses known task metadata and the general fallback', () => {
     expect(notificationMeta('TASK_REMINDER').color).toBe('var(--warning-text)');
+    expect(notificationMeta('COMMENT_MENTION').color).toBe('var(--accent-text)');
+    expect(notificationMeta('TASK_COMMENT').color).toBe('var(--info-text)');
+    expect(notificationMeta('TASK_BLOCKED').color).toBe('var(--danger-text)');
     expect(notificationMeta('UNKNOWN')).toBe(notificationMeta('GENERAL'));
+  });
+
+  it('uses sprint and epic metadata', () => {
+    expect(notificationMeta('SPRINT_STARTED').color).toBe('var(--success-text)');
+    expect(notificationMeta('SPRINT_COMPLETED').color).toBe('var(--success-text)');
+    expect(notificationMeta('EPIC_OPENED').color).toBe('var(--info-text)');
+    expect(notificationMeta('EPIC_COMPLETED').color).toBe('var(--success-text)');
   });
 
   it.each([

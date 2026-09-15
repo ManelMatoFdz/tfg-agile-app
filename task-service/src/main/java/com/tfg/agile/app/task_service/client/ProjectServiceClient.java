@@ -2,6 +2,8 @@ package com.tfg.agile.app.task_service.client;
 
 import com.tfg.agile.app.task_service.exception.ForbiddenException;
 import com.tfg.agile.app.task_service.exception.ResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -13,6 +15,8 @@ import java.util.UUID;
 
 @Component
 public class ProjectServiceClient {
+
+    private static final Logger log = LoggerFactory.getLogger(ProjectServiceClient.class);
 
     private final RestClient restClient;
 
@@ -37,6 +41,18 @@ public class ProjectServiceClient {
                 throw new ForbiddenException("NOT_PROJECT_MEMBER");
             }
             throw ex;
+        }
+    }
+
+    public ProjectMemberIdsDto getMemberIds(UUID projectId) {
+        try {
+            return restClient.get()
+                    .uri("/internal/projects/{projectId}/member-ids", projectId)
+                    .retrieve()
+                    .body(ProjectMemberIdsDto.class);
+        } catch (Exception e) {
+            log.error("Failed to get member ids for project {}: {}", projectId, e.getMessage());
+            return null;
         }
     }
 

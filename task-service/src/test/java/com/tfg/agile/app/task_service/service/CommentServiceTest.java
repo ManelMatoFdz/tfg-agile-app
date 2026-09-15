@@ -36,12 +36,14 @@ class CommentServiceTest {
     private TaskRepository taskRepository;
     @Mock
     private ProjectServiceClient projectServiceClient;
+    @Mock
+    private TaskNotificationService taskNotificationService;
 
     private CommentService service;
 
     @BeforeEach
     void setUp() {
-        service = new CommentService(commentRepository, taskRepository, projectServiceClient);
+        service = new CommentService(commentRepository, taskRepository, projectServiceClient, taskNotificationService);
     }
 
     @Test

@@ -548,7 +548,19 @@
         "title": "Etiquetas",
         "namePlaceholder": "Nombre de la etiqueta",
         "add": "Añadir",
-        "empty": "No hay etiquetas definidas para este proyecto."
+        "empty": "No hay etiquetas definidas para este proyecto.",
+        "deleteAria": "Eliminar etiqueta {{name}}",
+        "deleting": "Eliminando...",
+        "deleteSuccess": "Etiqueta «{{name}}» eliminada",
+        "deleteError": "No se pudo eliminar la etiqueta.",
+        "usageError": "No se pudo comprobar el uso de la etiqueta.",
+        "deleteConfirm": {
+          "title": "Eliminar etiqueta",
+          "unusedMessage": "Vas a eliminar la etiqueta «{{name}}». Esta acción no se puede deshacer.",
+          "confirm": "Eliminar etiqueta",
+          "inUseMessage_one": "La etiqueta «{{name}}» está asignada a {{count}} tarea. Al eliminarla, se quitará de esa tarea.",
+          "inUseMessage_other": "La etiqueta «{{name}}» está asignada a {{count}} tareas. Al eliminarla, se quitará de esas tareas."
+        }
       },
       "git": {
         "title": "Integración con Git",
@@ -1041,7 +1053,7 @@
     "defaultUser": "Usuario",
     "info": {
       "title": "Información personal",
-      "subtitle": "Actualiza tu nombre y biografía",
+      "subtitle": "Actualiza tu usuario, correo, nombre y biografía",
       "username": "Nombre de usuario",
       "email": "Correo electrónico",
       "fullName": "Nombre completo",
@@ -1049,7 +1061,9 @@
       "bio": "Biografía",
       "bioPlaceholder": "Cuéntanos sobre ti...",
       "save": "Guardar cambios",
-      "successMessage": "Perfil actualizado correctamente."
+      "successMessage": "Perfil actualizado correctamente.",
+      "usernamePlaceholder": "Tu nombre de usuario",
+      "emailPlaceholder": "tu@email.com"
     },
     "password": {
       "title": "Cambiar contraseña",

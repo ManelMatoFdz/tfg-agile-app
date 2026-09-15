@@ -545,7 +545,19 @@
         "title": "Labels",
         "namePlaceholder": "Label name",
         "add": "Add",
-        "empty": "No labels defined for this project."
+        "empty": "No labels defined for this project.",
+        "deleteAria": "Delete label {{name}}",
+        "deleting": "Deleting...",
+        "deleteSuccess": "Label “{{name}}” deleted",
+        "deleteError": "Could not delete the label.",
+        "usageError": "Could not check label usage.",
+        "deleteConfirm": {
+          "title": "Delete label",
+          "unusedMessage": "You are about to delete the label “{{name}}”. This action cannot be undone.",
+          "confirm": "Delete label",
+          "inUseMessage_one": "The label “{{name}}” is assigned to {{count}} task. Deleting it will remove it from that task.",
+          "inUseMessage_other": "The label “{{name}}” is assigned to {{count}} tasks. Deleting it will remove it from those tasks."
+        }
       },
       "git": {
         "title": "Git integration",
@@ -1038,7 +1050,7 @@
     "defaultUser": "User",
     "info": {
       "title": "Personal information",
-      "subtitle": "Update your name and bio",
+      "subtitle": "Update your username, email, name and bio",
       "username": "Username",
       "email": "Email address",
       "fullName": "Full name",
@@ -1046,7 +1058,9 @@
       "bio": "Bio",
       "bioPlaceholder": "Tell us about yourself...",
       "save": "Save changes",
-      "successMessage": "Profile updated successfully."
+      "successMessage": "Profile updated successfully.",
+      "usernamePlaceholder": "Your username",
+      "emailPlaceholder": "you@example.com"
     },
     "password": {
       "title": "Change password",

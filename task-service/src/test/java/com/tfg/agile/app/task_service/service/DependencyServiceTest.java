@@ -43,12 +43,14 @@ class DependencyServiceTest {
     private ProjectServiceClient projectServiceClient;
     @Mock
     private ActivityService activityService;
+    @Mock
+    private TaskNotificationService taskNotificationService;
 
     private DependencyService service;
 
     @BeforeEach
     void setUp() {
-        service = new DependencyService(dependencyRepository, taskRepository, projectServiceClient, activityService);
+        service = new DependencyService(dependencyRepository, taskRepository, projectServiceClient, activityService, taskNotificationService);
     }
 
     @Test

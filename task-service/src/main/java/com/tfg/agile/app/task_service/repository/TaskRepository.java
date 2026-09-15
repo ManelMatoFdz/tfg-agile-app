@@ -51,5 +51,12 @@ public interface TaskRepository extends JpaRepository<Task, UUID>, JpaSpecificat
     @Query(value = "DELETE FROM task_labels WHERE task_id IN (SELECT id FROM tasks WHERE project_id = :projectId)", nativeQuery = true)
     void deleteTaskLabelsByProjectId(@Param("projectId") UUID projectId);
 
+    @Query(value = "SELECT COUNT(*) FROM task_labels WHERE label_id = :labelId", nativeQuery = true)
+    long countTasksByLabelId(@Param("labelId") UUID labelId);
+
+    @Modifying
+    @Query(value = "DELETE FROM task_labels WHERE label_id = :labelId", nativeQuery = true)
+    void deleteTaskLabelsByLabelId(@Param("labelId") UUID labelId);
+
     void deleteByProjectId(UUID projectId);
 }

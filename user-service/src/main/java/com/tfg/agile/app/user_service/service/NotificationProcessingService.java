@@ -24,6 +24,13 @@ public class NotificationProcessingService {
     private static final String TYPE_PROJECT_UPDATE = "PROJECT_UPDATE";
     private static final String TYPE_TASK_REMINDER = "TASK_REMINDER";
     private static final String TYPE_POKER_INVITATION = "POKER_INVITATION";
+    private static final String TYPE_COMMENT_MENTION = "COMMENT_MENTION";
+    private static final String TYPE_TASK_COMMENT = "TASK_COMMENT";
+    private static final String TYPE_TASK_BLOCKED = "TASK_BLOCKED";
+    private static final String TYPE_SPRINT_STARTED = "SPRINT_STARTED";
+    private static final String TYPE_SPRINT_COMPLETED = "SPRINT_COMPLETED";
+    private static final String TYPE_EPIC_OPENED = "EPIC_OPENED";
+    private static final String TYPE_EPIC_COMPLETED = "EPIC_COMPLETED";
     private static final int MAX_DATA_LENGTH = 2000;
 
     private final UserRepository userRepository;
@@ -91,8 +98,10 @@ public class NotificationProcessingService {
     private boolean isTypeEnabled(NotificationSettings settings, String type) {
         String normalizedType = normalizeType(type);
         return switch (normalizedType) {
-            case TYPE_PROJECT_UPDATE, TYPE_POKER_INVITATION -> settings.isProjectUpdatesEnabled();
-            case TYPE_TASK_REMINDER -> settings.isTaskRemindersEnabled();
+            case TYPE_PROJECT_UPDATE, TYPE_POKER_INVITATION,
+                 TYPE_SPRINT_STARTED, TYPE_SPRINT_COMPLETED,
+                 TYPE_EPIC_OPENED, TYPE_EPIC_COMPLETED -> settings.isProjectUpdatesEnabled();
+            case TYPE_TASK_REMINDER, TYPE_COMMENT_MENTION, TYPE_TASK_COMMENT, TYPE_TASK_BLOCKED -> settings.isTaskRemindersEnabled();
             default -> true;
         };
     }

@@ -25,17 +25,20 @@ public class EpicService {
     private final ProjectServiceClient projectServiceClient;
     private final BoardColumnService boardColumnService;
     private final ActivityService activityService;
+    private final TaskNotificationService taskNotificationService;
 
     public EpicService(EpicRepository epicRepository,
                        TaskRepository taskRepository,
                        ProjectServiceClient projectServiceClient,
                        BoardColumnService boardColumnService,
-                       ActivityService activityService) {
+                       ActivityService activityService,
+                       TaskNotificationService taskNotificationService) {
         this.epicRepository = epicRepository;
         this.taskRepository = taskRepository;
         this.projectServiceClient = projectServiceClient;
         this.boardColumnService = boardColumnService;
         this.activityService = activityService;
+        this.taskNotificationService = taskNotificationService;
     }
 
     @Transactional(readOnly = true)
@@ -81,6 +84,7 @@ public class EpicService {
 
         Epic saved = epicRepository.save(epic);
         projectServiceClient.touchProject(projectId);
+        taskNotificationService.notifyEpicOpened(saved, callerId);
         return toDto(saved, Set.of());
     }
 
@@ -89,6 +93,8 @@ public class EpicService {
         Epic epic = getEpicOrThrow(epicId);
         MemberPermissionsDto perms = projectServiceClient.getMemberPermissions(epic.getProjectId(), callerId);
         requireProductOwner(perms);
+
+        EpicStatus previousStatus = epic.getStatus();
 
         epic.setName(dto.name());
         epic.setDescription(dto.description());
@@ -104,6 +110,7 @@ public class EpicService {
         Epic saved = epicRepository.save(epic);
         Set<String> doneStatuses = boardColumnService.getDoneEquivalentStatuses(epic.getProjectId());
         projectServiceClient.touchProject(epic.getProjectId());
+        notifyEpicStatusTransition(saved, previousStatus, callerId);
         return toDto(saved, doneStatuses);
     }
 
@@ -178,6 +185,15 @@ public class EpicService {
         boolean isPo = "PRODUCT_OWNER".equals(perms.scrumRole());
         if (!isPo) {
             throw new ForbiddenException("ONLY_PO_CAN_MANAGE_EPICS");
+        }
+    }
+
+    private void notifyEpicStatusTransition(Epic epic, EpicStatus previousStatus, UUID callerId) {
+        if (previousStatus == epic.getStatus()) return;
+        if (epic.getStatus() == EpicStatus.OPEN) {
+            taskNotificationService.notifyEpicOpened(epic, callerId);
+        } else if (epic.getStatus() == EpicStatus.DONE) {
+            taskNotificationService.notifyEpicCompleted(epic, callerId);
         }
     }
 

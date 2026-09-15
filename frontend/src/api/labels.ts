@@ -11,6 +11,11 @@ export interface UpdateLabelDto {
   color?: string;
 }
 
+export interface LabelUsageDto {
+  labelId: string;
+  taskCount: number;
+}
+
 export const labelsApi = {
   getByProject: (projectId: string) =>
     taskClient.get<Label[]>(`/projects/${projectId}/labels`).then((r) => r.data),
@@ -20,6 +25,9 @@ export const labelsApi = {
 
   update: (labelId: string, dto: UpdateLabelDto) =>
     taskClient.put<Label>(`/labels/${labelId}`, dto).then((r) => r.data),
+
+  usage: (labelId: string) =>
+    taskClient.get<LabelUsageDto>(`/labels/${labelId}/usage`).then((r) => r.data),
 
   delete: (labelId: string) =>
     taskClient.delete(`/labels/${labelId}`),

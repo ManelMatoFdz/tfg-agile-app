@@ -14,6 +14,7 @@ import com.tfg.agile.app.user_service.dto.UserSummaryDto;
 import com.tfg.agile.app.user_service.entity.Notification;
 import com.tfg.agile.app.user_service.entity.NotificationSettings;
 import com.tfg.agile.app.user_service.entity.User;
+import com.tfg.agile.app.user_service.exception.EmailAlreadyExistsException;
 import com.tfg.agile.app.user_service.exception.InvalidCredentialsException;
 import com.tfg.agile.app.user_service.exception.InvalidPasswordChangeException;
 import com.tfg.agile.app.user_service.exception.NotificationNotFoundException;
@@ -24,6 +25,7 @@ import com.tfg.agile.app.user_service.repository.RefreshTokenRepository;
 import com.tfg.agile.app.user_service.repository.UserRepository;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -81,6 +83,25 @@ public class UserProfileService {
     @Transactional
     public UserProfileResponseDto updateProfile(UUID userId, UpdateUserProfileRequestDto req) {
         User user = getUser(userId);
+        if (req.getUsername() != null) {
+            String username = req.getUsername().trim();
+            if (username.isBlank()) {
+                throw new IllegalArgumentException("USERNAME_REQUIRED");
+            }
+            user.setUsername(username);
+        }
+        if (req.getEmail() != null) {
+            String email = req.getEmail().trim();
+            if (email.isBlank()) {
+                throw new IllegalArgumentException("EMAIL_REQUIRED");
+            }
+            userRepository.findByEmail(email)
+                    .filter(existing -> !existing.getId().equals(userId))
+                    .ifPresent(existing -> {
+                        throw new EmailAlreadyExistsException();
+                    });
+            user.setEmail(email);
+        }
         if (req.getFullName() != null) {
             user.setFullName(req.getFullName().trim());
         }
@@ -88,7 +109,11 @@ public class UserProfileService {
             user.setBio(req.getBio().trim());
         }
         user.setUpdatedAt(Instant.now());
-        userRepository.save(user);
+        try {
+            userRepository.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            throw new EmailAlreadyExistsException();
+        }
         return toProfileResponse(user);
     }
 

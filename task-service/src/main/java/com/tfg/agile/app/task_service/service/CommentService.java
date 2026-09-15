@@ -24,13 +24,16 @@ public class CommentService {
     private final TaskCommentRepository commentRepository;
     private final TaskRepository taskRepository;
     private final ProjectServiceClient projectServiceClient;
+    private final TaskNotificationService taskNotificationService;
 
     public CommentService(TaskCommentRepository commentRepository,
                           TaskRepository taskRepository,
-                          ProjectServiceClient projectServiceClient) {
+                          ProjectServiceClient projectServiceClient,
+                          TaskNotificationService taskNotificationService) {
         this.commentRepository = commentRepository;
         this.taskRepository = taskRepository;
         this.projectServiceClient = projectServiceClient;
+        this.taskNotificationService = taskNotificationService;
     }
 
     @Transactional(readOnly = true)
@@ -53,7 +56,9 @@ public class CommentService {
                 .content(dto.content())
                 .build();
 
-        return TaskCommentDto.from(commentRepository.save(comment));
+        TaskComment saved = commentRepository.save(comment);
+        taskNotificationService.notifyCommentCreated(task, saved, callerId);
+        return TaskCommentDto.from(saved);
     }
 
     @Transactional

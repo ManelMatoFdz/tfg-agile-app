@@ -41,11 +41,15 @@ export default function ProfileInfo() {
   const setUser = useAuthStore((s) => s.setUser);
   const { loading, error, success, run, reset } = useApiAction<User>();
 
+  const [username, setUsername] = useState(user?.username ?? '');
+  const [email, setEmail] = useState(user?.email ?? '');
   const [fullName, setFullName] = useState(user?.fullName ?? '');
   const [bio, setBio] = useState(user?.bio ?? '');
 
   useEffect(() => {
     if (user) {
+      setUsername(user.username ?? '');
+      setEmail(user.email ?? '');
       setFullName(user.fullName ?? '');
       setBio(user.bio ?? '');
     }
@@ -53,7 +57,13 @@ export default function ProfileInfo() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    const updated = await run(usersApi.updateMe({ fullName, bio }));
+    if (!username.trim() || !email.trim()) return;
+    const updated = await run(usersApi.updateMe({
+      username: username.trim(),
+      email: email.trim(),
+      fullName,
+      bio,
+    }));
     if (updated) setUser(updated);
   };
 
@@ -97,8 +107,21 @@ export default function ProfileInfo() {
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div className="profile-info-grid">
-          <Input label={t('profile.info.username')} value={user?.username ?? ''} disabled />
-          <Input label={t('profile.info.email')} value={user?.email ?? ''} disabled />
+          <Input
+            label={t('profile.info.username')}
+            placeholder={t('profile.info.usernamePlaceholder')}
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+          />
+          <Input
+            label={t('profile.info.email')}
+            placeholder={t('profile.info.emailPlaceholder')}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="email"
+            required
+          />
         </div>
         <Input
           label={t('profile.info.fullName')}
@@ -119,7 +142,7 @@ export default function ProfileInfo() {
           />
         </div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
-          <Button type="submit" loading={loading}>
+          <Button type="submit" loading={loading} disabled={!username.trim() || !email.trim()}>
             {t('profile.info.save')}
           </Button>
         </div>

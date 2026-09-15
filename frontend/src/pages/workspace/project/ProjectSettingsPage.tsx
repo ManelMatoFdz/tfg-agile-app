@@ -50,6 +50,27 @@ const card: React.CSSProperties = {
   overflow: 'hidden',
 };
 
+const modalOverlay: React.CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  zIndex: 1000,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 20,
+  background: 'rgba(15, 23, 42, 0.45)',
+  backdropFilter: 'blur(2px)',
+};
+
+const modalCard: React.CSSProperties = {
+  width: 'min(460px, 100%)',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius-lg)',
+  boxShadow: 'var(--shadow-lg)',
+  padding: 20,
+};
+
 export default function ProjectSettingsPage() {
   const { t } = useTranslation();
   const { workspaceId, projectId } = useParams<{ workspaceId: string; projectId: string }>();
@@ -76,6 +97,9 @@ export default function ProjectSettingsPage() {
   const [editingLabelId, setEditingLabelId] = useState<string | null>(null);
   const [editLabelName, setEditLabelName] = useState('');
   const [editLabelColor, setEditLabelColor] = useState('');
+  const [deleteLabelTarget, setDeleteLabelTarget] = useState<{ label: Label; taskCount: number } | null>(null);
+  const [loadingLabelUsageId, setLoadingLabelUsageId] = useState<string | null>(null);
+  const [deletingLabelId, setDeletingLabelId] = useState<string | null>(null);
 
   const [showDeleteZone, setShowDeleteZone] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
@@ -187,6 +211,38 @@ export default function ProjectSettingsPage() {
     } catch {
       setError(t('projects.settings.deleteError'));
       setDeleting(false);
+    }
+  };
+
+  const requestLabelDeletion = async (label: Label) => {
+    setError(null);
+    setSuccess(null);
+    setLoadingLabelUsageId(label.id);
+    try {
+      const usage = await labelsApi.usage(label.id);
+      setDeleteLabelTarget({ label, taskCount: usage.taskCount });
+    } catch {
+      setError(t('projects.settings.labels.usageError'));
+    } finally {
+      setLoadingLabelUsageId(null);
+    }
+  };
+
+  const confirmLabelDeletion = async () => {
+    if (!deleteLabelTarget) return;
+    const label = deleteLabelTarget.label;
+    setDeletingLabelId(label.id);
+    setError(null);
+    setSuccess(null);
+    try {
+      await labelsApi.delete(label.id);
+      setLabels((prev) => prev.filter((l) => l.id !== label.id));
+      setDeleteLabelTarget(null);
+      setSuccess(t('projects.settings.labels.deleteSuccess', { name: label.name }));
+    } catch {
+      setError(t('projects.settings.labels.deleteError'));
+    } finally {
+      setDeletingLabelId(null);
     }
   };
 
@@ -525,19 +581,25 @@ export default function ProjectSettingsPage() {
                             </span>
                             <button
                               type="button"
-                              onClick={async () => {
-                                await labelsApi.delete(label.id);
-                                setLabels((prev) => prev.filter((l) => l.id !== label.id));
-                              }}
+                              onClick={() => void requestLabelDeletion(label)}
+                              disabled={loadingLabelUsageId === label.id || deletingLabelId === label.id}
                               style={{
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 width: 28, height: 28, padding: 0, flexShrink: 0,
                                 background: 'transparent', border: 'none', borderRadius: 'var(--radius-sm)',
-                                cursor: 'pointer', color: 'var(--text-faint)',
+                                cursor: loadingLabelUsageId === label.id || deletingLabelId === label.id ? 'wait' : 'pointer',
+                                color: 'var(--text-faint)',
+                                opacity: loadingLabelUsageId === label.id || deletingLabelId === label.id ? 0.5 : 1,
                                 transition: 'color 150ms, background 150ms',
                               }}
-                              onMouseEnter={(e) => { e.currentTarget.style.color = '#DC2626'; e.currentTarget.style.background = 'rgba(220,38,38,0.08)'; }}
+                              onMouseEnter={(e) => {
+                                if (loadingLabelUsageId !== label.id && deletingLabelId !== label.id) {
+                                  e.currentTarget.style.color = '#DC2626';
+                                  e.currentTarget.style.background = 'rgba(220,38,38,0.08)';
+                                }
+                              }}
                               onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-faint)'; e.currentTarget.style.background = 'transparent'; }}
+                              aria-label={t('projects.settings.labels.deleteAria', { name: label.name })}
                             >
                               <Trash2 size={14} strokeWidth={2} />
                             </button>
@@ -805,6 +867,88 @@ export default function ProjectSettingsPage() {
             </p>
           </div>
         </section>
+      )}
+
+      {deleteLabelTarget && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-label-title"
+          style={modalOverlay}
+        >
+          <div style={modalCard}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: 'rgba(220,38,38,0.1)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}>
+                <AlertTriangle size={20} strokeWidth={2} style={{ color: '#DC2626' }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h2 id="delete-label-title" style={{ margin: 0, fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
+                  {t('projects.settings.labels.deleteConfirm.title')}
+                </h2>
+                <p style={{ margin: '8px 0 0', fontSize: 14, lineHeight: 1.6, color: 'var(--text-muted)' }}>
+                  {deleteLabelTarget.taskCount > 0
+                    ? t('projects.settings.labels.deleteConfirm.inUseMessage', {
+                        name: deleteLabelTarget.label.name,
+                        count: deleteLabelTarget.taskCount,
+                      })
+                    : t('projects.settings.labels.deleteConfirm.unusedMessage', {
+                        name: deleteLabelTarget.label.name,
+                      })}
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+              <button
+                type="button"
+                onClick={() => setDeleteLabelTarget(null)}
+                disabled={deletingLabelId === deleteLabelTarget.label.id}
+                style={{
+                  padding: '9px 16px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: 'transparent',
+                  color: 'var(--text-muted)',
+                  border: '1px solid var(--border)',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: deletingLabelId === deleteLabelTarget.label.id ? 'not-allowed' : 'pointer',
+                  opacity: deletingLabelId === deleteLabelTarget.label.id ? 0.5 : 1,
+                }}
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmLabelDeletion()}
+                disabled={deletingLabelId === deleteLabelTarget.label.id}
+                style={{
+                  padding: '9px 16px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  background: '#DC2626',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  cursor: deletingLabelId === deleteLabelTarget.label.id ? 'not-allowed' : 'pointer',
+                  opacity: deletingLabelId === deleteLabelTarget.label.id ? 0.5 : 1,
+                }}
+              >
+                {deletingLabelId === deleteLabelTarget.label.id
+                  ? t('projects.settings.labels.deleting')
+                  : t('projects.settings.labels.deleteConfirm.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

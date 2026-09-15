@@ -5,10 +5,17 @@ type AvatarUploadResponse = {
   avatarUrl: string;
 };
 
+type UpdateMeRequest = {
+  username?: string;
+  email?: string;
+  fullName?: string;
+  bio?: string;
+};
+
 export const usersApi = {
   getMe: () => client.get<User>('/users/me'),
 
-  updateMe: (data: { fullName?: string; bio?: string }) =>
+  updateMe: (data: UpdateMeRequest) =>
     client.patch<User>('/users/me', data),
 
   changePassword: (newPassword: string, currentPassword?: string) =>

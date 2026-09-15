@@ -37,15 +37,31 @@ describe('profile components', () => {
   });
 
   it('updates personal information and the auth store', async () => {
-    const updated = userFixture({ fullName: 'Grace Hopper', bio: 'Compiler pioneer' });
+    const updated = userFixture({
+      username: 'grace',
+      email: 'grace@example.com',
+      fullName: 'Grace Hopper',
+      bio: 'Compiler pioneer',
+    });
     updateMe.mockResolvedValue({ data: updated } as never);
     const { user } = renderWithProviders(<ProfileInfo />);
+    const username = screen.getByLabelText('Username');
+    const email = screen.getByLabelText('Email address');
     const name = screen.getByLabelText('Full name');
+    await user.clear(username);
+    await user.type(username, 'grace');
+    await user.clear(email);
+    await user.type(email, 'grace@example.com');
     await user.clear(name);
     await user.type(name, 'Grace Hopper');
     await user.type(screen.getByPlaceholderText(/Tell us/i), 'Compiler pioneer');
     await user.click(screen.getByRole('button', { name: /Save changes/i }));
-    await waitFor(() => expect(updateMe).toHaveBeenCalledWith({ fullName: 'Grace Hopper', bio: 'Compiler pioneer' }));
+    await waitFor(() => expect(updateMe).toHaveBeenCalledWith({
+      username: 'grace',
+      email: 'grace@example.com',
+      fullName: 'Grace Hopper',
+      bio: 'Compiler pioneer',
+    }));
     expect(useAuthStore.getState().user).toEqual(updated);
   });
 

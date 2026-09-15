@@ -71,7 +71,7 @@ jest.mock('../api/sprints', () => ({ sprintsApi: {
   getSprintStories: jest.fn(), getVelocity: jest.fn(), getSprintSnapshots: jest.fn(),
 } }));
 jest.mock('../api/labels', () => ({ labelsApi: {
-  getByProject: jest.fn(), create: jest.fn(), update: jest.fn(), delete: jest.fn(),
+  getByProject: jest.fn(), create: jest.fn(), update: jest.fn(), usage: jest.fn(), delete: jest.fn(),
 } }));
 jest.mock('../api/epics', () => ({ epicsApi: { getByProject: jest.fn(), getTasks: jest.fn(), assignToTask: jest.fn() } }));
 jest.mock('../api/boardColumns', () => ({ boardColumnsApi: { getColumns: jest.fn(), saveColumns: jest.fn() } }));

@@ -41,7 +41,7 @@ class UserProfileControllerTest {
         UUID notificationId = UUID.randomUUID();
         Authentication authentication = new TestingAuthenticationToken(userId.toString(), null);
 
-        UpdateUserProfileRequestDto updateProfileRequest = new UpdateUserProfileRequestDto("John", "Bio");
+        UpdateUserProfileRequestDto updateProfileRequest = new UpdateUserProfileRequestDto("john", "john@example.com", "John", "Bio");
         ChangePasswordRequestDto changePasswordRequest = new ChangePasswordRequestDto("current", "new-secret");
         UpdateNotificationSettingsRequestDto settingsRequest = new UpdateNotificationSettingsRequestDto(false, true, false);
         MockMultipartFile avatarFile = new MockMultipartFile("file", "avatar.png", "image/png", new byte[]{1, 2, 3});
@@ -93,4 +93,3 @@ class UserProfileControllerTest {
         assertThatThrownBy(() -> controller.me(new TestingAuthenticationToken("not-a-uuid", null))).isInstanceOf(InvalidCredentialsException.class);
     }
 }
-

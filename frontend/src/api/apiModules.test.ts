@@ -55,7 +55,7 @@ describe('API endpoint modules', () => {
     await authApi.resetPassword('reset-token', 'new-secret');
     await authApi.me();
     await usersApi.getMe();
-    await usersApi.updateMe({ fullName: 'Alice' });
+    await usersApi.updateMe({ username: 'alice', email: 'alice@example.com', fullName: 'Alice' });
     await usersApi.changePassword('new-secret', 'old-secret');
     await usersApi.uploadAvatar(new File(['avatar'], 'avatar.png', { type: 'image/png' }));
     await usersApi.batch(['u1']);
@@ -67,6 +67,7 @@ describe('API endpoint modules', () => {
     await notificationsApi.updateSettings({ projectUpdatesEnabled: false });
 
     expect(client.post).toHaveBeenCalledWith('/auth/login', { email: 'a@b.dev', password: 'secret' });
+    expect(client.patch).toHaveBeenCalledWith('/users/me', { username: 'alice', email: 'alice@example.com', fullName: 'Alice' });
     expect(client.get).toHaveBeenCalledWith('/users/lookup?email=a%2Bb%40b.dev');
     expect(client.patch).toHaveBeenCalledWith('/users/me/notifications/n1/read');
     const upload = jest.mocked(client.post).mock.calls.find(([url]) => url === '/users/me/avatar');
@@ -137,6 +138,7 @@ describe('API endpoint modules', () => {
     await labelsApi.getByProject('p1');
     await labelsApi.create('p1', { name: 'frontend' });
     await labelsApi.update('label1', { name: 'backend' });
+    await labelsApi.usage('label1');
     await labelsApi.delete('label1');
     await epicsApi.getByProject('p1');
     await epicsApi.getById('p1', 'epic1');
@@ -148,6 +150,7 @@ describe('API endpoint modules', () => {
 
     expect(taskClient.patch).toHaveBeenCalledWith('/tasks/task1/move', { status: 'DONE', position: 2 });
     expect(taskClient.post).toHaveBeenCalledWith('/tasks/task1/dependencies', { blockedTaskId: 'task2' });
+    expect(taskClient.get).toHaveBeenCalledWith('/labels/label1/usage');
     expect(taskClient.put).toHaveBeenCalledWith('/tasks/task1/epic', { epicId: 'epic1' });
   });
 

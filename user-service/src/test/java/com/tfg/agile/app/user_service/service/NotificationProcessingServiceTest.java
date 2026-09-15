@@ -111,6 +111,39 @@ class NotificationProcessingServiceTest {
         verify(notificationRepository, never()).save(any());
     }
 
+
+    @Test
+    void process_skipsNewTaskNotificationTypesWhenTaskRemindersAreDisabled() {
+        User user = TestDataFactory.user();
+        NotificationSettings settings = TestDataFactory.notificationSettings(user);
+        settings.setTaskRemindersEnabled(false);
+
+        NotificationQueueMessage message = new NotificationQueueMessage(user.getId(), "Title", "Message", "TASK_BLOCKED", null, null);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(notificationSettingsRepository.findByUserId(user.getId())).thenReturn(Optional.of(settings));
+
+        service.process(message);
+
+        verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
+    void process_skipsNewProjectNotificationTypesWhenProjectUpdatesAreDisabled() {
+        User user = TestDataFactory.user();
+        NotificationSettings settings = TestDataFactory.notificationSettings(user);
+        settings.setProjectUpdatesEnabled(false);
+
+        NotificationQueueMessage message = new NotificationQueueMessage(user.getId(), "Title", "Message", "EPIC_COMPLETED", null, null);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(notificationSettingsRepository.findByUserId(user.getId())).thenReturn(Optional.of(settings));
+
+        service.process(message);
+
+        verify(notificationRepository, never()).save(any());
+    }
+
     @Test
     void process_normalizesBlankTypeTitleMessageAndLink() {
         User user = TestDataFactory.user();
