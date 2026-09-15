@@ -32,6 +32,11 @@ function httpStatus(err: unknown): number | undefined {
   return (err as { response?: { status?: number } })?.response?.status;
 }
 
+function httpErrorCode(err: unknown): string | undefined {
+  const data = (err as { response?: { data?: { errorCode?: string; error?: string } } })?.response?.data;
+  return data?.errorCode ?? data?.error;
+}
+
 export default function TaskDetailPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -254,7 +259,16 @@ export default function TaskDetailPage() {
       };
       await tasksApi.update(task.id, dto);
       if (epicId !== (task.epicId ?? '')) {
-        await epicsApi.assignToTask(task.id, epicId || null);
+        try {
+          await epicsApi.assignToTask(task.id, epicId || null);
+        } catch (err) {
+          const code = httpErrorCode(err);
+          setError(code === 'ONLY_PO_CAN_MANAGE_EPICS'
+              ? t('tasks.detail.epicChangePermissionError')
+              : t('tasks.detail.epicChangeError'));
+          loadTask();
+          return;
+        }
       }
       for (const stId of toggledSubtaskIds) {
         await tasksApi.toggleSubtaskDone(stId);

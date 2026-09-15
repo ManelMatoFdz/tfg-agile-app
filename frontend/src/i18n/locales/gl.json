@@ -861,7 +861,9 @@
       "unsavedStay": "Seguir editando",
       "saved": "Cambios gardados",
       "readOnlyCompleted": "Este sprint está completado: a tarefa é de só lectura.",
-      "readOnlyPermission": "O teu rol non permite editar esta tarefa."
+      "readOnlyPermission": "O teu rol non permite editar esta tarefa.",
+      "epicChangePermissionError": "A tarefa gardouse, pero non se cambiou o epic. Só o Product Owner pode xestionar a asignación de epics.",
+      "epicChangeError": "A tarefa gardouse, pero non se puido cambiar o epic."
     },
     "createModal": {
       "createdHint": "Tarefa creada. Podes crear outra."

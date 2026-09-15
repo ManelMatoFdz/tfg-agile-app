@@ -860,7 +860,9 @@
       "unsavedStay": "Keep editing",
       "saved": "Changes saved",
       "readOnlyCompleted": "This sprint is completed: the task is read-only.",
-      "readOnlyPermission": "Your role doesn't allow editing this task."
+      "readOnlyPermission": "Your role doesn't allow editing this task.",
+      "epicChangePermissionError": "The task was saved, but the epic was not changed. Only the Product Owner can manage epic assignment.",
+      "epicChangeError": "The task was saved, but the epic could not be changed."
     },
     "createModal": {
       "createdHint": "Task created. You can create another one."

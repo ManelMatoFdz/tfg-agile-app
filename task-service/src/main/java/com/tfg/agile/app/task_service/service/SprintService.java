@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -202,19 +204,22 @@ public class SprintService {
         if (sprint.getStartDate() == null) {
             throw new IllegalArgumentException("SPRINT_START_DATE_REQUIRED");
         }
-        if (sprint.getStartDate().isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("SPRINT_START_DATE_IN_FUTURE");
-        }
+        LocalDate today = LocalDate.now();
         if (sprint.getEndDate() == null) {
             throw new IllegalArgumentException("SPRINT_END_DATE_REQUIRED");
         }
-        if (sprint.getEndDate().isBefore(LocalDate.now())) {
+        if (sprint.getEndDate().isBefore(today)) {
             throw new IllegalArgumentException("SPRINT_END_DATE_IN_PAST");
         }
         if (sprintRepository.existsByProjectIdAndStatus(sprint.getProjectId(), SprintStatus.ACTIVE)) {
             throw new ConflictException("SPRINT_ALREADY_ACTIVE");
         }
+        Sprint nextSprint = getNextPlanningSprintToStart(sprint.getProjectId(), today);
+        if (!sprint.getId().equals(nextSprint.getId())) {
+            throw new ConflictException("SPRINT_NOT_NEXT_TO_START");
+        }
 
+        sprint.setStartDate(today);
         sprint.setStatus(SprintStatus.ACTIVE);
         SprintResponseDto result = SprintResponseDto.from(sprintRepository.save(sprint));
         projectServiceClient.touchProject(sprint.getProjectId());
@@ -305,6 +310,7 @@ public class SprintService {
                     }
                 });
 
+        sprint.setEndDate(LocalDate.now());
         sprint.setStatus(SprintStatus.COMPLETED);
         sprintRepository.save(sprint);
         projectServiceClient.touchProject(projectId);
@@ -533,5 +539,17 @@ public class SprintService {
                 sprintRepository.existsOverlapping(projectId, excludeId, startDate, endDate)) {
             throw new IllegalArgumentException("SPRINT_DATES_OVERLAP");
         }
+    }
+
+    private Sprint getNextPlanningSprintToStart(UUID projectId, LocalDate today) {
+        return sprintRepository.findAllByProjectIdAndStatus(projectId, SprintStatus.PLANNING)
+                .stream()
+                .filter(s -> s.getStartDate() != null)
+                .min(Comparator
+                        .comparingLong((Sprint s) -> Math.abs(ChronoUnit.DAYS.between(today, s.getStartDate())))
+                        .thenComparing(Sprint::getStartDate)
+                        .thenComparing(Sprint::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Sprint::getId))
+                .orElseThrow(() -> new ConflictException("SPRINT_NOT_NEXT_TO_START"));
     }
 }

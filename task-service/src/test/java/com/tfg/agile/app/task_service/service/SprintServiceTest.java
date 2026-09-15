@@ -219,6 +219,21 @@ class SprintServiceTest {
     }
 
     @Test
+    void activateSprint_throwsWhenStartDateIsMissing() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+        sprint.setStartDate(null);
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+
+        assertThatThrownBy(() -> service.activateSprint(sprint.getId(), callerId))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("SPRINT_START_DATE_REQUIRED");
+    }
+
+    @Test
     void activateSprint_throwsWhenEndDateIsInThePast() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
@@ -249,19 +264,43 @@ class SprintServiceTest {
     }
 
     @Test
-    void activateSprint_setsStatusActiveWhenValid() {
+    void activateSprint_setsStatusActiveAndStartDateToTodayWhenValid() {
         UUID callerId = UUID.randomUUID();
         UUID projectId = UUID.randomUUID();
         Sprint sprint = TestDataFactory.sprint(projectId);
+        sprint.setStartDate(LocalDate.now().plusDays(3));
 
         when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
         when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
         when(sprintRepository.existsByProjectIdAndStatus(projectId, SprintStatus.ACTIVE)).thenReturn(false);
+        when(sprintRepository.findAllByProjectIdAndStatus(projectId, SprintStatus.PLANNING)).thenReturn(List.of(sprint));
         when(sprintRepository.save(sprint)).thenReturn(sprint);
 
+        LocalDate today = LocalDate.now();
         var response = service.activateSprint(sprint.getId(), callerId);
 
         assertThat(response.status()).isEqualTo(SprintStatus.ACTIVE);
+        assertThat(response.startDate()).isEqualTo(today);
+        assertThat(sprint.getStartDate()).isEqualTo(today);
+    }
+
+    @Test
+    void activateSprint_throwsWhenSprintIsNotNextPlanningSprintToStart() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+        sprint.setStartDate(LocalDate.now().plusDays(3));
+        Sprint closerSprint = TestDataFactory.sprint(projectId);
+        closerSprint.setStartDate(LocalDate.now().plusDays(1));
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+        when(sprintRepository.existsByProjectIdAndStatus(projectId, SprintStatus.ACTIVE)).thenReturn(false);
+        when(sprintRepository.findAllByProjectIdAndStatus(projectId, SprintStatus.PLANNING)).thenReturn(List.of(sprint, closerSprint));
+
+        assertThatThrownBy(() -> service.activateSprint(sprint.getId(), callerId))
+                .isInstanceOf(ConflictException.class)
+                .hasMessage("SPRINT_NOT_NEXT_TO_START");
     }
 
     @Test
@@ -284,12 +323,37 @@ class SprintServiceTest {
         when(taskRepository.save(any(Task.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(sprintRepository.save(sprint)).thenReturn(sprint);
 
+        LocalDate today = LocalDate.now();
         service.completeSprintInternal(sprint);
 
         assertThat(sprint.getStatus()).isEqualTo(SprintStatus.COMPLETED);
+        assertThat(sprint.getEndDate()).isEqualTo(today);
         assertThat(openTask.getSprintId()).isNull();
         assertThat(openTask.getStatus()).isEqualTo("TODO");
         assertThat(doneTask.getSprintId()).isEqualTo(sprint.getId());
+    }
+
+    @Test
+    void completeSprint_setsEndDateToCompletionDate() {
+        UUID callerId = UUID.randomUUID();
+        UUID projectId = UUID.randomUUID();
+        Sprint sprint = TestDataFactory.sprint(projectId);
+        sprint.setStatus(SprintStatus.ACTIVE);
+        sprint.setEndDate(LocalDate.now().plusDays(7));
+
+        when(sprintRepository.findById(sprint.getId())).thenReturn(Optional.of(sprint));
+        when(projectServiceClient.getMemberPermissions(projectId, callerId)).thenReturn(TestDataFactory.scrumMasterPermissions());
+        when(boardColumnService.getDoneEquivalentStatuses(projectId)).thenReturn(Set.of("DONE"));
+        when(boardColumnService.getFirstColumnName(projectId)).thenReturn("TODO");
+        when(taskRepository.findBySprintIdOrderByStatusAscPositionAsc(sprint.getId())).thenReturn(List.of());
+        when(sprintRepository.save(sprint)).thenReturn(sprint);
+
+        LocalDate today = LocalDate.now();
+        var response = service.completeSprint(sprint.getId(), callerId);
+
+        assertThat(response.status()).isEqualTo(SprintStatus.COMPLETED);
+        assertThat(response.endDate()).isEqualTo(today);
+        verify(projectServiceClient).touchMemberActivity(projectId, callerId);
     }
 
     @Test
@@ -625,4 +689,3 @@ class SprintServiceTest {
         assertThat(result.get(0).completed()).isTrue();
     }
 }
-

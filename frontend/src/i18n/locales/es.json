@@ -863,7 +863,9 @@
       "unsavedStay": "Seguir editando",
       "saved": "Cambios guardados",
       "readOnlyCompleted": "Este sprint está completado: la tarea es de solo lectura.",
-      "readOnlyPermission": "Tu rol no permite editar esta tarea."
+      "readOnlyPermission": "Tu rol no permite editar esta tarea.",
+      "epicChangePermissionError": "La tarea se ha guardado, pero no se ha cambiado el epic. Solo el Product Owner puede gestionar la asignación de epics.",
+      "epicChangeError": "La tarea se ha guardado, pero no se ha podido cambiar el epic."
     },
     "createModal": {
       "createdHint": "Tarea creada. Puedes crear otra."

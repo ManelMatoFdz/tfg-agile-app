@@ -94,6 +94,13 @@ function taskFixture(overrides: Partial<Task> = {}): Task {
   };
 }
 
+function dateFromToday(days: number): string {
+  const today = new Date();
+  return new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + days))
+    .toISOString()
+    .slice(0, 10);
+}
+
 describe('SprintsPage', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -167,6 +174,37 @@ describe('SprintsPage', () => {
     expect(screen.getByRole('link', { name: i18n.t('projects.sprints.sprintBacklog.button') })).toHaveAttribute('href', '/workspaces/workspace-1/projects/project-1/sprints/active-1/backlog');
     expect(screen.getByText('Sprint Planned')).toBeInTheDocument();
     expect(screen.getByText('Sprint Done')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: i18n.t('projects.sprints.activate') })).not.toBeInTheDocument();
+  });
+
+  it('shows the start button only for the closest planned sprint when there is no active sprint', async () => {
+    mockListSprints.mockResolvedValue([
+      sprintFixture({ id: 'past-1', name: 'Sprint Last Week', startDate: dateFromToday(-7), endDate: dateFromToday(7), createdAt: '2026-09-01' }),
+      sprintFixture({ id: 'future-1', name: 'Sprint Tomorrow', startDate: dateFromToday(1), endDate: dateFromToday(14), createdAt: '2026-09-02' }),
+      sprintFixture({ id: 'future-2', name: 'Sprint Next Week', startDate: dateFromToday(6), endDate: dateFromToday(20), createdAt: '2026-09-03' }),
+    ] as never);
+    mockActivateSprint.mockResolvedValue(sprintFixture({
+      id: 'future-1',
+      name: 'Sprint Tomorrow',
+      status: 'ACTIVE',
+      startDate: dateFromToday(0),
+      endDate: dateFromToday(14),
+    }) as never);
+
+    const { user } = renderWithProviders(<SprintsPage />, {
+      route: '/workspaces/workspace-1/projects/project-1/sprints',
+      path: '/workspaces/:workspaceId/projects/:projectId/sprints',
+    });
+
+    expect(await screen.findByText('Sprint Tomorrow')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: i18n.t('projects.sprints.activate') })).toHaveLength(1);
+
+    await user.click(screen.getByRole('button', { name: i18n.t('projects.sprints.activate') }));
+    expect(await screen.findByText(i18n.t('projects.sprints.activateConfirm.title'))).toBeInTheDocument();
+    const activateButtons = screen.getAllByRole('button', { name: i18n.t('projects.sprints.activate') });
+    await user.click(activateButtons[activateButtons.length - 1]);
+
+    await waitFor(() => expect(mockActivateSprint).toHaveBeenCalledWith('future-1'));
   });
 
   it('creates a sprint, reports overlapping dates, updates it, activates it and deletes it', async () => {

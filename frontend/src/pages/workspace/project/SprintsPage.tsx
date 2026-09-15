@@ -351,6 +351,38 @@ function formatDateShort(date: string | null | undefined): string {
   return new Date(date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+function localDateValue(date: string | null | undefined): number | null {
+  if (!date) return null;
+  const [year, month, day] = date.split('-').map(Number);
+  if (!year || !month || !day) return null;
+  return Date.UTC(year, month - 1, day);
+}
+
+function todayLocalDateValue(): number {
+  const today = new Date();
+  return Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+}
+
+function createdAtValue(date: string | null | undefined): number {
+  if (!date) return Number.MAX_SAFE_INTEGER;
+  const value = new Date(date).getTime();
+  return Number.isNaN(value) ? Number.MAX_SAFE_INTEGER : value;
+}
+
+function findNextPlanningSprintToStart(plannedSprints: Sprint[]): Sprint | null {
+  const today = todayLocalDateValue();
+  return [...plannedSprints]
+    .filter((sprint) => localDateValue(sprint.startDate) !== null)
+    .sort((a, b) => {
+      const aStart = localDateValue(a.startDate)!;
+      const bStart = localDateValue(b.startDate)!;
+      return Math.abs(aStart - today) - Math.abs(bStart - today)
+        || aStart - bStart
+        || createdAtValue(a.createdAt) - createdAtValue(b.createdAt)
+        || a.id.localeCompare(b.id);
+    })[0] ?? null;
+}
+
 // ── SprintsPage ──────────────────────────────────────────────────────────────
 
 export default function SprintsPage() {
@@ -451,6 +483,7 @@ export default function SprintsPage() {
   // Categorize sprints
   const plannedSprints = sprints.filter((s) => s.status === 'PLANNING');
   const completedSprints = sprints.filter((s) => s.status === 'COMPLETED');
+  const nextPlanningSprintToStart = activeSprint ? null : findNextPlanningSprintToStart(plannedSprints);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -725,7 +758,7 @@ export default function SprintsPage() {
                               <Columns2 size={12} strokeWidth={2} />
                               {t('projects.sprints.planning.title')}
                             </Link>
-                            {canManageSprint && sprint.startDate && new Date(sprint.startDate) <= new Date(new Date().toDateString()) && (
+                            {canManageSprint && !activeSprint && nextPlanningSprintToStart?.id === sprint.id && (
                               <button
                                 onClick={() => setConfirmActivate(sprint.id)}
                                 style={{ ...btnOutline, color: 'var(--success-text)', borderColor: 'var(--success)' }}
