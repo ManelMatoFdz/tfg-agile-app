@@ -1,6 +1,7 @@
 package com.tfg.agile.app.user_service.service;
 
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.Multipart;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -33,7 +34,7 @@ class SmtpPasswordResetNotifierTest {
         MimeMessage realMimeMessage = new MimeMessage((jakarta.mail.Session) null);
         when(mailSender.createMimeMessage()).thenReturn(realMimeMessage);
         when(messageSource.getMessage(anyString(), any(), anyString(), any(Locale.class)))
-                .thenReturn("Reset your AgileApp password");
+                .thenReturn("Reset your Kadenza password");
 
         SmtpPasswordResetNotifier notifier = new SmtpPasswordResetNotifier(
                 mailSender,
@@ -47,8 +48,24 @@ class SmtpPasswordResetNotifierTest {
         verify(mailSender).send(captor.capture());
 
         MimeMessage sent = captor.getValue();
-        assertThat(sent.getSubject()).isEqualTo("Reset your AgileApp password");
+        assertThat(sent.getSubject()).isEqualTo("Reset your Kadenza password");
         assertThat(sent.getAllRecipients()).isNotEmpty();
-        assertThat(sent.getContent()).isNotNull();
+        String content = extractText(sent.getContent());
+        assertThat(content).contains("Kadenza");
+        assertThat(content).contains("15 minutes");
+    }
+
+    private static String extractText(Object content) throws Exception {
+        if (content instanceof String text) {
+            return text;
+        }
+        if (content instanceof Multipart multipart) {
+            StringBuilder text = new StringBuilder();
+            for (int i = 0; i < multipart.getCount(); i++) {
+                text.append(extractText(multipart.getBodyPart(i).getContent()));
+            }
+            return text.toString();
+        }
+        return "";
     }
 }

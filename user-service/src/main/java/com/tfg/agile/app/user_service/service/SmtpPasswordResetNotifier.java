@@ -12,7 +12,7 @@ import java.util.Locale;
 public class SmtpPasswordResetNotifier implements PasswordResetNotifier {
 
     private static final String SUBJECT_MESSAGE_KEY = "auth.reset-password.mail.subject";
-    private static final String DEFAULT_SUBJECT = "Reset your AgileApp password";
+    private static final String DEFAULT_SUBJECT = "Reset your Kadenza password";
 
     private final JavaMailSender mailSender;
     private final MessageSource messageSource;
@@ -46,36 +46,36 @@ public class SmtpPasswordResetNotifier implements PasswordResetNotifier {
         String lang = locale.getLanguage();
         if ("es".equals(lang) || "gl".equals(lang)) {
             return """
-                    AgileApp — Restablecer contraseña
+                    Kadenza — Restablecer contraseña
 
-                    Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en AgileApp.
+                    Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en Kadenza.
 
                     Haz clic en el siguiente enlace para crear una nueva contraseña:
                     %s
 
-                    Este enlace es válido durante las próximas 24 horas. Si no lo usas en ese plazo, tendrás que solicitar uno nuevo.
+                    Este enlace es válido durante los próximos 15 minutos. Si no lo usas en ese plazo, tendrás que solicitar uno nuevo.
 
                     Si no solicitaste este cambio, puedes ignorar este correo con total seguridad. Tu contraseña actual no se modificará.
 
                     ──────────────────────────────
-                    AgileApp · Gestión ágil de proyectos
+                    Kadenza · Gestión ágil de proyectos
                     Este mensaje fue generado automáticamente. Por favor, no respondas a este correo.
                     """.formatted(resetLink);
         }
         return """
-                AgileApp — Reset your password
+                Kadenza — Reset your password
 
-                We received a request to reset the password for your AgileApp account.
+                We received a request to reset the password for your Kadenza account.
 
                 Click the link below to set a new password:
                 %s
 
-                This link is valid for the next 24 hours. If you don't use it within that time, you'll need to request a new one.
+                This link is valid for the next 15 minutes. If you don't use it within that time, you'll need to request a new one.
 
                 If you didn't request a password reset, you can safely ignore this email. Your current password will not be changed.
 
                 ──────────────────────────────
-                AgileApp · Agile Project Management
+                Kadenza · Agile Project Management
                 This message was generated automatically. Please do not reply to this email.
                 """.formatted(resetLink);
     }
@@ -86,12 +86,12 @@ public class SmtpPasswordResetNotifier implements PasswordResetNotifier {
 
         String heading        = isSpanish ? "Restablece tu contraseña" : "Reset your password";
         String intro          = isSpanish
-                ? "Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en <strong>AgileApp</strong>."
-                : "We received a request to reset the password for your <strong>AgileApp</strong> account.";
+                ? "Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en <strong>Kadenza</strong>."
+                : "We received a request to reset the password for your <strong>Kadenza</strong> account.";
         String btnLabel       = isSpanish ? "Restablecer contraseña" : "Reset password";
         String expiryNotice   = isSpanish
-                ? "Este enlace es válido durante las próximas <strong>24 horas</strong>. Si no lo usas en ese plazo, tendrás que solicitar uno nuevo."
-                : "This link is valid for the next <strong>24 hours</strong>. If you don't use it within that time, you'll need to request a new one.";
+                ? "Este enlace es válido durante los próximos <strong>15 minutos</strong>. Si no lo usas en ese plazo, tendrás que solicitar uno nuevo."
+                : "This link is valid for the next <strong>15 minutes</strong>. If you don't use it within that time, you'll need to request a new one.";
         String securityNotice = isSpanish
                 ? "Si no solicitaste este cambio, puedes ignorar este correo con total seguridad. Tu contraseña actual no se modificará."
                 : "If you didn't request a password reset, you can safely ignore this email. Your current password will not be changed.";
@@ -120,7 +120,7 @@ public class SmtpPasswordResetNotifier implements PasswordResetNotifier {
                           <!-- Header -->
                           <tr>
                             <td style="background-color:#1e293b;padding:32px 40px;text-align:center;">
-                              <span style="font-size:26px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Agile<span style="color:#6366f1;">App</span></span>
+                              <span style="font-size:26px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Kadenza</span>
                             </td>
                           </tr>
 
@@ -166,7 +166,7 @@ public class SmtpPasswordResetNotifier implements PasswordResetNotifier {
                           <!-- Footer -->
                           <tr>
                             <td style="padding:24px 40px;text-align:center;">
-                              <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#1e293b;">AgileApp</p>
+                              <p style="margin:0 0 4px;font-size:13px;font-weight:600;color:#1e293b;">Kadenza</p>
                               <p style="margin:0 0 12px;font-size:12px;color:#94a3b8;">%s</p>
                               <p style="margin:0;font-size:11px;color:#cbd5e1;">%s</p>
                             </td>
