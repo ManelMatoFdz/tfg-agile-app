@@ -156,7 +156,7 @@ describe('API endpoint modules', () => {
 
   it('maps sprint operations and serializes every active task filter', async () => {
     const filters = {
-      priorities: ['HIGH'], assigneeIds: ['u1'], labelIds: ['l1'], statuses: ['TODO'], epicIds: ['e1'], search: 'needle',
+      priorities: ['HIGH'], assigneeIds: ['u1'], labelIds: ['l1'], statuses: ['TODO'], readyStates: ['READY'], epicIds: ['e1'], search: 'needle',
     } as never;
     await sprintsApi.getBacklog('p1', filters);
     await sprintsApi.getBacklog('p1');
@@ -175,7 +175,7 @@ describe('API endpoint modules', () => {
     await sprintsApi.saveRetrospective('s1', '{}');
 
     expect(taskClient.get).toHaveBeenCalledWith('/projects/p1/backlog', { params: {
-      priority: ['HIGH'], assigneeId: ['u1'], labelId: ['l1'], status: ['TODO'], epicId: ['e1'], search: 'needle',
+      priority: ['HIGH'], assigneeId: ['u1'], labelId: ['l1'], status: ['TODO'], ready: 'true', epicId: ['e1'], search: 'needle',
     } });
     expect(taskClient.patch).toHaveBeenCalledWith('/sprints/s1/retrospective', { reviewNotes: '{}' });
   });

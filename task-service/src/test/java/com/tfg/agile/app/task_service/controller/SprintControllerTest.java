@@ -58,7 +58,7 @@ class SprintControllerTest {
                 now, now
         );
 
-        when(sprintService.getBacklog(projectId, null, null, null, null, null, null, callerId)).thenReturn(List.of(taskResponse));
+        when(sprintService.getBacklog(projectId, null, null, null, null, null, null, null, callerId)).thenReturn(List.of(taskResponse));
         when(sprintService.listSprints(projectId, callerId)).thenReturn(List.of(sprintResponse));
         when(sprintService.getSprint(sprintId, callerId)).thenReturn(sprintResponse);
         when(sprintService.getSprintTasks(sprintId, null, null, null, null, callerId)).thenReturn(List.of(taskResponse));
@@ -68,7 +68,7 @@ class SprintControllerTest {
         when(sprintService.assignTasksToSprint(sprintId, assignRequest, callerId)).thenReturn(List.of(taskResponse));
         when(sprintService.removeTaskFromSprint(sprintId, taskId, callerId)).thenReturn(taskResponse);
 
-        assertThat(controller.getBacklog(projectId, null, null, null, null, null, null, callerId)).hasSize(1);
+        assertThat(controller.getBacklog(projectId, null, null, null, null, null, null, null, callerId)).hasSize(1);
         assertThat(controller.listSprints(projectId, callerId)).hasSize(1);
         assertThat(controller.getSprint(sprintId, callerId)).isEqualTo(sprintResponse);
         assertThat(controller.getSprintTasks(sprintId, null, null, null, null, callerId)).hasSize(1);
@@ -79,4 +79,3 @@ class SprintControllerTest {
         assertThat(controller.removeTaskFromSprint(sprintId, taskId, callerId)).isEqualTo(taskResponse);
     }
 }
-

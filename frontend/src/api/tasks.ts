@@ -7,7 +7,6 @@ export interface CreateTaskDto {
   priority?: string;
   type?: string;
   parentId?: string;
-  assigneeId?: string;
   labelIds?: string[];
   definitionOfDone?: string;
 }

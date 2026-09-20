@@ -22,13 +22,16 @@ export interface UpdateSprintDto {
   reviewNotes?: string;
 }
 
-function buildFilterParams(filters?: TaskFilters): Record<string, string | string[]> {
+function buildFilterParams(filters?: TaskFilters, includeReady = false): Record<string, string | string[]> {
   if (!filters) return {};
   const params: Record<string, string | string[]> = {};
   if (filters.priorities.length > 0) params.priority = filters.priorities;
   if (filters.assigneeIds.length > 0) params.assigneeId = filters.assigneeIds;
   if (filters.labelIds.length > 0) params.labelId = filters.labelIds;
   if (filters.statuses.length > 0) params.status = filters.statuses;
+  if (includeReady && filters.readyStates.length === 1) {
+    params.ready = filters.readyStates[0] === 'READY' ? 'true' : 'false';
+  }
   if (filters.epicIds && filters.epicIds.length > 0) params.epicId = filters.epicIds;
   if (filters.search) params.search = filters.search;
   return params;
@@ -36,7 +39,7 @@ function buildFilterParams(filters?: TaskFilters): Record<string, string | strin
 
 export const sprintsApi = {
   getBacklog: (projectId: string, filters?: TaskFilters) =>
-    taskClient.get<Task[]>(`/projects/${projectId}/backlog`, { params: buildFilterParams(filters) }).then((r) => r.data),
+    taskClient.get<Task[]>(`/projects/${projectId}/backlog`, { params: buildFilterParams(filters, true) }).then((r) => r.data),
 
   listSprints: (projectId: string) =>
     taskClient.get<Sprint[]>(`/projects/${projectId}/sprints`).then((r) => r.data),

@@ -3,11 +3,14 @@ import { useTranslation } from 'react-i18next';
 import { Search, X, Filter, ChevronDown } from 'lucide-react';
 import type { TaskPriority, Label, UserSummary, Epic } from '../../types';
 
+export type ReadyFilter = 'READY' | 'NOT_READY';
+
 export interface TaskFilters {
   priorities: TaskPriority[];
   assigneeIds: string[];
   labelIds: string[];
   statuses: string[];
+  readyStates: ReadyFilter[];
   epicIds: string[];
   search: string;
 }
@@ -17,6 +20,7 @@ export const EMPTY_FILTERS: TaskFilters = {
   assigneeIds: [],
   labelIds: [],
   statuses: [],
+  readyStates: [],
   epicIds: [],
   search: '',
 };
@@ -27,6 +31,7 @@ export function hasActiveFilters(f: TaskFilters): boolean {
     f.assigneeIds.length > 0 ||
     f.labelIds.length > 0 ||
     f.statuses.length > 0 ||
+    f.readyStates.length > 0 ||
     f.epicIds.length > 0 ||
     f.search.length > 0
   );
@@ -38,6 +43,7 @@ export function activeFilterCount(f: TaskFilters): number {
   if (f.assigneeIds.length > 0) count++;
   if (f.labelIds.length > 0) count++;
   if (f.statuses.length > 0) count++;
+  if (f.readyStates.length > 0) count++;
   if (f.epicIds.length > 0) count++;
   if (f.search.length > 0) count++;
   return count;
@@ -51,6 +57,7 @@ interface TaskFilterBarProps {
   epics?: Epic[];
   showStatus?: boolean;
   statuses?: { key: string; label: string }[];
+  showReady?: boolean;
 }
 
 const PRIORITY_OPTIONS: TaskPriority[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
@@ -293,6 +300,7 @@ export default function TaskFilterBar({
   epics = [],
   showStatus = false,
   statuses = [],
+  showReady = false,
 }: TaskFilterBarProps) {
   const { t } = useTranslation();
 
@@ -328,6 +336,11 @@ export default function TaskFilterBar({
     label: e.name,
     color: e.color,
   }));
+
+  const readyOptions = [
+    { key: 'READY', label: t('tasks.modal.readyLabel'), color: '#16A34A' },
+    { key: 'NOT_READY', label: t('tasks.modal.notReadyLabel'), color: '#D97706' },
+  ];
 
   const active = hasActiveFilters(filters);
 
@@ -378,6 +391,16 @@ export default function TaskFilterBar({
       key: `s-${s}`,
       label: st?.label ?? s,
       onRemove: () => toggle('statuses', s),
+    });
+  });
+
+  filters.readyStates.forEach((s) => {
+    const st = readyOptions.find((ss) => ss.key === s);
+    chips.push({
+      key: `r-${s}`,
+      label: st?.label ?? s,
+      color: st?.color,
+      onRemove: () => toggle('readyStates', s),
     });
   });
 
@@ -491,6 +514,15 @@ export default function TaskFilterBar({
             options={statuses}
             selected={filters.statuses}
             onToggle={(key) => toggle('statuses', key)}
+          />
+        )}
+
+        {showReady && (
+          <MultiSelectDropdown
+            label={t('tasks.filters.status')}
+            options={readyOptions}
+            selected={filters.readyStates}
+            onToggle={(key) => toggle('readyStates', key)}
           />
         )}
 

@@ -14,12 +14,13 @@ describe('task filter helpers', () => {
       assigneeIds: ['u1'],
       labelIds: ['l1', 'l2'],
       statuses: ['TODO'],
+      readyStates: ['READY'],
       epicIds: ['e1'],
       search: 'checkout',
     } as typeof EMPTY_FILTERS;
 
     expect(hasActiveFilters(filters)).toBe(true);
-    expect(activeFilterCount(filters)).toBe(6);
+    expect(activeFilterCount(filters)).toBe(7);
   });
 
   it('ignores empty filter categories', () => {

@@ -34,6 +34,10 @@ public final class TaskSpecifications {
         return (root, query, cb) -> root.get("status").in(statuses);
     }
 
+    public static Specification<Task> hasReady(boolean ready) {
+        return (root, query, cb) -> cb.equal(root.get("ready"), ready);
+    }
+
     public static Specification<Task> hasAssigneeIn(List<UUID> assigneeIds) {
         return (root, query, cb) -> root.get("assigneeId").in(assigneeIds);
     }

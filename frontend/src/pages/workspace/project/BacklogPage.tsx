@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ClipboardList, Filter as FilterIcon, BookOpen, CheckSquare, Bug, ChevronRight, ChevronDown, ChevronLeft, Target, Lock } from 'lucide-react';
-import type { Task, TaskPriority, TaskType, UserSummary } from '../../../types';
+import type { Task, TaskPriority, TaskType } from '../../../types';
 import { sprintsApi } from '../../../api/sprints';
 import { tasksApi } from '../../../api/tasks';
 
@@ -13,15 +13,13 @@ const TYPE_ICON: Record<TaskType, { icon: typeof BookOpen; color: string }> = {
 };
 import { labelsApi } from '../../../api/labels';
 import { epicsApi } from '../../../api/epics';
-import { AssigneeAvatar } from '../../../components/kanban/AssigneePicker';
 import CreateTaskModal from '../../../components/kanban/CreateTaskModal';
 import SubtaskModal from '../../../components/kanban/SubtaskModal';
 import TaskFilterBar, { type TaskFilters, EMPTY_FILTERS, hasActiveFilters } from '../../../components/kanban/TaskFilterBar';
 import Alert from '../../../components/ui/Alert';
 import PageTitle from '../../../components/motion/PageTitle';
 import { useProjectMember } from '../../../hooks/useProjectMember';
-import { useProjectMembers } from '../../../hooks/useProjectMembers';
-import { useBoardColumns, getStatusLabel } from '../../../hooks/useBoardColumns';
+import { useBoardColumns } from '../../../hooks/useBoardColumns';
 import type { Label, Epic } from '../../../types';
 
 const PRIORITY_CONFIG: Record<TaskPriority, { color: string; bg: string; border: string }> = {
@@ -43,7 +41,17 @@ const GROUP_EPIC_KEY = (pid: string) => `backlog_groupByEpic_${pid}`;
 function loadFilters(projectId: string): TaskFilters {
   try {
     const raw = localStorage.getItem(FILTER_STORAGE_KEY(projectId));
-    if (raw) return { ...EMPTY_FILTERS, ...JSON.parse(raw) };
+    if (raw) {
+      const parsed = { ...EMPTY_FILTERS, ...JSON.parse(raw) } as TaskFilters;
+      return {
+        ...parsed,
+        assigneeIds: [],
+        statuses: [],
+        readyStates: Array.isArray(parsed.readyStates)
+          ? parsed.readyStates.filter((s) => s === 'READY' || s === 'NOT_READY')
+          : [],
+      };
+    }
   } catch { /* ignore */ }
   return { ...EMPTY_FILTERS };
 }
@@ -55,7 +63,6 @@ export default function BacklogPage() {
   const location = useLocation();
 
   const { canCreateTask, canEditBacklogTask } = useProjectMember(projectId);
-  const { members, userMap } = useProjectMembers(projectId);
   const columns = useBoardColumns(projectId);
 
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -138,13 +145,6 @@ export default function BacklogPage() {
     [projectId, filters.search, fetchTasks],
   );
 
-  const memberSummaries: UserSummary[] = members.map((m) => userMap[m.userId]).filter(Boolean) as UserSummary[];
-
-  const STATUS_OPTIONS = columns.map((c) => ({
-    key: c.name,
-    label: getStatusLabel(c.name, columns, t),
-  }));
-
   const totalPoints = tasks.reduce((sum, task) => sum + (task.storyPoints ?? 0), 0);
   const readyCount = tasks.filter((task) => task.ready).length;
 
@@ -221,7 +221,6 @@ export default function BacklogPage() {
     const readyConf = task.ready ? READY_CONFIG.ready : READY_CONFIG.notReady;
     const isStory = task.subtaskCount > 0;
     const isExpanded = expandedStories.has(task.id);
-    const assignee = task.assigneeId ? userMap[task.assigneeId] : undefined;
 
     return (
       <div
@@ -241,7 +240,7 @@ export default function BacklogPage() {
             width: '100%',
             textAlign: 'left',
             display: 'grid',
-            gridTemplateColumns: '56px 1fr 180px 100px 120px 120px 80px',
+            gridTemplateColumns: '56px 1fr 180px 100px 120px 120px',
             alignItems: 'center',
             gap: 16,
             padding: '18px 24px',
@@ -371,27 +370,11 @@ export default function BacklogPage() {
               {task.ready ? t('tasks.modal.readyLabel') : t('tasks.modal.notReadyLabel')}
             </span>
           </div>
-
-          {/* Assignee */}
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            {assignee ? (
-              <AssigneeAvatar name={assignee.fullName ?? assignee.username} avatarUrl={assignee.avatarUrl} size={28} />
-            ) : (
-              <span style={{
-                width: 28, height: 28, borderRadius: '50%', border: '1.5px dashed var(--border)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--text-faint)', fontSize: 12,
-              }}>
-                —
-              </span>
-            )}
-          </div>
         </button>
 
         {/* Expanded subtasks */}
         {isStory && isExpanded && (storySubtasks[task.id] ?? []).map((sub) => {
           const subDone = sub.completedAt != null;
-          const subAssignee = sub.assigneeId ? userMap[sub.assigneeId] : undefined;
           return (
             <button
               key={sub.id}
@@ -425,19 +408,6 @@ export default function BacklogPage() {
               }}>
                 {sub.title}
               </span>
-              <div style={{ width: 80, flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
-                {subAssignee ? (
-                  <AssigneeAvatar name={subAssignee.fullName ?? subAssignee.username} avatarUrl={subAssignee.avatarUrl} size={22} />
-                ) : (
-                  <span style={{
-                    width: 22, height: 22, borderRadius: '50%', border: '1.5px dashed var(--border)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    color: 'var(--text-faint)', fontSize: 9,
-                  }}>
-                    —
-                  </span>
-                )}
-              </div>
             </button>
           );
         })}
@@ -508,11 +478,10 @@ export default function BacklogPage() {
           <TaskFilterBar
             filters={filters}
             onChange={handleFilterChange}
-            members={memberSummaries}
+            members={[]}
             labels={labels}
             epics={epics}
-            showStatus
-            statuses={STATUS_OPTIONS}
+            showReady
           />
         </div>
         {epics.length > 0 && (
@@ -589,7 +558,7 @@ export default function BacklogPage() {
           {/* Table header */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: '56px 1fr 180px 100px 120px 120px 80px',
+            gridTemplateColumns: '56px 1fr 180px 100px 120px 120px',
             alignItems: 'center',
             gap: 16,
             padding: '14px 24px',
@@ -607,7 +576,6 @@ export default function BacklogPage() {
             <span style={{ textAlign: 'center' }}>{t('projects.backlog.colPriority')}</span>
             <span style={{ textAlign: 'center' }}>{t('projects.backlog.colEstimate')}</span>
             <span style={{ textAlign: 'center' }}>{t('projects.backlog.colStatus')}</span>
-            <span style={{ textAlign: 'center' }}>{t('projects.backlog.colAssignee')}</span>
           </div>
 
           {/* Task rows */}

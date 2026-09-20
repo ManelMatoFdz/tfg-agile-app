@@ -7,10 +7,8 @@ import type { CreateTaskDto } from '../../api/tasks';
 import { tasksApi } from '../../api/tasks';
 import { labelsApi } from '../../api/labels';
 import { epicsApi } from '../../api/epics';
-import { useProjectMembers } from '../../hooks/useProjectMembers';
 import { PRIORITIES, TASK_TYPES, TYPE_CONFIG } from './taskConstants';
 import { sidebarLabel, fieldStyle, focusHandler, blurHandler } from './taskFieldStyles';
-import { AssigneeDropdown } from './AssigneePicker';
 import { LabelMultiSelect } from './LabelPicker';
 import { EpicDropdown } from './EpicPicker';
 
@@ -31,7 +29,6 @@ export default function CreateTaskModal({ projectId, defaultType = 'TASK', paren
   const [definitionOfDone, setDefinitionOfDone] = useState('');
   const [priority, setPriority] = useState<TaskPriority>('MEDIUM');
   const [taskType, setTaskType] = useState<TaskType>(parentId ? 'TASK' : defaultType);
-  const [assigneeId, setAssigneeId] = useState('');
   const [selectedLabelIds, setSelectedLabelIds] = useState<string[]>([]);
   const [epicId, setEpicId] = useState('');
 
@@ -41,8 +38,6 @@ export default function CreateTaskModal({ projectId, defaultType = 'TASK', paren
   const [error, setError] = useState<string | null>(null);
   const [createdHint, setCreatedHint] = useState(false);
 
-  const { members, userMap } = useProjectMembers(projectId);
-  const developerMembers = members.filter((m) => m.scrumRole === 'DEVELOPER');
   const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -67,7 +62,6 @@ export default function CreateTaskModal({ projectId, defaultType = 'TASK', paren
         priority,
         type: parentId ? 'TASK' : taskType,
         parentId: parentId || undefined,
-        assigneeId: assigneeId || undefined,
         labelIds: selectedLabelIds.length > 0 ? selectedLabelIds : undefined,
         ...(!parentId ? { definitionOfDone: definitionOfDone.trim() || undefined } : {}),
       };
@@ -80,7 +74,6 @@ export default function CreateTaskModal({ projectId, defaultType = 'TASK', paren
       setTitle('');
       setDescription('');
       setDefinitionOfDone('');
-      setAssigneeId('');
       setSelectedLabelIds([]);
       setCreatedHint(true);
       titleRef.current?.focus();
@@ -238,34 +231,20 @@ export default function CreateTaskModal({ projectId, defaultType = 'TASK', paren
             </div>
           )}
 
-          {/* Priority + assignee */}
-          <div style={{ display: 'grid', gap: 14, gridTemplateColumns: '1fr 1fr' }}>
-            <div>
-              <label style={sidebarLabel}>{t('tasks.modal.priority')}</label>
-              <select
-                value={priority}
-                onChange={(e) => setPriority(e.target.value as TaskPriority)}
-                style={fieldStyle}
-                onFocus={focusHandler}
-                onBlur={blurHandler}
-              >
-                {PRIORITIES.map((p) => (
-                  <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
-                ))}
-              </select>
-            </div>
-            {developerMembers.length > 0 && (
-              <div>
-                <label style={sidebarLabel}>{t('tasks.modal.assignee')}</label>
-                <AssigneeDropdown
-                  value={assigneeId}
-                  onChange={setAssigneeId}
-                  members={developerMembers}
-                  userMap={userMap}
-                  placeholder={t('tasks.modal.unassigned')}
-                />
-              </div>
-            )}
+          {/* Priority */}
+          <div>
+            <label style={sidebarLabel}>{t('tasks.modal.priority')}</label>
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value as TaskPriority)}
+              style={fieldStyle}
+              onFocus={focusHandler}
+              onBlur={blurHandler}
+            >
+              {PRIORITIES.map((p) => (
+                <option key={p} value={p}>{t(`tasks.priority.${p}`)}</option>
+              ))}
+            </select>
           </div>
 
           {/* Type selector — not for subtasks */}

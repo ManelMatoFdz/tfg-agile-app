@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Route, Routes } from 'react-router-dom';
 import Button from './Button';
@@ -11,9 +11,12 @@ import NotificationSource from './NotificationSource';
 import ProtectedRoute from '../auth/ProtectedRoute';
 import { renderWithProviders } from '../../test/testUtils';
 import { useAuthStore } from '../../store/authStore';
-import { userSummaryFixture } from '../../test/fixtures';
+import { usersApi } from '../../api/users';
+import { userFixture, userSummaryFixture } from '../../test/fixtures';
 import type { Notification } from '../../types';
 import i18n from '../../i18n';
+
+jest.mock('../../api/users', () => ({ usersApi: { getMe: jest.fn() } }));
 
 describe('UI primitives', () => {
   it('Button forwards clicks and disables interaction while loading', async () => {
@@ -87,7 +90,10 @@ describe('NotificationSource', () => {
 });
 
 describe('ProtectedRoute', () => {
-  beforeEach(() => useAuthStore.setState({ accessToken: null, refreshToken: null, user: null }));
+  beforeEach(() => {
+    jest.clearAllMocks();
+    useAuthStore.setState({ accessToken: null, refreshToken: null, user: null });
+  });
 
   it('redirects anonymous users to the login route', () => {
     renderWithProviders(
@@ -98,14 +104,19 @@ describe('ProtectedRoute', () => {
       { route: '/private' },
     );
     expect(screen.getByText('Login')).toBeInTheDocument();
+    expect(usersApi.getMe).not.toHaveBeenCalled();
   });
 
-  it('renders protected content with a token', () => {
+  it('renders protected content with a token and refreshes the stored user', async () => {
+    const freshUser = userFixture({ fullName: 'Fresh User' });
+    jest.mocked(usersApi.getMe).mockResolvedValue({ data: freshUser } as never);
     useAuthStore.setState({ accessToken: 'token' });
     renderWithProviders(
       <Routes><Route element={<ProtectedRoute />}><Route path="/private" element={<div>Private</div>} /></Route></Routes>,
       { route: '/private' },
     );
     expect(screen.getByText('Private')).toBeInTheDocument();
+    await waitFor(() => expect(usersApi.getMe).toHaveBeenCalled());
+    expect(useAuthStore.getState().user).toEqual(freshUser);
   });
 });

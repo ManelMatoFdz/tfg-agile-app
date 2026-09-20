@@ -61,6 +61,7 @@ public class SprintService {
                                             List<UUID> assigneeIds,
                                             List<UUID> labelIds,
                                             List<String> statuses,
+                                            List<Boolean> ready,
                                             List<UUID> epicIds,
                                             String search,
                                             UUID callerId) {
@@ -70,6 +71,7 @@ public class SprintService {
                 .and(TaskSpecifications.inBacklog())
                 .and(TaskSpecifications.isRootTask());
         spec = applyFilters(spec, priorities, assigneeIds, labelIds, statuses, epicIds, search);
+        spec = applyReadyFilter(spec, ready);
 
         return taskRepository.findAll(spec, Sort.by(Sort.Order.desc("priority"), Sort.Order.asc("position")))
                 .stream()
@@ -501,6 +503,17 @@ public class SprintService {
             spec = spec.and(TaskSpecifications.titleContains(search.trim()));
         }
         return spec;
+    }
+
+    private Specification<Task> applyReadyFilter(Specification<Task> spec, List<Boolean> ready) {
+        if (ready == null || ready.isEmpty()) {
+            return spec;
+        }
+        List<Boolean> distinct = ready.stream().distinct().toList();
+        if (distinct.size() != 1) {
+            return spec;
+        }
+        return spec.and(TaskSpecifications.hasReady(distinct.get(0)));
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────

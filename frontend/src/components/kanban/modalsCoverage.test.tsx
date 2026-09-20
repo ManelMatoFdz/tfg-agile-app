@@ -146,7 +146,7 @@ describe('kanban modals coverage', () => {
     assignToTask.mockResolvedValue(taskFixture());
   });
 
-  it('shows only Developers in task assignee dropdowns', () => {
+  it('does not show an assignee dropdown when creating tasks', () => {
     mockedUseProjectMembers.mockReturnValue({
       members: [
         teamMemberFixture({ userId: 'user-2', scrumRole: 'DEVELOPER' }),
@@ -162,10 +162,7 @@ describe('kanban modals coverage', () => {
       <CreateTaskModal projectId="project-1" defaultType="TASK" onCreated={jest.fn()} onClose={jest.fn()} />,
     );
 
-    expect(screen.getByRole('option', { name: 'Ada Lovelace' })).toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'Grace Hopper' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'Ken Schwaber' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('option', { name: 'Jeff Sutherland' })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('assignee-dropdown')).not.toBeInTheDocument();
   });
 
   it('creates a root task, trims fields and assigns the selected epic', async () => {
@@ -181,7 +178,6 @@ describe('kanban modals coverage', () => {
     await user.type(screen.getByPlaceholderText(i18n.t('tasks.modal.descriptionPlaceholder')), '  Add regression coverage  ');
     await user.type(screen.getByPlaceholderText(i18n.t('tasks.modal.dodPlaceholder')), '  Green in CI  ');
     await user.selectOptions(screen.getAllByRole('combobox')[0], 'HIGH');
-    await user.selectOptions(screen.getByLabelText('assignee-dropdown'), 'user-2');
     await user.click(screen.getByRole('button', { name: i18n.t('tasks.type.STORY') }));
     await user.click(screen.getByRole('button', { name: 'Select labels' }));
     await user.selectOptions(screen.getByLabelText('epic-dropdown'), 'epic-1');
@@ -192,7 +188,6 @@ describe('kanban modals coverage', () => {
       description: 'Add regression coverage',
       priority: 'HIGH',
       type: 'STORY',
-      assigneeId: 'user-2',
       labelIds: ['label-1', 'label-2'],
       definitionOfDone: 'Green in CI',
     }));
