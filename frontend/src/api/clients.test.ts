@@ -2,6 +2,7 @@ import axios from 'axios';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 
 jest.mock('axios', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { jest: jestObject } = require('@jest/globals');
   return {
     __esModule: true,
@@ -11,6 +12,17 @@ jest.mock('axios', () => {
 
 type RequestInterceptor = (config: { headers: Record<string, string> }) => { headers: Record<string, string> };
 type ResponseErrorInterceptor = (error: unknown) => Promise<unknown>;
+type LoadedClient = ReturnType<typeof createAxiosClientMock> & { authStore: typeof import('../store/authStore').useAuthStore; exported: unknown };
+
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
 
 function createAxiosClientMock() {
   let requestInterceptor!: RequestInterceptor;
@@ -44,6 +56,23 @@ async function loadClient(loader: () => Promise<{ default: unknown }>) {
   return { ...mock, authStore, exported };
 }
 
+async function loadClients(loaders: Array<() => Promise<{ default: unknown }>>) {
+  const mocks = loaders.map(() => createAxiosClientMock());
+  let createIndex = 0;
+  jest.mocked(axios.create).mockImplementation(() => mocks[createIndex++].client as never);
+
+  let authStore!: typeof import('../store/authStore').useAuthStore;
+  const exported: unknown[] = [];
+  await jest.isolateModulesAsync(async () => {
+    authStore = (await import('../store/authStore')).useAuthStore;
+    for (const loader of loaders) {
+      exported.push((await loader()).default);
+    }
+  });
+
+  return mocks.map((mock, index) => ({ ...mock, authStore, exported: exported[index] })) as LoadedClient[];
+}
+
 describe('API clients', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -73,7 +102,7 @@ describe('API clients', () => {
     loaded.authStore.setState({ accessToken: 'expired', refreshToken: null, user: null });
     const error = { response: { status: 401 }, config: { headers: {} } };
 
-    await expect(loaded.responseError()(error)).rejects.toBe(error);
+    await expect(loaded.responseError()(error)).rejects.toThrow('No refresh token available');
     expect(loaded.authStore.getState().accessToken).toBeNull();
   });
 
@@ -88,6 +117,30 @@ describe('API clients', () => {
     expect(axios.post).toHaveBeenCalledWith('/api/auth/refresh', { refreshToken: 'refresh' });
     expect(config.headers.Authorization).toBe('Bearer new-access');
     expect(loaded.authStore.getState()).toMatchObject({ accessToken: 'new-access', refreshToken: 'new-refresh' });
+  });
+
+  it('shares one token refresh across concurrent 401s from different clients', async () => {
+    const refresh = createDeferred<{ data: { accessToken: string; refreshToken: string } }>();
+    jest.mocked(axios.post).mockReturnValue(refresh.promise);
+    const [userLoaded, taskLoaded] = await loadClients([() => import('./client'), () => import('./taskClient')]);
+    userLoaded.authStore.setState({ accessToken: 'expired', refreshToken: 'refresh', user: null });
+    const userConfig = { headers: {} as Record<string, string> };
+    const taskConfig = { headers: {} as Record<string, string> };
+
+    const userRetry = userLoaded.responseError()({ response: { status: 401 }, config: userConfig });
+    const taskRetry = taskLoaded.responseError()({ response: { status: 401 }, config: taskConfig });
+
+    expect(axios.post).toHaveBeenCalledTimes(1);
+    expect(axios.post).toHaveBeenCalledWith('/api/auth/refresh', { refreshToken: 'refresh' });
+
+    refresh.resolve({ data: { accessToken: 'new-access', refreshToken: 'new-refresh' } });
+
+    await expect(Promise.all([userRetry, taskRetry])).resolves.toHaveLength(2);
+    expect(userConfig.headers.Authorization).toBe('Bearer new-access');
+    expect(taskConfig.headers.Authorization).toBe('Bearer new-access');
+    expect(userLoaded.client).toHaveBeenCalledWith(userConfig);
+    expect(taskLoaded.client).toHaveBeenCalledWith(taskConfig);
+    expect(userLoaded.authStore.getState()).toMatchObject({ accessToken: 'new-access', refreshToken: 'new-refresh' });
   });
 
   it('rejects and logs out when token refresh fails', async () => {
